@@ -1,25 +1,22 @@
 import React, { useState } from 'react';
 import backgroundImg from '../assets/background.jpg';
 import loginCoverImg from '../assets/loginright.jpg';
-import dnscLogo from '../assets/DNSC-IC.jpg';
+import cpmsLogo from '../assets/logo-cpms.png';
+import '../../css/pages/login.css';
+import { ROLE_OPTIONS } from '../types/auth';
+import { Link } from '@inertiajs/react';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('');
-    const [rememberMe, setRememberMe] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log('Login submitted:', { email, password, role, rememberMe });
+        console.log('Login submitted:', { email, password, role });
     };
 
-    const roles = [
-        { value: 'student', label: 'Student' },
-        { value: 'faculty', label: 'Faculty Member' },
-        { value: 'coordinator', label: 'CS Coordinator' },
-        { value: 'panelist', label: 'Panelist' },
-    ];
+    const roles = ROLE_OPTIONS;
 
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
@@ -42,8 +39,11 @@ export default function LoginPage() {
 
                     {/* Logo in center */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="animate-scale-in rounded-full bg-white p-4 shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-[0_0_30px_10px_rgba(5,68,32,0.4)] hover:ring-4 hover:ring-gray-500 hover:ring-offset-2">
+                        {/* <div className="animate-scale-in rounded-full bg-white p-4 shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-[0_0_30px_10px_rgba(5,68,32,0.4)] hover:ring-4 hover:ring-gray-500 hover:ring-offset-2">
                             <img src={dnscLogo} alt="DNSC-IC Logo" className="h-20 w-20 rounded-full object-cover" />
+                        </div> */}
+                        <div className="animate-scale-in flex h-40 w-40 items-center justify-center rounded-full bg-white shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-[0_0_30px_10px_rgba(5,68,32,0.4)] hover:ring-2 hover:ring-gray-500 hover:ring-offset-2">
+                            <img src={cpmsLogo} alt="DNSC-IC Logo" className="h-full w-full rounded-full object-cover" />
                         </div>
                     </div>
 
@@ -72,7 +72,7 @@ export default function LoginPage() {
                                         required
                                         value={role}
                                         onChange={(e) => setRole(e.target.value)}
-                                        className="peer block w-full appearance-none rounded-lg border-2 border-gray-200 bg-gray-50/50 px-3 pt-5 pb-1.5 text-sm text-gray-900 transition-all duration-300 hover:border-green-200 hover:bg-white focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-500/10 focus:outline-none"
+                                        className="peer block w-full appearance-none rounded-lg border-2 border-gray-200 bg-gray-50/50 px-3 py-3 text-sm text-gray-900 transition-all duration-300 hover:border-green-200 hover:bg-white focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-500/10 focus:outline-none"
                                     >
                                         <option value="" disabled hidden></option>
                                         {roles.map((roleOption) => (
@@ -82,16 +82,16 @@ export default function LoginPage() {
                                         ))}
                                     </select>
 
-                                    {/* Floating Label */}
+                                    {/* Floating Label — updated to match email/password style */}
                                     <label
                                         htmlFor="role"
-                                        className={`pointer-events-none absolute left-3 transition-all duration-300 ease-in-out ${
+                                        className={`pointer-events-none absolute left-3 transition-all duration-300 ${
                                             role
-                                                ? 'top-1.5 text-xs font-medium text-green-600'
-                                                : 'top-1/2 -translate-y-1/2 text-sm text-gray-500 peer-focus:top-1.5 peer-focus:translate-y-0 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
+                                                ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
+                                                : 'top-1/2 -translate-y-1/2 text-sm text-gray-500 peer-focus:-top-2 peer-focus:translate-y-0 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
                                         }`}
                                     >
-                                        Select Your Role
+                                        Select Role
                                     </label>
 
                                     {/* Custom Arrow Icon */}
@@ -155,14 +155,15 @@ export default function LoginPage() {
 
                             {/* Submit Button - Smaller */}
                             <div className="animate-fade-in-up pt-1" style={{ animationDelay: '0.5s' }}>
-                                <button
+                                <Link
+                                    href="/instructor/dashboard"
                                     type="submit"
                                     className="group relative flex w-full justify-center overflow-hidden rounded-lg border border-transparent bg-gradient-to-r from-green-600 to-green-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:from-green-700 hover:to-green-800 hover:shadow-xl focus:ring-4 focus:ring-green-500/50 focus:outline-none active:scale-[0.98]"
                                 >
                                     {/* Shine effect */}
                                     <span className="animate-shine absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent"></span>
                                     Sign In
-                                </button>
+                                </Link>
                             </div>
                         </form>
 
@@ -175,106 +176,12 @@ export default function LoginPage() {
                                 </a>
                             </p>
                         </div>
-
-                        {/* Mobile Logo - HIDDEN on small screens */}
-                        {/* Removed the mobile logo section as requested */}
                     </div>
                 </div>
             </div>
 
             {/* DNSC Institute Text - Outside Container */}
             <p className="relative z-10 mt-6 text-center text-xs text-white sm:text-sm">DNSC - Institute of Computing</p>
-
-            {/* CSS Animations */}
-            <style>{`
-                @keyframes fade-in {
-                    from {
-                        opacity: 0;
-                        transform: scale(0.95);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                }
-
-                @keyframes fade-in-down {
-                    from {
-                        opacity: 0;
-                        transform: translateY(-20px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-
-                @keyframes fade-in-up {
-                    from {
-                        opacity: 0;
-                        transform: translateY(20px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-
-                @keyframes slide-up {
-                    from {
-                        opacity: 0;
-                        transform: translateY(30px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-
-                @keyframes scale-in {
-                    from {
-                        opacity: 0;
-                        transform: scale(0.8);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                }
-
-                @keyframes shine {
-                    to {
-                        transform: translateX(200%);
-                    }
-                }
-
-                .animate-fade-in {
-                    animation: fade-in 0.6s ease-out;
-                }
-
-                .animate-fade-in-down {
-                    animation: fade-in-down 0.6s ease-out;
-                }
-
-                .animate-fade-in-up {
-                    animation: fade-in-up 0.6s ease-out;
-                    animation-fill-mode: both;
-                }
-
-                .animate-slide-up {
-                    animation: slide-up 0.8s ease-out 0.3s;
-                    animation-fill-mode: both;
-                }
-
-                .animate-scale-in {
-                    animation: scale-in 0.8s ease-out 0.2s;
-                    animation-fill-mode: both;
-                }
-
-                .animate-shine {
-                    animation: shine 3s ease-in-out infinite;
-                }
-            `}</style>
         </div>
     );
 }

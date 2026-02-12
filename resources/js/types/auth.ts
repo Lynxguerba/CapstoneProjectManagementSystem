@@ -1,14 +1,13 @@
-export type User = {
-    id: number;
-    name: string;
-    email: string;
-    avatar?: string;
-    email_verified_at: string | null;
-    created_at: string;
-    updated_at: string;
-    [key: string]: unknown; // This allows for additional properties...
-};
+export interface UserRoleOption {
+    value: string;
+    label: string;
+}
 
-export type Auth = {
-    user: User;
-};
+export const ROLE_OPTIONS: UserRoleOption[] = [
+    { value: 'student', label: 'Student' },
+    { value: 'adviser', label: 'Adviser' },
+    { value: 'panelist', label: 'Panelist' },
+    { value: 'instructor', label: 'Instructor' },
+    { value: 'dean', label: 'Dean' },
+    { value: 'program_chairperson', label: 'Program Chair' },
+];
