@@ -4,16 +4,50 @@ import loginCoverImg from '../assets/loginright.jpg';
 import cpmsLogo from '../assets/logo-cpms.png';
 import '../../css/pages/login.css';
 import { ROLE_OPTIONS } from '../types/auth';
-import { Link } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('');
 
+    const { post, processing, errors } = useForm({
+        email: '',
+        password: '',
+        role: '',
+    });
+
     const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         console.log('Login submitted:', { email, password, role });
+        
+        // For now, we'll just navigate directly to the dashboard based on role
+        // In a real application, you would validate credentials first
+        switch (role) {
+            case 'instructor':
+                window.location.href = '/instructor/dashboard';
+                break;
+            case 'student':
+                window.location.href = '/student/dashboard';
+                break;
+            case 'admin':
+                window.location.href = '/admin/dashboard';
+                break;
+            case 'adviser':
+                window.location.href = '/instructor/dashboard';
+                break;
+            case 'panelist':
+                window.location.href = '/instructor/dashboard';
+                break;
+            case 'dean':
+                window.location.href = '/admin/dashboard';
+                break;
+            case 'program_chairperson':
+                window.location.href = '/admin/dashboard';
+                break;
+            default:
+                console.error('Unknown role:', role);
+        }
     };
 
     const roles = ROLE_OPTIONS;
@@ -39,9 +73,6 @@ export default function LoginPage() {
 
                     {/* Logo in center */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                        {/* <div className="animate-scale-in rounded-full bg-white p-4 shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-[0_0_30px_10px_rgba(5,68,32,0.4)] hover:ring-4 hover:ring-gray-500 hover:ring-offset-2">
-                            <img src={dnscLogo} alt="DNSC-IC Logo" className="h-20 w-20 rounded-full object-cover" />
-                        </div> */}
                         <div className="animate-scale-in flex h-40 w-40 items-center justify-center rounded-full bg-white shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-[0_0_30px_10px_rgba(5,68,32,0.4)] hover:ring-2 hover:ring-gray-500 hover:ring-offset-2">
                             <img src={cpmsLogo} alt="DNSC-IC Logo" className="h-full w-full rounded-full object-cover" />
                         </div>
@@ -155,17 +186,28 @@ export default function LoginPage() {
 
                             {/* Submit Button - Smaller */}
                             <div className="animate-fade-in-up pt-1" style={{ animationDelay: '0.5s' }}>
-                                <Link
-                                    href="/instructor/dashboard"
+                                <button
                                     type="submit"
-                                    className="group relative flex w-full justify-center overflow-hidden rounded-lg border border-transparent bg-gradient-to-r from-green-600 to-green-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:from-green-700 hover:to-green-800 hover:shadow-xl focus:ring-4 focus:ring-green-500/50 focus:outline-none active:scale-[0.98]"
+                                    disabled={processing}
+                                    className="group relative flex w-full justify-center overflow-hidden rounded-lg border border-transparent bg-gradient-to-r from-green-600 to-green-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:from-green-700 hover:to-green-800 hover:shadow-xl focus:ring-4 focus:ring-green-500/50 focus:outline-none active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {/* Shine effect */}
                                     <span className="animate-shine absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent"></span>
-                                    Sign In
-                                </Link>
+                                    {processing ? 'Signing In...' : 'Sign In'}
+                                </button>
                             </div>
                         </form>
+
+                        {/* Error Messages */}
+                        {errors.email && (
+                            <div className="text-xs text-red-600 text-center">{errors.email}</div>
+                        )}
+                        {errors.password && (
+                            <div className="text-xs text-red-600 text-center">{errors.password}</div>
+                        )}
+                        {errors.role && (
+                            <div className="text-xs text-red-600 text-center">{errors.role}</div>
+                        )}
 
                         {/* Sign up link - Smaller */}
                         <div className="animate-fade-in-up pt-1 text-center" style={{ animationDelay: '0.6s' }}>

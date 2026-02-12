@@ -11,14 +11,14 @@ const Dashboard = () => {
       <main className="flex-1 ml-64 p-8">
         <header className="mb-8">
           <h2 className="text-2xl font-bold text-slate-800">Dashboard Overview</h2>
-          <p className="text-slate-500">Welcome back, Instructor!</p>
+          <p className="text-slate-500">Welcome back, Student!</p>
         </header>
 
         {/* Dashboard Cards Example */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="p-6 bg-white rounded-2xl shadow-sm border border-slate-200">
-             <p className="text-slate-500 text-sm font-medium">Total Groups</p>
-             <h3 className="text-3xl font-bold text-slate-900">12</h3>
+             <p className="text-slate-500 text-sm font-medium">My Groups</p>
+             <h3 className="text-3xl font-bold text-slate-900">1</h3>
           </div>
           {/* Add more cards here... */}
         </div>
