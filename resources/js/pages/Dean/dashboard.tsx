@@ -11,7 +11,7 @@ const Dashboard = () => {
       <main className="flex-1 ml-64 p-8">
         <header className="mb-8">
           <h2 className="text-2xl font-bold text-slate-800">Dashboard Overview</h2>
-          <p className="text-slate-500">Welcome back, Admin!</p>
+          <p className="text-slate-500">Welcome back, Dean!</p>
         </header>
 
         {/* Dashboard Cards Example */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import backgroundImg from '../assets/background.jpg';
 import loginCoverImg from '../assets/loginright.jpg';
 import cpmsLogo from '../assets/logo-cpms.png';
@@ -7,47 +7,16 @@ import { ROLE_OPTIONS } from '../types/auth';
 import { useForm } from '@inertiajs/react';
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [role, setRole] = useState('');
-
-    const { post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
         role: '',
     });
 
-    const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log('Login submitted:', { email, password, role });
-        
-        // For now, we'll just navigate directly to the dashboard based on role
-        // In a real application, you would validate credentials first
-        switch (role) {
-            case 'instructor':
-                window.location.href = '/instructor/dashboard';
-                break;
-            case 'student':
-                window.location.href = '/student/dashboard';
-                break;
-            case 'admin':
-                window.location.href = '/admin/dashboard';
-                break;
-            case 'adviser':
-                window.location.href = '/instructor/dashboard';
-                break;
-            case 'panelist':
-                window.location.href = '/instructor/dashboard';
-                break;
-            case 'dean':
-                window.location.href = '/admin/dashboard';
-                break;
-            case 'program_chairperson':
-                window.location.href = '/admin/dashboard';
-                break;
-            default:
-                console.error('Unknown role:', role);
-        }
+
+        post('/login');
     };
 
     const roles = ROLE_OPTIONS;
@@ -101,8 +70,8 @@ export default function LoginPage() {
                                         id="role"
                                         name="role"
                                         required
-                                        value={role}
-                                        onChange={(e) => setRole(e.target.value)}
+                                        value={data.role}
+                                        onChange={(e) => setData('role', e.target.value)}
                                         className="peer block w-full appearance-none rounded-lg border-2 border-gray-200 bg-gray-50/50 px-3 py-3 text-sm text-gray-900 transition-all duration-300 hover:border-green-200 hover:bg-white focus:border-green-500 focus:bg-white focus:ring-4 focus:ring-green-500/10 focus:outline-none"
                                     >
                                         <option value="" disabled hidden></option>
@@ -116,11 +85,10 @@ export default function LoginPage() {
                                     {/* Floating Label — updated to match email/password style */}
                                     <label
                                         htmlFor="role"
-                                        className={`pointer-events-none absolute left-3 transition-all duration-300 ${
-                                            role
-                                                ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
-                                                : 'top-1/2 -translate-y-1/2 text-sm text-gray-500 peer-focus:-top-2 peer-focus:translate-y-0 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
-                                        }`}
+                                        className={`pointer-events-none absolute left-3 transition-all duration-300 ${data.role
+                                            ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
+                                            : 'top-1/2 -translate-y-1/2 text-sm text-gray-500 peer-focus:-top-2 peer-focus:translate-y-0 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
+                                            }`}
                                     >
                                         Select Role
                                     </label>
@@ -142,18 +110,17 @@ export default function LoginPage() {
                                     type="email"
                                     autoComplete="email"
                                     required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    value={data.email}
+                                    onChange={(e) => setData('email', e.target.value)}
                                     className="peer block w-full appearance-none rounded-lg border-2 border-gray-200 px-3 py-3 text-sm text-gray-900 placeholder-transparent transition-all duration-300 hover:border-gray-300 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 focus:outline-none"
                                     placeholder="Email Address"
                                 />
                                 <label
                                     htmlFor="email"
-                                    className={`pointer-events-none absolute left-3 transition-all duration-300 ${
-                                        email
-                                            ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
-                                            : 'top-3 text-sm text-gray-500 peer-focus:-top-2 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
-                                    }`}
+                                    className={`pointer-events-none absolute left-3 transition-all duration-300 ${data.email
+                                        ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
+                                        : 'top-3 text-sm text-gray-500 peer-focus:-top-2 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
+                                        }`}
                                 >
                                     Email Address
                                 </label>
@@ -167,18 +134,17 @@ export default function LoginPage() {
                                     type="password"
                                     autoComplete="current-password"
                                     required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    value={data.password}
+                                    onChange={(e) => setData('password', e.target.value)}
                                     className="peer block w-full appearance-none rounded-lg border-2 border-gray-200 px-3 py-3 text-sm text-gray-900 placeholder-transparent transition-all duration-300 hover:border-gray-300 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 focus:outline-none"
                                     placeholder="Password"
                                 />
                                 <label
                                     htmlFor="password"
-                                    className={`pointer-events-none absolute left-3 transition-all duration-300 ${
-                                        password
-                                            ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
-                                            : 'top-3 text-sm text-gray-500 peer-focus:-top-2 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
-                                    }`}
+                                    className={`pointer-events-none absolute left-3 transition-all duration-300 ${data.password
+                                        ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
+                                        : 'top-3 text-sm text-gray-500 peer-focus:-top-2 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
+                                        }`}
                                 >
                                     Password
                                 </label>
