@@ -35,6 +35,7 @@ const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProgram, setSelectedProgram] = useState('bsit');
   const [selectedPhase, setSelectedPhase] = useState('concept');
+  const [isSignoutModalOpen, setIsSignoutModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -139,14 +140,14 @@ const Dashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <Sidebar />
+      <Sidebar onModalOpen={setIsSignoutModalOpen} />
 
       <main className="flex-1 ml-64">
         {/* Top Bar */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white/80 backdrop-blur-lg border-b border-slate-200 px-8 py-6 sticky top-0 z-40 shadow-sm"
+          className={`bg-white/80 backdrop-blur-lg border-b border-slate-200 px-8 py-6 sticky top-0 z-40 shadow-sm ${isSignoutModalOpen ? 'blur-sm' : ''}`}
         >
           <div className="flex justify-between items-center">
             <div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import {
   LayoutDashboard,
@@ -13,11 +13,15 @@ import logoCpms from '../assets/logo-cpms.png';
 import { router } from '@inertiajs/react'
 import SignOutModal from './signout-modal';
 
-const Sidebar = () => {
+const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => {
   const { auth } = usePage().props as any;
   const user = auth?.user;
   const role = user?.role || 'student';
   const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    onModalOpen?.(showModal);
+  }, [showModal, onModalOpen]);
 
   const capitalizeRole = (r: string) => r.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 
