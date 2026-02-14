@@ -196,7 +196,7 @@ const Dashboard = () => {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-slate-800 bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-                Phase 1: Group Creation & Access Control
+                Dashboard
               </h2>
               <p className="text-sm text-slate-500 mt-1">Instructor Dashboard</p>
             </div>
