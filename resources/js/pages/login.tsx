@@ -5,6 +5,7 @@ import cpmsLogo from '../assets/logo-cpms.png';
 import '../../css/pages/login.css';
 import { ROLE_OPTIONS } from '../types/auth';
 import { useForm } from '@inertiajs/react';
+import { useState } from 'react';
 
 export default function LoginPage() {
     const { data, setData, post, processing, errors } = useForm({
@@ -20,6 +21,10 @@ export default function LoginPage() {
     };
 
     const roles = ROLE_OPTIONS;
+
+
+    // VIEW TOGGLE STATE FOR PASSWORD
+    const [showPassword, setShowPassword] = useState(false);
 
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
@@ -126,28 +131,55 @@ export default function LoginPage() {
                                 </label>
                             </div>
 
-                            {/* Password Input - Smaller */}
+                            {/* Password Input - Smaller with Toggle */}
                             <div className="animate-fade-in-up relative" style={{ animationDelay: '0.3s' }}>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                    required
-                                    value={data.password}
-                                    onChange={(e) => setData('password', e.target.value)}
-                                    className="peer block w-full appearance-none rounded-lg border-2 border-gray-200 px-3 py-3 text-sm text-gray-900 placeholder-transparent transition-all duration-300 hover:border-gray-300 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 focus:outline-none"
-                                    placeholder="Password"
-                                />
-                                <label
-                                    htmlFor="password"
-                                    className={`pointer-events-none absolute left-3 transition-all duration-300 ${data.password
-                                        ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
-                                        : 'top-3 text-sm text-gray-500 peer-focus:-top-2 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
-                                        }`}
-                                >
-                                    Password
-                                </label>
+                                <div className="relative">
+                                    <input
+                                        id="password"
+                                        name="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        autoComplete="current-password"
+                                        required
+                                        value={data.password}
+                                        onChange={(e) => setData('password', e.target.value)}
+                                        className="peer block w-full appearance-none rounded-lg border-2 border-gray-200 px-3 py-3 pr-10 text-sm text-gray-900 placeholder-transparent transition-all duration-300 hover:border-gray-300 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 focus:outline-none"
+                                        placeholder="Password"
+                                    />
+
+                                    {/* Floating Label */}
+                                    <label
+                                        htmlFor="password"
+                                        className={`pointer-events-none absolute left-3 transition-all duration-300 ${data.password
+                                                ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
+                                                : 'top-3 text-sm text-gray-500 peer-focus:-top-2 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
+                                            }`}
+                                    >
+                                        Password
+                                    </label>
+
+                                    {/* Toggle Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-green-600 focus:outline-none"
+                                    >
+                                        {showPassword ? (
+                                            // Eye Off Icon
+                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round"
+                                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9.27-3.11-11-7 1.02-2.29 2.86-4.22 5.13-5.44M9.88 9.88A3 3 0 1114.12 14.12M6.1 6.1L17.9 17.9" />
+                                            </svg>
+                                        ) : (
+                                            // Eye Icon
+                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round"
+                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round"
+                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Submit Button - Smaller */}
