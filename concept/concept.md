@@ -44,3 +44,8 @@ CAPSTONE PROJECT MANAGEMENT SYSTEM
     9.2.Send dashboard notifications three (3) days before deadlines
     9.3.Allow deadline modification and extension by authorized personnel
     10.Deployment Verification and Archiving Module
+
+
+AI PROMPT:
+    Assist me to create a concept of the project including what pages should i need to include, what are the components and elements need to build on this project, this is the concept:
+    Now lets focus first on the [instructor] page, so what are the pages should include in this role?
