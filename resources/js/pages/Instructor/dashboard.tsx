@@ -186,29 +186,29 @@ const Dashboard = () => {
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <Sidebar onModalOpen={setIsSignoutModalOpen} />
 
-      <main className="flex-1 ml-64">
+      <main className="flex-1 ml-0 md:ml-64">
         {/* Top Bar */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className={`bg-white/80 backdrop-blur-lg border-b border-slate-200 px-8 py-6 sticky top-0 z-40 shadow-sm ${isSignoutModalOpen ? 'blur-sm' : ''}`}
+          className={`bg-white/80 backdrop-blur-lg border-b border-slate-200 px-4 md:px-8 py-5 md:py-6 sticky top-0 z-40 shadow-sm ${isSignoutModalOpen ? 'blur-sm' : ''}`}
         >
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-slate-800 bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+              <h2 className="text-xl md:text-2xl font-bold text-slate-800 bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent pl-12 md:pl-0">
                 Dashboard
               </h2>
               <p className="text-sm text-slate-500 mt-1">Instructor Dashboard</p>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
               {/* Program Switch */}
               <div>
                 <label className="text-xs text-slate-500 block mb-1 font-medium">Program</label>
                 <select
                   value={selectedProgram}
                   onChange={(e) => setSelectedProgram(e.target.value)}
-                  className="border border-slate-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm transition-all"
+                  className="border border-slate-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm transition-all w-full sm:w-auto"
                 >
                   <option value="bsit">BS Information Technology (BSIT)</option>
                   <option value="bsis">BS Information Systems (BSIS)</option>
@@ -221,7 +221,7 @@ const Dashboard = () => {
                 <select
                   value={selectedPhase}
                   onChange={(e) => setSelectedPhase(e.target.value)}
-                  className="border border-slate-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm transition-all"
+                  className="border border-slate-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm transition-all w-full sm:w-auto"
                 >
                   <option value="concept">Concept</option>
                   <option value="outline">Outline</option>
@@ -234,7 +234,7 @@ const Dashboard = () => {
         </motion.div>
 
         {/* Content */}
-        <div className="p-8 space-y-8">
+        <div className="p-4 md:p-8 space-y-8">
           {/* Statistics Cards */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
