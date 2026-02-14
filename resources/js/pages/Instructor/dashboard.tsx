@@ -258,6 +258,65 @@ const Dashboard = () => {
             ))}
           </motion.div>
 
+          {/* Adviser Load Cards */}
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          >
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1, transition: { type: "spring", stiffness: 100, delay: 0 } }}
+              className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <h3 className="font-semibold text-slate-800 text-lg">Prof. Cruz</h3>
+              <p className="text-sm text-slate-500 mb-4">Adviser Load</p>
+              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: "60%" }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className="bg-gradient-to-r from-teal-400 to-teal-600 h-3 rounded-full"
+                />
+              </div>
+              <p className="text-xs text-slate-600 mt-3 font-medium">3 / 5 groups</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1, transition: { type: "spring", stiffness: 100, delay: 0.1 } }}
+              className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <h3 className="font-semibold text-slate-800 text-lg">Prof. Reyes</h3>
+              <p className="text-sm text-slate-500 mb-4">Adviser Load</p>
+              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: "80%" }}
+                  transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+                  className="bg-gradient-to-r from-amber-400 to-amber-600 h-3 rounded-full"
+                />
+              </div>
+              <p className="text-xs text-slate-600 mt-3 font-medium">4 / 5 groups</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1, transition: { type: "spring", stiffness: 100, delay: 0.2 } }}
+              className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <h3 className="font-semibold text-slate-800 text-lg">Prof. Santos</h3>
+              <p className="text-sm text-slate-500 mb-4">Adviser Load</p>
+              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
+                  className="bg-gradient-to-r from-rose-400 to-rose-600 h-3 rounded-full"
+                />
+              </div>
+              <p className="text-xs text-rose-600 mt-3 font-semibold">5 / 5 groups (Full)</p>
+            </motion.div>
+          </motion.div>
+
           {/* Charts + Notifications */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -431,321 +490,6 @@ const Dashboard = () => {
               >
                 Manage Deadlines
               </button>
-            </div>
-          </motion.div>
-
-          {/* Adviser Load Cards */}
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-          >
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1, transition: { type: "spring", stiffness: 100, delay: 0 } }}
-              className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <h3 className="font-semibold text-slate-800 text-lg">Prof. Cruz</h3>
-              <p className="text-sm text-slate-500 mb-4">Adviser Load</p>
-              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: "60%" }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  className="bg-gradient-to-r from-teal-400 to-teal-600 h-3 rounded-full"
-                />
-              </div>
-              <p className="text-xs text-slate-600 mt-3 font-medium">3 / 5 groups</p>
-            </motion.div>
-
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1, transition: { type: "spring", stiffness: 100, delay: 0.1 } }}
-              className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <h3 className="font-semibold text-slate-800 text-lg">Prof. Reyes</h3>
-              <p className="text-sm text-slate-500 mb-4">Adviser Load</p>
-              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: "80%" }}
-                  transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
-                  className="bg-gradient-to-r from-amber-400 to-amber-600 h-3 rounded-full"
-                />
-              </div>
-              <p className="text-xs text-slate-600 mt-3 font-medium">4 / 5 groups</p>
-            </motion.div>
-
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1, transition: { type: "spring", stiffness: 100, delay: 0.2 } }}
-              className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <h3 className="font-semibold text-slate-800 text-lg">Prof. Santos</h3>
-              <p className="text-sm text-slate-500 mb-4">Adviser Load</p>
-              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
-                  className="bg-gradient-to-r from-rose-400 to-rose-600 h-3 rounded-full"
-                />
-              </div>
-              <p className="text-xs text-rose-600 mt-3 font-semibold">5 / 5 groups (Full)</p>
-            </motion.div>
-          </motion.div>
-
-          {/* Student Groups */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm"
-          >
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
-              <h2 className="text-2xl font-bold text-slate-800">Student Groups</h2>
-
-              <div className="flex gap-3 flex-wrap">
-                <input
-                  type="text"
-                  placeholder="Search group..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
-                />
-
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-                >
-                  <option value="all">All Status</option>
-                  <option value="assigned">Adviser Assigned</option>
-                  <option value="not-assigned">Not Assigned</option>
-                </select>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="bg-gradient-to-r from-slate-700 to-slate-900 text-white px-6 py-2.5 rounded-xl hover:shadow-lg transition-all font-medium"
-                >
-                  + Create Group
-                </motion.button>
-              </div>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-            >
-              <AnimatePresence mode="wait">
-                {paginatedGroups.map((group, index) => (
-                  <motion.div
-                    key={group.name}
-                    layout
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="border border-slate-200 rounded-2xl p-6 bg-gradient-to-br from-white to-slate-50 hover:shadow-lg transition-all cursor-pointer group"
-                  >
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="font-bold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">{group.name}</h3>
-                      <span className={`text-xs px-3 py-1.5 ${group.color} rounded-full font-medium`}>
-                        {group.status}
-                      </span>
-                    </div>
-                    <div className="text-sm text-slate-600 mb-4 space-y-1">
-                      {group.members.map((member, i) => (
-                        <p key={i} className="flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                          {member}
-                        </p>
-                      ))}
-                    </div>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        setSelectedGroup(group.name);
-                        setIsGroupModalOpen(true);
-                      }}
-                      className="text-sm bg-slate-700 text-white px-4 py-2 rounded-xl hover:bg-slate-800 transition-all w-full font-medium"
-                    >
-                      View Details
-                    </motion.button>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </motion.div>
-
-            {/* Pagination */}
-            <div className="flex justify-between items-center mt-8 text-sm text-slate-500">
-              <p className="font-medium">
-                Showing {Math.min((currentPage - 1) * groupsPerPage + 1, filteredGroups.length)}–
-                {Math.min(currentPage * groupsPerPage, filteredGroups.length)} of {filteredGroups.length} groups
-              </p>
-              <div className="flex gap-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border border-slate-300 rounded-xl hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
-                >
-                  Prev
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-slate-300 rounded-xl hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
-                >
-                  Next
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Capstone Deadlines */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm"
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <span>📅</span> Capstone Deadlines
-              </h2>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-gradient-to-r from-slate-700 to-slate-900 text-white px-5 py-2.5 rounded-xl hover:shadow-lg transition-all font-medium"
-              >
-                + Add Deadline
-              </motion.button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-600">
-                    <th className="text-left py-4 font-semibold">Phase</th>
-                    <th className="text-left py-4 font-semibold">Deadline</th>
-                    <th className="text-left py-4 font-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  <motion.tr
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="py-4 font-medium text-slate-700">Proposal Submission</td>
-                    <td className="py-4 text-slate-600">March 10, 2026</td>
-                    <td className="py-4">
-                      <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">
-                        Upcoming
-                      </span>
-                    </td>
-                  </motion.tr>
-                  <motion.tr
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="py-4 font-medium text-slate-700">Final Documentation</td>
-                    <td className="py-4 text-slate-600">April 15, 2026</td>
-                    <td className="py-4">
-                      <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-semibold">
-                        Scheduled
-                      </span>
-                    </td>
-                  </motion.tr>
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
-
-          {/* Defense Scheduler */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm"
-          >
-            <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-              <span>🏫</span> Defense Room & Time Scheduling
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <select
-                value={defenseForm.group}
-                onChange={(e) => setDefenseForm({ ...defenseForm, group: e.target.value })}
-                className="border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-              >
-                <option value="">Select Group</option>
-                {groups.map(g => <option key={g.name} value={g.name}>{g.name}</option>)}
-              </select>
-
-              <input
-                type="date"
-                value={defenseForm.date}
-                onChange={(e) => setDefenseForm({ ...defenseForm, date: e.target.value })}
-                className="border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-              />
-
-              <select
-                value={defenseForm.room}
-                onChange={(e) => setDefenseForm({ ...defenseForm, room: e.target.value })}
-                className="border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-              >
-                <option value="">Select Room</option>
-                <option>Room 101</option>
-                <option>Room 102</option>
-              </select>
-
-              <select
-                value={defenseForm.time}
-                onChange={(e) => setDefenseForm({ ...defenseForm, time: e.target.value })}
-                className="border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
-              >
-                <option value="">Select Time</option>
-                <option>8:00 AM - 9:00 AM</option>
-                <option>9:00 AM - 10:00 AM</option>
-                <option>10:00 AM - 11:00 AM</option>
-              </select>
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleScheduleDefense}
-              className="bg-gradient-to-r from-slate-700 to-slate-900 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all font-medium"
-            >
-              Schedule Defense
-            </motion.button>
-
-            <div className="mt-6 space-y-3">
-              <AnimatePresence>
-                {schedules.map((schedule, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="p-4 border border-slate-200 rounded-xl bg-gradient-to-br from-slate-50 to-white shadow-sm"
-                  >
-                    <p className="font-bold text-slate-800">{schedule.group}</p>
-                    <p className="text-sm text-slate-600 mt-1">{schedule.date}</p>
-                    <p className="text-sm text-slate-600">{schedule.room} | {schedule.time}</p>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
             </div>
           </motion.div>
         </div>

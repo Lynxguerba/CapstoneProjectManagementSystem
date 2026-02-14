@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
     X,
     LogOut,
@@ -12,6 +13,27 @@ interface SignOutModalProps {
 
 const SignOutModal = ({ open, onClose }: SignOutModalProps) => {
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        window.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            document.body.style.overflow = originalOverflow;
+            window.removeEventListener('keydown', onKeyDown);
+        };
+    }, [open, onClose]);
 
     const handleSignOut = async () => {
         setLoading(true);
@@ -42,9 +64,25 @@ const SignOutModal = ({ open, onClose }: SignOutModalProps) => {
 
     if (!open) return null;
 
-    return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden">
+    if (typeof document === 'undefined') {
+        return null;
+    }
+
+    return createPortal(
+        <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(e) => {
+                if (e.target === e.currentTarget && !loading) {
+                    onClose();
+                }
+            }}
+        >
+            <div
+                className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden"
+                onMouseDown={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 flex items-center justify-between border-b border-gray-200">
                     <div className="flex items-center gap-2">
@@ -113,7 +151,8 @@ const SignOutModal = ({ open, onClose }: SignOutModalProps) => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
