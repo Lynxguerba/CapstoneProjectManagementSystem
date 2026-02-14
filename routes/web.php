@@ -17,6 +17,55 @@ Route::get('/instructor/dashboard', function () {
     return Inertia::render('Instructor/dashboard');
 })->name('instructor.dashboard');
 
+// INSTRUCTOR PAGES (UI ONLY)
+Route::get('/instructor/groups', function () {
+    return Inertia::render('Instructor/groups');
+})->name('instructor.groups');
+
+Route::get('/instructor/titles', function () {
+    return Inertia::render('Instructor/titles');
+})->name('instructor.titles');
+
+Route::get('/instructor/concepts', function () {
+    return Inertia::render('Instructor/concepts');
+})->name('instructor.concepts');
+
+Route::get('/instructor/scheduling', function () {
+    return Inertia::render('Instructor/scheduling');
+})->name('instructor.scheduling');
+
+Route::get('/instructor/evaluation', function () {
+    return Inertia::render('Instructor/evaluation');
+})->name('instructor.evaluation');
+
+Route::get('/instructor/verdict', function () {
+    return Inertia::render('Instructor/verdict');
+})->name('instructor.verdict');
+
+Route::get('/instructor/minutes', function () {
+    return Inertia::render('Instructor/minutes');
+})->name('instructor.minutes');
+
+Route::get('/instructor/deadlines', function () {
+    return Inertia::render('Instructor/deadlines');
+})->name('instructor.deadlines');
+
+Route::get('/instructor/deployment', function () {
+    return Inertia::render('Instructor/deployment');
+})->name('instructor.deployment');
+
+Route::get('/instructor/notifications', function () {
+    return Inertia::render('Instructor/notifications');
+})->name('instructor.notifications');
+
+Route::get('/instructor/reports', function () {
+    return Inertia::render('Instructor/reports');
+})->name('instructor.reports');
+
+Route::get('/instructor/settings', function () {
+    return Inertia::render('Instructor/settings');
+})->name('instructor.settings');
+
 // STUDENT DASHBOARD
 Route::get('/student/dashboard', function () {
     return Inertia::render('Student/dashboard');

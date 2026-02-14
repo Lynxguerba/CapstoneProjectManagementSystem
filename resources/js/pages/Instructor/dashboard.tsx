@@ -31,6 +31,14 @@ interface Schedule {
   time: string;
 }
 
+type DashboardNotification = {
+  id: string;
+  title: string;
+  message: string;
+  date: string;
+  tone: 'info' | 'success' | 'warning' | 'danger';
+};
+
 const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProgram, setSelectedProgram] = useState('bsit');
@@ -55,6 +63,42 @@ const Dashboard = () => {
   });
 
   const groupsPerPage = 6;
+
+  const stats = [
+    { label: 'Total Groups', value: '28', style: 'from-slate-700 to-slate-900' },
+    { label: 'Pending Concepts', value: '9', style: 'from-amber-500 to-amber-600' },
+    { label: 'Scheduled Defenses', value: '6', style: 'from-indigo-500 to-indigo-600' },
+    { label: 'Re-Defense Cases', value: '3', style: 'from-rose-500 to-rose-600' },
+    { label: 'Approved Projects', value: '14', style: 'from-teal-500 to-teal-600' },
+  ];
+
+  const upcomingDefenses: Schedule[] = [
+    { group: 'Group 2', date: '2026-03-20', room: 'Room 101', time: '9:00 AM - 10:00 AM' },
+    { group: 'Group 5', date: '2026-03-21', room: 'Room 102', time: '10:00 AM - 11:00 AM' },
+    { group: 'Group 1', date: '2026-03-22', room: 'Room 101', time: '8:00 AM - 9:00 AM' },
+  ];
+
+  const dashboardNotifications: DashboardNotification[] = [
+    { id: 'n1', title: 'Concept Submitted', message: 'Group 1 submitted a concept paper.', date: '2026-03-12', tone: 'info' },
+    { id: 'n2', title: 'Deadline Approaching', message: 'Concept deadline is in 3 days.', date: '2026-03-22', tone: 'warning' },
+    { id: 'n3', title: 'Payment Verified', message: 'Payment verified for Group 2.', date: '2026-03-12', tone: 'success' },
+    { id: 'n4', title: 'Evaluation Submitted', message: 'Panel evaluation submitted for Group 2.', date: '2026-03-20', tone: 'info' },
+  ];
+
+  const approvalTrend = [52, 56, 60, 61, 64, 68, 70];
+  const defenseStatus = [
+    { label: 'Not Scheduled', value: 14, className: 'from-slate-500 to-slate-600' },
+    { label: 'Scheduled', value: 6, className: 'from-indigo-500 to-indigo-600' },
+    { label: 'Completed', value: 8, className: 'from-teal-500 to-teal-600' },
+    { label: 'Re-Defense', value: 3, className: 'from-rose-500 to-rose-600' },
+  ];
+
+  const toneStyles: Record<DashboardNotification['tone'], string> = {
+    info: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+    success: 'bg-teal-50 border-teal-200 text-teal-700',
+    warning: 'bg-amber-50 border-amber-200 text-amber-700',
+    danger: 'bg-rose-50 border-rose-200 text-rose-700',
+  };
 
   const groups: Group[] = [
     { name: "Group 1", members: ["Juan – PM", "Maria – Analyst", "Carlo – Programmer", "Ana – Documentarian"], status: "Adviser Assigned", color: "bg-teal-100 text-teal-600" },
@@ -191,6 +235,205 @@ const Dashboard = () => {
 
         {/* Content */}
         <div className="p-8 space-y-8">
+          {/* Statistics Cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6"
+          >
+            {stats.map((s, idx) => (
+              <motion.div
+                key={s.label}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08 * idx }}
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6"
+              >
+                <div className="text-xs uppercase tracking-wide text-slate-500 font-semibold">{s.label}</div>
+                <div className="mt-3 flex items-end justify-between">
+                  <div className="text-3xl font-bold text-slate-900">{s.value}</div>
+                  <div className={`h-10 w-10 rounded-2xl bg-gradient-to-br ${s.style} opacity-90`} />
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Charts + Notifications */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="grid grid-cols-1 xl:grid-cols-3 gap-6"
+          >
+            <div className="xl:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-800">Approval Rate</h3>
+                    <p className="text-sm text-slate-500 mt-1">Dummy trend (weekly)</p>
+                  </div>
+                  <div className="text-sm font-semibold text-slate-700">{approvalTrend[approvalTrend.length - 1]}%</div>
+                </div>
+
+                <div className="mt-6 h-36 flex items-end gap-2">
+                  {approvalTrend.map((v, i) => (
+                    <div key={i} className="flex-1">
+                      <div className="w-full h-28 rounded-xl bg-slate-100 overflow-hidden flex items-end">
+                        <motion.div
+                          initial={{ height: 0 }}
+                          animate={{ height: `${v}%` }}
+                          transition={{ duration: 0.7, delay: 0.05 * i }}
+                          className="bg-gradient-to-t from-teal-500 to-indigo-500"
+                          style={{ height: `${v}%` }}
+                        />
+                      </div>
+                      <div className="mt-2 text-[10px] text-slate-500 text-center">W{i + 1}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-800">Defense Status</h3>
+                  <p className="text-sm text-slate-500 mt-1">Distribution snapshot</p>
+                </div>
+
+                <div className="mt-6 space-y-4">
+                  {defenseStatus.map((d) => {
+                    const total = defenseStatus.reduce((a, b) => a + b.value, 0);
+                    const pct = total === 0 ? 0 : Math.round((d.value / total) * 100);
+
+                    return (
+                      <div key={d.label}>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="font-semibold text-slate-700">{d.label}</div>
+                          <div className="text-slate-500">{d.value} ({pct}%)</div>
+                        </div>
+                        <div className="mt-2 w-full h-3 rounded-full bg-slate-200 overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ duration: 0.8 }}
+                            className={`h-3 rounded-full bg-gradient-to-r ${d.className}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-800">Notifications</h3>
+                  <p className="text-sm text-slate-500 mt-1">Latest events</p>
+                </div>
+                <button
+                  onClick={() => alert('UI only: open notifications center')}
+                  className="text-sm font-semibold text-slate-700 hover:text-slate-900"
+                >
+                  View all
+                </button>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                {dashboardNotifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className={`p-4 rounded-2xl border ${toneStyles[n.tone]} bg-white`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-sm font-semibold">{n.title}</div>
+                      <div className="text-xs opacity-80">{n.date}</div>
+                    </div>
+                    <div className="mt-1 text-sm text-slate-600">{n.message}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Upcoming Defenses + Deadlines Preview */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="grid grid-cols-1 xl:grid-cols-3 gap-6"
+          >
+            <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-800">Upcoming Defenses</h2>
+                  <p className="text-sm text-slate-500 mt-1">Quick view of scheduled defenses</p>
+                </div>
+                <button
+                  onClick={() => alert('UI only: open scheduling page')}
+                  className="bg-gradient-to-r from-slate-700 to-slate-900 text-white px-5 py-2.5 rounded-xl hover:shadow-lg transition-all font-medium"
+                >
+                  Go to Scheduling
+                </button>
+              </div>
+
+              <div className="mt-6 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-600">
+                      <th className="text-left py-4 font-semibold">Group</th>
+                      <th className="text-left py-4 font-semibold">Date</th>
+                      <th className="text-left py-4 font-semibold">Time</th>
+                      <th className="text-left py-4 font-semibold">Room</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {upcomingDefenses.map((d, i) => (
+                      <tr key={`${d.group}-${i}`} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-4 font-medium text-slate-800">{d.group}</td>
+                        <td className="py-4 text-slate-600">{d.date}</td>
+                        <td className="py-4 text-slate-600">{d.time}</td>
+                        <td className="py-4 text-slate-600">{d.room}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-800">Upcoming Deadlines</h2>
+                  <p className="text-sm text-slate-500 mt-1">At-a-glance tracking</p>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                {[
+                  { phase: 'Concept', date: '2026-03-25', tone: 'bg-amber-100 text-amber-700' },
+                  { phase: 'Proposal', date: '2026-04-10', tone: 'bg-teal-100 text-teal-700' },
+                  { phase: 'Final Manuscript', date: '2026-04-15', tone: 'bg-teal-100 text-teal-700' },
+                ].map((x) => (
+                  <div key={x.phase} className="p-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-semibold text-slate-800">{x.phase}</div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${x.tone}`}>{x.date}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => alert('UI only: open deadline management')}
+                className="mt-6 w-full bg-white border border-slate-300 text-slate-800 px-5 py-2.5 rounded-xl hover:bg-slate-50 transition-all font-medium"
+              >
+                Manage Deadlines
+              </button>
+            </div>
+          </motion.div>
+
           {/* Adviser Load Cards */}
           <motion.div
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
