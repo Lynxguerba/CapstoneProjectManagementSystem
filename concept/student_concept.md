@@ -1,36 +1,38 @@
-# 🎓 STUDENT ROLE – SYSTEM CONCEPT
+# 🎓 Student Role – System Concept
 
-## 🔐 Student Core Capabilities
+The **Student** is the primary actor of the capstone lifecycle.
 
-Students should be able to:
+They:
 
-* Manage their group
-* Submit project concepts
+* Form groups
+* Submit titles & concepts
 * Upload documents
-* View adviser feedback
-* Track deadlines
-* View defense schedule
-* See evaluation results
-* Download official documents
-* Submit deployment requirements
+* Comply with deadlines
+* Attend defense
+* View verdict
+* Deploy and archive their system
+
+So the Student interface should feel like a:
+
+> 📌 **Project Workspace + Submission Portal + Progress Tracker**
 
 ---
 
-# 🧭 MAIN NAVIGATION (Student Sidebar)
+# 🧭 MAIN STRUCTURE (Student Navigation)
+
+To benchmark with the Instructor concept, your Student module should have:
 
 1. Dashboard
-2. My Group
-3. Title Repository
+2. My Capstone Group
+3. Title Repository (View Only)
 4. Concept Submission
-5. Document Submission
+5. Documents & Uploads
 6. Defense Schedule
-7. Evaluation Results
-8. Minutes & Approval Sheet
+7. Evaluation & Feedback
+8. Verdict Results
 9. Deployment Submission
-10. Notifications
-11. Profile & Settings
-
-Now let’s break each one down clearly.
+10. Deadlines & Notifications
+11. Profile & Account Settings
 
 ---
 
@@ -38,133 +40,140 @@ Now let’s break each one down clearly.
 
 ### 🎯 Purpose:
 
-Quick overview of their capstone progress.
+Personal capstone progress overview.
 
 ### Components:
 
-#### 📊 Progress Cards
+* 📊 Progress Tracker (Stepper UI)
 
-* Group Status
-* Concept Status
-* Defense Status
-* Payment Status
-* Final Verdict
+  * Concept Phase
+  * Outline Defense
+  * Pre-Deployment Defense
+  * Deployment
+  * Archived
 
-#### ⏰ Deadline Tracker
+* 📌 Status Cards:
 
-* Countdown Timer
-* Status Color Indicator
+  * Concept Status
+  * Defense Schedule
+  * Payment Status
+  * Verdict Status
 
-#### 📝 Recent Adviser Feedback
+* 📅 Upcoming Schedule
 
-#### 📅 Upcoming Defense Schedule
+* ⏰ Deadline Countdown
 
-#### 🔔 Notifications Panel
+* 🔔 Notifications Panel
 
 ---
 
-# 👥 2. My Group Page
+# 👥 2. My Capstone Group Page
 
 ### 🎯 Purpose:
 
-Group information and collaboration visibility.
+Group management & transparency.
 
-### Components:
-
-#### Group Info Card
+### Sections:
 
 * Group Name
 * Section
-* Adviser
-* Panel Members
+* Adviser Assigned
+* Panel Members (once assigned)
+* Member List with Roles:
 
-#### Members Table
+  * Project Manager / Analyst
+  * Programmer
+  * Documentarian
 
-* Name
-* Role (PM / Programmer / Documentarian)
-* Email
+### Features:
 
-#### Group Status Timeline
-
-* Concept Submitted
-* Concept Approved
-* Proposal Defense
-* Final Defense
-* Deployment
+* Invite / Join Group (if allowed)
+* View member responsibilities
+* Group progress tracker
+* Payment status display
 
 ---
 
-# 📚 3. Title Repository Page
+# 📚 3. Title Repository (View Only)
 
-### 🎯 Purpose:
-
-Check originality before submitting concept.
+Students can check for originality before submitting.
 
 ### Components:
 
-* Search bar
-* Filter (Year / Category / Adviser)
-* List of Approved Titles
-* Duplicate Detection Warning (real-time validation)
+* 🔍 Search Bar
+* Filter (Approved / Archived / Category)
+* Title List Table:
+
+  * Title
+  * Year
+  * Adviser
+  * Status
+
+### System Logic:
+
+* Auto duplication checker when submitting title
+* Warning modal if similarity detected
 
 ---
 
-# 📝 4. Concept Submission Page
+# 📝 4. Concept Submission Module
 
 ### 🎯 Purpose:
 
-Submit 3 required concepts (Capstone 1)
+Submit three (3) concepts during Capstone 1.
 
 ### Page Structure:
 
-#### Section A – Concept Form
+## Concept List Page
 
-* Title
-* Abstract / Description
-* Category
-* Technology Stack
-* Upload File (optional)
+* Concept 1 – Status
+* Concept 2 – Status
+* Concept 3 – Status
 
-#### Section B – Submitted Concepts Table
+Statuses:
 
-* Title
-* Submission Date
-* Status (Pending / Approved / Rejected)
-* Adviser Feedback
-* Resubmit Button
-
-### Rules:
-
-* Maximum of 3 submissions
-* Disable if already approved
+* Pending
+* Approved
+* Rejected
+* Resubmit Required
 
 ---
 
-# 📂 5. Document Submission Page
+## Concept Detail Page
 
-This handles:
+* Concept Title
+* Description (Rich Text Editor)
+* File Upload (PDF/DOC)
+* Submission History
+* Adviser Comments
+* Resubmit Button (if rejected)
 
-* Proposal Manuscript
-* Final Manuscript
-* Source Code
-* Required Forms
+### Important Logic:
 
-### Components:
+* Max 3 submissions
+* Lock after approval
 
-#### Upload Section
+---
 
-* Select Document Type
-* File Upload Component
-* Version Number
-* Remarks
+# 📂 5. Documents & Upload Center
 
-#### Submission History Table
+### 🎯 Purpose:
 
-* File Name
-* Version
-* Date Uploaded
-* Status
-* Adviser/Panel Comments
+Centralized file management.
+
+### Tabs:
+
+* 📄 Proposal Manuscript
+* 📊 Presentation Slides
+* 📘 Final Manuscript
+* 📦 Supporting Documents
+
+### Features:
+
+* Version control
+* Upload history log
+* File status (Pending / Routed to Panel / Approved)
+* Download previous versions
 
 ---
 
@@ -172,149 +181,197 @@ This handles:
 
 ### 🎯 Purpose:
 
-Students view — not edit.
+View schedule only (cannot edit).
 
-### Components:
+![Image](https://cdn11.bigcommerce.com/s-10c6f/images/stencil/1280x1280/products/69260/131653/24HR-military-time-board-3624__95010.1629749075.jpg?c=2)
+
+![Image](https://www.assertion-evidence.com/uploads/5/6/1/4/56145985/cover-image_orig.jpg)
+
+![Image](https://graduateschool.nd.edu/assets/342751/400x/grad_defense_room_web.jpg)
+
+![Image](https://about.proquest.com/contentassets/db60e6a04c014c77b01c489ecd9bc7aa/shutterstock_484426825.jpg)
+
+### Page Elements:
+
+* Defense Type:
+
+  * Outline Defense
+  * Pre-Deployment Defense
+  * Final Defense
 
 * Date
+
 * Time
+
 * Room
-* Panel Members
-* Payment Validation Status
-* Defense Type (Proposal / Final)
 
-### If unpaid:
+* Assigned Panel
 
-⚠ Show “Defense Locked – Payment Required”
+* Payment Status (Verified / Not Verified)
+
+### Restriction:
+
+If unpaid → show:
+
+> “Defense scheduling locked until payment verification.”
 
 ---
 
-# 📊 7. Evaluation Results Page
+# 🧾 7. Evaluation & Feedback Page
 
 After defense.
 
-### Components:
+### Elements:
 
-#### Score Summary
+* Panel Member List
+* Individual Scores
+* Comments
+* Average Score (Auto-computed)
 
-* Individual Panel Scores
-* Average Score
-* Rating Breakdown
+### Timeline View:
 
-#### Panel Comments Section
+* Submitted Date
+* Panel Remarks
 
-#### Verdict Display
-
-* Approved
-* Re-Defense
+Students cannot edit — View only.
 
 ---
 
-# 🖨 8. Minutes & Approval Sheet Page
+# ⚖ 8. Verdict Results Page
 
 ### 🎯 Purpose:
 
-Download official documents.
+Official decision transparency.
 
-### Elements:
+### Components:
 
-* Minutes of Meeting PDF Download
-* Approval Sheet PDF Download
-* Digital Signatures Preview
-* Status (Available / Not Yet Released)
+* Consolidated Score Summary
+
+* Final Verdict:
+
+  * ✅ Approved
+  * 🔁 Re-Defense Required
+
+* Required Revisions (if applicable)
+
+* Download Evaluation Summary PDF
 
 ---
 
 # 🚀 9. Deployment Submission Page
 
-### 🎯 Purpose:
+### Purpose:
 
-Submit final working system proof.
+Submit final deployed system & manuscript.
 
 ### Fields:
 
-* Deployed System URL
-* GitHub Repository Link
-* Upload Final Documentation
-* Upload Source Code ZIP
-* Upload User Manual
+* Live System URL
+* Git Repository Link (optional)
+* Final Manuscript Upload
+* Deployment Evidence (screenshots)
 
 ### Status:
 
 * Pending Verification
 * Verified
-* Needs Revision
+* Archived (Read-only mode)
 
 ---
 
-# 🔔 10. Notifications Page
+# ⏰ 10. Deadlines & Notifications
 
-### Notification Types:
+### Components:
 
-* Adviser approved concept
-* Adviser rejected concept
-* Deadline reminder
-* Defense schedule posted
-* Evaluation released
-* Deployment verified
+* Deadline Table:
+
+  * Concept Deadline
+  * Manuscript Deadline
+  * Defense Schedule
+  * Deployment Deadline
+
+* Countdown Timer
+
+* Color Coding:
+
+  * 🟢 On Track
+  * 🟡 Near Deadline
+  * 🔴 Overdue
+
+* System Auto Notifications:
+
+  * 3 days before
+  * 1 day before
+  * Overdue alert
 
 ---
 
-# 👤 11. Profile & Settings
+# 👤 11. Profile & Account Settings
 
-* Update profile picture
 * Change password
-* View academic info
-* View capstone history
+* Update profile
+* View academic details
+* Role display (Student)
+* Group membership info
 
 ---
 
-# 🧩 Core UI Components to Build (Student Side)
+# 🧩 Core Student UI Components (Technical)
 
-You should create reusable components:
+To align with Instructor architecture:
 
-### 1️⃣ Sidebar Navigation Component
-
-### 2️⃣ Dashboard Card Component
-
-### 3️⃣ Deadline Countdown Component
-
-### 4️⃣ File Upload Component
-
-### 5️⃣ Document Versioning Component
-
-### 6️⃣ Status Badge Component
-
-### 7️⃣ Timeline Component
-
-### 8️⃣ Notification Toast Component
-
-### 9️⃣ PDF Viewer Component
-
-### 🔟 Evaluation Summary Card
+* Sidebar Navigation
+* Header with Role Badge
+* Progress Stepper Component
+* Reusable Data Table
+* File Upload Component (with validation)
+* Status Badge Component
+* Timeline Component
+* PDF Preview Modal
+* Notification Toast System
 
 ---
 
 # 🔐 Student Permission Matrix
 
-Students CAN:
-✔ Submit concepts
+Student CAN:
+✔ Create / Join group
+✔ Submit concepts (max 3)
 ✔ Upload documents
-✔ View feedback
-✔ View schedule
-✔ View scores
-✔ Download official documents
+✔ View schedules
+✔ View evaluation & verdict
 ✔ Submit deployment
 
-Students CANNOT:
+Student CANNOT:
 ❌ Assign panel
 ❌ Schedule defense
-❌ Change verdict
-❌ Edit other groups
+❌ Approve concepts
+❌ Edit evaluation scores
+❌ Finalize verdict
 
 ---
 
-# 🏗 Suggested Folder Structure (Frontend Example)
+# 🔁 Student Workflow (Connected to Instructor Flow)
+
+Student logs in →
+Create group →
+Check Title Repository →
+Submit 3 concepts →
+Adviser reviews →
+Instructor monitors →
+Panel assigned →
+Defense scheduled →
+Panel evaluates →
+Instructor finalizes verdict →
+Student views result →
+Submit deployment →
+Instructor archives
+
+This keeps both modules synchronized.
+
+---
+
+# 🏗 Suggested Frontend Folder Structure
 
 ```
 Student/
@@ -323,39 +380,30 @@ Student/
  │    ├── GroupDetails.tsx
  ├── Titles/
  ├── Concepts/
- │    ├── SubmitConcept.tsx
- │    ├── ConceptHistory.tsx
+ │    ├── ConceptList.tsx
+ │    ├── ConceptForm.tsx
  ├── Documents/
  ├── Schedule/
  ├── Evaluation/
+ ├── Verdict/
  ├── Deployment/
- ├── Minutes/
- ├── Notifications/
+ ├── Deadlines/
+ ├── Profile/
 ```
 
 ---
 
-# 🎯 Overall Student Module Architecture
+# 🎯 Final Architecture Summary
 
 Student Module =
-**Workspace + Submission Portal + Progress Tracker + Feedback Viewer**
+**Submission + Tracking + Compliance + Transparency**
 
-It is designed to:
+Instructor = Control Center
+Student = Project Workspace
 
-* Guide students step-by-step
-* Prevent process confusion
-* Reduce paperwork
-* Improve transparency
-* Track academic compliance
+Both modules are tightly connected through:
 
----
-
-If you want next, we can:
-
-* Design the Student Database Tables
-* Create ER Diagram for Student + Instructor
-* Design Capstone Workflow Diagram
-* Create UI Wireframe Layout
-* Define API Endpoints Structure
-
-Tell me which one you want to build next 🚀
+* Status updates
+* Role-based routing
+* Controlled permissions
+* Automated workflow transitions

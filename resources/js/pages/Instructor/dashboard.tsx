@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../../components/sidebar';
 import { CheckCircle2, ClipboardList, Layers3, TriangleAlert, Users } from 'lucide-react';
+import { Box, Typography } from '@mui/material';
 
 interface Member {
   fullName: string;
@@ -88,10 +89,10 @@ const Dashboard = () => {
 
   const approvalTrend = [52, 56, 60, 61, 64, 68, 70];
   const defenseStatus = [
-    { label: 'Not Scheduled', value: 14, className: 'from-slate-500 to-slate-600' },
-    { label: 'Scheduled', value: 6, className: 'from-indigo-500 to-indigo-600' },
-    { label: 'Completed', value: 8, className: 'from-teal-500 to-teal-600' },
-    { label: 'Re-Defense', value: 3, className: 'from-rose-500 to-rose-600' },
+    { label: 'Not Scheduled', value: 14, className: 'from-slate-500 to-slate-600', color: '#64748b' },
+    { label: 'Scheduled', value: 6, className: 'from-indigo-500 to-indigo-600', color: '#6366f1' },
+    { label: 'Completed', value: 8, className: 'from-teal-500 to-teal-600', color: '#14b8a6' },
+    { label: 'Re-Defense', value: 3, className: 'from-rose-500 to-rose-600', color: '#f43f5e' },
   ];
 
   const toneStyles: Record<DashboardNotification['tone'], string> = {
@@ -200,36 +201,6 @@ const Dashboard = () => {
                 Dashboard
               </h2>
               <p className="text-sm text-slate-500 mt-1">Instructor Dashboard</p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-              {/* Program Switch */}
-              <div>
-                <label className="text-xs text-slate-500 block mb-1 font-medium">Program</label>
-                <select
-                  value={selectedProgram}
-                  onChange={(e) => setSelectedProgram(e.target.value)}
-                  className="border border-slate-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm transition-all w-full sm:w-auto"
-                >
-                  <option value="bsit">BS Information Technology (BSIT)</option>
-                  <option value="bsis">BS Information Systems (BSIS)</option>
-                </select>
-              </div>
-
-              {/* Phase Switch */}
-              <div>
-                <label className="text-xs text-slate-500 block mb-1 font-medium">Phase</label>
-                <select
-                  value={selectedPhase}
-                  onChange={(e) => setSelectedPhase(e.target.value)}
-                  className="border border-slate-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm transition-all w-full sm:w-auto"
-                >
-                  <option value="concept">Concept</option>
-                  <option value="outline">Outline</option>
-                  <option value="predeployment">Pre-Deployment</option>
-                  <option value="deployment">Deployment</option>
-                </select>
-              </div>
             </div>
           </div>
         </motion.div>
@@ -361,30 +332,121 @@ const Dashboard = () => {
                   <p className="text-sm text-slate-500 mt-1">Distribution snapshot</p>
                 </div>
 
-                <div className="mt-6 space-y-4">
-                  {defenseStatus.map((d) => {
-                    const total = defenseStatus.reduce((a, b) => a + b.value, 0);
-                    const pct = total === 0 ? 0 : Math.round((d.value / total) * 100);
+                {(() => {
+                  const total = defenseStatus.reduce((a, b) => a + b.value, 0);
 
-                    return (
-                      <div key={d.label}>
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="font-semibold text-slate-700">{d.label}</div>
-                          <div className="text-slate-500">{d.value} ({pct}%)</div>
-                        </div>
-                        <div className="mt-2 w-full h-3 rounded-full bg-slate-200 overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pct}%` }}
-                            transition={{ duration: 0.8 }}
-                            className={`h-3 rounded-full bg-gradient-to-r ${d.className}`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
+                  const viewBoxSize = 200;
+                  const center = viewBoxSize / 2;
+                  const radius = 70;
+                  const strokeWidth = 18;
+                  const circumference = 2 * Math.PI * radius;
+
+                  return (
+                    <div className="mt-6">
+                      <div className="flex items-center justify-center">
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.96 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          <Box
+                            className="relative w-40 h-40 sm:w-44 sm:h-44 md:w-48 md:h-48"
+                            sx={{ position: 'relative' }}
+                          >
+                            <svg width="100%" height="100%" viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`} preserveAspectRatio="xMidYMid meet">
+                              <circle
+                                cx={center}
+                                cy={center}
+                                r={radius}
+                                fill="none"
+                                stroke="#e2e8f0"
+                                strokeWidth={strokeWidth}
+                              />
+
+                              {(() => {
+                                let offset = 0;
+                                return defenseStatus.map((d) => {
+                                  const pct = total === 0 ? 0 : d.value / total;
+                                  const segment = pct * circumference;
+                                  const dashOffset = circumference - offset;
+                                  offset += segment;
+
+                                  return (
+                                    <circle
+                                      key={d.label}
+                                      cx={center}
+                                      cy={center}
+                                      r={radius}
+                                      fill="none"
+                                      stroke={d.color}
+                                      strokeWidth={strokeWidth}
+                                      strokeLinecap="round"
+                                      strokeDasharray={`${segment} ${circumference - segment}`}
+                                      strokeDashoffset={dashOffset}
+                                      transform={`rotate(-90 ${center} ${center})`}
+                                    />
+                                  );
+                                });
+                              })()}
+                            </svg>
+
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                inset: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                textAlign: 'center',
+                              }}
+                            >
+                              <Box>
+                                <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: 24, lineHeight: 1 }}>
+                                  {total}
+                                </Typography>
+                                <Typography
+                                  sx={{
+                                    mt: 0.5,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    letterSpacing: '0.08em',
+                                    textTransform: 'uppercase',
+                                    color: '#64748b',
+                                  }}
+                                >
+                                  Total
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Box>
+                        </motion.div>
                       </div>
-                    );
-                  })}
-                </div>
+
+                      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {defenseStatus.map((d) => {
+                          const pct = total === 0 ? 0 : Math.round((d.value / total) * 100);
+                          return (
+                            <div
+                              key={d.label}
+                              className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-3"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span
+                                  className="h-3 w-3 rounded-full"
+                                  style={{ backgroundColor: d.color }}
+                                />
+                                <div className="text-xs font-semibold text-slate-700 truncate">{d.label}</div>
+                              </div>
+                              <div className="text-xs text-slate-500 whitespace-nowrap">
+                                {d.value} ({pct}%)
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
