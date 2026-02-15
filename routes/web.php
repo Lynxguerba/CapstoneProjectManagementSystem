@@ -111,11 +111,6 @@ Route::get('/student/settings', function () {
     return Inertia::render('Student/settings');
 })->name('student.settings');
 
-// ADMIN DASHBOARD
-Route::get('/admin/dashboard', function () {
-    return Inertia::render('Admin/dashboard');
-})->name('admin.dashboard');
-
 // ADVISER DASHBOARD
 Route::get('/adviser/dashboard', function () {
     return Inertia::render('Adviser/dashboard');

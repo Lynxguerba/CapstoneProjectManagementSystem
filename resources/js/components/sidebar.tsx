@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
   LayoutDashboard,
   Users,
@@ -22,7 +22,6 @@ import {
 } from 'lucide-react';
 
 import logoCpms from '../assets/logo-cpms.png';
-import { router } from '@inertiajs/react'
 import SignOutModal from './signout-modal';
 
 const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => {
@@ -179,18 +178,11 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
               const active = isActiveHref(item.href);
 
               return (
-                <a
+                <Link
                   key={item.label}
                   href={item.href ?? '#'}
-                  onClick={(e) => {
-                    if (!item.href || item.href === '#') {
-                      return;
-                    }
-
-                    e.preventDefault();
-                    router.visit(item.href);
-                    setIsMobileOpen(false);
-                  }}
+                  onClick={() => setIsMobileOpen(false)}
+                  preserveScroll
                   className={`flex items-center justify-between group px-4 py-3 rounded-xl transition-all duration-200 ${active
                     ? 'bg-green-600 text-white shadow-lg shadow-green-900/20'
                     : 'hover:bg-slate-800 hover:text-slate-100'
@@ -201,7 +193,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     <span className="font-medium text-sm">{item.label}</span>
                   </div>
                   {!active && <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-500" />}
-                </a>
+                </Link>
               );
             })}
           </div>
