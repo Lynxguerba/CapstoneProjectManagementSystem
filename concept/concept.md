@@ -48,7 +48,7 @@ CAPSTONE PROJECT MANAGEMENT SYSTEM
 
 AI PROMPT:
     Assist me to create a concept of the project including what pages should i need to include, what are the components and elements need to build on this project, this is the concept:
-    Now lets focus first on the [instructor] page, so what are the pages should include in this role?
+    Now lets focus first on the [role] pages, so what are the pages should include in this role?
 
-    INTRUCTOR:
-        base on the file @instructor_concept.md . create those pages, add pages base on that file  but that is UI only, so it means create dummy data so there is no totally a functional system, so its UI only, and also make it look modern. Then modify also on @sidebar.tsx  for instructor role only base on the concept file. Changes and create everything on the @resources/js/pages/Instructor pages.
+    AGENT: 
+    Base on the file @adviser_concept.md . create those pages, add pages base on that file  but that is UI only, so it means use dummy data so there is no totally a functional system, so its UI only, and also make it look modern. Then modify also on @sidebar.tsx  for adviser role only base on the concept file. Changes and create everything on the @resources/js/pages/Adviser  pages. Don't forget the responsive design so that it will be responsive on all devices. and for the dashbaord include graphs, pie graphs or linear graphs with dummy data using MUI, so use MUI for graph only with animations and the rest elements are tailwindcss
