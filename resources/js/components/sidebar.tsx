@@ -3,7 +3,6 @@ import { usePage } from '@inertiajs/react';
 import {
   LayoutDashboard,
   Users,
-  GraduationCap,
   FolderOpen,
   BookOpen,
   FileText,
@@ -81,15 +80,21 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
       case 'student':
         return [
           { icon: LayoutDashboard, label: 'Dashboard', href: '/student/dashboard' },
-          { icon: Users, label: 'Group Creation', href: '#' },
-          { icon: FolderOpen, label: 'Documents', href: '#' },
-          { icon: Settings, label: 'Settings', href: '#' },
+          { icon: Users, label: 'My Capstone Group', href: '/student/group' },
+          { icon: BookOpen, label: 'Title Repository', href: '/student/titles' },
+          { icon: FileText, label: 'Concept Submission', href: '/student/concepts' },
+          { icon: FolderOpen, label: 'Documents & Uploads', href: '/student/documents' },
+          { icon: Calendar, label: 'Defense Schedule', href: '/student/schedule' },
+          { icon: ClipboardCheck, label: 'Evaluation & Feedback', href: '/student/evaluation' },
+          { icon: Scale, label: 'Verdict Results', href: '/student/verdict' },
+          { icon: Archive, label: 'Deployment Submission', href: '/student/deployment' },
+          { icon: Clock, label: 'Deadlines & Notifications', href: '/student/deadlines' },
+          { icon: Settings, label: 'Profile & Settings', href: '/student/settings' },
         ];
       case 'adviser':
         return [
           { icon: LayoutDashboard, label: 'Dashboard', href: '/adviser/dashboard' },
           { icon: Users, label: 'Group Creation', href: '#' },
-          { icon: GraduationCap, label: 'Adviser Load', href: '#' },
           { icon: FolderOpen, label: 'Documents', href: '#' },
           { icon: Settings, label: 'Settings', href: '#' },
         ];

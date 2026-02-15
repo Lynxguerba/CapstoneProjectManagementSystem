@@ -71,6 +71,46 @@ Route::get('/student/dashboard', function () {
     return Inertia::render('Student/dashboard');
 })->name('student.dashboard');
 
+Route::get('/student/group', function () {
+    return Inertia::render('Student/group');
+})->name('student.group');
+
+Route::get('/student/titles', function () {
+    return Inertia::render('Student/titles');
+})->name('student.titles');
+
+Route::get('/student/concepts', function () {
+    return Inertia::render('Student/concepts');
+})->name('student.concepts');
+
+Route::get('/student/documents', function () {
+    return Inertia::render('Student/documents');
+})->name('student.documents');
+
+Route::get('/student/schedule', function () {
+    return Inertia::render('Student/schedule');
+})->name('student.schedule');
+
+Route::get('/student/evaluation', function () {
+    return Inertia::render('Student/evaluation');
+})->name('student.evaluation');
+
+Route::get('/student/verdict', function () {
+    return Inertia::render('Student/verdict');
+})->name('student.verdict');
+
+Route::get('/student/deployment', function () {
+    return Inertia::render('Student/deployment');
+})->name('student.deployment');
+
+Route::get('/student/deadlines', function () {
+    return Inertia::render('Student/deadlines');
+})->name('student.deadlines');
+
+Route::get('/student/settings', function () {
+    return Inertia::render('Student/settings');
+})->name('student.settings');
+
 // ADMIN DASHBOARD
 Route::get('/admin/dashboard', function () {
     return Inertia::render('Admin/dashboard');
