@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../../components/sidebar';
+import { CheckCircle2, ClipboardList, Layers3, TriangleAlert, Users } from 'lucide-react';
 
 interface Member {
   fullName: string;
@@ -65,11 +66,11 @@ const Dashboard = () => {
   const groupsPerPage = 6;
 
   const stats = [
-    { label: 'Total Groups', value: '28', style: 'from-slate-700 to-slate-900' },
-    { label: 'Pending Concepts', value: '9', style: 'from-amber-500 to-amber-600' },
-    { label: 'Scheduled Defenses', value: '6', style: 'from-indigo-500 to-indigo-600' },
-    { label: 'Re-Defense Cases', value: '3', style: 'from-rose-500 to-rose-600' },
-    { label: 'Approved Projects', value: '14', style: 'from-teal-500 to-teal-600' },
+    { label: 'Total Groups', value: '28', style: 'from-slate-700 to-slate-900', icon: Users },
+    { label: 'Pending Concepts', value: '9', style: 'from-amber-500 to-amber-600', icon: ClipboardList },
+    { label: 'Scheduled Defenses', value: '6', style: 'from-indigo-500 to-indigo-600', icon: Layers3 },
+    { label: 'Re-Defense Cases', value: '3', style: 'from-rose-500 to-rose-600', icon: TriangleAlert },
+    { label: 'Approved Projects', value: '14', style: 'from-teal-500 to-teal-600', icon: CheckCircle2 },
   ];
 
   const upcomingDefenses: Schedule[] = [
@@ -252,7 +253,9 @@ const Dashboard = () => {
                 <div className="text-xs uppercase tracking-wide text-slate-500 font-semibold">{s.label}</div>
                 <div className="mt-3 flex items-end justify-between">
                   <div className="text-3xl font-bold text-slate-900">{s.value}</div>
-                  <div className={`h-10 w-10 rounded-2xl bg-gradient-to-br ${s.style} opacity-90`} />
+                  <div className={`h-10 w-10 rounded-2xl bg-gradient-to-br ${s.style} opacity-95 flex items-center justify-center shadow-sm`}>
+                    <s.icon size={18} className="text-white" />
+                  </div>
                 </div>
               </motion.div>
             ))}
