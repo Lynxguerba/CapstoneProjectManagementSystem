@@ -93,9 +93,17 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
       case 'adviser':
         return [
           { icon: LayoutDashboard, label: 'Dashboard', href: '/adviser/dashboard' },
-          { icon: Users, label: 'Group Creation', href: '#' },
-          { icon: FolderOpen, label: 'Documents', href: '#' },
-          { icon: Settings, label: 'Settings', href: '#' },
+          { icon: Users, label: 'Groups', href: '/adviser/groups' },
+          { icon: FileText, label: 'Concepts', href: '/adviser/concepts' },
+          { icon: FolderOpen, label: 'Documents', href: '/adviser/documents' },
+          { icon: ClipboardCheck, label: 'Evaluations', href: '/adviser/evaluations' },
+          { icon: Calendar, label: 'Schedule', href: '/adviser/schedule' },
+          { icon: Scale, label: 'Verdict', href: '/adviser/verdict' },
+          { icon: Printer, label: 'Minutes', href: '/adviser/minutes' },
+          { icon: Bell, label: 'Notifications', href: '/adviser/notifications' },
+          { icon: Clock, label: 'Deadlines', href: '/adviser/deadlines' },
+          { icon: BarChart3, label: 'Reports', href: '/adviser/reports' },
+          { icon: Settings, label: 'Settings', href: '/adviser/settings' },
         ];
 
       case 'panelist':

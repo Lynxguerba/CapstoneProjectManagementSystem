@@ -7,6 +7,7 @@ FRONTEND:
 # npm run build
 # npm install @mui/material @emotion/react @emotion/styled
 # npm install @mui/icons-material
+# npm ls @mui/x-charts
 
 BACKEND:
 # composer global require laravel/installer

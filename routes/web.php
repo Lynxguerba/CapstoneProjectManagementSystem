@@ -116,6 +116,55 @@ Route::get('/adviser/dashboard', function () {
     return Inertia::render('Adviser/dashboard');
 })->name('adviser.dashboard');
 
+// ADVISER PAGES (UI ONLY)
+Route::get('/adviser/groups', function () {
+    return Inertia::render('Adviser/groups');
+})->name('adviser.groups');
+
+Route::get('/adviser/group-details', function () {
+    return Inertia::render('Adviser/group-details');
+})->name('adviser.group-details');
+
+Route::get('/adviser/concepts', function () {
+    return Inertia::render('Adviser/concepts');
+})->name('adviser.concepts');
+
+Route::get('/adviser/documents', function () {
+    return Inertia::render('Adviser/documents');
+})->name('adviser.documents');
+
+Route::get('/adviser/evaluations', function () {
+    return Inertia::render('Adviser/evaluations');
+})->name('adviser.evaluations');
+
+Route::get('/adviser/schedule', function () {
+    return Inertia::render('Adviser/schedule');
+})->name('adviser.schedule');
+
+Route::get('/adviser/verdict', function () {
+    return Inertia::render('Adviser/verdict');
+})->name('adviser.verdict');
+
+Route::get('/adviser/minutes', function () {
+    return Inertia::render('Adviser/minutes');
+})->name('adviser.minutes');
+
+Route::get('/adviser/notifications', function () {
+    return Inertia::render('Adviser/notifications');
+})->name('adviser.notifications');
+
+Route::get('/adviser/deadlines', function () {
+    return Inertia::render('Adviser/deadlines');
+})->name('adviser.deadlines');
+
+Route::get('/adviser/reports', function () {
+    return Inertia::render('Adviser/reports');
+})->name('adviser.reports');
+
+Route::get('/adviser/settings', function () {
+    return Inertia::render('Adviser/settings');
+})->name('adviser.settings');
+
 // PANELIST DASHBOARD
 Route::get('/panelist/dashboard', function () {
     return Inertia::render('Panelist/dashboard');
