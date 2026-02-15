@@ -170,6 +170,51 @@ Route::get('/panelist/dashboard', function () {
     return Inertia::render('Panelist/dashboard');
 })->name('panelist.dashboard');
 
+// PANELIST PAGES (UI ONLY)
+Route::get('/panelist/assigned-groups', function () {
+    return Inertia::render('Panelist/assigned-groups');
+})->name('panelist.assigned-groups');
+
+Route::get('/panelist/group-details', function () {
+    return Inertia::render('Panelist/group-details');
+})->name('panelist.group-details');
+
+Route::get('/panelist/schedule', function () {
+    return Inertia::render('Panelist/schedule');
+})->name('panelist.schedule');
+
+Route::get('/panelist/documents', function () {
+    return Inertia::render('Panelist/documents/document-list');
+})->name('panelist.documents');
+
+Route::get('/panelist/documents/viewer', function () {
+    return Inertia::render('Panelist/documents/document-viewer');
+})->name('panelist.documents.viewer');
+
+Route::get('/panelist/evaluation', function () {
+    return Inertia::render('Panelist/evaluation/evaluation-form');
+})->name('panelist.evaluation');
+
+Route::get('/panelist/comments', function () {
+    return Inertia::render('Panelist/comments/comments-dashboard');
+})->name('panelist.comments');
+
+Route::get('/panelist/verdict', function () {
+    return Inertia::render('Panelist/verdict/verdict-recommendation');
+})->name('panelist.verdict');
+
+Route::get('/panelist/history', function () {
+    return Inertia::render('Panelist/history/past-evaluations');
+})->name('panelist.history');
+
+Route::get('/panelist/notifications', function () {
+    return Inertia::render('Panelist/notifications');
+})->name('panelist.notifications');
+
+Route::get('/panelist/settings', function () {
+    return Inertia::render('Panelist/settings');
+})->name('panelist.settings');
+
 // DEAN DASHBOARD
 Route::get('/dean/dashboard', function () {
     return Inertia::render('Dean/dashboard');

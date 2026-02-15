@@ -13,6 +13,7 @@ import {
   Clock,
   Archive,
   Bell,
+  MessageSquareText,
   BarChart3,
   Settings,
   ChevronRight,
@@ -107,7 +108,18 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
         ];
 
       case 'panelist':
-        return commonItems;
+        return [
+          { icon: LayoutDashboard, label: 'Dashboard', href: '/panelist/dashboard' },
+          { icon: Users, label: 'Assigned Groups', href: '/panelist/assigned-groups' },
+          { icon: Calendar, label: 'Defense Schedule', href: '/panelist/schedule' },
+          { icon: FolderOpen, label: 'Document Review Center', href: '/panelist/documents' },
+          { icon: ClipboardCheck, label: 'Evaluation & Scoring', href: '/panelist/evaluation' },
+          { icon: MessageSquareText, label: 'Comments & Feedback', href: '/panelist/comments' },
+          { icon: Scale, label: 'Verdict Recommendation', href: '/panelist/verdict' },
+          { icon: Archive, label: 'Past Evaluations', href: '/panelist/history' },
+          { icon: Bell, label: 'Notifications', href: '/panelist/notifications' },
+          { icon: Settings, label: 'Settings', href: '/panelist/settings' },
+        ];
       case 'instructor':
         return [
           { icon: LayoutDashboard, label: 'Dashboard', href: '/instructor/dashboard' },
@@ -115,7 +127,6 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
           { icon: BookOpen, label: 'Title Repository', href: '/instructor/titles' },
           { icon: FileText, label: 'Concept Review', href: '/instructor/concepts' },
           { icon: Calendar, label: 'Defense Scheduling', href: '/instructor/scheduling' },
-
           { icon: ClipboardCheck, label: 'Evaluation Monitoring', href: '/instructor/evaluation' },
           { icon: Scale, label: 'Verdict Management', href: '/instructor/verdict' },
           { icon: Printer, label: 'Minutes & Approval Sheet', href: '/instructor/minutes' },
