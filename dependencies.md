@@ -5,6 +5,8 @@ FRONTEND:
 # npm install lucide-react
 # npm install framer-motion
 # npm run build
+# npm install @mui/material @emotion/react @emotion/styled
+# npm install @mui/icons-material
 
 BACKEND:
 # composer global require laravel/installer

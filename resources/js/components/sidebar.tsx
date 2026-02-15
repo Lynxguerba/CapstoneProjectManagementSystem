@@ -18,8 +18,10 @@ import {
   Settings,
   ChevronRight,
   Menu,
+  X,
   LogOut
 } from 'lucide-react';
+
 import logoCpms from '../assets/logo-cpms.png';
 import { router } from '@inertiajs/react'
 import SignOutModal from './signout-modal';
@@ -126,20 +128,29 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
     <>
       <button
         type="button"
-        onClick={() => setIsMobileOpen(true)}
+        onClick={() => setIsMobileOpen((v) => !v)}
         className="md:hidden fixed top-4 left-4 z-[60] inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/90 backdrop-blur border border-slate-200 shadow-sm text-slate-800"
-        aria-label="Open navigation"
+        aria-label={isMobileOpen ? 'Close navigation' : 'Open navigation'}
       >
-        <Menu size={20} />
+        <span className="relative w-5 h-5">
+          <Menu
+            size={20}
+            className={`absolute inset-0 transition-all duration-300 ${isMobileOpen ? 'opacity-0 rotate-90 scale-75' : 'opacity-100 rotate-0 scale-100'}`}
+          />
+          <X
+            size={20}
+            className={`absolute inset-0 transition-all duration-300 ${isMobileOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-75'}`}
+          />
+        </span>
       </button>
 
       <div
-        className={`md:hidden fixed inset-0 z-[55] bg-black/50 backdrop-blur-sm transition-opacity ${isMobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`md:hidden fixed inset-0 z-[55] bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${isMobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setIsMobileOpen(false)}
       />
 
       <aside
-        className={`w-64 bg-green-900 text-slate-300 flex flex-col fixed inset-y-0 left-0 z-[56] border-r border-slate-800 shadow-xl transform transition-transform duration-300 md:translate-x-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+        className={`w-64 bg-green-900 text-slate-300 flex flex-col fixed inset-y-0 left-0 z-[56] border-r border-slate-800 shadow-xl transform transition-transform duration-300 ease-out will-change-transform md:translate-x-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
 
         {/* Brand Section */}

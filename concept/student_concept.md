@@ -1,14 +1,3 @@
-Perfect 👌 Let’s now design the **Student Module** of your **Capstone Project Management System (CPMS)** properly and professionally.
-
-The **Student role** is the execution side of the capstone process.
-They submit, upload, respond to feedback, prepare for defense, and comply with deadlines.
-
-So their interface should feel like a:
-
-> 🎯 **Project Workspace + Submission Portal + Progress Tracker**
-
----
-
 # 🎓 STUDENT ROLE – SYSTEM CONCEPT
 
 ## 🔐 Student Core Capabilities
