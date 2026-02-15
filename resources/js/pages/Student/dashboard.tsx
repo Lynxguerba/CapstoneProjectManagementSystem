@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bell,
@@ -10,6 +10,7 @@ import {
   GraduationCap,
   ShieldAlert,
 } from 'lucide-react';
+import { Box, Typography } from '@mui/material';
 import StudentLayout from './_layout';
 
 type ProgressStep = {
@@ -24,6 +25,151 @@ type DashboardNotification = {
   message: string;
   date: string;
   tone: 'info' | 'success' | 'warning' | 'danger';
+};
+
+type ChartPoint = {
+  xLabel: string;
+  y: number;
+};
+
+const LineChart = ({ data, height = 180 }: { data: ChartPoint[]; height?: number }) => {
+  const padding = 18;
+  const width = 520;
+
+  const points = useMemo(() => {
+    const ys = data.map((d) => d.y);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const yRange = Math.max(1, maxY - minY);
+
+    return data.map((d, idx) => {
+      const x = padding + (idx * (width - padding * 2)) / Math.max(1, data.length - 1);
+      const y = padding + ((maxY - d.y) * (height - padding * 2)) / yRange;
+      return { x, y, label: d.xLabel, value: d.y };
+    });
+  }, [data, height]);
+
+  const poly = points.map((p) => `${p.x},${p.y}`).join(' ');
+
+  return (
+    <Box sx={{ width: '100%', overflowX: 'auto' }}>
+      <Box component="svg" viewBox={`0 0 ${width} ${height}`} sx={{ width: '100%', minWidth: 360, height }}>
+        <defs>
+          <linearGradient id="studentLine" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.06" />
+          </linearGradient>
+        </defs>
+
+        <rect x={0} y={0} width={width} height={height} fill="transparent" />
+        <path
+          d={`M ${points[0]?.x ?? padding} ${height - padding} L ${poly} L ${points[points.length - 1]?.x ?? width - padding} ${height - padding} Z`}
+          fill="url(#studentLine)"
+        />
+        <polyline points={poly} fill="none" stroke="#4f46e5" strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" />
+
+        {points.map((p) => (
+          <g key={p.label}>
+            <circle cx={p.x} cy={p.y} r={5} fill="#ffffff" stroke="#4f46e5" strokeWidth={2} />
+          </g>
+        ))}
+
+        <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#e2e8f0" strokeWidth={2} />
+        <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#e2e8f0" strokeWidth={2} />
+      </Box>
+    </Box>
+  );
+};
+
+const BarChart = ({ data, height = 180 }: { data: ChartPoint[]; height?: number }) => {
+  const padding = 18;
+  const width = 520;
+  const barGap = 10;
+  const barWidth = (width - padding * 2 - barGap * (data.length - 1)) / Math.max(1, data.length);
+  const maxY = Math.max(1, ...data.map((d) => d.y));
+
+  return (
+    <Box sx={{ width: '100%', overflowX: 'auto' }}>
+      <Box component="svg" viewBox={`0 0 ${width} ${height}`} sx={{ width: '100%', minWidth: 360, height }}>
+        <defs>
+          <linearGradient id="studentBar" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0f172a" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#64748b" stopOpacity="0.6" />
+          </linearGradient>
+        </defs>
+
+        <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#e2e8f0" strokeWidth={2} />
+
+        {data.map((d, idx) => {
+          const x = padding + idx * (barWidth + barGap);
+          const h = ((height - padding * 2) * d.y) / maxY;
+          const y = height - padding - h;
+
+          return (
+            <g key={d.xLabel}>
+              <rect x={x} y={y} width={barWidth} height={h} rx={10} fill="url(#studentBar)" />
+            </g>
+          );
+        })}
+      </Box>
+    </Box>
+  );
+};
+
+const PieChart = ({ segments, size = 180 }: { segments: Array<{ label: string; value: number; color: string }>; size?: number }) => {
+  const radius = size / 2 - 10;
+  const cx = size / 2;
+  const cy = size / 2;
+  const total = Math.max(1, segments.reduce((a, b) => a + b.value, 0));
+
+  const arcs = useMemo(() => {
+    let startAngle = -Math.PI / 2;
+    return segments.map((s) => {
+      const angle = (s.value / total) * Math.PI * 2;
+      const endAngle = startAngle + angle;
+
+      const x1 = cx + radius * Math.cos(startAngle);
+      const y1 = cy + radius * Math.sin(startAngle);
+      const x2 = cx + radius * Math.cos(endAngle);
+      const y2 = cy + radius * Math.sin(endAngle);
+      const largeArc = angle > Math.PI ? 1 : 0;
+
+      const d = `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+      startAngle = endAngle;
+
+      return { ...s, d };
+    });
+  }, [segments, total, cx, cy, radius]);
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+      <Box component="svg" viewBox={`0 0 ${size} ${size}`} sx={{ width: size, height: size, flex: '0 0 auto' }}>
+        {arcs.map((a) => (
+          <path key={a.label} d={a.d} fill={a.color} />
+        ))}
+        <circle cx={cx} cy={cy} r={radius * 0.55} fill="#ffffff" />
+        <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="14" fill="#0f172a" fontWeight="700">
+          {Math.round((segments[0]?.value ?? 0) / total * 100)}%
+        </text>
+      </Box>
+
+      <Box sx={{ minWidth: 220, flex: '1 1 auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {segments.map((s) => (
+          <Box key={s.label} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+              <Box sx={{ width: 10, height: 10, borderRadius: 999, bgcolor: s.color }} />
+              <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }} noWrap>
+                {s.label}
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, whiteSpace: 'nowrap' }}>
+              {s.value} ({Math.round((s.value / total) * 100)}%)
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
 };
 
 const StudentDashboard = () => {
@@ -127,53 +273,52 @@ const StudentDashboard = () => {
             <button
               type="button"
               onClick={() => alert('UI only: open full progress details')}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
             >
               View details
             </button>
           </div>
 
-          <div className="mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-              {steps.map((step, idx) => {
-                const isDone = step.status === 'done';
-                const isCurrent = step.status === 'current';
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {steps.map((step, idx) => {
+              const isDone = step.status === 'done';
+              const isCurrent = step.status === 'current';
 
-                return (
-                  <div key={step.key} className="relative">
+              return (
+                <div
+                  key={step.key}
+                  className={`rounded-2xl border p-4 ${isCurrent
+                    ? 'border-indigo-200 bg-indigo-50'
+                    : isDone
+                      ? 'border-emerald-200 bg-emerald-50'
+                      : 'border-slate-200 bg-slate-50'
+                    }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-slate-800 truncate">{step.label}</div>
+                      <div className="mt-1 text-xs text-slate-500">Step {idx + 1} of {steps.length}</div>
+                    </div>
                     <div
-                      className={`rounded-2xl border p-4 ${isCurrent
-                        ? 'border-indigo-200 bg-indigo-50'
+                      className={`h-9 w-9 rounded-xl flex items-center justify-center ${isCurrent
+                        ? 'bg-indigo-600'
                         : isDone
-                          ? 'border-emerald-200 bg-emerald-50'
-                          : 'border-slate-200 bg-slate-50'
+                          ? 'bg-emerald-600'
+                          : 'bg-slate-400'
                         }`}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="text-sm font-semibold text-slate-800">{step.label}</div>
-                        <div
-                          className={`h-8 w-8 rounded-xl flex items-center justify-center ${isCurrent
-                            ? 'bg-indigo-600'
-                            : isDone
-                              ? 'bg-emerald-600'
-                              : 'bg-slate-400'
-                            }`}
-                        >
-                          {isDone ? (
-                            <CheckCircle2 size={16} className="text-white" />
-                          ) : isCurrent ? (
-                            <Clock3 size={16} className="text-white" />
-                          ) : (
-                            <ShieldAlert size={16} className="text-white" />
-                          )}
-                        </div>
-                      </div>
-                      <div className="mt-2 text-xs text-slate-600">Step {idx + 1} of {steps.length}</div>
+                      {isDone ? (
+                        <CheckCircle2 size={16} className="text-white" />
+                      ) : isCurrent ? (
+                        <Clock3 size={16} className="text-white" />
+                      ) : (
+                        <ShieldAlert size={16} className="text-white" />
+                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         </motion.section>
 
@@ -194,7 +339,7 @@ const StudentDashboard = () => {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-xs uppercase tracking-wide text-slate-500 font-semibold">{card.title}</div>
-                  <div className="mt-2 text-2xl font-bold text-slate-900">{card.value}</div>
+                  <div className="mt-2 text-2xl font-semibold text-slate-900">{card.value}</div>
                   <div className="mt-2 text-sm text-slate-600">{card.sub}</div>
                 </div>
                 <div className={`h-11 w-11 rounded-2xl bg-gradient-to-br ${card.tone} flex items-center justify-center shadow-sm`}>
@@ -213,6 +358,89 @@ const StudentDashboard = () => {
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6"
+        >
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">Progress Analytics</h3>
+              <p className="text-sm text-slate-500 mt-1">Graphs are UI-only using dummy data.</p>
+            </div>
+            <span className="text-xs font-semibold text-slate-600 rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+              MUI graphs
+            </span>
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                  Deadline Compliance Trend
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                  Tracks how consistently you meet weekly submission targets (dummy)
+                </Typography>
+                <Box sx={{ mt: 2 }}>
+                  <LineChart
+                    data={[
+                      { xLabel: 'Week 1', y: 72 },
+                      { xLabel: 'Week 2', y: 78 },
+                      { xLabel: 'Week 3', y: 74 },
+                      { xLabel: 'Week 4', y: 86 },
+                      { xLabel: 'Week 5', y: 90 },
+                      { xLabel: 'Week 6', y: 88 },
+                    ]}
+                  />
+                </Box>
+              </Box>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                  Documents Status
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                  Pie graph (dummy)
+                </Typography>
+                <Box sx={{ mt: 2 }}>
+                  <PieChart
+                    segments={[
+                      { label: 'Approved', value: 6, color: '#10b981' },
+                      { label: 'Pending', value: 3, color: '#f59e0b' },
+                      { label: 'Routed', value: 2, color: '#6366f1' },
+                    ]}
+                  />
+                </Box>
+              </Box>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                  Phase Readiness
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                  Bar graph (dummy)
+                </Typography>
+                <Box sx={{ mt: 2 }}>
+                  <BarChart
+                    data={[
+                      { xLabel: 'Concept', y: 90 },
+                      { xLabel: 'Outline', y: 70 },
+                      { xLabel: 'Pre-Deploy', y: 40 },
+                      { xLabel: 'Deploy', y: 20 },
+                    ]}
+                  />
+                </Box>
+              </Box>
+            </div>
+          </div>
+        </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
           className="grid grid-cols-1 xl:grid-cols-3 gap-6"
         >
@@ -225,7 +453,7 @@ const StudentDashboard = () => {
               <button
                 type="button"
                 onClick={() => alert('UI only: go to defense schedule page')}
-                className="rounded-xl bg-gradient-to-r from-slate-800 to-slate-700 text-white px-4 py-2.5 text-sm font-semibold hover:shadow-lg"
+                className="rounded-xl bg-gradient-to-r from-slate-800 to-slate-700 text-white px-4 py-2.5 text-sm font-medium hover:shadow-lg"
               >
                 Open schedule
               </button>
@@ -258,7 +486,7 @@ const StudentDashboard = () => {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Deadline Countdown</h3>
+                <h3 className="text-lg font-semibold text-slate-900">Deadlines</h3>
                 <p className="text-sm text-slate-500 mt-1">Stay compliant and on track.</p>
               </div>
               <Clock3 size={18} className="text-slate-600" />
@@ -284,7 +512,7 @@ const StudentDashboard = () => {
             <button
               type="button"
               onClick={() => alert('UI only: go to deadlines & notifications')}
-              className="mt-5 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              className="mt-5 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
             >
               View deadlines
             </button>
@@ -305,7 +533,7 @@ const StudentDashboard = () => {
             <button
               type="button"
               onClick={() => alert('UI only: open notifications center')}
-              className="text-sm font-semibold text-slate-700 hover:text-slate-900"
+              className="text-sm font-medium text-slate-700 hover:text-slate-900"
             >
               View all
             </button>
