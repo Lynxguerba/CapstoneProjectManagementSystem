@@ -17,7 +17,7 @@ Route::get('/instructor/dashboard', function () {
     return Inertia::render('Instructor/dashboard');
 })->name('instructor.dashboard');
 
-// INSTRUCTOR PAGES (UI ONLY)
+// INSTRUCTOR PAGES
 Route::get('/instructor/groups', function () {
     return Inertia::render('Instructor/groups');
 })->name('instructor.groups');
