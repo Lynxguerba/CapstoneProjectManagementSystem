@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deployment Tracker - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        body { overflow: hidden; }
+        main { height: 100vh; overflow-y: auto; overflow-x: hidden; }
+        .glass-effect { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
+        .hover-scale { transition: transform 0.2s ease-in-out; }
+        .hover-scale:hover { transform: translateY(-2px); }
+        .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem; }
+        .status-badge.deployed { background: #dcfce7; color: #166534; }
+        .status-badge.verified { background: #dbeafe; color: #1e40af; }
+        .status-badge.progress { background: #fef9c3; color: #854d0e; }
+        .status-badge.pending { background: #fef9c3; color: #854d0e; }
+        .status-badge.completed { background: #dcfce7; color: #166534; }
+        .status-badge.rejected { background: #fee2e2; color: #991b1b; }
+        .status-badge.approved { background: #dcfce7; color: #166534; }
+        .progress-bar { height: 0.5rem; border-radius: 9999px; background: #e2e8f0; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 9999px; transition: width 0.3s ease; }
+        .deployment-card { transition: all 0.2s ease; }
+        .deployment-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .notification-dot { position: relative; }
+        .notification-dot::after { content: ''; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid white; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slideUp 0.3s ease-out; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #1e40af; font-weight: 500; }
+        .cert-preview { border: 1px dashed #cbd5e1; background: #f8fafc; }
+    </style>
+</head>
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - COMPLETE VERSION -->
+    <aside class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-graduation-cap text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Instructor Portal</p>
+                </div>
+            </div>
+           
+            <!-- Quick Stats in Sidebar -->
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Section</p>
+                    <p class="text-sm font-semibold text-white">BSIT-3A</p>
+                </div>
+            </div>
+        </div>
+       
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <!-- Main Navigation -->
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="instructor-dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">12</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Management</p>
+            <a href="group-management.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Group Management</span>
+                <i class="fas fa-chevron-right text-xs text-slate-500"></i>
+            </a>
+            <a href="adviser-assignment.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-user-tie w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Adviser Assignment</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">3 slots</span>
+            </a>
+            <a href="defense-scheduling.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Defense Scheduling</span>
+                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Academic Control</p>
+            <a href="deadline-manager.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-clock w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Deadline Manager</span>
+            </a>
+            <a href="payment-verification.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-credit-card w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Payment Verification</span>
+            </a>
+            <a href="deployment-tracker.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-600/20">
+                <i class="fas fa-rocket w-5"></i>
+                <span class="flex-1">Deployment Tracker</span>
+                <span class="bg-white/20 text-white text-xs px-2 py-1 rounded-full">8</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Reports</p>
+            <a href="analytics.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-line w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Analytics</span>
+            </a>
+            <a href="documents.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Documents</span>
+            </a>
+        </nav>
+       
+        <!-- User Profile in Sidebar -->
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg">PD</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Dela Cruz</p>
+                    <p class="text-xs text-slate-400">Capstone Coordinator</p>
+                </div>
+                <button class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition">
+                    <i class="fas fa-sign-out-alt text-slate-400"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72 smooth-scroll">
+
+        <!-- TOP BAR -->
+        <div class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40 shadow-sm">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Deployment Tracker</h2>
+                <span class="bg-orange-100 text-orange-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-rocket"></i> Capstone 2 Completion
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Quick Action Buttons -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+               
+                <!-- Control Selectors -->
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <div class="relative">
+                        <select id="programSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm">
+                            <option value="bsit" selected>BS Information Technology</option>
+                            <option value="bsis">BS Information Systems</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <div class="relative">
+                        <select id="phaseSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm">
+                            <option value="concept">Phase 1: Concept</option>
+                            <option value="outline">Phase 2: Outline</option>
+                            <option value="predeployment">Phase 3: Pre-Deployment</option>
+                            <option value="deployment" selected>Phase 4: Deployment</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Role Switch -->
+                    <div class="relative">
+                        <select id="roleSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="panel" selected>Panel Member</option>
+                            <option value="panelChair">Panel Chair</option>
+                            <option value="adviser">Adviser</option>
+                            <option value="instructor">Instructor</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEPLOYMENT TRACKER CONTENT -->
+        <div class="p-8 space-y-6 mt-20 pb-12">
+            <!-- Overview Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Total Projects</p>
+                            <p class="text-2xl font-bold text-slate-800">15</p>
+                        </div>
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-project-diagram text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Deployed</p>
+                            <p class="text-2xl font-bold text-green-600">8</p>
+                        </div>
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-check-circle text-green-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-green-600 mt-2">53% completed</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">In Progress</p>
+                            <p class="text-2xl font-bold text-blue-600">4</p>
+                        </div>
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-spinner text-blue-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-blue-600 mt-2">Development phase</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Pending</p>
+                            <p class="text-2xl font-bold text-amber-600">2</p>
+                        </div>
+                        <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-amber-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-amber-600 mt-2">Awaiting deployment</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Verified</p>
+                            <p class="text-2xl font-bold text-purple-600">6</p>
+                        </div>
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-certificate text-purple-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-purple-600 mt-2">Certificates verified</p>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="flex items-center justify-between">
+                <div class="flex gap-3">
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition flex items-center gap-2">
+                        <i class="fas fa-check-double"></i> Bulk Verify
+                    </button>
+                    <button class="bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 transition flex items-center gap-2">
+                        <i class="fas fa-file-export"></i> Export Report
+                    </button>
+                    <button class="bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 transition flex items-center gap-2">
+                        <i class="fas fa-bell"></i> Send Reminders
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                    <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                        <option>All Projects</option>
+                        <option>Web Development</option>
+                        <option>Mobile Apps</option>
+                        <option>AI/ML</option>
+                        <option>IoT</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="bg-white rounded-xl border border-slate-200 p-1 inline-flex">
+                <button class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white" onclick="filterDeployments('all')">All Projects</button>
+                <button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100" onclick="filterDeployments('deployed')">Deployed</button>
+                <button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100" onclick="filterDeployments('progress')">In Progress</button>
+                <button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100" onclick="filterDeployments('pending')">Pending</button>
+                <button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100" onclick="filterDeployments('verified')">Verified</button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="flex gap-4">
+                <div class="flex-1 relative">
+                    <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="searchDeployments" placeholder="Search by group name, project, or technology..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <button class="px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition flex items-center gap-2">
+                    <i class="fas fa-filter"></i> Advanced Filters
+                </button>
+            </div>
+
+            <!-- Deployment Progress Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center text-white">
+                            <i class="fas fa-rocket text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-green-700">Successfully Deployed</p>
+                            <p class="text-2xl font-bold text-green-800">8</p>
+                            <p class="text-xs text-green-600">Production ready</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+                            <i class="fas fa-code text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-blue-700">In Development</p>
+                            <p class="text-2xl font-bold text-blue-800">4</p>
+                            <p class="text-xs text-blue-600">Active sprints</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200 p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center text-white">
+                            <i class="fas fa-clock text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-amber-700">Pending Deployment</p>
+                            <p class="text-2xl font-bold text-amber-800">2</p>
+                            <p class="text-xs text-amber-600">Ready to deploy</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center text-white">
+                            <i class="fas fa-certificate text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-purple-700">Certificates Verified</p>
+                            <p class="text-2xl font-bold text-purple-800">6</p>
+                            <p class="text-xs text-purple-600">Client signed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deployment Cards Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="deploymentsGrid">
+                <!-- Deployed & Verified Card -->
+                <div class="deployment-card bg-white rounded-xl border-l-4 border-l-green-500 border p-6" data-status="deployed">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="flex items-center gap-3 mb-2">
+                                <h3 class="font-semibold text-lg">Group Alpha</h3>
+                                <span class="status-badge deployed">Deployed</span>
+                                <span class="status-badge verified">Verified</span>
+                            </div>
+                            <p class="text-sm text-slate-600">E-Learning Platform with AI Recommendations</p>
+                        </div>
+                        <div class="flex -space-x-2">
+                            <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs border-2 border-white">JD</div>
+                            <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-xs border-2 border-white">MS</div>
+                            <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs border-2 border-white">AR</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-xs text-slate-500">Technology Stack</p>
+                            <p class="text-sm font-medium">React, Node.js, MongoDB</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">Deployment Date</p>
+                            <p class="text-sm font-medium">March 1, 2026</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">Deployment URL</p>
+                            <a href="#" class="text-sm text-blue-600 hover:underline">elearning-alpha.com</a>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">Client</p>
+                            <p class="text-sm font-medium">TechEdu Solutions Inc.</p>
+                        </div>
+                    </div>
+
+                    <!-- Certificate Preview -->
+                    <div class="cert-preview rounded-lg p-3 mb-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-file-pdf text-red-500"></i>
+                                <span class="text-sm font-medium">deployment_certificate_alpha.pdf</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-eye"></i></button>
+                                <button class="text-green-600 hover:text-green-800"><i class="fas fa-download"></i></button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Uploaded: March 2, 2026 • Signed by: Juan Dela Cruz (PM)</p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 border-t pt-4">
+                        <button class="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-green-700">
+                            <i class="fas fa-check-circle mr-1"></i> Verify Certificate
+                        </button>
+                        <button class="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700">
+                            <i class="fas fa-rocket mr-1"></i> View Live
+                        </button>
+                        <button class="px-3 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- In Progress Card -->
+                <div class="deployment-card bg-white rounded-xl border-l-4 border-l-blue-500 border p-6" data-status="progress">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="flex items-center gap-3 mb-2">
+                                <h3 class="font-semibold text-lg">Group Beta</h3>
+                                <span class="status-badge progress">In Progress</span>
+                            </div>
+                            <p class="text-sm text-slate-600">Inventory Management System with Barcode</p>
+                        </div>
+                        <div class="flex -space-x-2">
+                            <div class="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white text-xs border-2 border-white">RC</div>
+                            <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs border-2 border-white">MT</div>
+                            <div class="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center text-white text-xs border-2 border-white">LJ</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-xs text-slate-500">Technology Stack</p>
+                            <p class="text-sm font-medium">Vue.js, Laravel, MySQL</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">Target Deployment</p>
+                            <p class="text-sm font-medium">March 25, 2026</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">Progress</p>
+                            <div class="flex items-center gap-2">
+                                <div class="progress-bar flex-1">
+                                    <div class="progress-fill bg-blue-600" style="width: 65%"></div>
+                                </div>
+                                <span class="text-xs font-medium">65%</span>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">Current Phase</p>
+                            <p class="text-sm font-medium">Testing & QA</p>
+                        </div>
+                    </div>
+
+                    <!-- Deployment Checklist -->
+                    <div class="bg-slate-50 rounded-lg p-3 mb-4">
+                        <p class="text-sm font-medium mb-2">Deployment Checklist</p>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" checked disabled class="rounded text-green-600">
+                                <span class="flex-1">Code completed</span>
+                                <span class="text-xs text-green-600">✓ Done</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" checked disabled class="rounded text-green-600">
+                                <span class="flex-1">Testing passed</span>
+                                <span class="text-xs text-green-600">✓ Done</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" class="rounded text-blue-600">
+                                <span class="flex-1">Documentation complete</span>
+                                <span class="text-xs text-amber-600">In Progress</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" class="rounded text-blue-600">
+                                <span class="flex-1">Client approval</span>
+                                <span class="text-xs text-slate-400">Pending</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 border-t pt-4">
+                        <button class="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700">
+                            <i class="fas fa-tasks mr-1"></i> Update Progress
+                        </button>
+                        <button class="flex-1 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">
+                            <i class="fas fa-upload mr-1"></i> Upload Cert
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Pending Deployment Card -->
+                <div class="deployment-card bg-white rounded-xl border-l-4 border-l-amber-500 border p-6" data-status="pending">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="flex items-center gap-3 mb-2">
+                                <h3 class="font-semibold text-lg">Group Gamma</h3>
+                                <span class="status-badge pending">Pending</span>
+                            </div>
+                            <p class="text-sm text-slate-600">Mobile Health Tracker App</p>
+                        </div>
+                        <div class="flex -space-x-2">
+                            <div class="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white text-xs border-2 border-white">AL</div>
+                            <div class="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-white text-xs border-2 border-white">KV</div>
+                            <div class="w-8 h-8 rounded-full bg-rose-500 flex items-center justify-center text-white text-xs border-2 border-white">MP</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-xs text-slate-500">Technology Stack</p>
+                            <p class="text-sm font-medium">Flutter, Firebase</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">Ready Since</p>
+                            <p class="text-sm font-medium">March 10, 2026</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">App Size</p>
+                            <p class="text-sm font-medium">24 MB</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">Platform</p>
+                            <p class="text-sm font-medium">Android / iOS</p>
+                        </div>
+                    </div>
+
+                    <!-- Missing Requirements -->
+                    <div class="bg-amber-50 rounded-lg p-3 mb-4">
+                        <p class="text-sm font-medium text-amber-700 mb-2">Missing Requirements</p>
+                        <ul class="text-sm text-amber-600 space-y-1">
+                            <li><i class="fas fa-times-circle mr-2"></i> Deployment certificate not uploaded</li>
+                            <li><i class="fas fa-times-circle mr-2"></i> Client signature pending</li>
+                        </ul>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 border-t pt-4">
+                        <button class="flex-1 bg-amber-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-amber-700">
+                            <i class="fas fa-bell mr-1"></i> Send Reminder
+                        </button>
+                        <button class="flex-1 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">
+                            <i class="fas fa-upload mr-1"></i> Upload For Group
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recently Verified Card -->
+                <div class="deployment-card bg-white rounded-xl border-l-4 border-l-purple-500 border p-6" data-status="verified">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="flex items-center gap-3 mb-2">
+                                <h3 class="font-semibold text-lg">Group Delta</h3>
+                                <span class="status-badge verified">Verified</span>
+                                <span class="status-badge completed">Completed</span>
+                            </div>
+                            <p class="text-sm text-slate-600">AI-Powered Chatbot for Customer Service</p>
+                        </div>
+                        <div class="flex -space-x-2">
+                            <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs border-2 border-white">CM</div>
+                            <div class="w-8 h-8 rounded-full bg-lime-500 flex items-center justify-center text-white text-xs border-2 border-white">JG</div>
+                            <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs border-2 border-white">RT</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-xs text-slate-500">Technology Stack</p>
+                            <p class="text-sm font-medium">Python, TensorFlow, Django</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">Deployment Date</p>
+                            <p class="text-sm font-medium">March 5, 2026</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">Verification Date</p>
+                            <p class="text-sm font-medium">March 8, 2026</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">Verified By</p>
+                            <p class="text-sm font-medium">Prof. Dela Cruz</p>
+                        </div>
+                    </div>
+
+                    <!-- Certificate Info -->
+                    <div class="bg-purple-50 rounded-lg p-3 mb-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-file-pdf text-purple-600"></i>
+                                <div>
+                                    <p class="text-sm font-medium">deployment_certificate_delta.pdf</p>
+                                    <p class="text-xs text-purple-600">✓ Client signature verified</p>
+                                </div>
+                            </div>
+                            <span class="status-badge verified">Valid</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 border-t pt-4">
+                        <button class="flex-1 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-purple-700">
+                            <i class="fas fa-certificate mr-1"></i> View Certificate
+                        </button>
+                        <button class="flex-1 bg-green-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-green-700">
+                            <i class="fas fa-check-double mr-1"></i> Mark Complete
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deployment Summary -->
+            <div class="bg-white rounded-xl border p-6 mt-6">
+                <h3 class="text-lg font-semibold mb-4">Deployment Summary</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <h4 class="font-medium mb-3">By Technology Stack</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span>Web Development</span>
+                                <span class="font-medium">8 projects</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill bg-blue-600" style="width: 53%"></div></div>
+                           
+                            <div class="flex justify-between text-sm mt-2">
+                                <span>Mobile Apps</span>
+                                <span class="font-medium">4 projects</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill bg-green-600" style="width: 27%"></div></div>
+                           
+                            <div class="flex justify-between text-sm mt-2">
+                                <span>AI/ML</span>
+                                <span class="font-medium">2 projects</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill bg-purple-600" style="width: 13%"></div></div>
+                           
+                            <div class="flex justify-between text-sm mt-2">
+                                <span>IoT</span>
+                                <span class="font-medium">1 project</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill bg-amber-600" style="width: 7%"></div></div>
+                        </div>
+                    </div>
+                   
+                    <div>
+                        <h4 class="font-medium mb-3">By Deployment Status</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                                    <span class="text-sm">Deployed</span>
+                                </div>
+                                <span class="font-medium">8</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                                    <span class="text-sm">In Progress</span>
+                                </div>
+                                <span class="font-medium">4</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                                    <span class="text-sm">Pending</span>
+                                </div>
+                                <span class="font-medium">2</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+                                    <span class="text-sm">Verified</span>
+                                </div>
+                                <span class="font-medium">6</span>
+                            </div>
+                        </div>
+                    </div>
+                   
+                    <div>
+                        <h4 class="font-medium mb-3">Recent Verifications</h4>
+                        <div class="space-y-2">
+                            <div class="text-sm flex justify-between">
+                                <span>Group Delta</span>
+                                <span class="text-green-600">Mar 8</span>
+                            </div>
+                            <div class="text-sm flex justify-between">
+                                <span>Group Alpha</span>
+                                <span class="text-green-600">Mar 7</span>
+                            </div>
+                            <div class="text-sm flex justify-between">
+                                <span>Group Epsilon</span>
+                                <span class="text-green-600">Mar 5</span>
+                            </div>
+                            <div class="text-sm flex justify-between">
+                                <span>Group Zeta</span>
+                                <span class="text-green-600">Mar 3</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Actions Footer -->
+            <div class="bg-white rounded-xl border p-4 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <span class="text-sm font-medium">Bulk Actions:</span>
+                    <button class="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+                        Verify Selected
+                    </button>
+                    <button class="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                        Mark as Deployed
+                    </button>
+                    <button class="px-3 py-1 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">
+                        Complete Projects
+                    </button>
+                    <button class="px-3 py-1 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">
+                        Send Reminders
+                    </button>
+                </div>
+                <span class="text-sm text-slate-500">
+                    <i class="fas fa-info-circle mr-1"></i> 4 items selected
+                </span>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-slate-500">
+                    Showing <span class="font-medium">1</span> to <span class="font-medium">4</span> of <span class="font-medium">15</span> projects
+                </div>
+                <div class="flex gap-2">
+                    <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-50" disabled>
+                        <i class="fas fa-chevron-left text-xs"></i>
+                    </button>
+                    <button class="px-3 py-1 bg-blue-600 text-white rounded-lg">1</button>
+                    <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 transition">2</button>
+                    <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 transition">3</button>
+                    <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 transition">4</button>
+                    <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Filter deployments by status
+        function filterDeployments(status) {
+            const cards = document.querySelectorAll('.deployment-card');
+            const buttons = document.querySelectorAll('.bg-white .px-4.py-2');
+           
+            // Update button styles
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+            });
+            event.target.classList.add('bg-blue-600', 'text-white');
+            event.target.classList.remove('text-slate-600', 'hover:bg-slate-100');
+           
+            // Filter cards
+            cards.forEach(card => {
+                if (status === 'all') {
+                    card.style.display = 'block';
+                } else {
+                    if (card.dataset.status === status) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }
+            });
+           
+            showNotification(`Filtering: ${status} projects`);
+        }
+
+        // Search functionality
+        document.getElementById('searchDeployments').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.deployment-card');
+           
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
+
+        // Switch Handlers
+        document.getElementById("programSwitch").addEventListener("change", function () {
+            showNotification('Program changed to ' + this.options[this.selectedIndex].text);
+        });
+
+        document.getElementById("phaseSwitch").addEventListener("change", function () {
+            showNotification('Phase changed to ' + this.options[this.selectedIndex].text);
+        });
+
+        // Role switch handler
+        document.getElementById("roleSwitch").addEventListener("change", function() {
+            const role = this.value;
+            switch(role) {
+                case 'panelChair':
+                    window.location.href = 'panel-chair.html';
+                    break;
+                case 'adviser':
+                    window.location.href = 'adviser.html';
+                    break;
+                case 'instructor':
+                    window.location.href = 'instructor-dashboard.html';
+                    break;
+                default:
+                    showNotification('Staying in Panel view');
+            }
+        });
+
+        // Notification function
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+           
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Verify deployment function
+        function verifyDeployment() {
+            showNotification('Deployment certificate verified successfully');
+        }
+
+        // Mark as complete function
+        function markComplete() {
+            showNotification('Project marked as completed');
+        }
+    </script>
+</body>
+</html>

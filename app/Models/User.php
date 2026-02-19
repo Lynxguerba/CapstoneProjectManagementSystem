@@ -45,4 +45,21 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function advisedGroups()
+    {
+        return $this->hasMany(Group::class, 'adviser_id');
+    }
+
+    public function groupMemberships()
+    {
+        return $this->belongsToMany(Group::class, 'group_members')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    public function activities()
+    {
+        return $this->hasMany(Activity::class);
+    }
 }
