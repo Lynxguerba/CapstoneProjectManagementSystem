@@ -25,3 +25,7 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+Dockerfile
+docker-compose.yml
+composer.lock
+package-lock.json
