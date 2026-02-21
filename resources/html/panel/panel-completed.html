@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Completed Evaluations - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            overflow: hidden;
+        }
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .glass-effect {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .status-badge.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .status-badge.approved {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .status-badge.re-defense {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .notification-dot {
+            position: relative;
+        }
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+        .completed-card {
+            transition: all 0.2s ease;
+        }
+        .completed-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+        .score-badge {
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+        }
+        .score-high {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .score-medium {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+        .score-low {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - EXACT COPY FROM PANEL-DASHBOARD -->
+    <aside class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-graduation-cap text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Panel Portal</p>
+                </div>
+            </div>
+           
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Panel Role</p>
+                    <p class="text-sm font-semibold text-white">Member</p>
+                </div>
+            </div>
+        </div>
+       
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="panel-dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Evaluation</p>
+            <a href="panel-review.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">For Review</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+            <a href="panel-defense.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-gavel w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">For Defense</span>
+                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">1</span>
+            </a>
+            <a href="panel-signature.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">For Signature</span>
+                <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Schedule</p>
+            <a href="panel-schedule.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">My Defense Schedule</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Records</p>
+            <a href="panel-completed.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
+                <i class="fas fa-check-circle w-5"></i>
+                <span class="flex-1">Completed</span>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">4</span>
+            </a>
+        </nav>
+       
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-semibold shadow-lg">JP</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Juan Perez</p>
+                    <p class="text-xs text-slate-400">Panel Member</p>
+                </div>
+                <a href="instructor-dashboard.html" class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition" title="Switch to Instructor">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72">
+
+        <!-- TOP BAR - COMPLETE WITH PROGRAM, PHASE, SETTINGS, AND ROLE SWITCHER -->
+        <div class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Completed Evaluations</h2>
+                <span class="bg-purple-100 text-purple-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-circle text-[8px] text-purple-500"></i> Panel Member
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Notification Bell -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+               
+                <!-- Settings Icon -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+               
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <!-- Program Switch -->
+                    <div class="relative">
+                        <select id="programSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="bsit" selected>BS Information Technology</option>
+                            <option value="bsis">BS Information Systems</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Phase Switch -->
+                    <div class="relative">
+                        <select id="phaseSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="concept" selected>Phase 1: Concept</option>
+                            <option value="outline">Phase 2: Outline</option>
+                            <option value="predeployment">Phase 3: Pre-Deployment</option>
+                            <option value="deployment">Phase 4: Deployment</option>
+                            <option value="final">Phase 5: Final</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Role Switch -->
+                    <div class="relative">
+                        <select id="roleSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="panel" selected>Panel Member</option>
+                            <option value="panelChair">Panel Chair</option>
+                            <option value="adviser">Adviser</option>
+                            <option value="instructor">Instructor</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="p-8 space-y-6 mt-20 pb-12">
+            <!-- Performance Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500">Total Completed</p>
+                            <p class="text-3xl font-bold text-slate-800">12</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-check-double text-2xl text-blue-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-green-600 mt-2">↑ 4 from last semester</p>
+                </div>
+
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500">Average Score</p>
+                            <p class="text-3xl font-bold text-green-600">87%</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-star text-2xl text-green-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-green-600 mt-2">Top 30% of panelists</p>
+                </div>
+
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500">Approved</p>
+                            <p class="text-3xl font-bold text-blue-600">10</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-thumbs-up text-2xl text-blue-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-blue-600 mt-2">83% approval rate</p>
+                </div>
+
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500">Re-Defense</p>
+                            <p class="text-3xl font-bold text-amber-600">2</p>
+                        </div>
+                        <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-redo-alt text-2xl text-amber-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-amber-600 mt-2">Requires follow-up</p>
+                </div>
+            </div>
+
+            <!-- Filter and Search -->
+            <div class="flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex gap-2">
+                    <button class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition">All</button>
+                    <button class="px-4 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition">This Semester</button>
+                    <button class="px-4 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition">Last Semester</button>
+                    <button class="px-4 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition">AY 2024-2025</button>
+                </div>
+                <div class="flex gap-2">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                        <input type="text" placeholder="Search completed evaluations..." class="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
+                    </div>
+                    <button class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                        <i class="fas fa-download mr-2"></i>Export Report
+                    </button>
+                </div>
+            </div>
+
+            <!-- Completed Evaluations Table -->
+            <div class="bg-white rounded-xl border overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-slate-50 border-b">
+                        <tr>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Group</th>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Project Title</th>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Date Evaluated</th>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Your Score</th>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Result</th>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Documents</th>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        <!-- Group Alpha -->
+                        <tr class="hover:bg-slate-50 transition completed-card">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">A</div>
+                                    <div>
+                                        <p class="font-medium">Group Alpha</p>
+                                        <p class="text-xs text-slate-500">BSIT-3A</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">E-Learning Platform</p>
+                                <p class="text-xs text-slate-500">with AI Recommendations</p>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">March 1, 2026</p>
+                                <p class="text-xs text-slate-500">2:00 PM</p>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="score-badge score-high">92%</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="status-badge approved"><i class="fas fa-check-circle"></i> Approved</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-file-pdf text-red-500"></i>
+                                    <i class="fas fa-file-word text-blue-500"></i>
+                                    <span class="text-xs text-slate-400">+2</span>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <div class="flex gap-2">
+                                    <button class="text-blue-600 hover:text-blue-800" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="text-green-600 hover:text-green-800" title="Download">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                    <button class="text-purple-600 hover:text-purple-800" title="Share">
+                                        <i class="fas fa-share-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Group Beta -->
+                        <tr class="hover:bg-slate-50 transition completed-card">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white font-bold">B</div>
+                                    <div>
+                                        <p class="font-medium">Group Beta</p>
+                                        <p class="text-xs text-slate-500">BSIT-3A</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Inventory System</p>
+                                <p class="text-xs text-slate-500">with Barcode Scanning</p>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Feb 25, 2026</p>
+                                <p class="text-xs text-slate-500">1:00 PM</p>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="score-badge score-medium">85%</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="status-badge approved"><i class="fas fa-check-circle"></i> Approved</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-file-pdf text-red-500"></i>
+                                    <span class="text-xs text-slate-400">+1</span>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <div class="flex gap-2">
+                                    <button class="text-blue-600 hover:text-blue-800" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="text-green-600 hover:text-green-800" title="Download">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                    <button class="text-purple-600 hover:text-purple-800" title="Share">
+                                        <i class="fas fa-share-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Group Gamma -->
+                        <tr class="hover:bg-slate-50 transition completed-card">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold">Γ</div>
+                                    <div>
+                                        <p class="font-medium">Group Gamma</p>
+                                        <p class="text-xs text-slate-500">BSIT-3A</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Mobile Health App</p>
+                                <p class="text-xs text-slate-500">Fitness Tracker</p>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Feb 18, 2026</p>
+                                <p class="text-xs text-slate-500">10:00 AM</p>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="score-badge score-high">94%</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="status-badge approved"><i class="fas fa-check-circle"></i> Approved</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-file-pdf text-red-500"></i>
+                                    <i class="fas fa-file-powerpoint text-orange-500"></i>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <div class="flex gap-2">
+                                    <button class="text-blue-600 hover:text-blue-800" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="text-green-600 hover:text-green-800" title="Download">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                    <button class="text-purple-600 hover:text-purple-800" title="Share">
+                                        <i class="fas fa-share-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Group Delta (Re-Defense) -->
+                        <tr class="hover:bg-slate-50 transition completed-card">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-bold">Δ</div>
+                                    <div>
+                                        <p class="font-medium">Group Delta</p>
+                                        <p class="text-xs text-slate-500">BSIT-3A</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">AI Chatbot System</p>
+                                <p class="text-xs text-slate-500">Customer Service</p>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Feb 10, 2026</p>
+                                <p class="text-xs text-slate-500">3:00 PM</p>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="score-badge score-low">68%</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="status-badge re-defense"><i class="fas fa-redo-alt"></i> Re-Defense</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-file-pdf text-red-500"></i>
+                                    <span class="text-xs text-red-600">Pending</span>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <div class="flex gap-2">
+                                    <button class="text-blue-600 hover:text-blue-800" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="text-amber-600 hover:text-amber-800" title="View Re-Defense Notes">
+                                        <i class="fas fa-clipboard-list"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Group Epsilon -->
+                        <tr class="hover:bg-slate-50 transition completed-card">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white font-bold">E</div>
+                                    <div>
+                                        <p class="font-medium">Group Epsilon</p>
+                                        <p class="text-xs text-slate-500">BSIT-3B</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Library System</p>
+                                <p class="text-xs text-slate-500">with QR Code</p>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Feb 5, 2026</p>
+                                <p class="text-xs text-slate-500">11:00 AM</p>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="score-badge score-high">91%</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="status-badge approved"><i class="fas fa-check-circle"></i> Approved</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-file-pdf text-red-500"></i>
+                                    <i class="fas fa-file-word text-blue-500"></i>
+                                    <i class="fas fa-file-archive text-purple-500"></i>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <div class="flex gap-2">
+                                    <button class="text-blue-600 hover:text-blue-800" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="text-green-600 hover:text-green-800" title="Download">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                    <button class="text-purple-600 hover:text-purple-800" title="Share">
+                                        <i class="fas fa-share-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Summary Statistics -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Score Distribution -->
+                <div class="bg-white rounded-xl border p-6">
+                    <h3 class="font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-pie text-purple-600"></i>
+                        Score Distribution
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>90-100% (Excellent)</span>
+                                <span class="font-medium">3 groups</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-green-600" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>75-89% (Good)</span>
+                                <span class="font-medium">1 group</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-blue-600" style="width: 20%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>60-74% (Satisfactory)</span>
+                                <span class="font-medium">1 group</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-amber-600" style="width: 20%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>Below 60% (Re-Defense)</span>
+                                <span class="font-medium">0 groups</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-red-600" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Feedback Summary -->
+                <div class="bg-white rounded-xl border p-6">
+                    <h3 class="font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-comment-dots text-purple-600"></i>
+                        Recent Feedback Summary
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="p-3 bg-slate-50 rounded-lg">
+                            <p class="text-sm font-medium">Group Alpha</p>
+                            <p class="text-sm text-slate-600 mt-1">"Excellent presentation and thorough documentation. AI integration was impressive."</p>
+                            <p class="text-xs text-slate-400 mt-1">March 1, 2026</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg">
+                            <p class="text-sm font-medium">Group Beta</p>
+                            <p class="text-sm text-slate-600 mt-1">"Good system architecture, but needs more testing documentation."</p>
+                            <p class="text-xs text-slate-400 mt-1">Feb 25, 2026</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg">
+                            <p class="text-sm font-medium">Group Gamma</p>
+                            <p class="text-sm text-slate-600 mt-1">"Outstanding mobile app with excellent user interface design."</p>
+                            <p class="text-xs text-slate-400 mt-1">Feb 18, 2026</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Archive Section -->
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-white/20 rounded-xl p-3">
+                            <i class="fas fa-archive text-3xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-lg">Evaluation Archive</h4>
+                            <p class="text-purple-100 text-sm">Access all your completed evaluations from previous semesters</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button class="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition flex items-center gap-2">
+                            <i class="fas fa-folder-open"></i>
+                            Browse Archive
+                        </button>
+                        <button class="bg-white/20 text-white px-4 py-2 rounded-lg hover:bg-white/30 transition flex items-center gap-2">
+                            <i class="fas fa-chart-line"></i>
+                            View Trends
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4 mt-6">
+                    <div class="bg-white/10 backdrop-blur rounded-lg p-3">
+                        <p class="text-sm text-purple-200">AY 2023-2024</p>
+                        <p class="font-bold text-xl">8</p>
+                        <p class="text-xs text-purple-200">Evaluations</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur rounded-lg p-3">
+                        <p class="text-sm text-purple-200">AY 2022-2023</p>
+                        <p class="font-bold text-xl">12</p>
+                        <p class="text-xs text-purple-200">Evaluations</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur rounded-lg p-3">
+                        <p class="text-sm text-purple-200">AY 2021-2022</p>
+                        <p class="font-bold text-xl">6</p>
+                        <p class="text-xs text-purple-200">Evaluations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Program switch handler
+        document.getElementById("programSwitch").addEventListener("change", function() {
+            const program = this.value;
+            showNotification('Switched to ' + (program === 'bsit' ? 'BS Information Technology' : 'BS Information Systems'));
+        });
+
+        // Phase switch handler
+        document.getElementById("phaseSwitch").addEventListener("change", function() {
+            const phase = this.value;
+            const phaseNames = {
+                'concept': 'Phase 1: Concept',
+                'outline': 'Phase 2: Outline',
+                'predeployment': 'Phase 3: Pre-Deployment',
+                'deployment': 'Phase 4: Deployment',
+                'final': 'Phase 5: Final'
+            };
+            showNotification('Switched to ' + phaseNames[phase]);
+        });
+
+        // Role switch handler
+        document.getElementById("roleSwitch").addEventListener("change", function() {
+            const role = this.value;
+            switch(role) {
+                case 'panelChair':
+                    window.location.href = 'panel-chair.html';
+                    break;
+                case 'adviser':
+                    window.location.href = 'adviser.html';
+                    break;
+                case 'instructor':
+                    window.location.href = 'instructor-dashboard.html';
+                    break;
+                default:
+                    showNotification('Staying in Panel view');
+            }
+        });
+
+        // Settings click handler
+        document.querySelector('.fa-cog').parentElement.addEventListener('click', function() {
+            showNotification('Settings opened');
+        });
+
+        // Filter buttons
+        document.querySelectorAll('.px-4.py-2').forEach(button => {
+            button.addEventListener('click', function() {
+                if(this.classList.contains('bg-blue-600')) return;
+                showNotification('Filtering evaluations');
+            });
+        });
+
+        // Export report button
+        document.querySelector('.fa-download')?.parentElement.addEventListener('click', function() {
+            showNotification('Exporting evaluation report');
+        });
+
+        // Action buttons
+        document.querySelectorAll('.fa-eye').forEach(button => {
+            button.addEventListener('click', function() {
+                showNotification('Viewing evaluation details');
+            });
+        });
+
+        document.querySelectorAll('.fa-download').forEach(button => {
+            button.addEventListener('click', function() {
+                showNotification('Downloading documents');
+            });
+        });
+
+        document.querySelectorAll('.fa-share-alt').forEach(button => {
+            button.addEventListener('click', function() {
+                showNotification('Sharing evaluation');
+            });
+        });
+
+        // Archive buttons
+        document.querySelectorAll('.bg-white.text-purple-600, .bg-white\\/20.text-white').forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.textContent.trim();
+                showNotification(action);
+            });
+        });
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

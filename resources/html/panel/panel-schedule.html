@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Defense Schedule - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            overflow: hidden;
+        }
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .glass-effect {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .status-badge.scheduled {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .status-badge.today {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+        .status-badge.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .notification-dot {
+            position: relative;
+        }
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+        .calendar-day {
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            min-height: 120px;
+            background: white;
+            transition: all 0.2s ease;
+        }
+        .calendar-day:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+        .calendar-day.today {
+            background: #eff6ff;
+            border-color: #3b82f6;
+        }
+        .calendar-day.other-month {
+            background: #f8fafc;
+            color: #94a3b8;
+        }
+        .event {
+            background: #dbeafe;
+            padding: 0.35rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.7rem;
+            margin-bottom: 0.35rem;
+            cursor: pointer;
+            border-left: 3px solid #3b82f6;
+            transition: all 0.2s ease;
+        }
+        .event:hover {
+            background: #bfdbfe;
+            transform: translateX(2px);
+        }
+        .event.today-event {
+            background: #fef9c3;
+            border-left-color: #f59e0b;
+        }
+        .event.completed-event {
+            background: #dcfce7;
+            border-left-color: #10b981;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - EXACT COPY FROM PANEL-DASHBOARD -->
+    <aside class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-graduation-cap text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Panel Portal</p>
+                </div>
+            </div>
+           
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Panel Role</p>
+                    <p class="text-sm font-semibold text-white">Member</p>
+                </div>
+            </div>
+        </div>
+       
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="panel-dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Evaluation</p>
+            <a href="panel-review.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">For Review</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+            <a href="panel-defense.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-gavel w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">For Defense</span>
+                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">1</span>
+            </a>
+            <a href="panel-signature.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">For Signature</span>
+                <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Schedule</p>
+            <a href="panel-schedule.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
+                <i class="fas fa-calendar-alt w-5"></i>
+                <span class="flex-1">My Defense Schedule</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Records</p>
+            <a href="panel-completed.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-check-circle w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Completed</span>
+                <span class="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">4</span>
+            </a>
+        </nav>
+       
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-semibold shadow-lg">JP</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Juan Perez</p>
+                    <p class="text-xs text-slate-400">Panel Member</p>
+                </div>
+                <a href="instructor-dashboard.html" class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition" title="Switch to Instructor">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72">
+
+        <!-- TOP BAR - COMPLETE WITH PROGRAM, PHASE, SETTINGS, AND ROLE SWITCHER -->
+        <div class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">My Defense Schedule</h2>
+                <span class="bg-purple-100 text-purple-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-circle text-[8px] text-purple-500"></i> Panel Member
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Notification Bell -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+               
+                <!-- Settings Icon -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+               
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <!-- Program Switch -->
+                    <div class="relative">
+                        <select id="programSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="bsit" selected>BS Information Technology</option>
+                            <option value="bsis">BS Information Systems</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Phase Switch -->
+                    <div class="relative">
+                        <select id="phaseSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="concept" selected>Phase 1: Concept</option>
+                            <option value="outline">Phase 2: Outline</option>
+                            <option value="predeployment">Phase 3: Pre-Deployment</option>
+                            <option value="deployment">Phase 4: Deployment</option>
+                            <option value="final">Phase 5: Final</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Role Switch -->
+                    <div class="relative">
+                        <select id="roleSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="panel" selected>Panel Member</option>
+                            <option value="panelChair">Panel Chair</option>
+                            <option value="adviser">Adviser</option>
+                            <option value="instructor">Instructor</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="p-8 space-y-6 mt-20 pb-12">
+            <!-- Schedule Overview Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500">Total Defenses</p>
+                            <p class="text-2xl font-bold text-slate-800">8</p>
+                        </div>
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500">Today</p>
+                            <p class="text-2xl font-bold text-amber-600">1</p>
+                        </div>
+                        <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-amber-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500">This Week</p>
+                            <p class="text-2xl font-bold text-green-600">3</p>
+                        </div>
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar-week text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500">Completed</p>
+                            <p class="text-2xl font-bold text-purple-600">4</p>
+                        </div>
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-check-circle text-purple-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Navigation -->
+            <div class="bg-white rounded-xl border overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <h3 class="font-semibold text-lg">March 2026</h3>
+                        <span class="text-sm text-slate-500">BSIT-3A Section</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1.5 border rounded-lg hover:bg-slate-100 transition flex items-center gap-1">
+                            <i class="fas fa-chevron-left text-xs"></i> Prev
+                        </button>
+                        <button class="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Today</button>
+                        <button class="px-3 py-1.5 border rounded-lg hover:bg-slate-100 transition flex items-center gap-1">
+                            Next <i class="fas fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Calendar Legend -->
+                <div class="px-4 py-2 border-b flex gap-4 text-xs">
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 bg-amber-100 border border-amber-300 rounded"></span> Today</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></span> Scheduled</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-100 border border-green-300 rounded"></span> Completed</span>
+                </div>
+
+                <!-- Weekday Headers -->
+                <div class="grid grid-cols-7 gap-px bg-slate-200">
+                    <div class="bg-white p-3 text-center text-sm font-semibold text-slate-600">Sunday</div>
+                    <div class="bg-white p-3 text-center text-sm font-semibold text-slate-600">Monday</div>
+                    <div class="bg-white p-3 text-center text-sm font-semibold text-slate-600">Tuesday</div>
+                    <div class="bg-white p-3 text-center text-sm font-semibold text-slate-600">Wednesday</div>
+                    <div class="bg-white p-3 text-center text-sm font-semibold text-slate-600">Thursday</div>
+                    <div class="bg-white p-3 text-center text-sm font-semibold text-slate-600">Friday</div>
+                    <div class="bg-white p-3 text-center text-sm font-semibold text-slate-600">Saturday</div>
+                </div>
+
+                <!-- Calendar Days -->
+                <div class="grid grid-cols-7 gap-px bg-slate-200">
+                    <!-- Previous month days -->
+                    <div class="calendar-day other-month">
+                        <span class="text-sm">23</span>
+                    </div>
+                    <div class="calendar-day other-month">
+                        <span class="text-sm">24</span>
+                    </div>
+                    <div class="calendar-day other-month">
+                        <span class="text-sm">25</span>
+                    </div>
+                    <div class="calendar-day other-month">
+                        <span class="text-sm">26</span>
+                    </div>
+                    <div class="calendar-day other-month">
+                        <span class="text-sm">27</span>
+                    </div>
+                    <div class="calendar-day other-month">
+                        <span class="text-sm">28</span>
+                    </div>
+                    <div class="calendar-day other-month">
+                        <span class="text-sm">1</span>
+                    </div>
+
+                    <!-- March 2-8 -->
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">2</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">3</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">4</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">5</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">6</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">7</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">8</span>
+                    </div>
+
+                    <!-- March 9-15 -->
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">9</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">10</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">11</span>
+                        <div class="event today-event mt-1">
+                            <div class="font-medium">2:00 PM</div>
+                            <div class="text-xs">Group Alpha</div>
+                            <div class="text-xs">Room 201</div>
+                        </div>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">12</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">13</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">14</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">15</span>
+                    </div>
+
+                    <!-- March 16-22 -->
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">16</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">17</span>
+                    </div>
+                    <div class="calendar-day today">
+                        <span class="text-sm font-medium bg-blue-600 text-white w-6 h-6 rounded-full inline-flex items-center justify-center">18</span>
+                        <div class="event mt-1">
+                            <div class="font-medium">1:00 PM</div>
+                            <div class="text-xs">Group Delta</div>
+                            <div class="text-xs">Room 202</div>
+                        </div>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">19</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">20</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">21</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">22</span>
+                    </div>
+
+                    <!-- March 23-29 -->
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">23</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">24</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">25</span>
+                        <div class="event mt-1">
+                            <div class="font-medium">9:00 AM</div>
+                            <div class="text-xs">Group Epsilon</div>
+                            <div class="text-xs">Room 203</div>
+                        </div>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">26</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">27</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">28</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">29</span>
+                    </div>
+
+                    <!-- March 30-31 -->
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">30</span>
+                    </div>
+                    <div class="calendar-day">
+                        <span class="text-sm font-medium">31</span>
+                    </div>
+                   
+                    <!-- Next month days -->
+                    <div class="calendar-day other-month">
+                        <span class="text-sm">1</span>
+                    </div>
+                    <div class="calendar-day other-month">
+                        <span class="text-sm">2</span>
+                    </div>
+                    <div class="calendar-day other-month">
+                        <span class="text-sm">3</span>
+                    </div>
+                    <div class="calendar-day other-month">
+                        <span class="text-sm">4</span>
+                    </div>
+                    <div class="calendar-day other-month">
+                        <span class="text-sm">5</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Defenses List -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Today's Schedule -->
+                <div class="bg-white rounded-xl border p-6">
+                    <h3 class="font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-clock text-amber-600"></i>
+                        Today's Schedule
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-4 bg-amber-50 rounded-lg border-l-4 border-l-amber-500">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-amber-200 rounded-full flex items-center justify-center text-amber-700 font-bold">A</div>
+                                <div>
+                                    <p class="font-medium">Group Alpha</p>
+                                    <p class="text-xs text-slate-600">E-Learning Platform</p>
+                                    <div class="flex items-center gap-3 mt-1">
+                                        <span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">2:00 PM</span>
+                                        <span class="text-xs text-slate-500">Room 201</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                                Join
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- This Week's Schedule -->
+                <div class="bg-white rounded-xl border p-6">
+                    <h3 class="font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-calendar-week text-blue-600"></i>
+                        This Week
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold">D</div>
+                                <div>
+                                    <p class="font-medium">Group Delta</p>
+                                    <p class="text-xs text-slate-500">AI Chatbot</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-medium">Mar 18, 1:00 PM</p>
+                                <p class="text-xs text-slate-500">Room 202</p>
+                            </div>
+                            <span class="status-badge scheduled">Scheduled</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold">E</div>
+                                <div>
+                                    <p class="font-medium">Group Epsilon</p>
+                                    <p class="text-xs text-slate-500">Inventory System</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-medium">Mar 25, 9:00 AM</p>
+                                <p class="text-xs text-slate-500">Room 203</p>
+                            </div>
+                            <span class="status-badge scheduled">Scheduled</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Room Schedule Overview -->
+            <div class="bg-white rounded-xl border p-6">
+                <h3 class="font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-door-open text-purple-600"></i>
+                    Room Schedule Overview
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Room 201 -->
+                    <div class="border rounded-lg p-4 hover-scale">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-medium">Room 201</h4>
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Available Today</span>
+                        </div>
+                        <div class="text-sm space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">2:00 PM</span>
+                                <span class="font-medium">Group Alpha</span>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>9:00 AM</span>
+                                <span>Available</span>
+                            </div>
+                        </div>
+                    </div>
+                   
+                    <!-- Room 202 -->
+                    <div class="border rounded-lg p-4 hover-scale">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-medium">Room 202</h4>
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Available Today</span>
+                        </div>
+                        <div class="text-sm space-y-2">
+                            <div class="flex justify-between text-slate-400">
+                                <span>All Day</span>
+                                <span>Available</span>
+                            </div>
+                        </div>
+                    </div>
+                   
+                    <!-- Room 203 -->
+                    <div class="border rounded-lg p-4 hover-scale">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-medium">Room 203</h4>
+                            <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Fully Booked</span>
+                        </div>
+                        <div class="text-sm space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">9:00 AM</span>
+                                <span class="font-medium">Group Epsilon</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">2:00 PM</span>
+                                <span class="font-medium">Group Zeta</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Options -->
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-white/20 rounded-xl p-3">
+                            <i class="fas fa-file-export text-2xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-lg">Export Your Schedule</h4>
+                            <p class="text-purple-100 text-sm">Download your defense schedule for offline access</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button class="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition flex items-center gap-2">
+                            <i class="fas fa-file-pdf"></i>
+                            PDF
+                        </button>
+                        <button class="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition flex items-center gap-2">
+                            <i class="fas fa-calendar-plus"></i>
+                            iCal
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Program switch handler
+        document.getElementById("programSwitch").addEventListener("change", function() {
+            const program = this.value;
+            showNotification('Switched to ' + (program === 'bsit' ? 'BS Information Technology' : 'BS Information Systems'));
+        });
+
+        // Phase switch handler
+        document.getElementById("phaseSwitch").addEventListener("change", function() {
+            const phase = this.value;
+            const phaseNames = {
+                'concept': 'Phase 1: Concept',
+                'outline': 'Phase 2: Outline',
+                'predeployment': 'Phase 3: Pre-Deployment',
+                'deployment': 'Phase 4: Deployment',
+                'final': 'Phase 5: Final'
+            };
+            showNotification('Switched to ' + phaseNames[phase]);
+        });
+
+        // Role switch handler
+        document.getElementById("roleSwitch").addEventListener("change", function() {
+            const role = this.value;
+            switch(role) {
+                case 'panelChair':
+                    window.location.href = 'panel-chair.html';
+                    break;
+                case 'adviser':
+                    window.location.href = 'adviser.html';
+                    break;
+                case 'instructor':
+                    window.location.href = 'instructor-dashboard.html';
+                    break;
+                default:
+                    showNotification('Staying in Panel view');
+            }
+        });
+
+        // Settings click handler
+        document.querySelector('.fa-cog').parentElement.addEventListener('click', function() {
+            showNotification('Settings opened');
+        });
+
+        // Calendar navigation
+        document.querySelectorAll('.border.rounded-lg.hover\\:bg-slate-100').forEach(button => {
+            button.addEventListener('click', function() {
+                showNotification('Changing month...');
+            });
+        });
+
+        // Today button
+        document.querySelector('.bg-blue-600.text-white.rounded-lg').addEventListener('click', function() {
+            showNotification('Returning to current month');
+        });
+
+        // Join button
+        document.querySelector('.bg-blue-600.text-white.px-4').addEventListener('click', function() {
+            showNotification('Opening defense session for Group Alpha');
+        });
+
+        // Event clicks
+        document.querySelectorAll('.event').forEach(event => {
+            event.addEventListener('click', function() {
+                showNotification('Viewing defense details');
+            });
+        });
+
+        // Export buttons
+        document.querySelectorAll('.bg-white.text-purple-600').forEach(button => {
+            button.addEventListener('click', function() {
+                const format = this.querySelector('.fa-file-pdf') ? 'PDF' : 'iCal';
+                showNotification(`Exporting schedule as ${format}`);
+            });
+        });
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+    </script>
+</body>
+</html>
