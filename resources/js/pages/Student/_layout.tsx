@@ -8,6 +8,7 @@ type Props = {
   children: React.ReactNode;
 };
 
+//Student
 const StudentLayout = ({ title, subtitle, children }: Props) => {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
