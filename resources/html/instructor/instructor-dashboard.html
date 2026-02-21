@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructor Command Center - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+       
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+       
+        body {
+            overflow: hidden;
+        }
+       
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+       
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+       
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+       
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+       
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+       
+        .status-badge.approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+       
+        .status-badge.pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+       
+        .status-badge.review {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+       
+        .status-badge.redefense {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+       
+        .status-badge.completed {
+            background: #e0f2fe;
+            color: #075985;
+        }
+       
+        .status-badge.scheduled {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+       
+        .status-badge.paid {
+            background: #dcfce7;
+            color: #166534;
+        }
+       
+        .status-badge.unpaid {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+       
+        .status-badge.verified {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+       
+        .progress-bar {
+            height: 0.5rem;
+            border-radius: 9999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+       
+        .progress-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.3s ease;
+        }
+       
+        .notification-dot {
+            position: relative;
+        }
+       
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+       
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #1e40af;
+            font-weight: 500;
+        }
+       
+        .tab-link {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+       
+        .tab-link:hover {
+            color: #1e40af;
+            border-bottom: 2px solid #94a3b8;
+        }
+       
+        /* Chart container fixes */
+        .chart-container {
+            position: relative;
+            height: 180px;
+            width: 100%;
+        }
+       
+        /* Fixed height for cards to prevent overflow */
+        .fixed-height-card {
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+        }
+       
+        .chart-wrapper {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+       
+        /* Smooth scrolling */
+        .smooth-scroll {
+            scroll-behavior: smooth;
+        }
+       
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+       
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+       
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+       
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+       
+        /* Animation */
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+       
+        /* Summary cards */
+        .summary-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+       
+        .summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR -->
+    <aside class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-graduation-cap text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Instructor Portal</p>
+                </div>
+            </div>
+           
+            <!-- Quick Stats in Sidebar -->
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Section</p>
+                    <p class="text-sm font-semibold text-white">BSIT-3A</p>
+                </div>
+            </div>
+        </div>
+       
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <!-- Main Navigation -->
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="instructor-dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-600/20">
+                <i class="fas fa-tachometer-alt w-5"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">12</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Management</p>
+            <a href="group-management.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Group Management</span>
+                <i class="fas fa-chevron-right text-xs text-slate-500"></i>
+            </a>
+            <a href="adviser-assignment.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-user-tie w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Adviser Assignment</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">3 slots</span>
+            </a>
+            <a href="defense-scheduling.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Defense Scheduling</span>
+                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Academic Control</p>
+            <a href="deadline-manager.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-clock w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Deadline Manager</span>
+            </a>
+            <a href="payment-verification.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-credit-card w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Payment Verification</span>
+            </a>
+            <a href="deployment-tracker.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-rocket w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Deployment Tracker</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Reports</p>
+            <a href="analytics.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-line w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Analytics</span>
+            </a>
+            <a href="documents.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Documents</span>
+            </a>
+        </nav>
+       
+        <!-- User Profile in Sidebar -->
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg">PD</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Dela Cruz</p>
+                    <p class="text-xs text-slate-400">Capstone Coordinator</p>
+                </div>
+                <button class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition">
+                    <i class="fas fa-sign-out-alt text-slate-400"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72 smooth-scroll">
+
+        <!-- TOP BAR -->
+        <div class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40 shadow-sm">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Instructor Command Center</h2>
+                <span class="bg-green-100 text-green-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-circle text-[8px] text-green-500"></i> Active Session
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Quick Action Buttons -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+               
+                <!-- Control Selectors -->
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <div class="relative">
+                        <select id="programSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm">
+                            <option value="bsit" selected>BS Information Technology</option>
+                            <option value="bsis">BS Information Systems</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <div class="relative">
+                        <select id="phaseSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm">
+                            <option value="concept" selected>Phase 1: Concept</option>
+                            <option value="outline">Phase 2: Outline</option>
+                            <option value="predeployment">Phase 3: Pre-Deployment</option>
+                            <option value="deployment">Phase 4: Deployment</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Role Switch -->
+                    <div class="relative">
+                        <select id="roleSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="panel" >Panel Member</option>
+                            <option value="panelChair">Panel Chair</option>
+                            <option value="adviser">Adviser</option>
+                            <option value="instructor" selected>Instructor</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD CONTENT -->
+        <div class="p-8 space-y-8 mt-20 pb-12">
+            <!-- QUICK STATS (always visible) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm hover:shadow-xl transition-all">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Total Groups</p>
+                            <p class="text-3xl font-bold text-slate-800">15</p>
+                            <p class="text-xs text-green-600 mt-2"><i class="fas fa-arrow-up"></i> +2 this week</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-users text-2xl text-blue-600"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar mt-4">
+                        <div class="progress-fill bg-blue-600" style="width: 75%"></div>
+                    </div>
+                </div>
+               
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm hover:shadow-xl transition-all">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Approved Concepts</p>
+                            <p class="text-3xl font-bold text-green-600">12</p>
+                            <p class="text-xs text-green-600 mt-2"><i class="fas fa-check-circle"></i> 80% completion</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-check-circle text-2xl text-green-600"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar mt-4">
+                        <div class="progress-fill bg-green-600" style="width: 80%"></div>
+                    </div>
+                </div>
+               
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm hover:shadow-xl transition-all">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Pending Reviews</p>
+                            <p class="text-3xl font-bold text-amber-600">3</p>
+                            <p class="text-xs text-amber-600 mt-2"><i class="fas fa-clock"></i> Requires attention</p>
+                        </div>
+                        <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-clock text-2xl text-amber-600"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar mt-4">
+                        <div class="progress-fill bg-amber-600" style="width: 30%"></div>
+                    </div>
+                </div>
+               
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm hover:shadow-xl transition-all">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">For Re-defense</p>
+                            <p class="text-3xl font-bold text-red-600">2</p>
+                            <p class="text-xs text-red-600 mt-2"><i class="fas fa-exclamation-triangle"></i> Action required</p>
+                        </div>
+                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar mt-4">
+                        <div class="progress-fill bg-red-600" style="width: 15%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABS for different views -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="border-b border-slate-100 px-6">
+                    <div class="flex gap-8">
+                        <button class="tab-active py-4 px-2 text-sm font-medium transition tab-link" onclick="switchTab('overview')">Overview</button>
+                        <button class="py-4 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition tab-link" onclick="switchTab('groups')">Groups</button>
+                        <button class="py-4 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition tab-link" onclick="switchTab('schedules')">Schedules</button>
+                        <button class="py-4 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition tab-link" onclick="switchTab('payments')">Payments</button>
+                        <button class="py-4 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition tab-link" onclick="switchTab('analytics')">Analytics</button>
+                    </div>
+                </div>
+               
+                <!-- OVERVIEW TAB (default) -->
+                <div id="overview-tab" class="p-6">
+                    <!-- VISUALIZATIONS -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <!-- Adviser Load Chart -->
+                        <div class="fixed-height-card bg-slate-50 rounded-xl p-5">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                                    <i class="fas fa-chart-bar text-blue-500"></i> Adviser Load
+                                </h3>
+                                <span class="text-xs text-slate-500">Current AY</span>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="adviserLoadChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Group Status Chart -->
+                        <div class="fixed-height-card bg-slate-50 rounded-xl p-5">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                                    <i class="fas fa-pie-chart text-green-500"></i> Group Status
+                                </h3>
+                                <span class="text-xs text-slate-500">Distribution</span>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="groupStatusChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Project Preferences -->
+                        <div class="fixed-height-card bg-slate-50 rounded-xl p-5">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                                    <i class="fas fa-chart-pie text-purple-500"></i> Project Preferences
+                                </h3>
+                                <span class="text-xs text-slate-500">Student choice</span>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="studentPrefChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GROUP MANAGEMENT OVERVIEW -->
+                    <div class="mt-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-lg font-semibold text-slate-800">Active Groups</h2>
+                            <div class="flex gap-2">
+                                <button class="px-4 py-2 text-sm border border-slate-200 rounded-xl hover:bg-slate-50 transition flex items-center gap-2">
+                                    <i class="fas fa-download text-slate-500"></i> Export
+                                </button>
+                                <a href="group-management.html" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-xl hover:from-blue-700 hover:to-blue-800 transition shadow-lg shadow-blue-600/20 flex items-center gap-2">
+                                    <i class="fas fa-arrow-right"></i> Full Management
+                                </a>
+                            </div>
+                        </div>
+                       
+                        <div class="overflow-x-auto rounded-xl border border-slate-100">
+                            <table class="w-full text-sm">
+                                <thead class="bg-slate-50">
+                                    <tr class="text-slate-500">
+                                        <th class="text-left py-4 px-6">Group</th>
+                                        <th class="text-left py-4 px-6">Members</th>
+                                        <th class="text-left py-4 px-6">Adviser</th>
+                                        <th class="text-left py-4 px-6">Status</th>
+                                        <th class="text-left py-4 px-6">Progress</th>
+                                        <th class="text-left py-4 px-6">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr class="hover:bg-slate-50 transition">
+                                        <td class="py-4 px-6 font-medium">Alpha</td>
+                                        <td class="py-4 px-6">
+                                            <div class="flex -space-x-2">
+                                                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs border-2 border-white">JD</div>
+                                                <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-xs border-2 border-white">MS</div>
+                                                <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs border-2 border-white">AR</div>
+                                                <div class="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-slate-600 text-xs border-2 border-white">+2</div>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-6">Prof. Cruz</td>
+                                        <td class="py-4 px-6"><span class="status-badge approved"><i class="fas fa-check-circle"></i> Approved</span></td>
+                                        <td class="py-4 px-6">
+                                            <div class="flex items-center gap-2">
+                                                <div class="progress-bar w-20">
+                                                    <div class="progress-fill bg-green-600" style="width: 75%"></div>
+                                                </div>
+                                                <span class="text-xs text-slate-600">75%</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <div class="flex gap-2">
+                                                <button class="w-8 h-8 rounded-lg hover:bg-blue-100 text-blue-600 transition"><i class="fas fa-edit"></i></button>
+                                                <button class="w-8 h-8 rounded-lg hover:bg-red-100 text-red-600 transition"><i class="fas fa-trash"></i></button>
+                                                <a href="group-management.html" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 transition inline-flex items-center justify-center"><i class="fas fa-ellipsis-v"></i></a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50 transition">
+                                        <td class="py-4 px-6 font-medium">Beta</td>
+                                        <td class="py-4 px-6">
+                                            <div class="flex -space-x-2">
+                                                <div class="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white text-xs border-2 border-white">RC</div>
+                                                <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs border-2 border-white">MT</div>
+                                                <div class="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center text-white text-xs border-2 border-white">LJ</div>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-6 text-amber-600">Unassigned</td>
+                                        <td class="py-4 px-6"><span class="status-badge pending"><i class="fas fa-clock"></i> Pending</span></td>
+                                        <td class="py-4 px-6">
+                                            <div class="flex items-center gap-2">
+                                                <div class="progress-bar w-20">
+                                                    <div class="progress-fill bg-amber-600" style="width: 30%"></div>
+                                                </div>
+                                                <span class="text-xs text-slate-600">30%</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <div class="flex gap-2">
+                                                <button class="w-8 h-8 rounded-lg hover:bg-blue-100 text-blue-600 transition"><i class="fas fa-edit"></i></button>
+                                                <button class="w-8 h-8 rounded-lg hover:bg-red-100 text-red-600 transition"><i class="fas fa-trash"></i></button>
+                                                <a href="group-management.html" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 transition inline-flex items-center justify-center"><i class="fas fa-ellipsis-v"></i></a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GROUPS TAB (summary) -->
+                <div id="groups-tab" style="display: none;" class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-slate-800">Groups Summary</h2>
+                        <a href="group-management.html" class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition flex items-center gap-2">
+                            <i class="fas fa-arrow-right"></i> Full Group Management
+                        </a>
+                    </div>
+                   
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="summary-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-users text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-blue-700">Total Groups</p>
+                                    <p class="text-3xl font-bold text-blue-800">15</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-check-circle text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-green-700">With Adviser</p>
+                                    <p class="text-3xl font-bold text-green-800">12</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-clock text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-amber-700">Pending</p>
+                                    <p class="text-3xl font-bold text-amber-800">3</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-lock text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-purple-700">Locked</p>
+                                    <p class="text-3xl font-bold text-purple-800">2</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-xl border p-6">
+                            <h3 class="font-semibold mb-4">Group Roles Distribution</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span>Project Managers</span>
+                                    <span class="font-medium">15</span>
+                                </div>
+                                <div class="progress-bar"><div class="progress-fill bg-blue-600" style="width: 100%"></div></div>
+                               
+                                <div class="flex justify-between items-center mt-2">
+                                    <span>System Analysts</span>
+                                    <span class="font-medium">14</span>
+                                </div>
+                                <div class="progress-bar"><div class="progress-fill bg-green-600" style="width: 93%"></div></div>
+                               
+                                <div class="flex justify-between items-center mt-2">
+                                    <span>Programmers</span>
+                                    <span class="font-medium">15</span>
+                                </div>
+                                <div class="progress-bar"><div class="progress-fill bg-purple-600" style="width: 100%"></div></div>
+                               
+                                <div class="flex justify-between items-center mt-2">
+                                    <span>Documentarians</span>
+                                    <span class="font-medium">12</span>
+                                </div>
+                                <div class="progress-bar"><div class="progress-fill bg-amber-600" style="width: 80%"></div></div>
+                            </div>
+                        </div>
+                       
+                        <div class="bg-white rounded-xl border p-6">
+                            <h3 class="font-semibold mb-4">Recent Group Activities</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-3 text-sm">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span>Group Alpha completed concept paper</span>
+                                    <span class="text-xs text-slate-400 ml-auto">2h ago</span>
+                                </div>
+                                <div class="flex items-center gap-3 text-sm">
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    <span>Group Beta added new member</span>
+                                    <span class="text-xs text-slate-400 ml-auto">5h ago</span>
+                                </div>
+                                <div class="flex items-center gap-3 text-sm">
+                                    <div class="w-2 h-2 bg-amber-500 rounded-full"></div>
+                                    <span>Group Gamma updated project info</span>
+                                    <span class="text-xs text-slate-400 ml-auto">1d ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SCHEDULES TAB (summary) -->
+                <div id="schedules-tab" style="display: none;" class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-slate-800">Defense Schedule Summary</h2>
+                        <a href="defense-scheduling.html" class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition flex items-center gap-2">
+                            <i class="fas fa-arrow-right"></i> Full Schedule Management
+                        </a>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="summary-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-calendar text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-blue-700">Total Defenses</p>
+                                    <p class="text-3xl font-bold text-blue-800">24</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-check-circle text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-green-700">Scheduled</p>
+                                    <p class="text-3xl font-bold text-green-800">8</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-clock text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-amber-700">Pending</p>
+                                    <p class="text-3xl font-bold text-amber-800">6</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-check-double text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-purple-700">Completed</p>
+                                    <p class="text-3xl font-bold text-purple-800">10</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border p-6">
+                        <h3 class="font-semibold mb-4">Upcoming Defenses (Next 7 Days)</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                <div class="flex items-center gap-4">
+                                    <span class="text-sm font-medium text-blue-600">Mar 11, 10:00 AM</span>
+                                    <span class="font-medium">Group Alpha</span>
+                                    <span class="text-sm text-slate-500">Room 201</span>
+                                </div>
+                                <span class="status-badge scheduled">Scheduled</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                <div class="flex items-center gap-4">
+                                    <span class="text-sm font-medium text-blue-600">Mar 11, 2:00 PM</span>
+                                    <span class="font-medium">Group Beta</span>
+                                    <span class="text-sm text-slate-500">Room 202</span>
+                                </div>
+                                <span class="status-badge scheduled">Scheduled</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                <div class="flex items-center gap-4">
+                                    <span class="text-sm font-medium text-blue-600">Mar 18, 1:00 PM</span>
+                                    <span class="font-medium">Group Gamma</span>
+                                    <span class="text-sm text-slate-500">Room 201</span>
+                                </div>
+                                <span class="status-badge scheduled">Scheduled</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <div class="bg-white rounded-xl border p-6">
+                            <h3 class="font-semibold mb-4">Room Availability</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span>Room 201</span>
+                                    <span class="text-green-600">Available Today</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>Room 202</span>
+                                    <span class="text-green-600">Available Today</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>Room 203</span>
+                                    <span class="text-amber-600">Occupied</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-xl border p-6">
+                            <h3 class="font-semibold mb-4">Conflict Status</h3>
+                            <div class="flex items-center gap-2 text-green-600">
+                                <i class="fas fa-check-circle text-xl"></i>
+                                <span>No scheduling conflicts detected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PAYMENTS TAB (summary) -->
+                <div id="payments-tab" style="display: none;" class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-slate-800">Payment Summary</h2>
+                        <a href="payment-verification.html" class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition flex items-center gap-2">
+                            <i class="fas fa-arrow-right"></i> Full Payment Verification
+                        </a>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="summary-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-users text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-blue-700">Total Groups</p>
+                                    <p class="text-3xl font-bold text-blue-800">15</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-check-circle text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-green-700">Paid</p>
+                                    <p class="text-3xl font-bold text-green-800">12</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-clock text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-amber-700">Pending</p>
+                                    <p class="text-3xl font-bold text-amber-800">3</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-lock text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-purple-700">Locked</p>
+                                    <p class="text-3xl font-bold text-purple-800">2</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-xl border p-6">
+                            <h3 class="font-semibold mb-4">Recent Payments</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-medium">Group Alpha</p>
+                                        <p class="text-xs text-slate-500">REF-2026-001</p>
+                                    </div>
+                                    <span class="status-badge paid">Verified</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-medium">Group Beta</p>
+                                        <p class="text-xs text-slate-500">REF-2026-002</p>
+                                    </div>
+                                    <span class="status-badge pending">Pending</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-medium">Group Gamma</p>
+                                        <p class="text-xs text-slate-500">REF-2026-003</p>
+                                    </div>
+                                    <span class="status-badge paid">Verified</span>
+                                </div>
+                            </div>
+                        </div>
+                       
+                        <div class="bg-white rounded-xl border p-6">
+                            <h3 class="font-semibold mb-4">Defense Access Status</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span>Unlocked Groups</span>
+                                    <span class="text-green-600 font-medium">12</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>Locked Groups</span>
+                                    <span class="text-red-600 font-medium">2</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>Pending Verification</span>
+                                    <span class="text-amber-600 font-medium">1</span>
+                                </div>
+                            </div>
+                            <div class="mt-4 p-3 bg-amber-50 rounded-lg">
+                                <p class="text-sm text-amber-700">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    3 groups need payment verification
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ANALYTICS TAB (summary) -->
+                <div id="analytics-tab" style="display: none;" class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-slate-800">Analytics Summary</h2>
+                        <a href="analytics.html" class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition flex items-center gap-2">
+                            <i class="fas fa-arrow-right"></i> Full Analytics Dashboard
+                        </a>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="summary-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-chart-line text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-blue-700">Completion Rate</p>
+                                    <p class="text-3xl font-bold text-blue-800">73%</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-star text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-green-700">Average Grade</p>
+                                    <p class="text-3xl font-bold text-green-800">1.75</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-amber-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-clock text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-amber-700">On-time Rate</p>
+                                    <p class="text-3xl font-bold text-amber-800">82%</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="summary-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-exclamation-triangle text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-purple-700">At Risk</p>
+                                    <p class="text-3xl font-bold text-purple-800">2</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-xl border p-6">
+                            <h3 class="font-semibold mb-4">Top Performers</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 text-sm">1</span>
+                                    <span class="font-medium">Group Alpha</span>
+                                    <span class="text-sm text-green-600 ml-auto">Grade: 1.25</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 text-sm">2</span>
+                                    <span class="font-medium">Group Epsilon</span>
+                                    <span class="text-sm text-green-600 ml-auto">Grade: 1.50</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-sm">3</span>
+                                    <span class="font-medium">Group Beta</span>
+                                    <span class="text-sm text-green-600 ml-auto">Grade: 1.50</span>
+                                </div>
+                            </div>
+                        </div>
+                       
+                        <div class="bg-white rounded-xl border p-6">
+                            <h3 class="font-semibold mb-4">Project Distribution</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span>Web Development</span>
+                                    <span class="font-medium">40%</span>
+                                </div>
+                                <div class="progress-bar"><div class="progress-fill bg-blue-600" style="width: 40%"></div></div>
+                               
+                                <div class="flex justify-between items-center mt-2">
+                                    <span>Mobile Apps</span>
+                                    <span class="font-medium">25%</span>
+                                </div>
+                                <div class="progress-bar"><div class="progress-fill bg-green-600" style="width: 25%"></div></div>
+                               
+                                <div class="flex justify-between items-center mt-2">
+                                    <span>AI/ML</span>
+                                    <span class="font-medium">15%</span>
+                                </div>
+                                <div class="progress-bar"><div class="progress-fill bg-purple-600" style="width: 15%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold mb-1">Need Detailed Insights?</h3>
+                                <p class="text-blue-100">View complete analytics with charts and trends</p>
+                            </div>
+                            <a href="analytics.html" class="bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition font-medium">
+                                Go to Analytics
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CAPSTONE DEADLINES & PAYMENT VERIFICATION (always visible) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Deadlines Card -->
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-calendar-check text-green-500"></i> Upcoming Deadlines
+                        </h2>
+                        <a href="deadline-manager.html" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Manage</a>
+                    </div>
+                   
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-4 bg-amber-50 rounded-xl border border-amber-100">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-file-alt text-amber-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium">Proposal Submission</p>
+                                    <p class="text-xs text-slate-500">Phase 1 Documentation</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-amber-600">March 10, 2026</p>
+                                <p class="text-xs text-slate-500">in 3 days</p>
+                            </div>
+                        </div>
+                       
+                        <div class="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-book text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium">Final Documentation</p>
+                                    <p class="text-xs text-slate-500">Capstone 2 Completion</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-blue-600">April 15, 2026</p>
+                                <p class="text-xs text-slate-500">in 2 months</p>
+                            </div>
+                        </div>
+                       
+                        <a href="deadline-manager.html" class="w-full py-3 border border-dashed border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 transition flex items-center justify-center gap-2">
+                            <i class="fas fa-plus"></i> Add New Deadline
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Payment & Deployment Card -->
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-credit-card text-purple-500"></i> Financial & Deployment Status
+                    </h2>
+                   
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <a href="payment-verification.html" class="p-4 bg-purple-50 rounded-xl border border-purple-100 hover:shadow-md transition">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-credit-card text-purple-600"></i>
+                                </div>
+                                <span class="font-medium">Payments</span>
+                            </div>
+                            <p class="text-2xl font-bold text-purple-600">12/15</p>
+                            <p class="text-xs text-slate-500">3 pending verification</p>
+                        </a>
+                       
+                        <a href="deployment-tracker.html" class="p-4 bg-orange-50 rounded-xl border border-orange-100 hover:shadow-md transition">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-rocket text-orange-600"></i>
+                                </div>
+                                <span class="font-medium">Deployed</span>
+                            </div>
+                            <p class="text-2xl font-bold text-orange-600">8/15</p>
+                            <p class="text-xs text-slate-500">7 in progress</p>
+                        </a>
+                    </div>
+                   
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-circle text-[8px] text-green-500"></i>
+                                <span class="text-sm">Group Alpha - Payment verified</span>
+                            </div>
+                            <span class="text-xs text-slate-500">2 days ago</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-circle text-[8px] text-amber-500"></i>
+                                <span class="text-sm">Group Beta - Awaiting payment</span>
+                            </div>
+                            <span class="text-xs text-slate-500">Pending</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-circle text-[8px] text-blue-500"></i>
+                                <span class="text-sm">Group Gamma - Deployment verified</span>
+                            </div>
+                            <span class="text-xs text-slate-500">Completed</span>
+                        </div>
+                    </div>
+                   
+                    <div class="flex gap-2 mt-4">
+                        <a href="payment-verification.html" class="flex-1 bg-purple-600 text-white py-2.5 rounded-xl hover:bg-purple-700 transition text-sm text-center">Verify Payments</a>
+                        <a href="deployment-tracker.html" class="flex-1 bg-orange-600 text-white py-2.5 rounded-xl hover:bg-orange-700 transition text-sm text-center">Check Deployments</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECENT ACTIVITY LOG (always visible) -->
+            <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-history text-slate-500"></i> Recent System Activity
+                    </h2>
+                    <button class="text-sm text-blue-600 hover:text-blue-700">View All</button>
+                </div>
+               
+                <div class="space-y-3 max-h-64 overflow-y-auto pr-2">
+                    <div class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition">
+                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <div class="flex-1">
+                            <p class="text-sm"><span class="font-medium">Prof. Santos</span> assigned as adviser to Group Alpha</p>
+                            <p class="text-xs text-slate-500">5 minutes ago</p>
+                        </div>
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Assignment</span>
+                    </div>
+                   
+                    <div class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition">
+                        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <div class="flex-1">
+                            <p class="text-sm"><span class="font-medium">Group Beta</span> submitted concept paper</p>
+                            <p class="text-xs text-slate-500">1 hour ago</p>
+                        </div>
+                        <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Submission</span>
+                    </div>
+                   
+                    <div class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition">
+                        <div class="w-2 h-2 bg-amber-500 rounded-full"></div>
+                        <div class="flex-1">
+                            <p class="text-sm"><span class="font-medium">Payment verified</span> for Group Delta</p>
+                            <p class="text-xs text-slate-500">3 hours ago</p>
+                        </div>
+                        <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Payment</span>
+                    </div>
+                   
+                    <div class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition">
+                        <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <div class="flex-1">
+                            <p class="text-sm"><span class="font-medium">Defense schedule</span> created for Group Gamma</p>
+                            <p class="text-xs text-slate-500">5 hours ago</p>
+                        </div>
+                        <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Scheduling</span>
+                    </div>
+                   
+                    <div class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition">
+                        <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                        <div class="flex-1">
+                            <p class="text-sm"><span class="font-medium">Deadline extended</span> for proposal submission</p>
+                            <p class="text-xs text-slate-500">1 day ago</p>
+                        </div>
+                        <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">Override</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Chart Configurations
+        const adviserData = {
+            labels: ["Prof. Cruz", "Prof. Reyes", "Prof. Santos", "Prof. Villanueva", "Prof. Lim"],
+            datasets: [{
+                label: "Groups Assigned",
+                data: [3, 4, 5, 2, 3],
+                backgroundColor: ["#3b82f6", "#f59e0b", "#ef4444", "#10b981", "#8b5cf6"],
+                borderRadius: 6,
+                barPercentage: 0.6,
+            }]
+        };
+
+        const statusData = {
+            labels: ["Assigned", "Not Assigned", "Locked", "Completed"],
+            datasets: [{
+                data: [5, 3, 2, 5],
+                backgroundColor: ["#10b981", "#f59e0b", "#a855f7", "#3b82f6"],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        };
+
+        const preferenceData = {
+            labels: ["AI/ML", "Web Development", "Mobile Apps", "Data Science", "IoT"],
+            datasets: [{
+                data: [30, 25, 20, 15, 10],
+                backgroundColor: ["#3b82f6", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6"],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        };
+
+        // Initialize Charts
+        const adviserChart = new Chart(document.getElementById("adviserLoadChart"), {
+            type: "bar",
+            data: adviserData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        titleColor: '#f1f5f9',
+                        bodyColor: '#cbd5e1'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { display: false, drawBorder: false },
+                        border: { display: false },
+                        ticks: {
+                            stepSize: 1,
+                            color: '#64748b'
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            color: '#64748b'
+                        }
+                    }
+                }
+            }
+        });
+       
+        const statusChart = new Chart(document.getElementById("groupStatusChart"), {
+            type: "doughnut",
+            data: statusData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            boxWidth: 12,
+                            padding: 15,
+                            color: '#334155'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        titleColor: '#f1f5f9',
+                        bodyColor: '#cbd5e1'
+                    }
+                }
+            }
+        });
+       
+        const prefChart = new Chart(document.getElementById("studentPrefChart"), {
+            type: "pie",
+            data: preferenceData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            boxWidth: 12,
+                            padding: 15,
+                            color: '#334155'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        titleColor: '#f1f5f9',
+                        bodyColor: '#cbd5e1'
+                    }
+                }
+            }
+        });
+
+        // Tab switching function
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.getElementById('overview-tab').style.display = 'none';
+            document.getElementById('groups-tab').style.display = 'none';
+            document.getElementById('schedules-tab').style.display = 'none';
+            document.getElementById('payments-tab').style.display = 'none';
+            document.getElementById('analytics-tab').style.display = 'none';
+           
+            // Show selected tab
+            document.getElementById(tabName + '-tab').style.display = 'block';
+           
+            // Update tab styles
+            const tabs = document.querySelectorAll('.tab-link');
+            tabs.forEach(tab => {
+                tab.classList.remove('tab-active', 'text-blue-600', 'border-b-2', 'border-blue-600');
+                tab.classList.add('text-slate-500');
+            });
+           
+            // Highlight active tab
+            event.target.classList.add('tab-active', 'text-blue-600', 'border-b-2', 'border-blue-600');
+            event.target.classList.remove('text-slate-500');
+           
+            // Show notification
+            showNotification('Showing ' + tabName + ' summary');
+        }
+
+        // Switch Handlers
+        document.getElementById("programSwitch").addEventListener("change", function () {
+            showNotification('Program changed to ' + this.options[this.selectedIndex].text);
+        });
+
+        document.getElementById("phaseSwitch").addEventListener("change", function () {
+            showNotification('Phase changed to ' + this.options[this.selectedIndex].text);
+        });
+
+        // Notification function
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+           
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        // Role switch handler
+        document.getElementById("roleSwitch").addEventListener("change", function() {
+            const role = this.value;
+            switch(role) {
+                case 'panelChair':
+                    window.location.href = 'panel-chair.html';
+                    break;
+                case 'adviser':
+                    window.location.href = 'adviser.html';
+                    break;
+                case 'instructor':
+                    window.location.href = 'instructor-dashboard.html';
+                    break;
+                default:
+                    showNotification('Staying in Panel view');
+            }
+        });
+
+        // Window resize handler
+        window.addEventListener('resize', function() {
+            adviserChart.update();
+            statusChart.update();
+            prefChart.update();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deadline Manager - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        body { overflow: hidden; }
+        main { height: 100vh; overflow-y: auto; overflow-x: hidden; }
+        .glass-effect { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
+        .hover-scale { transition: transform 0.2s ease-in-out; }
+        .hover-scale:hover { transform: translateY(-2px); }
+        .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem; }
+        .status-badge.active { background: #dbeafe; color: #1e40af; }
+        .status-badge.warning { background: #fef9c3; color: #854d0e; }
+        .status-badge.expired { background: #fee2e2; color: #991b1b; }
+        .status-badge.completed { background: #dcfce7; color: #166534; }
+        .status-badge.extended { background: #f3e8ff; color: #6b21a8; }
+        .progress-bar { height: 0.5rem; border-radius: 9999px; background: #e2e8f0; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 9999px; transition: width 0.3s ease; }
+        .deadline-card { transition: all 0.2s ease; }
+        .deadline-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .notification-dot { position: relative; }
+        .notification-dot::after { content: ''; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid white; }
+        .timeline-item { position: relative; padding-left: 2rem; padding-bottom: 1.5rem; }
+        .timeline-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #e2e8f0; }
+        .timeline-item::after { content: ''; position: absolute; left: -4px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; border: 2px solid white; }
+        .timeline-item.completed::after { background: #10b981; }
+        .timeline-item.warning::after { background: #f59e0b; }
+        .timeline-item.expired::after { background: #ef4444; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slideUp 0.3s ease-out; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #1e40af; font-weight: 500; }
+    </style>
+</head>
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - COMPLETE VERSION -->
+    <aside class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-graduation-cap text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Instructor Portal</p>
+                </div>
+            </div>
+           
+            <!-- Quick Stats in Sidebar -->
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Section</p>
+                    <p class="text-sm font-semibold text-white">BSIT-3A</p>
+                </div>
+            </div>
+        </div>
+       
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <!-- Main Navigation -->
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="instructor-dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">12</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Management</p>
+            <a href="group-management.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Group Management</span>
+                <i class="fas fa-chevron-right text-xs text-slate-500"></i>
+            </a>
+            <a href="adviser-assignment.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-user-tie w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Adviser Assignment</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">3 slots</span>
+            </a>
+            <a href="defense-scheduling.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Defense Scheduling</span>
+                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Academic Control</p>
+            <a href="deadline-manager.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-600/20">
+                <i class="fas fa-clock w-5"></i>
+                <span class="flex-1">Deadline Manager</span>
+            </a>
+            <a href="payment-verification.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-credit-card w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Payment Verification</span>
+            </a>
+            <a href="deployment-tracker.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-rocket w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Deployment Tracker</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Reports</p>
+            <a href="analytics.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-line w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Analytics</span>
+            </a>
+            <a href="documents.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Documents</span>
+            </a>
+        </nav>
+       
+        <!-- User Profile in Sidebar -->
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg">PD</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Dela Cruz</p>
+                    <p class="text-xs text-slate-400">Capstone Coordinator</p>
+                </div>
+                <button class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition">
+                    <i class="fas fa-sign-out-alt text-slate-400"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72 smooth-scroll">
+
+        <!-- TOP BAR -->
+        <div class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40 shadow-sm">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Deadline Manager</h2>
+                <span class="bg-amber-100 text-amber-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-clock"></i> 3 Deadlines This Week
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Quick Action Buttons -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+               
+                <!-- Control Selectors -->
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <div class="relative">
+                        <select id="programSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm">
+                            <option value="bsit" selected>BS Information Technology</option>
+                            <option value="bsis">BS Information Systems</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <div class="relative">
+                        <select id="phaseSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm">
+                            <option value="concept" selected>Phase 1: Concept</option>
+                            <option value="outline">Phase 2: Outline</option>
+                            <option value="predeployment">Phase 3: Pre-Deployment</option>
+                            <option value="deployment">Phase 4: Deployment</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Role Switch -->
+                    <div class="relative">
+                        <select id="roleSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="panel" selected>Panel Member</option>
+                            <option value="panelChair">Panel Chair</option>
+                            <option value="adviser">Adviser</option>
+                            <option value="instructor">Instructor</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEADLINE MANAGER CONTENT -->
+        <div class="p-8 space-y-6 mt-20 pb-12">
+            <!-- Overview Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Total Deadlines</p>
+                            <p class="text-2xl font-bold text-slate-800">12</p>
+                        </div>
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar text-blue-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">This semester</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Active</p>
+                            <p class="text-2xl font-bold text-green-600">5</p>
+                        </div>
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-check-circle text-green-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-green-600 mt-2">Ongoing deadlines</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Due This Week</p>
+                            <p class="text-2xl font-bold text-amber-600">3</p>
+                        </div>
+                        <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-amber-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-amber-600 mt-2">Requires attention</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Overdue</p>
+                            <p class="text-2xl font-bold text-red-600">2</p>
+                        </div>
+                        <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-red-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-red-600 mt-2">Action required</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Extensions</p>
+                            <p class="text-2xl font-bold text-purple-600">4</p>
+                        </div>
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-purple-600"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-purple-600 mt-2">Granted this sem</p>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="flex items-center justify-between">
+                <div class="flex gap-3">
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Set New Deadline
+                    </button>
+                    <button class="bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 transition flex items-center gap-2">
+                        <i class="fas fa-clock"></i> Bulk Extend
+                    </button>
+                    <button class="bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 transition flex items-center gap-2">
+                        <i class="fas fa-history"></i> Override Log
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                    <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                        <option>All Phases</option>
+                        <option>Phase 1: Concept</option>
+                        <option>Phase 2: Outline</option>
+                        <option>Phase 3: Pre-Deployment</option>
+                        <option>Phase 4: Deployment</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="bg-white rounded-xl border border-slate-200 p-1 inline-flex">
+                <button class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white" onclick="filterDeadlines('all')">All Deadlines</button>
+                <button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100" onclick="filterDeadlines('active')">Active</button>
+                <button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100" onclick="filterDeadlines('warning')">Due Soon</button>
+                <button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100" onclick="filterDeadlines('expired')">Overdue</button>
+                <button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100" onclick="filterDeadlines('extended')">Extended</button>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Deadlines List - Left Column (2/3 width) -->
+                <div class="lg:col-span-2 space-y-4">
+                    <!-- Deadline Card 1 - Urgent -->
+                    <div class="deadline-card bg-white rounded-xl border-l-4 border-l-amber-500 border p-6" data-status="warning">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="font-semibold text-lg">Proposal Submission</h3>
+                                    <span class="status-badge warning">Due in 3 days</span>
+                                    <span class="status-badge active">Phase 1</span>
+                                </div>
+                                <p class="text-sm text-slate-600 mb-3">Concept Paper and Proposal Documentation with preliminary system design</p>
+                               
+                                <div class="grid grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <p class="text-xs text-slate-500">Deadline</p>
+                                        <p class="font-medium">March 10, 2026</p>
+                                        <p class="text-xs text-slate-500">11:59 PM</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500">Assigned To</p>
+                                        <p class="font-medium">All Groups</p>
+                                        <p class="text-xs text-slate-500">15 groups</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500">Submissions</p>
+                                        <p class="font-medium text-amber-600">10/15</p>
+                                        <p class="text-xs text-slate-500">66% completed</p>
+                                    </div>
+                                </div>
+
+                                <!-- Progress Bar -->
+                                <div class="mb-4">
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span>Submission Progress</span>
+                                        <span class="font-medium">10/15 (66%)</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill bg-amber-500" style="width: 66%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Groups List -->
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Group Alpha</span>
+                                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Group Beta</span>
+                                    <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">⏳ Group Gamma</span>
+                                    <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">⏳ Group Delta</span>
+                                    <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">✗ 5 more pending</span>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="flex gap-2 mt-4 pt-4 border-t">
+                                    <button class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Edit Deadline</button>
+                                    <button class="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700">Extend</button>
+                                    <button class="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">Override Lock</button>
+                                    <button class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">Notify All</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Deadline Card 2 - Active -->
+                    <div class="deadline-card bg-white rounded-xl border-l-4 border-l-green-500 border p-6" data-status="active">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="font-semibold text-lg">Final Documentation</h3>
+                                    <span class="status-badge active">Active</span>
+                                    <span class="status-badge">Phase 4</span>
+                                </div>
+                                <p class="text-sm text-slate-600 mb-3">Complete Capstone Documentation including user manuals and technical specifications</p>
+                               
+                                <div class="grid grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <p class="text-xs text-slate-500">Deadline</p>
+                                        <p class="font-medium">April 15, 2026</p>
+                                        <p class="text-xs text-slate-500">11:59 PM</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500">Assigned To</p>
+                                        <p class="font-medium">All Groups</p>
+                                        <p class="text-xs text-slate-500">15 groups</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500">Submissions</p>
+                                        <p class="font-medium text-green-600">3/15</p>
+                                        <p class="text-xs text-slate-500">20% completed</p>
+                                    </div>
+                                </div>
+
+                                <!-- Progress Bar -->
+                                <div class="mb-4">
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span>Submission Progress</span>
+                                        <span class="font-medium">3/15 (20%)</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill bg-green-500" style="width: 20%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="flex gap-2 mt-4 pt-4 border-t">
+                                    <button class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Edit Deadline</button>
+                                    <button class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">Remind Groups</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Deadline Card 3 - Extended -->
+                    <div class="deadline-card bg-white rounded-xl border-l-4 border-l-purple-500 border p-6" data-status="extended">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="font-semibold text-lg">Defense Presentation</h3>
+                                    <span class="status-badge extended">Extended</span>
+                                    <span class="status-badge">Phase 3</span>
+                                </div>
+                                <p class="text-sm text-slate-600 mb-3">Final Defense Presentation with working prototype</p>
+                               
+                                <div class="grid grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <p class="text-xs text-slate-500">Original Deadline</p>
+                                        <p class="font-medium text-red-600 line-through">Feb 28, 2026</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500">New Deadline</p>
+                                        <p class="font-medium text-purple-600">March 5, 2026</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500">Extension Reason</p>
+                                        <p class="font-medium">Technical Issues</p>
+                                    </div>
+                                </div>
+
+                                <div class="bg-purple-50 rounded-lg p-3 mb-4">
+                                    <p class="text-sm text-purple-700">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        Extended for Group Gamma and Group Delta only. Other groups maintain original deadline.
+                                    </p>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="flex gap-2 mt-4 pt-4 border-t">
+                                    <button class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Manage Extension</button>
+                                    <button class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Revoke Extension</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Deadline Card 4 - Overdue -->
+                    <div class="deadline-card bg-white rounded-xl border-l-4 border-l-red-500 border p-6" data-status="expired">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="font-semibold text-lg">System Architecture Design</h3>
+                                    <span class="status-badge expired">Overdue</span>
+                                    <span class="status-badge">Phase 2</span>
+                                </div>
+                                <p class="text-sm text-slate-600 mb-3">Detailed system architecture and database design</p>
+                               
+                                <div class="grid grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <p class="text-xs text-slate-500">Deadline</p>
+                                        <p class="font-medium text-red-600">Feb 25, 2026</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500">Days Overdue</p>
+                                        <p class="font-medium text-red-600">11 days</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-slate-500">Status</p>
+                                        <p class="font-medium text-red-600">Locked</p>
+                                    </div>
+                                </div>
+
+                                <div class="bg-red-50 rounded-lg p-3 mb-4">
+                                    <p class="text-sm text-red-700">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        Submissions are locked. 4 groups haven't submitted. Override required for late submission.
+                                    </p>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="flex gap-2 mt-4 pt-4 border-t">
+                                    <button class="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700">Extend & Unlock</button>
+                                    <button class="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">Override Lock</button>
+                                    <button class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">View Late Groups</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column (1/3 width) -->
+                <div class="space-y-6">
+                    <!-- Upcoming Deadlines Timeline -->
+                    <div class="bg-white rounded-xl border p-6">
+                        <h3 class="text-lg font-semibold mb-4">Deadline Timeline</h3>
+                        <div class="timeline">
+                            <div class="timeline-item warning">
+                                <p class="font-medium">Proposal Submission</p>
+                                <p class="text-xs text-slate-500">March 10, 2026 · 3 days left</p>
+                                <p class="text-xs text-amber-600 mt-1">10/15 submitted</p>
+                            </div>
+                            <div class="timeline-item">
+                                <p class="font-medium">System Design Document</p>
+                                <p class="text-xs text-slate-500">March 15, 2026 · 8 days left</p>
+                            </div>
+                            <div class="timeline-item">
+                                <p class="font-medium">Prototype Demo</p>
+                                <p class="text-xs text-slate-500">March 20, 2026 · 13 days left</p>
+                            </div>
+                            <div class="timeline-item">
+                                <p class="font-medium">Final Documentation</p>
+                                <p class="text-xs text-slate-500">April 15, 2026 · 39 days left</p>
+                            </div>
+                            <div class="timeline-item completed">
+                                <p class="font-medium">Concept Paper</p>
+                                <p class="text-xs text-slate-500">Completed Feb 1, 2026</p>
+                                <p class="text-xs text-green-600">15/15 submitted</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Override Panel -->
+                    <div class="bg-white rounded-xl border p-6">
+                        <h3 class="text-lg font-semibold mb-4">Emergency Override</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-sm text-slate-500 block mb-1">Select Group</label>
+                                <select class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                                    <option>Group Alpha</option>
+                                    <option>Group Beta</option>
+                                    <option>Group Gamma</option>
+                                    <option>Group Delta</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-sm text-slate-500 block mb-1">Override Type</label>
+                                <select class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                                    <option>Extend Deadline</option>
+                                    <option>Unlock Submission</option>
+                                    <option>Reopen Submission</option>
+                                    <option>Bypass Lock</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-sm text-slate-500 block mb-1">Justification</label>
+                                <textarea class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" rows="2" placeholder="Reason for override..."></textarea>
+                            </div>
+                            <button class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">
+                                Apply Override
+                            </button>
+                            <p class="text-xs text-slate-400 text-center">
+                                <i class="fas fa-shield-alt mr-1"></i> All overrides are logged
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Recent Override Log -->
+                    <div class="bg-white rounded-xl border p-6">
+                        <h3 class="text-lg font-semibold mb-4">Recent Overrides</h3>
+                        <div class="space-y-3">
+                            <div class="text-sm p-2 hover:bg-slate-50 rounded">
+                                <p class="font-medium">Extended deadline for Group Gamma</p>
+                                <p class="text-xs text-slate-500">By Prof. Dela Cruz · 2 hours ago</p>
+                                <p class="text-xs text-purple-600">Reason: Technical issues</p>
+                            </div>
+                            <div class="text-sm p-2 hover:bg-slate-50 rounded">
+                                <p class="font-medium">Unlocked submission for Group Beta</p>
+                                <p class="text-xs text-slate-500">By Prof. Dela Cruz · 1 day ago</p>
+                                <p class="text-xs text-amber-600">Reason: Medical emergency</p>
+                            </div>
+                            <div class="text-sm p-2 hover:bg-slate-50 rounded">
+                                <p class="font-medium">Extended all Phase 1 deadlines</p>
+                                <p class="text-xs text-slate-500">By System Admin · 3 days ago</p>
+                                <p class="text-xs text-blue-600">Reason: University event</p>
+                            </div>
+                        </div>
+                        <button class="w-full text-center text-blue-600 text-sm mt-3 hover:text-blue-800">
+                            View Full Log →
+                        </button>
+                    </div>
+
+                    <!-- Notification Settings -->
+                    <div class="bg-white rounded-xl border p-6">
+                        <h3 class="text-lg font-semibold mb-4">Auto-Notifications</h3>
+                        <div class="space-y-3">
+                            <label class="flex items-center justify-between">
+                                <span class="text-sm">3 days before deadline</span>
+                                <input type="checkbox" checked class="rounded text-blue-600">
+                            </label>
+                            <label class="flex items-center justify-between">
+                                <span class="text-sm">24 hours before deadline</span>
+                                <input type="checkbox" checked class="rounded text-blue-600">
+                            </label>
+                            <label class="flex items-center justify-between">
+                                <span class="text-sm">On deadline day</span>
+                                <input type="checkbox" checked class="rounded text-blue-600">
+                            </label>
+                            <label class="flex items-center justify-between">
+                                <span class="text-sm">After deadline passes</span>
+                                <input type="checkbox" class="rounded text-blue-600">
+                            </label>
+                            <button class="w-full bg-slate-100 text-slate-700 py-2 rounded-lg text-sm hover:bg-slate-200 mt-2">
+                                Save Preferences
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Actions -->
+            <div class="bg-white rounded-xl border p-6 mt-6">
+                <h3 class="text-lg font-semibold mb-4">Bulk Deadline Operations</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <button class="p-4 border-2 border-dashed border-slate-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition group">
+                        <i class="fas fa-calendar-plus text-2xl text-slate-400 group-hover:text-blue-500 mb-2"></i>
+                        <p class="font-medium">Extend All Deadlines</p>
+                        <p class="text-xs text-slate-400">Add days to multiple</p>
+                    </button>
+                    <button class="p-4 border-2 border-dashed border-slate-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition group">
+                        <i class="fas fa-lock-open text-2xl text-slate-400 group-hover:text-green-500 mb-2"></i>
+                        <p class="font-medium">Unlock Submissions</p>
+                        <p class="text-xs text-slate-400">For selected groups</p>
+                    </button>
+                    <button class="p-4 border-2 border-dashed border-slate-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition group">
+                        <i class="fas fa-bell text-2xl text-slate-400 group-hover:text-purple-500 mb-2"></i>
+                        <p class="font-medium">Send Reminders</p>
+                        <p class="text-xs text-slate-400">To all pending groups</p>
+                    </button>
+                    <button class="p-4 border-2 border-dashed border-slate-200 rounded-lg hover:border-amber-400 hover:bg-amber-50 transition group">
+                        <i class="fas fa-file-export text-2xl text-slate-400 group-hover:text-amber-500 mb-2"></i>
+                        <p class="font-medium">Export Report</p>
+                        <p class="text-xs text-slate-400">Deadline compliance</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Filter deadlines by status
+        function filterDeadlines(status) {
+            const deadlines = document.querySelectorAll('.deadline-card');
+            const buttons = document.querySelectorAll('.bg-white .px-4.py-2');
+           
+            // Update button styles
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+            });
+            event.target.classList.add('bg-blue-600', 'text-white');
+            event.target.classList.remove('text-slate-600', 'hover:bg-slate-100');
+           
+            // Filter deadlines
+            deadlines.forEach(deadline => {
+                if (status === 'all') {
+                    deadline.style.display = 'block';
+                } else {
+                    if (deadline.dataset.status === status) {
+                        deadline.style.display = 'block';
+                    } else {
+                        deadline.style.display = 'none';
+                    }
+                }
+            });
+           
+            showNotification(`Filtering: ${status} deadlines`);
+        }
+
+        // Switch Handlers
+        document.getElementById("programSwitch").addEventListener("change", function () {
+            showNotification('Program changed to ' + this.options[this.selectedIndex].text);
+        });
+
+        document.getElementById("phaseSwitch").addEventListener("change", function () {
+            showNotification('Phase changed to ' + this.options[this.selectedIndex].text);
+        });
+
+        // Role switch handler
+        document.getElementById("roleSwitch").addEventListener("change", function() {
+            const role = this.value;
+            switch(role) {
+                case 'panelChair':
+                    window.location.href = 'panel-chair.html';
+                    break;
+                case 'adviser':
+                    window.location.href = 'adviser.html';
+                    break;
+                case 'instructor':
+                    window.location.href = 'instructor-dashboard.html';
+                    break;
+                default:
+                    showNotification('Staying in Panel view');
+            }
+        });
+
+        // Notification function
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+           
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Override function
+        function applyOverride() {
+            showNotification('Override applied and logged in system');
+        }
+
+        // Extend deadline function
+        function extendDeadline() {
+            showNotification('Deadline extension applied');
+        }
+    </script>
+</body>
+</html>

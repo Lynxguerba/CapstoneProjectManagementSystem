@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Management - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        body { overflow: hidden; }
+        main { height: 100vh; overflow-y: auto; overflow-x: hidden; }
+        .glass-effect { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
+        .hover-scale { transition: transform 0.2s ease-in-out; }
+        .hover-scale:hover { transform: translateY(-2px); }
+        .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem; }
+        .folder-item { transition: all 0.2s ease; cursor: pointer; }
+        .folder-item:hover { background: #f8fafc; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .file-item { transition: all 0.2s ease; }
+        .file-item:hover { background: #f8fafc; }
+        .notification-dot { position: relative; }
+        .notification-dot::after { content: ''; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid white; }
+        .upload-area { border: 2px dashed #cbd5e1; transition: all 0.2s ease; }
+        .upload-area:hover { border-color: #3b82f6; background: #eff6ff; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slideUp 0.3s ease-out; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #1e40af; font-weight: 500; }
+        .breadcrumb { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
+        .breadcrumb a { color: #3b82f6; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .breadcrumb span { color: #64748b; }
+    </style>
+</head>
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - COMPLETE VERSION -->
+    <aside class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-graduation-cap text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Instructor Portal</p>
+                </div>
+            </div>
+           
+            <!-- Quick Stats in Sidebar -->
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Section</p>
+                    <p class="text-sm font-semibold text-white">BSIT-3A</p>
+                </div>
+            </div>
+        </div>
+       
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <!-- Main Navigation -->
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="instructor-dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">12</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Management</p>
+            <a href="group-management.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Group Management</span>
+                <i class="fas fa-chevron-right text-xs text-slate-500"></i>
+            </a>
+            <a href="adviser-assignment.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-user-tie w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Adviser Assignment</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">3 slots</span>
+            </a>
+            <a href="defense-scheduling.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Defense Scheduling</span>
+                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Academic Control</p>
+            <a href="deadline-manager.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-clock w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Deadline Manager</span>
+            </a>
+            <a href="payment-verification.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-credit-card w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Payment Verification</span>
+            </a>
+            <a href="deployment-tracker.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-rocket w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Deployment Tracker</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Reports</p>
+            <a href="analytics.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-line w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Analytics</span>
+            </a>
+            <a href="documents.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-600/20">
+                <i class="fas fa-file-alt w-5"></i>
+                <span class="flex-1">Documents</span>
+                <span class="bg-white/20 text-white text-xs px-2 py-1 rounded-full">45</span>
+            </a>
+        </nav>
+       
+        <!-- User Profile in Sidebar -->
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg">PD</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Dela Cruz</p>
+                    <p class="text-xs text-slate-400">Capstone Coordinator</p>
+                </div>
+                <button class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition">
+                    <i class="fas fa-sign-out-alt text-slate-400"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72 smooth-scroll">
+
+        <!-- TOP BAR -->
+        <div class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40 shadow-sm">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Document Management</h2>
+                <span class="bg-blue-100 text-blue-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-file-alt"></i> 45 Total Files
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Quick Action Buttons -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+               
+                <!-- Control Selectors -->
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <div class="relative">
+                        <select id="programSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm">
+                            <option value="bsit" selected>BS Information Technology</option>
+                            <option value="bsis">BS Information Systems</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <div class="relative">
+                        <select id="sectionSelect" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent shadow-sm">
+                            <option value="all" selected>All Sections</option>
+                            <option value="bsit3a">BSIT-3A</option>
+                            <option value="bsit3b">BSIT-3B</option>
+                            <option value="bsis3a">BSIS-3A</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Role Switch -->
+                    <div class="relative">
+                        <select id="roleSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="panel" selected>Panel Member</option>
+                            <option value="panelChair">Panel Chair</option>
+                            <option value="adviser">Adviser</option>
+                            <option value="instructor">Instructor</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DOCUMENTS CONTENT -->
+        <div class="p-8 space-y-6 mt-20 pb-12">
+            <!-- Upload Area -->
+            <div class="upload-area rounded-xl p-8 text-center bg-white">
+                <i class="fas fa-cloud-upload-alt text-4xl text-slate-400 mb-3"></i>
+                <p class="text-lg font-medium text-slate-700">Drag and drop files here</p>
+                <p class="text-sm text-slate-500 mb-4">or</p>
+                <button class="bg-blue-600 text-white px-6 py-2.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-600/20">
+                    <i class="fas fa-folder-open mr-2"></i> Browse Files
+                </button>
+                <p class="text-xs text-slate-400 mt-3">Supported formats: PDF, DOC, DOCX, XLS, PPT, ZIP (Max 50MB)</p>
+            </div>
+
+            <!-- Quick Access Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                <div class="bg-white rounded-xl border p-4 hover-scale">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold">24</p>
+                            <p class="text-xs text-slate-500">PDF Files</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl border p-4 hover-scale">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
+                            <i class="fas fa-file-word"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold">12</p>
+                            <p class="text-xs text-slate-500">Word Docs</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl border p-4 hover-scale">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
+                            <i class="fas fa-file-excel"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold">5</p>
+                            <p class="text-xs text-slate-500">Excel Files</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl border p-4 hover-scale">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
+                            <i class="fas fa-file-powerpoint"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold">4</p>
+                            <p class="text-xs text-slate-500">Presentations</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl border p-4 hover-scale">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center text-red-600">
+                            <i class="fas fa-file-archive"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold">8</p>
+                            <p class="text-xs text-slate-500">ZIP Files</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filter Bar -->
+            <div class="flex gap-4">
+                <div class="flex-1 relative">
+                    <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="searchDocs" placeholder="Search documents by name, group, or type..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <button class="px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition flex items-center gap-2">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                <button class="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition flex items-center gap-2">
+                    <i class="fas fa-plus"></i> New Folder
+                </button>
+            </div>
+
+            <!-- Breadcrumb Navigation -->
+            <div class="breadcrumb text-sm">
+                <a href="#" onclick="navigateTo('root')">My Drive</a>
+                <i class="fas fa-chevron-right text-xs text-slate-400"></i>
+                <a href="#" onclick="navigateTo('capstone')">Capstone 2026</a>
+                <i class="fas fa-chevron-right text-xs text-slate-400"></i>
+                <span>BSIT-3A</span>
+            </div>
+
+            <!-- Quick Access Folders -->
+            <div>
+                <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Quick Access</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div class="folder-item bg-white rounded-xl border p-4 text-center">
+                        <i class="fas fa-folder text-yellow-500 text-3xl mb-2"></i>
+                        <p class="font-medium text-sm">Concept Papers</p>
+                        <p class="text-xs text-slate-500">15 files</p>
+                    </div>
+                    <div class="folder-item bg-white rounded-xl border p-4 text-center">
+                        <i class="fas fa-folder text-yellow-500 text-3xl mb-2"></i>
+                        <p class="font-medium text-sm">Proposals</p>
+                        <p class="text-xs text-slate-500">12 files</p>
+                    </div>
+                    <div class="folder-item bg-white rounded-xl border p-4 text-center">
+                        <i class="fas fa-folder text-yellow-500 text-3xl mb-2"></i>
+                        <p class="font-medium text-sm">Defense Slides</p>
+                        <p class="text-xs text-slate-500">8 files</p>
+                    </div>
+                    <div class="folder-item bg-white rounded-xl border p-4 text-center">
+                        <i class="fas fa-folder text-yellow-500 text-3xl mb-2"></i>
+                        <p class="font-medium text-sm">Documentation</p>
+                        <p class="text-xs text-slate-500">10 files</p>
+                    </div>
+                    <div class="folder-item bg-white rounded-xl border p-4 text-center">
+                        <i class="fas fa-folder text-yellow-500 text-3xl mb-2"></i>
+                        <p class="font-medium text-sm">Deployment Certs</p>
+                        <p class="text-xs text-slate-500">6 files</p>
+                    </div>
+                    <div class="folder-item bg-white rounded-xl border p-4 text-center">
+                        <i class="fas fa-folder text-yellow-500 text-3xl mb-2"></i>
+                        <p class="font-medium text-sm">Grades</p>
+                        <p class="text-xs text-slate-500">4 files</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Tabs -->
+            <div class="border-b border-slate-200">
+                <div class="flex gap-6">
+                    <button class="tab-active py-2 px-1 text-sm font-medium">All Files</button>
+                    <button class="py-2 px-1 text-sm font-medium text-slate-500 hover:text-slate-700">Recent</button>
+                    <button class="py-2 px-1 text-sm font-medium text-slate-500 hover:text-slate-700">Shared with me</button>
+                    <button class="py-2 px-1 text-sm font-medium text-slate-500 hover:text-slate-700">Starred</button>
+                    <button class="py-2 px-1 text-sm font-medium text-slate-500 hover:text-slate-700">Trash</button>
+                </div>
+            </div>
+
+            <!-- Files Table -->
+            <div class="bg-white rounded-xl border overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-slate-50 border-b">
+                        <tr>
+                            <th class="text-left py-4 px-6">
+                                <input type="checkbox" class="rounded border-slate-300">
+                            </th>
+                            <th class="text-left py-4 px-6">Name</th>
+                            <th class="text-left py-4 px-6">Group</th>
+                            <th class="text-left py-4 px-6">Type</th>
+                            <th class="text-left py-4 px-6">Size</th>
+                            <th class="text-left py-4 px-6">Modified</th>
+                            <th class="text-left py-4 px-6">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        <!-- PDF Files -->
+                        <tr class="file-item hover:bg-slate-50">
+                            <td class="py-3 px-6">
+                                <input type="checkbox" class="rounded border-slate-300">
+                            </td>
+                            <td class="py-3 px-6">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-file-pdf text-red-500 text-lg"></i>
+                                    <div>
+                                        <p class="font-medium">Group_Alpha_Concept_Paper.pdf</p>
+                                        <p class="text-xs text-slate-500">Uploaded by Group Alpha</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 px-6">Alpha</td>
+                            <td class="py-3 px-6">PDF</td>
+                            <td class="py-3 px-6">2.4 MB</td>
+                            <td class="py-3 px-6">Mar 15, 2026</td>
+                            <td class="py-3 px-6">
+                                <div class="flex gap-2">
+                                    <button class="text-blue-600 hover:text-blue-800" title="Download"><i class="fas fa-download"></i></button>
+                                    <button class="text-green-600 hover:text-green-800" title="Share"><i class="fas fa-share-alt"></i></button>
+                                    <button class="text-amber-600 hover:text-amber-800" title="Star"><i class="far fa-star"></i></button>
+                                    <button class="text-red-600 hover:text-red-800" title="Delete"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr class="file-item hover:bg-slate-50">
+                            <td class="py-3 px-6">
+                                <input type="checkbox" class="rounded border-slate-300">
+                            </td>
+                            <td class="py-3 px-6">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-file-pdf text-red-500 text-lg"></i>
+                                    <div>
+                                        <p class="font-medium">Group_Beta_Proposal.pdf</p>
+                                        <p class="text-xs text-slate-500">Uploaded by Group Beta</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 px-6">Beta</td>
+                            <td class="py-3 px-6">PDF</td>
+                            <td class="py-3 px-6">1.8 MB</td>
+                            <td class="py-3 px-6">Mar 14, 2026</td>
+                            <td class="py-3 px-6">
+                                <div class="flex gap-2">
+                                    <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-download"></i></button>
+                                    <button class="text-green-600 hover:text-green-800"><i class="fas fa-share-alt"></i></button>
+                                    <button class="text-amber-600 hover:text-amber-800"><i class="fas fa-star"></i></button>
+                                    <button class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Word Documents -->
+                        <tr class="file-item hover:bg-slate-50">
+                            <td class="py-3 px-6">
+                                <input type="checkbox" class="rounded border-slate-300">
+                            </td>
+                            <td class="py-3 px-6">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-file-word text-blue-500 text-lg"></i>
+                                    <div>
+                                        <p class="font-medium">Group_Gamma_Final_Doc.docx</p>
+                                        <p class="text-xs text-slate-500">Uploaded by Group Gamma</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 px-6">Gamma</td>
+                            <td class="py-3 px-6">DOCX</td>
+                            <td class="py-3 px-6">3.2 MB</td>
+                            <td class="py-3 px-6">Mar 13, 2026</td>
+                            <td class="py-3 px-6">
+                                <div class="flex gap-2">
+                                    <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-download"></i></button>
+                                    <button class="text-green-600 hover:text-green-800"><i class="fas fa-share-alt"></i></button>
+                                    <button class="text-amber-600 hover:text-amber-800"><i class="far fa-star"></i></button>
+                                    <button class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- PowerPoint -->
+                        <tr class="file-item hover:bg-slate-50">
+                            <td class="py-3 px-6">
+                                <input type="checkbox" class="rounded border-slate-300">
+                            </td>
+                            <td class="py-3 px-6">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-file-powerpoint text-orange-500 text-lg"></i>
+                                    <div>
+                                        <p class="font-medium">Group_Delta_Defense.pptx</p>
+                                        <p class="text-xs text-slate-500">Uploaded by Group Delta</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 px-6">Delta</td>
+                            <td class="py-3 px-6">PPTX</td>
+                            <td class="py-3 px-6">5.1 MB</td>
+                            <td class="py-3 px-6">Mar 12, 2026</td>
+                            <td class="py-3 px-6">
+                                <div class="flex gap-2">
+                                    <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-download"></i></button>
+                                    <button class="text-green-600 hover:text-green-800"><i class="fas fa-share-alt"></i></button>
+                                    <button class="text-amber-600 hover:text-amber-800"><i class="fas fa-star"></i></button>
+                                    <button class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Excel -->
+                        <tr class="file-item hover:bg-slate-50">
+                            <td class="py-3 px-6">
+                                <input type="checkbox" class="rounded border-slate-300">
+                            </td>
+                            <td class="py-3 px-6">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-file-excel text-green-500 text-lg"></i>
+                                    <div>
+                                        <p class="font-medium">Group_Epsilon_Data.xlsx</p>
+                                        <p class="text-xs text-slate-500">Uploaded by Group Epsilon</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 px-6">Epsilon</td>
+                            <td class="py-3 px-6">XLSX</td>
+                            <td class="py-3 px-6">1.2 MB</td>
+                            <td class="py-3 px-6">Mar 11, 2026</td>
+                            <td class="py-3 px-6">
+                                <div class="flex gap-2">
+                                    <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-download"></i></button>
+                                    <button class="text-green-600 hover:text-green-800"><i class="fas fa-share-alt"></i></button>
+                                    <button class="text-amber-600 hover:text-amber-800"><i class="far fa-star"></i></button>
+                                    <button class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- ZIP Archive -->
+                        <tr class="file-item hover:bg-slate-50">
+                            <td class="py-3 px-6">
+                                <input type="checkbox" class="rounded border-slate-300">
+                            </td>
+                            <td class="py-3 px-6">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-file-archive text-purple-500 text-lg"></i>
+                                    <div>
+                                        <p class="font-medium">Group_Zeta_Source_Code.zip</p>
+                                        <p class="text-xs text-slate-500">Uploaded by Group Zeta</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 px-6">Zeta</td>
+                            <td class="py-3 px-6">ZIP</td>
+                            <td class="py-3 px-6">15.8 MB</td>
+                            <td class="py-3 px-6">Mar 10, 2026</td>
+                            <td class="py-3 px-6">
+                                <div class="flex gap-2">
+                                    <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-download"></i></button>
+                                    <button class="text-green-600 hover:text-green-800"><i class="fas fa-share-alt"></i></button>
+                                    <button class="text-amber-600 hover:text-amber-800"><i class="far fa-star"></i></button>
+                                    <button class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Storage Info -->
+            <div class="bg-white rounded-xl border p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-database text-blue-600"></i>
+                        <span class="font-medium">Storage Used</span>
+                    </div>
+                    <span class="text-sm">245 MB / 1 GB</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill bg-blue-600" style="width: 24%"></div>
+                </div>
+                <div class="flex justify-between mt-2 text-xs text-slate-500">
+                    <span>Documents: 156 MB</span>
+                    <span>Source Code: 89 MB</span>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-slate-500">
+                    Showing <span class="font-medium">1</span> to <span class="font-medium">6</span> of <span class="font-medium">45</span> files
+                </div>
+                <div class="flex gap-2">
+                    <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 transition disabled:opacity-50" disabled>
+                        <i class="fas fa-chevron-left text-xs"></i>
+                    </button>
+                    <button class="px-3 py-1 bg-blue-600 text-white rounded-lg">1</button>
+                    <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 transition">2</button>
+                    <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 transition">3</button>
+                    <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 transition">4</button>
+                    <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 transition">5</button>
+                    <button class="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-xl border p-6">
+                <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3 text-sm">
+                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span class="text-slate-600"><span class="font-medium">Group Alpha</span> uploaded <span class="text-blue-600">Concept_Paper.pdf</span></span>
+                        <span class="text-xs text-slate-400 ml-auto">2 minutes ago</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-sm">
+                        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span class="text-slate-600"><span class="font-medium">Prof. Cruz</span> downloaded <span class="text-blue-600">Group_Beta_Proposal.pdf</span></span>
+                        <span class="text-xs text-slate-400 ml-auto">1 hour ago</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-sm">
+                        <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <span class="text-slate-600"><span class="font-medium">Group Delta</span> modified <span class="text-blue-600">Defense_Slides.pptx</span></span>
+                        <span class="text-xs text-slate-400 ml-auto">3 hours ago</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-sm">
+                        <div class="w-2 h-2 bg-amber-500 rounded-full"></div>
+                        <span class="text-slate-600"><span class="font-medium">System</span> created folder <span class="text-blue-600">Deployment_Certificates</span></span>
+                        <span class="text-xs text-slate-400 ml-auto">5 hours ago</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-sm">
+                        <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                        <span class="text-slate-600"><span class="font-medium">Group Epsilon</span> deleted <span class="text-blue-600">old_draft.docx</span></span>
+                        <span class="text-xs text-slate-400 ml-auto">1 day ago</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Search functionality
+        document.getElementById('searchDocs').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+           
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+           
+            if (searchTerm.length > 0) {
+                showNotification(`Searching: "${searchTerm}"`);
+            }
+        });
+
+        // Navigation functions
+        function navigateTo(location) {
+            showNotification(`Navigating to: ${location}`);
+        }
+
+        // Filter function
+        function filterFiles() {
+            showNotification('Filter options opened');
+        }
+
+        // Switch Handlers
+        document.getElementById("programSwitch").addEventListener("change", function () {
+            showNotification('Program changed to ' + this.options[this.selectedIndex].text);
+        });
+
+        document.getElementById("sectionSelect").addEventListener("change", function () {
+            showNotification('Section changed to ' + this.options[this.selectedIndex].text);
+        });
+
+        // Notification function
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+           
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // File actions
+        function downloadFile(filename) {
+            showNotification(`Downloading: ${filename}`);
+        }
+
+        function shareFile(filename) {
+            showNotification(`Sharing: ${filename}`);
+        }
+
+        function starFile(filename) {
+            showNotification(`Starred: ${filename}`);
+        }
+
+        function deleteFile(filename) {
+            if(confirm(`Are you sure you want to delete ${filename}?`)) {
+                showNotification(`Deleted: ${filename}`);
+            }
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            const tabs = document.querySelectorAll('.border-b .py-2');
+            tabs.forEach(tab => {
+                tab.classList.remove('tab-active', 'text-blue-600', 'border-b-2', 'border-blue-600');
+                tab.classList.add('text-slate-500');
+            });
+            event.target.classList.add('tab-active', 'text-blue-600', 'border-b-2', 'border-blue-600');
+            event.target.classList.remove('text-slate-500');
+           
+            showNotification(`Switched to: ${tabName}`);
+        }
+
+        // Drag and drop simulation
+        document.querySelector('.upload-area').addEventListener('click', function() {
+            showNotification('File browser opened');
+        });
+
+        document.querySelector('.upload-area').addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('border-blue-600', 'bg-blue-50');
+        });
+
+        document.querySelector('.upload-area').addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('border-blue-600', 'bg-blue-50');
+        });
+
+        document.querySelector('.upload-area').addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('border-blue-600', 'bg-blue-50');
+            showNotification('Files dropped - upload started');
+        });
+    </script>
+</body>
+</html>
