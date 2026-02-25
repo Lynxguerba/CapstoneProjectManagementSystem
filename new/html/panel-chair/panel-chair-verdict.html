@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Verdict - Panel Chair - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-badge.pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .status-badge.approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.re-defense {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .notification-dot {
+            position: relative;
+        }
+
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .table-row-hover:hover {
+            background: #f8fafc;
+        }
+
+        .pagination-item {
+            transition: all 0.2s ease;
+        }
+
+        .pagination-item:hover {
+            background: #f1f5f9;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - EXACT COPY FROM DASHBOARD -->
+    <aside
+        class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-gavel text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Panel Chair Portal</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Chair Role</p>
+                    <p class="text-sm font-semibold text-white">Panel Chair</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="panel-chair-dashboard.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">8</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Evaluation</p>
+            <a href="panel-chair-evaluation.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Evaluation Sheets</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">5</span>
+            </a>
+            <a href="panel-chair-verdict.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg">
+                <i class="fas fa-check-circle w-5"></i>
+                <span class="flex-1">Final Verdict</span>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+            <a href="panel-chair-comments.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Panel Comments</span>
+                <span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded-full">12</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Defense Day</p>
+            <a href="panel-chair-livedefense.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-check w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Live Defense</span>
+                <span class="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+            <a href="panel-chair-minutes.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-clipboard-list w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Minutes of Meeting</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Approval</p>
+            <a href="panel-chair-signatures.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Digital Signatures</span>
+                <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded-full">4</span>
+            </a>
+            <a href="panel-chair-approval.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-pdf w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Approval Sheets</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Reports</p>
+            <a href="panel-chair-analytics.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-line w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Analytics</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                    MS</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Maria Santos</p>
+                    <p class="text-xs text-slate-400">Panel Chair · College of Computing</p>
+                </div>
+                <a href="instructor-dashboard.html"
+                    class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"
+                    title="Switch Role">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72">
+        <div
+            class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Final Verdict</h2>
+                <span class="bg-violet-100 text-violet-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-gavel"></i> Defense Groups
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <div class="flex items-center gap-3 border-l pl-4">
+                    <select class="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
+                        <option>BS Information Technology</option>
+                        <option>BS Information Systems</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-8 space-y-6 mt-20 pb-12">
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-white rounded-xl border p-6">
+                    <p class="text-sm text-slate-500">Total Defenses</p>
+                    <p class="text-3xl font-bold">24</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6">
+                    <p class="text-sm text-slate-500">Pending Verdict</p>
+                    <p class="text-3xl font-bold text-amber-600">5</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6">
+                    <p class="text-sm text-slate-500">Completed</p>
+                    <p class="text-3xl font-bold text-green-600">15</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6">
+                    <p class="text-sm text-slate-500">This Week</p>
+                    <p class="text-3xl font-bold text-blue-600">8</p>
+                </div>
+            </div>
+
+            <!-- Search and Filter Section -->
+            <div class="bg-white rounded-xl border p-4 flex flex-col md:flex-row gap-4">
+                <div class="flex-1 relative">
+                    <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" placeholder="Search by group name, project, or adviser..."
+                        class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400">
+                </div>
+                <div class="flex gap-2">
+                    <select class="border border-slate-200 rounded-lg px-4 py-2 text-sm">
+                        <option>All Status</option>
+                        <option>Pending</option>
+                        <option>Approved</option>
+                        <option>Re-Defense</option>
+                    </select>
+                    <select class="border border-slate-200 rounded-lg px-4 py-2 text-sm">
+                        <option>All Rooms</option>
+                        <option>Room 201</option>
+                        <option>Room 202</option>
+                        <option>Room 203</option>
+                    </select>
+                    <select class="border border-slate-200 rounded-lg px-4 py-2 text-sm">
+                        <option>Sort by Date</option>
+                        <option>Newest First</option>
+                        <option>Oldest First</option>
+                        <option>By Room</option>
+                    </select>
+                    <button class="bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700">
+                        <i class="fas fa-filter mr-2"></i>Apply
+                    </button>
+                </div>
+            </div>
+
+            <!-- Defense Groups Table -->
+            <div class="bg-white rounded-xl border overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-slate-50 border-b">
+                        <tr>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Group</th>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Project</th>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Adviser</th>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Schedule</th>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Room</th>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Status</th>
+                            <th class="text-left py-4 px-6 text-sm font-semibold text-slate-600">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        <!-- Group Alpha -->
+                        <tr class="table-row-hover">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">
+                                        A</div>
+                                    <div>
+                                        <p class="font-medium">Group Alpha</p>
+                                        <p class="text-xs text-slate-400">BSIT-3A</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">E-Learning Platform</p>
+                                <p class="text-xs text-slate-400">with AI Recommendations</p>
+                            </td>
+                            <td class="py-4 px-6">Prof. Cruz</td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Mar 11, 2026</p>
+                                <p class="text-xs text-slate-400">2:00 PM</p>
+                            </td>
+                            <td class="py-4 px-6">Room 201</td>
+                            <td class="py-4 px-6">
+                                <span class="status-badge pending px-3 py-1">Pending</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <a href="panel-chair-verdict-details.html?group=alpha"
+                                    class="text-violet-600 hover:text-violet-800 font-medium text-sm flex items-center gap-1">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            </td>
+                        </tr>
+
+                        <!-- Group Beta -->
+                        <tr class="table-row-hover">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white font-bold">
+                                        B</div>
+                                    <div>
+                                        <p class="font-medium">Group Beta</p>
+                                        <p class="text-xs text-slate-400">BSIT-3A</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Inventory System</p>
+                                <p class="text-xs text-slate-400">with Barcode Scanning</p>
+                            </td>
+                            <td class="py-4 px-6">Prof. Reyes</td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Mar 11, 2026</p>
+                                <p class="text-xs text-slate-400">4:00 PM</p>
+                            </td>
+                            <td class="py-4 px-6">Room 202</td>
+                            <td class="py-4 px-6">
+                                <span class="status-badge pending px-3 py-1">Pending</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <a href="panel-chair-verdict-details.html?group=beta"
+                                    class="text-violet-600 hover:text-violet-800 font-medium text-sm flex items-center gap-1">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            </td>
+                        </tr>
+
+                        <!-- Group Gamma -->
+                        <tr class="table-row-hover">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                        Γ</div>
+                                    <div>
+                                        <p class="font-medium">Group Gamma</p>
+                                        <p class="text-xs text-slate-400">BSIT-3A</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Mobile Health App</p>
+                                <p class="text-xs text-slate-400">Fitness Tracker</p>
+                            </td>
+                            <td class="py-4 px-6">Prof. Santos</td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Mar 12, 2026</p>
+                                <p class="text-xs text-slate-400">1:00 PM</p>
+                            </td>
+                            <td class="py-4 px-6">Room 201</td>
+                            <td class="py-4 px-6">
+                                <span class="status-badge pending px-3 py-1">Pending</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <a href="panel-chair-verdict-details.html?group=gamma"
+                                    class="text-violet-600 hover:text-violet-800 font-medium text-sm flex items-center gap-1">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            </td>
+                        </tr>
+
+                        <!-- Group Delta -->
+                        <tr class="table-row-hover">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-bold">
+                                        Δ</div>
+                                    <div>
+                                        <p class="font-medium">Group Delta</p>
+                                        <p class="text-xs text-slate-400">BSIT-3A</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">AI Chatbot System</p>
+                                <p class="text-xs text-slate-400">Customer Service</p>
+                            </td>
+                            <td class="py-4 px-6">Prof. Lim</td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Mar 13, 2026</p>
+                                <p class="text-xs text-slate-400">10:00 AM</p>
+                            </td>
+                            <td class="py-4 px-6">Room 203</td>
+                            <td class="py-4 px-6">
+                                <span class="status-badge approved px-3 py-1">Approved</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <a href="panel-chair-verdict-details.html?group=delta"
+                                    class="text-violet-600 hover:text-violet-800 font-medium text-sm flex items-center gap-1">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            </td>
+                        </tr>
+
+                        <!-- Group Epsilon -->
+                        <tr class="table-row-hover">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white font-bold">
+                                        E</div>
+                                    <div>
+                                        <p class="font-medium">Group Epsilon</p>
+                                        <p class="text-xs text-slate-400">BSIT-3B</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Library System</p>
+                                <p class="text-xs text-slate-400">with QR Code</p>
+                            </td>
+                            <td class="py-4 px-6">Prof. Villanueva</td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Mar 14, 2026</p>
+                                <p class="text-xs text-slate-400">9:00 AM</p>
+                            </td>
+                            <td class="py-4 px-6">Room 201</td>
+                            <td class="py-4 px-6">
+                                <span class="status-badge re-defense px-3 py-1">Re-Defense</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <a href="panel-chair-verdict-details.html?group=epsilon"
+                                    class="text-violet-600 hover:text-violet-800 font-medium text-sm flex items-center gap-1">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            </td>
+                        </tr>
+
+                        <!-- Group Zeta -->
+                        <tr class="table-row-hover">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-bold">
+                                        Z</div>
+                                    <div>
+                                        <p class="font-medium">Group Zeta</p>
+                                        <p class="text-xs text-slate-400">BSIT-3B</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">HR Analytics</p>
+                                <p class="text-xs text-slate-400">Employee Performance</p>
+                            </td>
+                            <td class="py-4 px-6">Prof. Cruz</td>
+                            <td class="py-4 px-6">
+                                <p class="font-medium">Mar 15, 2026</p>
+                                <p class="text-xs text-slate-400">1:00 PM</p>
+                            </td>
+                            <td class="py-4 px-6">Room 202</td>
+                            <td class="py-4 px-6">
+                                <span class="status-badge pending px-3 py-1">Pending</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <a href="panel-chair-verdict-details.html?group=zeta"
+                                    class="text-violet-600 hover:text-violet-800 font-medium text-sm flex items-center gap-1">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-slate-500">
+                    Showing <span class="font-medium">1</span> to <span class="font-medium">6</span> of <span
+                        class="font-medium">24</span> defenses
+                </div>
+                <div class="flex gap-2">
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-50"
+                        disabled>
+                        <i class="fas fa-chevron-left text-sm"></i>
+                    </button>
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg bg-violet-600 text-white flex items-center justify-center">1</button>
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">2</button>
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">3</button>
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">4</button>
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">5</button>
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+                        <i class="fas fa-chevron-right text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Generate Minutes Section -->
+            <div class="bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl p-6 text-white mt-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold mb-2">Generate Minutes of Meeting</h3>
+                        <p class="text-violet-100 text-sm">Create official minutes for completed defense sessions</p>
+                    </div>
+                    <button
+                        class="bg-white text-violet-600 px-6 py-2.5 rounded-lg hover:bg-violet-50 transition font-medium flex items-center gap-2">
+                        <i class="fas fa-file-pdf"></i>
+                        Generate Minutes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

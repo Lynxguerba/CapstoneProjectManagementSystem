@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Comments - Panel Chair - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        .notification-dot {
+            position: relative;
+        }
+
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .comment-card {
+            transition: all 0.2s ease;
+        }
+
+        .comment-card:hover {
+            background: #f8fafc;
+            transform: translateX(4px);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - EXACT COPY FROM DASHBOARD -->
+    <aside
+        class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-gavel text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Panel Chair Portal</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Chair Role</p>
+                    <p class="text-sm font-semibold text-white">Panel Chair</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="panel-chair-dashboard.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">8</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Evaluation</p>
+            <a href="panel-chair-evaluation.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Evaluation Sheets</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">5</span>
+            </a>
+            <a href="panel-chair-verdict.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-check-circle w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Final Verdict</span>
+                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+            <a href="panel-chair-comments.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg">
+                <i class="fas fa-users w-5"></i>
+                <span class="flex-1">Panel Comments</span>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">12</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Defense Day</p>
+            <a href="panel-chair-livedefense.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-check w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Live Defense</span>
+                <span class="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+            <a href="panel-chair-minutes.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-clipboard-list w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Minutes of Meeting</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Approval</p>
+            <a href="panel-chair-signatures.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Digital Signatures</span>
+                <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded-full">4</span>
+            </a>
+            <a href="panel-chair-approval.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-pdf w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Approval Sheets</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Reports</p>
+            <a href="panel-chair-analytics.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-line w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Analytics</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                    MS</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Maria Santos</p>
+                    <p class="text-xs text-slate-400">Panel Chair · College of Computing</p>
+                </div>
+                <a href="instructor-dashboard.html"
+                    class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"
+                    title="Switch Role">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72">
+        <div
+            class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Panel Comments</h2>
+                <span class="bg-violet-100 text-violet-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-comments"></i> 12 New Comments
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <div class="flex items-center gap-3 border-l pl-4">
+                    <select class="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
+                        <option>BS Information Technology</option>
+                        <option>BS Information Systems</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-8 space-y-6 mt-20 pb-12">
+            <!-- Filter Section -->
+            <div class="bg-white rounded-xl border p-4 flex flex-wrap gap-4">
+                <select class="border border-slate-200 rounded-lg px-4 py-2">
+                    <option>All Groups</option>
+                    <option>Group Alpha</option>
+                    <option>Group Beta</option>
+                    <option>Group Gamma</option>
+                    <option>Group Delta</option>
+                </select>
+                <select class="border border-slate-200 rounded-lg px-4 py-2">
+                    <option>All Panelists</option>
+                    <option>Prof. Santos</option>
+                    <option>Prof. Lopez</option>
+                    <option>Prof. Reyes</option>
+                    <option>Prof. Cruz</option>
+                </select>
+                <select class="border border-slate-200 rounded-lg px-4 py-2">
+                    <option>Newest First</option>
+                    <option>Oldest First</option>
+                    <option>By Group</option>
+                </select>
+            </div>
+
+            <!-- Comments Summary Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-white rounded-xl border p-6">
+                    <p class="text-sm text-slate-500">Total Comments</p>
+                    <p class="text-2xl font-bold">48</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6">
+                    <p class="text-sm text-slate-500">New This Week</p>
+                    <p class="text-2xl font-bold text-amber-600">12</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6">
+                    <p class="text-sm text-slate-500">Panelists Active</p>
+                    <p class="text-2xl font-bold text-green-600">6</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6">
+                    <p class="text-sm text-slate-500">Groups with Comments</p>
+                    <p class="text-2xl font-bold">8</p>
+                </div>
+            </div>
+
+            <!-- Comments List -->
+            <div class="space-y-4">
+                <!-- Comment 1 -->
+                <div class="comment-card bg-white border rounded-xl p-5">
+                    <div class="flex items-start gap-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
+                            PS</div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium">Prof. Santos <span
+                                            class="text-xs text-slate-400 ml-2">Panelist</span></p>
+                                    <p class="text-xs text-slate-400">on Group Alpha · Concept Paper</p>
+                                </div>
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">2 hours
+                                    ago</span>
+                            </div>
+                            <p class="text-sm text-slate-600 mt-3">"Excellent presentation and thorough documentation.
+                                AI integration is impressive. The system architecture is well-designed and the team
+                                demonstrated good understanding of the technology stack."</p>
+                            <div class="mt-3 flex items-center gap-4 text-xs">
+                                <span class="text-amber-600"><i class="fas fa-star mr-1"></i> Recommendation:
+                                    Approved</span>
+                                <span class="text-slate-400"><i class="fas fa-paperclip mr-1"></i> 2 attachments</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comment 2 -->
+                <div class="comment-card bg-white border rounded-xl p-5">
+                    <div class="flex items-start gap-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                            JL</div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium">Prof. Lopez <span
+                                            class="text-xs text-slate-400 ml-2">Panelist</span></p>
+                                    <p class="text-xs text-slate-400">on Group Beta · Proposal</p>
+                                </div>
+                                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">5 hours
+                                    ago</span>
+                            </div>
+                            <p class="text-sm text-slate-600 mt-3">"Good system architecture, but needs more testing
+                                documentation. Consider adding unit test results and QA procedures. The database design
+                                looks solid."</p>
+                            <div class="mt-3 flex items-center gap-4 text-xs">
+                                <span class="text-amber-600"><i class="fas fa-star mr-1"></i> Recommendation: Minor
+                                    Revisions</span>
+                                <span class="text-slate-400"><i class="fas fa-paperclip mr-1"></i> 1 attachment</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comment 3 -->
+                <div class="comment-card bg-white border rounded-xl p-5">
+                    <div class="flex items-start gap-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-lg">
+                            MR</div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium">Prof. Reyes <span
+                                            class="text-xs text-slate-400 ml-2">Panelist</span></p>
+                                    <p class="text-xs text-slate-400">on Group Gamma · Defense Slides</p>
+                                </div>
+                                <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">1 day
+                                    ago</span>
+                            </div>
+                            <p class="text-sm text-slate-600 mt-3">"Mobile app UI needs improvement. Consider user
+                                feedback from initial testing. The functionality is there but the user experience could
+                                be enhanced."</p>
+                            <div class="mt-3 flex items-center gap-4 text-xs">
+                                <span class="text-red-600"><i class="fas fa-star mr-1"></i> Recommendation:
+                                    Re-Defense</span>
+                                <span class="text-slate-400"><i class="fas fa-paperclip mr-1"></i> 3 attachments</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comment 4 -->
+                <div class="comment-card bg-white border rounded-xl p-5">
+                    <div class="flex items-start gap-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-lg">
+                            AC</div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium">Prof. Cruz <span
+                                            class="text-xs text-slate-400 ml-2">Adviser</span></p>
+                                    <p class="text-xs text-slate-400">on Group Delta · Concept Paper</p>
+                                </div>
+                                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">2 days
+                                    ago</span>
+                            </div>
+                            <p class="text-sm text-slate-600 mt-3">"The AI Chatbot concept is innovative. Good choice of
+                                technology stack. Please provide more details on the NLP implementation and training
+                                data."</p>
+                            <div class="mt-3 flex items-center gap-4 text-xs">
+                                <span class="text-amber-600"><i class="fas fa-star mr-1"></i> Recommendation: Minor
+                                    Revisions</span>
+                                <span class="text-slate-400"><i class="fas fa-paperclip mr-1"></i> 1 attachment</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comment 5 -->
+                <div class="comment-card bg-white border rounded-xl p-5">
+                    <div class="flex items-start gap-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg">
+                            DM</div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium">Prof. Mendoza <span
+                                            class="text-xs text-slate-400 ml-2">Panelist</span></p>
+                                    <p class="text-xs text-slate-400">on Group Epsilon · Documentation</p>
+                                </div>
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">3 days
+                                    ago</span>
+                            </div>
+                            <p class="text-sm text-slate-600 mt-3">"Excellent documentation! Very thorough and
+                                well-organized. The technical specifications are clear and the user manual is
+                                comprehensive."</p>
+                            <div class="mt-3 flex items-center gap-4 text-xs">
+                                <span class="text-green-600"><i class="fas fa-star mr-1"></i> Recommendation:
+                                    Approved</span>
+                                <span class="text-slate-400"><i class="fas fa-paperclip mr-1"></i> 2 attachments</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Load More -->
+            <div class="text-center">
+                <button class="px-6 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm">
+                    Load More Comments
+                </button>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>
