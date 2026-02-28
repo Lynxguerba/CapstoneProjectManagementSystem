@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Filter, Search } from 'lucide-react';
 import AdminLayout from './_layout';
 
@@ -44,8 +45,12 @@ const AdminAuditLogs = ({ logs = [] }: AuditLogsProps) => {
     }, [logs, query, severity]);
 
     return (
-        <AdminLayout title="Audit Logs" subtitle="Track high-impact system activities and data integrity events">
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <AdminLayout title="Audit Logs" subtitle="Track sensitive system activity and data integrity events">
+            <motion.section
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+            >
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h3 className="text-lg font-semibold text-slate-900">System Activity Logs</h3>
@@ -92,7 +97,7 @@ const AdminAuditLogs = ({ logs = [] }: AuditLogsProps) => {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {filteredLogs.map((log) => (
-                                <tr key={log.id} className="hover:bg-slate-50">
+                                <tr key={log.id} className="transition-colors hover:bg-slate-50">
                                     <td className="py-3 whitespace-nowrap text-slate-600">{log.timestamp}</td>
                                     <td className="py-3 font-medium text-slate-800">{log.actor}</td>
                                     <td className="py-3 text-slate-700">{log.action}</td>
@@ -113,7 +118,7 @@ const AdminAuditLogs = ({ logs = [] }: AuditLogsProps) => {
                         </div>
                     ) : null}
                 </div>
-            </section>
+            </motion.section>
         </AdminLayout>
     );
 };

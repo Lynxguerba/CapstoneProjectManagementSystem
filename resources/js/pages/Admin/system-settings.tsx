@@ -1,5 +1,7 @@
 import React from 'react';
 import { useForm } from '@inertiajs/react';
+import { motion } from 'framer-motion';
+import { Settings } from 'lucide-react';
 import AdminLayout from './_layout';
 
 type SystemSettingsData = {
@@ -29,10 +31,19 @@ const AdminSystemSettings = ({ settings }: AdminSystemSettingsProps) => {
     };
 
     return (
-        <AdminLayout title="System Settings" subtitle="Configure global academic cycles, deadlines, and notifications">
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-900">Global Configuration</h3>
-                <p className="mt-1 text-sm text-slate-500">Settings from this page apply system-wide for all roles.</p>
+        <AdminLayout title="System Settings" subtitle="Configure global academic cycles and deadlines">
+            <motion.section
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+            >
+                <div className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-slate-700" />
+                    <div>
+                        <h3 className="text-lg font-semibold text-slate-900">Global Configuration</h3>
+                        <p className="text-sm text-slate-500">Settings from this page apply system-wide for all roles.</p>
+                    </div>
+                </div>
 
                 <form onSubmit={submitSettings} className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
                     <div>
@@ -98,13 +109,13 @@ const AdminSystemSettings = ({ settings }: AdminSystemSettingsProps) => {
                         <button
                             type="submit"
                             disabled={form.processing}
-                            className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-700 px-5 py-2.5 text-sm font-semibold text-white hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {form.processing ? 'Saving...' : 'Save settings'}
                         </button>
                     </div>
                 </form>
-            </section>
+            </motion.section>
         </AdminLayout>
     );
 };

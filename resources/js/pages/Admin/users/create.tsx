@@ -1,5 +1,6 @@
 import React from 'react';
 import { useForm } from '@inertiajs/react';
+import { motion } from 'framer-motion';
 import { Upload, UserPlus } from 'lucide-react';
 import AdminLayout from '../_layout';
 
@@ -24,7 +25,7 @@ const AdminUsersCreate = ({ availableRoles = ['admin', 'student', 'adviser', 'in
         password: '',
     });
 
-    const [bulkFileName, setBulkFileName] = React.useState<string>('');
+    const [bulkFileName, setBulkFileName] = React.useState('');
 
     const submitSingleUser = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -32,9 +33,13 @@ const AdminUsersCreate = ({ availableRoles = ['admin', 'student', 'adviser', 'in
     };
 
     return (
-        <AdminLayout title="Create Users" subtitle="Add individual accounts or upload user data in bulk">
+        <AdminLayout title="Create Users" subtitle="Add individual accounts or upload accounts in bulk">
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <motion.section
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+                >
                     <div className="flex items-center gap-3">
                         <UserPlus className="h-5 w-5 text-slate-700" />
                         <div>
@@ -98,14 +103,19 @@ const AdminUsersCreate = ({ availableRoles = ['admin', 'student', 'adviser', 'in
                         <button
                             type="submit"
                             disabled={userForm.processing}
-                            className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="w-full rounded-xl bg-gradient-to-r from-slate-900 to-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {userForm.processing ? 'Creating...' : 'Create account'}
                         </button>
                     </form>
-                </section>
+                </motion.section>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <motion.section
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+                >
                     <div className="flex items-center gap-3">
                         <Upload className="h-5 w-5 text-slate-700" />
                         <div>
@@ -127,9 +137,7 @@ const AdminUsersCreate = ({ availableRoles = ['admin', 'student', 'adviser', 'in
                                     setBulkFileName(file ? file.name : '');
                                 }}
                             />
-                            <span className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
-                                Browse file
-                            </span>
+                            <span className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">Browse file</span>
                         </label>
                     </div>
 
@@ -141,7 +149,7 @@ const AdminUsersCreate = ({ availableRoles = ['admin', 'student', 'adviser', 'in
                     >
                         Upload and import
                     </button>
-                </section>
+                </motion.section>
             </div>
         </AdminLayout>
     );

@@ -81,6 +81,14 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
         ];
 
         switch (role) {
+            case 'admin':
+                return [
+                    { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
+                    { icon: Users, label: 'User Management', href: '/admin/users' },
+                    { icon: BookOpen, label: 'Create Users', href: '/admin/users/create' },
+                    { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
+                    { icon: Archive, label: 'Audit Logs', href: '/admin/audit-logs' },
+                ];
             case 'student':
                 return [
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/student/dashboard' },
