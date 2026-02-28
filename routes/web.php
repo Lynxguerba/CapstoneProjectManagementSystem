@@ -6,11 +6,18 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\EnsureWebAuthenticated;
 use Illuminate\Auth\Middleware\Authenticate as AuthenticateMiddleware;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 //
 Route::get('/', function () {
+    if (Auth::guard('web')->check()) {
+        $user = Auth::guard('web')->user();
+
+        return redirect()->route($user->role.'.dashboard');
+    }
+
     return Inertia::render('login');
 })->name('login');
 

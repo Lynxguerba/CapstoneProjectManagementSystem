@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, LogOut, AlertTriangle } from 'lucide-react';
+import { useForm } from '@inertiajs/react';
 
 interface SignOutModalProps {
     open: boolean;
@@ -9,6 +10,7 @@ interface SignOutModalProps {
 
 const SignOutModal = ({ open, onClose }: SignOutModalProps) => {
     const [loading, setLoading] = useState(false);
+    const { post } = useForm({});
 
     useEffect(() => {
         if (!open) {
@@ -31,31 +33,15 @@ const SignOutModal = ({ open, onClose }: SignOutModalProps) => {
         };
     }, [open, onClose]);
 
-    const handleSignOut = async () => {
+    const handleSignOut = () => {
         setLoading(true);
-        try {
-            const response = await fetch('/logout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-                credentials: 'same-origin',
-            });
 
-            if (response.redirected) {
-                window.location.replace(response.url);
-            } else {
-                // Fallback
-                window.location.replace('/');
-            }
-        } catch (error) {
-            console.error('Sign out failed', error);
-            // Fallback
-            window.location.replace('/');
-        } finally {
-            setLoading(false);
-        }
+        post('/logout', {
+            preserveScroll: true,
+            onFinish: () => {
+                setLoading(false);
+            },
+        });
     };
 
     if (!open) return null;
