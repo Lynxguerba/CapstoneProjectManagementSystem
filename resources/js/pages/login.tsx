@@ -22,7 +22,6 @@ export default function LoginPage() {
 
     const roles = ROLE_OPTIONS;
 
-
     // VIEW TOGGLE STATE FOR PASSWORD
     const [showPassword, setShowPassword] = useState(false);
 
@@ -90,10 +89,11 @@ export default function LoginPage() {
                                     {/* Floating Label — updated to match email/password style */}
                                     <label
                                         htmlFor="role"
-                                        className={`pointer-events-none absolute left-3 transition-all duration-300 ${data.role
-                                            ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
-                                            : 'top-1/2 -translate-y-1/2 text-sm text-gray-500 peer-focus:-top-2 peer-focus:translate-y-0 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
-                                            }`}
+                                        className={`pointer-events-none absolute left-3 transition-all duration-300 ${
+                                            data.role
+                                                ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
+                                                : 'top-1/2 -translate-y-1/2 text-sm text-gray-500 peer-focus:-top-2 peer-focus:translate-y-0 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
+                                        }`}
                                     >
                                         Select Role
                                     </label>
@@ -122,10 +122,11 @@ export default function LoginPage() {
                                 />
                                 <label
                                     htmlFor="email"
-                                    className={`pointer-events-none absolute left-3 transition-all duration-300 ${data.email
-                                        ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
-                                        : 'top-3 text-sm text-gray-500 peer-focus:-top-2 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
-                                        }`}
+                                    className={`pointer-events-none absolute left-3 transition-all duration-300 ${
+                                        data.email
+                                            ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
+                                            : 'top-3 text-sm text-gray-500 peer-focus:-top-2 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
+                                    }`}
                                 >
                                     Email Address
                                 </label>
@@ -149,10 +150,11 @@ export default function LoginPage() {
                                     {/* Floating Label */}
                                     <label
                                         htmlFor="password"
-                                        className={`pointer-events-none absolute left-3 transition-all duration-300 ${data.password
+                                        className={`pointer-events-none absolute left-3 transition-all duration-300 ${
+                                            data.password
                                                 ? '-top-2 bg-white px-1 text-xs font-medium text-green-600'
                                                 : 'top-3 text-sm text-gray-500 peer-focus:-top-2 peer-focus:bg-white peer-focus:px-1 peer-focus:text-xs peer-focus:font-medium peer-focus:text-green-600'
-                                            }`}
+                                        }`}
                                     >
                                         Password
                                     </label>
@@ -166,16 +168,21 @@ export default function LoginPage() {
                                         {showPassword ? (
                                             // Eye Off Icon
                                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round"
-                                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9.27-3.11-11-7 1.02-2.29 2.86-4.22 5.13-5.44M9.88 9.88A3 3 0 1114.12 14.12M6.1 6.1L17.9 17.9" />
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9.27-3.11-11-7 1.02-2.29 2.86-4.22 5.13-5.44M9.88 9.88A3 3 0 1114.12 14.12M6.1 6.1L17.9 17.9"
+                                                />
                                             </svg>
                                         ) : (
                                             // Eye Icon
                                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round"
-                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round"
-                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                                />
                                             </svg>
                                         )}
                                     </button>
@@ -187,7 +194,7 @@ export default function LoginPage() {
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="group relative flex w-full justify-center overflow-hidden rounded-lg border border-transparent bg-gradient-to-r from-green-600 to-green-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:from-green-700 hover:to-green-800 hover:shadow-xl focus:ring-4 focus:ring-green-500/50 focus:outline-none active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="group relative flex w-full justify-center overflow-hidden rounded-lg border border-transparent bg-gradient-to-r from-green-600 to-green-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] hover:from-green-700 hover:to-green-800 hover:shadow-xl focus:ring-4 focus:ring-green-500/50 focus:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {/* Shine effect */}
                                     <span className="animate-shine absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent"></span>
@@ -197,15 +204,9 @@ export default function LoginPage() {
                         </form>
 
                         {/* Error Messages */}
-                        {errors.email && (
-                            <div className="text-xs text-red-600 text-center">{errors.email}</div>
-                        )}
-                        {errors.password && (
-                            <div className="text-xs text-red-600 text-center">{errors.password}</div>
-                        )}
-                        {errors.role && (
-                            <div className="text-xs text-red-600 text-center">{errors.role}</div>
-                        )}
+                        {errors.email && <div className="text-center text-xs text-red-600">{errors.email}</div>}
+                        {errors.password && <div className="text-center text-xs text-red-600">{errors.password}</div>}
+                        {errors.role && <div className="text-center text-xs text-red-600">{errors.role}</div>}
 
                         {/* Sign up link - Smaller */}
                         <div className="animate-fade-in-up pt-1 text-center" style={{ animationDelay: '0.6s' }}>
