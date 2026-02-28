@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminSystemSettingsController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\EnsureWebAuthenticated;
 use Illuminate\Auth\Middleware\Authenticate as AuthenticateMiddleware;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -17,7 +18,7 @@ Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // ADMIN ROUTES (protected)
-Route::prefix('admin')->middleware([AuthenticateMiddleware::class, EnsureRole::class.':admin'])->group(function () {
+Route::prefix('admin')->middleware([EnsureWebAuthenticated::class, EnsureRole::class.':admin'])->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Admin/dashboard');
     })->name('admin.dashboard');

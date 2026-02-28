@@ -12,21 +12,19 @@ class EnsureRole
      * Handle an incoming request.
      * Accepts one or more roles as parameters.
      */
-    public function handle(Request $request, Closure $next, string $role = null)
+    public function handle(Request $request, Closure $next, ?string $role = null)
     {
-        if (!Auth::check()) {
+        if (! Auth::guard('web')->check()) {
             return redirect()->route('login');
         }
 
-        $user = Auth::user();
+        $user = Auth::guard('web')->user();
 
         if ($role !== null) {
-            // Allow pipe-separated roles as fallback
             $allowed = array_map('trim', explode('|', $role));
 
-            if (!in_array($user->role, $allowed, true)) {
-                // Redirect the user to their own dashboard if they try to access another role's pages
-                return redirect()->route($user->role . '.dashboard');
+            if (! in_array($user->role, $allowed, true)) {
+                return redirect()->route($user->role.'.dashboard');
             }
         }
 
