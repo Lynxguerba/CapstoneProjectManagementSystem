@@ -4,36 +4,60 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Inertia\Inertia;
+use Illuminate\Validation\Rule;
 
 class LoginController extends Controller
 {
-    public function store(Request $request)
+    /**
+     * @var array<string, string>
+     */
+    private const ROLE_DASHBOARD_ROUTES = [
+        'admin' => 'admin.dashboard',
+        'student' => 'student.dashboard',
+        'adviser' => 'adviser.dashboard',
+        'panelist' => 'panelist.dashboard',
+        'instructor' => 'instructor.dashboard',
+        'dean' => 'dean.dashboard',
+        'program_chairperson' => 'program_chairperson.dashboard',
+    ];
+
+    public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
-            'role' => 'required|string',
+            'role' => ['required', 'string', Rule::in(array_keys(self::ROLE_DASHBOARD_ROUTES))],
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $requestedRole = (string) $request->input('role');
 
-        if (!$user || !Hash::check($request->password, $user->password) || $user->role !== $request->role) {
+        $user = User::query()->where('email', $request->email)->first();
+
+        if (! $user || ! Hash::check($request->password, $user->password) || $user->role !== $requestedRole) {
             return back()->withErrors([
                 'email' => 'The provided credentials do not match our records.',
             ]);
         }
 
-        Auth::login($user);
+        $dashboardRoute = self::ROLE_DASHBOARD_ROUTES[$user->role] ?? null;
 
-        // Redirect based on role
-        return redirect()->route($user->role . '.dashboard');
+        if ($dashboardRoute === null) {
+            return back()->withErrors([
+                'role' => 'The selected role is not configured for dashboard access.',
+            ]);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->route($dashboardRoute);
     }
 
-    public function logout(Request $request)
+    public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
 

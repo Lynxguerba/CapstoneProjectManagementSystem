@@ -4,6 +4,7 @@ export interface UserRoleOption {
 }
 
 export const ROLE_OPTIONS: UserRoleOption[] = [
+    { value: 'admin', label: 'Admin' },
     { value: 'student', label: 'Student' },
     { value: 'adviser', label: 'Adviser' },
     { value: 'panelist', label: 'Panelist' },
