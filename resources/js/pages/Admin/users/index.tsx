@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Filter, Search, UserCog } from 'lucide-react';
 import AdminLayout from '../_layout';
+import { Settings } from 'lucide-react';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type UserStatus = 'active' | 'inactive';
@@ -144,9 +145,9 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                                     <td className="py-3 text-right">
                                         <button
                                             type="button"
-                                            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                            className="inline-flex items-center h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-300"
                                         >
-                                            Manage
+                                            <Settings className="h-3 w-3"/>
                                         </button>
                                     </td>
                                 </tr>

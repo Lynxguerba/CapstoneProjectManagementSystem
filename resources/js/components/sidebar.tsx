@@ -66,6 +66,10 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
             return false;
         }
 
+        if (href === '/admin/users') {
+            return currentUrl === '/admin/users';
+        }
+
         if (href === '/') {
             return currentUrl === '/';
         }
