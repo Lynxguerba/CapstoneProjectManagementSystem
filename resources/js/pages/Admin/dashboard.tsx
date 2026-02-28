@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Clock3, FolderKanban, ShieldCheck, Users } from 'lucide-react';
-import { Box, Typography } from '@mui/material';
+import { FileArchive, Clock3, FolderKanban, ShieldCheck, Users } from 'lucide-react';
+import { Box } from '@mui/material';
 import { LineChart, PieChart } from '@mui/x-charts';
 import AdminLayout from './_layout';
 
@@ -9,7 +9,7 @@ type DashboardStats = {
     totalUsers: number;
     activeGroups: number;
     pendingTitleApprovals: number;
-    securityAlerts: number;
+    upcomingDefenses: number;
 };
 
 type DashboardItem = {
@@ -37,7 +37,7 @@ const fallbackStats: DashboardStats = {
     totalUsers: 0,
     activeGroups: 0,
     pendingTitleApprovals: 0,
-    securityAlerts: 0,
+    upcomingDefenses: 0,
 };
 
 const fallbackTrend = [24, 30, 28, 35, 39, 42, 47];
@@ -83,10 +83,10 @@ const AdminDashboard = ({
             tone: 'from-amber-500 to-orange-600',
         },
         {
-            label: 'Security Alerts',
-            value: stats.securityAlerts,
-            icon: AlertTriangle,
-            tone: 'from-rose-500 to-rose-700',
+            label: 'Documents',
+            value: stats.upcomingDefenses,
+            icon: FileArchive,
+            tone: 'from-violet-500 to-violet-700',
         },
     ] as const;
 
@@ -134,15 +134,12 @@ const AdminDashboard = ({
                     className="grid grid-cols-1 gap-6 xl:grid-cols-3"
                 >
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
-                        <div className="flex items-center justify-between gap-4">
-                            <div>
-                                <h3 className="text-lg font-semibold text-slate-900">Approval Throughput</h3>
-                                <p className="mt-1 text-sm text-slate-500">Animated MUI line graph for weekly title approvals.</p>
-                            </div>
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">MUI X Charts</span>
+                        <div className="mb-4">
+                            <h3 className="text-lg font-semibold text-slate-900">Title Approval Throughput</h3>
+                            <p className="mt-1 text-sm text-slate-500">Weekly overview of capstone titles reviewed and approved.</p>
                         </div>
 
-                        <Box sx={{ mt: 2 }}>
+                        <Box>
                             <LineChart
                                 height={280}
                                 xAxis={[{ data: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7'], scaleType: 'point' }]}
@@ -151,22 +148,16 @@ const AdminDashboard = ({
                                 grid={{ vertical: true, horizontal: true }}
                                 skipAnimation={false}
                             />
-                            <Typography sx={{ mt: 1, fontSize: 12, color: 'text.secondary', fontWeight: 600 }}>
-                                Graph is UI-ready for backend-driven analytics.
-                            </Typography>
                         </Box>
                     </div>
 
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <h3 className="text-lg font-semibold text-slate-900">Role Distribution</h3>
-                                <p className="mt-1 text-sm text-slate-500">Animated MUI pie graph by role.</p>
-                            </div>
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">MUI X Charts</span>
+                        <div className="mb-4">
+                            <h3 className="text-lg font-semibold text-slate-900">Role Distribution</h3>
+                            <p className="mt-1 text-sm text-slate-500">Breakdown of registered users by their system role.</p>
                         </div>
 
-                        <Box sx={{ mt: 1 }}>
+                        <Box>
                             <PieChart
                                 height={260}
                                 series={[
@@ -205,7 +196,7 @@ const AdminDashboard = ({
                 >
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
                         <h3 className="text-lg font-semibold text-slate-900">Recent Activities</h3>
-                        <p className="mt-1 text-sm text-slate-500">Latest high-level system events from the backend audit stream.</p>
+                        <p className="mt-1 text-sm text-slate-500">Latest system events across groups, submissions, and approvals.</p>
 
                         <div className="mt-5 space-y-3">
                             {recentActivities.length > 0 ? (
@@ -222,7 +213,7 @@ const AdminDashboard = ({
                                 })
                             ) : (
                                 <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                                    No activity data yet. Pass `recentActivities` from your Inertia response.
+                                    No recent activity yet. Events from group submissions, adviser reviews, and defense scheduling will appear here.
                                 </div>
                             )}
                         </div>
@@ -233,7 +224,7 @@ const AdminDashboard = ({
                             <ShieldCheck className="h-5 w-5 text-slate-700" />
                             <h3 className="text-lg font-semibold text-slate-900">Quick Admin Actions</h3>
                         </div>
-                        <p className="mt-1 text-sm text-slate-500">UI-only shortcuts for common operations.</p>
+                        <p className="mt-1 text-sm text-slate-500">Shortcuts to commonly used administrative operations.</p>
 
                         <div className="mt-5 space-y-3">
                             <button
