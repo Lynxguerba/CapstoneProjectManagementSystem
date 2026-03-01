@@ -213,8 +213,8 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                     ) : (
                         <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-sm text-slate-600">
-                                Showing {(currentPage - 1) * usersPerPage + 1}-
-                                {Math.min(currentPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length} users
+                                Showing {(currentPage - 1) * usersPerPage + 1}-{Math.min(currentPage * usersPerPage, filteredUsers.length)} of{' '}
+                                {filteredUsers.length} users
                             </p>
                             <div className="flex items-center gap-2">
                                 <button
@@ -223,7 +223,19 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                                     disabled={currentPage === 1}
                                     className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    Previous
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <path d="m15 18-6-6 6-6" />
+                                    </svg>
                                 </button>
                                 {pages[0] !== 1 ? <span className="px-1 text-sm text-slate-500">...</span> : null}
                                 {pages.map((page) => (
@@ -247,7 +259,19 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                                     disabled={currentPage === totalPages}
                                     className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    Next
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <path d="m9 18 6-6-6-6" />
+                                    </svg>
                                 </button>
                             </div>
                         </div>
