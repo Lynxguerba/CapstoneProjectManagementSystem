@@ -180,67 +180,6 @@ const AdminDashboard = ({
                         </div>
                     </div>
                 </motion.section>
-
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.12 }}
-                    className="grid grid-cols-1 gap-6 xl:grid-cols-3"
-                >
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
-                        <h3 className="text-lg font-semibold text-slate-900">Recent Activities</h3>
-                        <p className="mt-1 text-sm text-slate-500">Latest system events across groups, submissions, and approvals.</p>
-
-                        <div className="mt-5 space-y-3">
-                            {recentActivities.length > 0 ? (
-                                recentActivities.map((activity) => {
-                                    const tone = activity.tone ?? 'info';
-
-                                    return (
-                                        <div key={activity.id} className={`rounded-xl border px-4 py-3 ${toneStyles[tone]}`}>
-                                            <p className="text-sm font-semibold">{activity.title}</p>
-                                            <p className="text-sm opacity-90">{activity.details}</p>
-                                            <p className="mt-1 text-xs opacity-80">Updated: {activity.updatedAt}</p>
-                                        </div>
-                                    );
-                                })
-                            ) : (
-                                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                                    No recent activity yet. Events from group submissions, adviser reviews, and defense scheduling will appear here.
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="flex items-center gap-2">
-                            <ShieldCheck className="h-5 w-5 text-slate-700" />
-                            <h3 className="text-lg font-semibold text-slate-900">Quick Admin Actions</h3>
-                        </div>
-                        <p className="mt-1 text-sm text-slate-500">Shortcuts to commonly used administrative operations.</p>
-
-                        <div className="mt-5 space-y-3">
-                            <button
-                                type="button"
-                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                            >
-                                Review pending title approvals
-                            </button>
-                            <button
-                                type="button"
-                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                            >
-                                Validate archived project records
-                            </button>
-                            <button
-                                type="button"
-                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                            >
-                                Publish system-wide notice
-                            </button>
-                        </div>
-                    </div>
-                </motion.section>
             </div>
         </AdminLayout>
     );
