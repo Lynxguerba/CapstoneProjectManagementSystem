@@ -17,7 +17,9 @@ type AdminUsersCreateProps = {
     availableRoles?: UserRole[];
 };
 
-const AdminUsersCreate = ({ availableRoles = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'] }: AdminUsersCreateProps) => {
+const AdminUsersCreate = ({
+    availableRoles = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'],
+}: AdminUsersCreateProps) => {
     const userForm = useForm<CreateUserForm>({
         name: '',
         email: '',
@@ -137,7 +139,9 @@ const AdminUsersCreate = ({ availableRoles = ['admin', 'student', 'adviser', 'in
                                     setBulkFileName(file ? file.name : '');
                                 }}
                             />
-                            <span className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">Browse file</span>
+                            <span className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+                                Browse file
+                            </span>
                         </label>
                     </div>
 

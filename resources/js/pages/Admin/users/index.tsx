@@ -129,7 +129,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                                 <tr key={user.id} className="transition-colors hover:bg-slate-50">
                                     <td className="py-3 font-medium text-slate-900">{user.name}</td>
                                     <td className="py-3 text-slate-600">{user.email}</td>
-                                    <td className="py-3 capitalize text-slate-700">{user.role}</td>
+                                    <td className="py-3 text-slate-700 capitalize">{user.role}</td>
                                     <td className="py-3">
                                         <span
                                             className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${
@@ -145,9 +145,9 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                                     <td className="py-3 text-right">
                                         <button
                                             type="button"
-                                            className="inline-flex items-center h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-300"
+                                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-300"
                                         >
-                                            <Settings className="h-3 w-3"/>
+                                            <Settings className="h-3 w-3" />
                                         </button>
                                     </td>
                                 </tr>

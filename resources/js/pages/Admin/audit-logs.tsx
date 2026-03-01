@@ -103,7 +103,9 @@ const AdminAuditLogs = ({ logs = [] }: AuditLogsProps) => {
                                     <td className="py-3 text-slate-700">{log.action}</td>
                                     <td className="py-3 text-slate-600">{log.entity}</td>
                                     <td className="py-3">
-                                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${severityStyles[log.severity]}`}>
+                                        <span
+                                            className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${severityStyles[log.severity]}`}
+                                        >
                                             {log.severity}
                                         </span>
                                     </td>
