@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminUserRequest;
+use App\Http\Requests\Admin\StoreBulkAdminUsersRequest;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -105,5 +106,22 @@ class AdminUserController extends Controller
         ]);
 
         return redirect()->route('admin.users.index')->with('success', 'User account updated successfully.');
+    }
+
+    public function bulkStore(StoreBulkAdminUsersRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+
+        collect($validated['rows'])->each(function (array $row): void {
+            User::query()->create([
+                'name' => $row['name'],
+                'email' => $row['email'],
+                'role' => $row['role'],
+                'status' => $row['status'] ?? 'active',
+                'password' => $row['password'],
+            ]);
+        });
+
+        return redirect()->route('admin.users.index')->with('success', 'Users imported successfully.');
     }
 }

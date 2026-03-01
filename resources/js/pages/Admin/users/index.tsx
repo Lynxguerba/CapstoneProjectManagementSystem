@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
-import { Filter, Search, Settings, UserCog } from 'lucide-react';
+import { Filter, Search, Settings, Upload, UserCog } from 'lucide-react';
 import React from 'react';
 import AddUserModal from '@/components/Admin/AddUserModal';
+import BulkUploadModal from '@/components/Admin/BulkUploadModal';
 import ManageUserActionModal from '@/components/Admin/ManageUserActionModal';
 import AdminLayout from '../_layout';
 
@@ -38,6 +39,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
     const [role, setRole] = React.useState<UserRole | 'all'>(filters?.role ?? 'all');
     const [status, setStatus] = React.useState<UserStatus | 'all'>(filters?.status ?? 'all');
     const [isAddUserModalOpen, setIsAddUserModalOpen] = React.useState(false);
+    const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = React.useState(false);
     const [isManageUserModalOpen, setIsManageUserModalOpen] = React.useState(false);
     const [selectedUser, setSelectedUser] = React.useState<UserRow | null>(null);
     const [currentPage, setCurrentPage] = React.useState(1);
@@ -151,14 +153,15 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                                 ))}
                             </select>
                         </div>
-
                         <button
                             type="button"
-                            onClick={() => setIsAddUserModalOpen(true)}
-                            className="inline-flex items-center justify-center rounded-xl border border-green-500 bg-green-100 px-4 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-200"
+                            onClick={() => setIsBulkUploadModalOpen(true)}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                         >
-                            Bulk Upload
+                            <Upload className="h-4 w-4" />
+                            Bulk upload
                         </button>
+
                         <button
                             type="button"
                             onClick={() => setIsAddUserModalOpen(true)}
@@ -286,6 +289,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                 </div>
             </motion.section>
             <AddUserModal open={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} />
+            <BulkUploadModal open={isBulkUploadModalOpen} onClose={() => setIsBulkUploadModalOpen(false)} />
             <ManageUserActionModal
                 open={isManageUserModalOpen}
                 user={selectedUser}
