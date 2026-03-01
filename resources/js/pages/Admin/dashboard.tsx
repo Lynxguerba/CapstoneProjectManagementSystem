@@ -42,14 +42,7 @@ const fallbackStats: DashboardStats = {
 
 const fallbackTrend = [24, 30, 28, 35, 39, 42, 47];
 
-const fallbackRoles: RoleDistribution[] = [
-    { label: 'Students', value: 120, color: '#16a34a' },
-    { label: 'Advisers', value: 22, color: '#4f46e5' },
-    { label: 'Instructors', value: 18, color: '#0891b2' },
-    { label: 'Panelists', value: 15, color: '#f59e0b' },
-    { label: 'Deans', value: 4, color: '#dc2626' },
-    { label: 'Admins', value: 2, color: '#334155' },
-];
+const fallbackRoles: RoleDistribution[] = [];
 
 const toneStyles: Record<NonNullable<DashboardItem['tone']>, string> = {
     info: 'border-indigo-200 bg-indigo-50 text-indigo-700',

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminSystemSettingsController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Auth\LoginController;
@@ -26,9 +27,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // ADMIN ROUTES (protected)
 Route::prefix('admin')->middleware([EnsureWebAuthenticated::class, EnsureRole::class.':admin'])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Admin/dashboard');
-    })->name('admin.dashboard');
+    Route::get('/dashboard', AdminDashboardController::class)->name('admin.dashboard');
     Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
     Route::get('/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
     Route::post('/users', [AdminUserController::class, 'store'])->name('admin.users.store');
