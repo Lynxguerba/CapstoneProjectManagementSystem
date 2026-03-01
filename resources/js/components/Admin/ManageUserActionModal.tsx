@@ -27,6 +27,7 @@ type ManageUserForm = {
     name: string;
     email: string;
     role: UserRole;
+    status: UserStatus;
 };
 
 const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserActionModalProps) => {
@@ -34,6 +35,7 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
         name: '',
         email: '',
         role: 'student',
+        status: 'active',
     });
     const initializedUserIdRef = React.useRef<number | null>(null);
 
@@ -53,6 +55,7 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
             name: user.name,
             email: user.email,
             role: user.role,
+            status: user.status,
         });
     }, [user, clearErrors, setData]);
 
@@ -159,9 +162,15 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
 
                         <div>
                             <label className="text-sm font-semibold text-slate-700">Status</label>
-                            <div className="mt-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 capitalize">
-                                {user.status}
-                            </div>
+                            <select
+                                value={data.status}
+                                onChange={(event) => setData('status', event.target.value as UserStatus)}
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            >
+                                <option value="active">active</option>
+                                <option value="inactive">inactive</option>
+                            </select>
+                            {errors.status ? <p className="mt-1 text-xs text-rose-600">{errors.status}</p> : null}
                         </div>
                     </div>
 
@@ -193,6 +202,7 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                                             name: data.name,
                                             email: data.email,
                                             role: data.role,
+                                            status: data.status,
                                         });
                                         clearErrors();
                                     },

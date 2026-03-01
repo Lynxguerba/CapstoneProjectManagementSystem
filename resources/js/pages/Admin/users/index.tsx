@@ -41,7 +41,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
     const [isManageUserModalOpen, setIsManageUserModalOpen] = React.useState(false);
     const [selectedUser, setSelectedUser] = React.useState<UserRow | null>(null);
     const [currentPage, setCurrentPage] = React.useState(1);
-    const usersPerPage = 5;
+    const usersPerPage = 10;
 
     React.useEffect(() => {
         setManagedUsers(initialUsers);
@@ -157,7 +157,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                             onClick={() => setIsAddUserModalOpen(true)}
                             className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
                         >
-                            Add user
+                            Add User
                         </button>
                     </div>
                 </div>

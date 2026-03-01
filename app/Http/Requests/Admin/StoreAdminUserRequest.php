@@ -20,6 +20,14 @@ class StoreAdminUserRequest extends FormRequest
         'program_chairperson',
     ];
 
+    /**
+     * @var array<int, string>
+     */
+    private const AVAILABLE_STATUSES = [
+        'active',
+        'inactive',
+    ];
+
     public function authorize(): bool
     {
         $user = $this->user();
@@ -36,6 +44,7 @@ class StoreAdminUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', 'string', Rule::in(self::AVAILABLE_ROLES)],
+            'status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             'password' => ['required', 'string', 'min:8', 'max:255'],
         ];
     }
@@ -47,6 +56,7 @@ class StoreAdminUserRequest extends FormRequest
     {
         return [
             'role.in' => 'The selected role is invalid.',
+            'status.in' => 'The selected status is invalid.',
         ];
     }
 }

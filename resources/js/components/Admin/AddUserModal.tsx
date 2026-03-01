@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
+type UserStatus = 'active' | 'inactive';
 
 type AddUserModalProps = {
     open: boolean;
@@ -15,6 +16,7 @@ type AddUserForm = {
     name: string;
     email: string;
     role: UserRole;
+    status: UserStatus;
     password: string;
 };
 
@@ -25,6 +27,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
         name: '',
         email: '',
         role: availableRoles[0] ?? 'student',
+        status: 'active',
         password: '',
     });
 
@@ -138,6 +141,19 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
                             ))}
                         </select>
                         {addUserForm.errors.role ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.role}</p> : null}
+                    </div>
+
+                    <div>
+                        <label className="text-sm font-semibold text-slate-700">Status</label>
+                        <select
+                            value={addUserForm.data.status}
+                            onChange={(event) => addUserForm.setData('status', event.target.value as UserStatus)}
+                            className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                        >
+                            <option value="active">active</option>
+                            <option value="inactive">inactive</option>
+                        </select>
+                        {addUserForm.errors.status ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.status}</p> : null}
                     </div>
 
                     <div>

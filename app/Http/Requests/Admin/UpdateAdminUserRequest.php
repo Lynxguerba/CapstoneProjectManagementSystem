@@ -20,6 +20,14 @@ class UpdateAdminUserRequest extends FormRequest
         'program_chairperson',
     ];
 
+    /**
+     * @var array<int, string>
+     */
+    private const AVAILABLE_STATUSES = [
+        'active',
+        'inactive',
+    ];
+
     public function authorize(): bool
     {
         $user = $this->user();
@@ -38,6 +46,7 @@ class UpdateAdminUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user'))],
             'role' => ['required', 'string', Rule::in(self::AVAILABLE_ROLES)],
+            'status' => ['required', 'string', Rule::in(self::AVAILABLE_STATUSES)],
         ];
     }
 
@@ -48,6 +57,7 @@ class UpdateAdminUserRequest extends FormRequest
     {
         return [
             'role.in' => 'The selected role is invalid.',
+            'status.in' => 'The selected status is invalid.',
         ];
     }
 }

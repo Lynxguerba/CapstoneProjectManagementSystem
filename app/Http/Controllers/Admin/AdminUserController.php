@@ -45,16 +45,17 @@ class AdminUserController extends Controller
                 $query->where('role', $filters['role']);
             })
             ->orderByDesc('created_at')
-            ->get(['id', 'name', 'email', 'role', 'created_at'])
+            ->get(['id', 'name', 'email', 'role', 'status', 'created_at'])
             ->map(function (User $user): array {
                 $role = is_string($user->role) && $user->role !== '' ? $user->role : 'student';
+                $status = is_string($user->status) && $user->status !== '' ? $user->status : 'active';
 
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $role,
-                    'status' => 'active',
+                    'status' => $status,
                     'createdAt' => $user->created_at?->format('Y-m-d') ?? '',
                 ];
             })
@@ -85,6 +86,7 @@ class AdminUserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'role' => $validated['role'],
+            'status' => $validated['status'] ?? 'active',
             'password' => $validated['password'],
         ]);
 
@@ -99,6 +101,7 @@ class AdminUserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'role' => $validated['role'],
+            'status' => $validated['status'],
         ]);
 
         return redirect()->route('admin.users.index')->with('success', 'User account updated successfully.');
