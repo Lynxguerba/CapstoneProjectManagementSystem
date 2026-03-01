@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminUserRequest;
+use App\Http\Requests\Admin\UpdateAdminUserRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -88,5 +89,18 @@ class AdminUserController extends Controller
         ]);
 
         return redirect()->route('admin.users.index')->with('success', 'User account created successfully.');
+    }
+
+    public function update(UpdateAdminUserRequest $request, User $user): RedirectResponse
+    {
+        $validated = $request->validated();
+
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'role' => $validated['role'],
+        ]);
+
+        return redirect()->route('admin.users.index')->with('success', 'User account updated successfully.');
     }
 }

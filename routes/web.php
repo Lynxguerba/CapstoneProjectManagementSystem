@@ -31,6 +31,7 @@ Route::prefix('admin')->middleware([EnsureWebAuthenticated::class, EnsureRole::c
     Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
     Route::get('/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
     Route::post('/users', [AdminUserController::class, 'store'])->name('admin.users.store');
+    Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
     Route::get('/system-settings', [AdminSystemSettingsController::class, 'edit'])->name('admin.system-settings');
     Route::put('/system-settings', [AdminSystemSettingsController::class, 'update'])->name('admin.system-settings.update');
     Route::get('/audit-logs', function () {
