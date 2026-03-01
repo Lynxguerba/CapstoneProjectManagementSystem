@@ -54,6 +54,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
 
         addUserForm.post('/admin/users', {
             preserveScroll: true,
+            preserveState: false,
             onSuccess: () => {
                 addUserForm.reset();
                 onClose();
@@ -80,7 +81,10 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
                 }
             }}
         >
-            <div className="max-h-[90vh] w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
+            <div
+                className="max-h-[90vh] w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl"
+                onMouseDown={(event) => event.stopPropagation()}
+            >
                 <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                     <div className="flex items-center gap-2">
                         <UserPlus className="h-5 w-5 text-emerald-800" />

@@ -37,9 +37,12 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
     const [isAddUserModalOpen, setIsAddUserModalOpen] = React.useState(false);
     const [isManageUserModalOpen, setIsManageUserModalOpen] = React.useState(false);
     const [selectedUser, setSelectedUser] = React.useState<UserRow | null>(null);
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const usersPerPage = 5;
 
     React.useEffect(() => {
         setManagedUsers(users);
+        setCurrentPage(1);
     }, [users]);
 
     const filteredUsers = React.useMemo(() => {
@@ -53,6 +56,21 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
             return matchesQuery && matchesRole && matchesStatus;
         });
     }, [managedUsers, search, role, status]);
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [search, role, status]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / usersPerPage));
+    const paginatedUsers = React.useMemo(() => {
+        const startIndex = (currentPage - 1) * usersPerPage;
+
+        return filteredUsers.slice(startIndex, startIndex + usersPerPage);
+    }, [filteredUsers, currentPage]);
+
+    const pages = React.useMemo(() => {
+        return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }, [totalPages]);
 
     const openManageUserModal = (user: UserRow) => {
         setSelectedUser(user);
@@ -145,7 +163,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {filteredUsers.map((user) => (
+                            {paginatedUsers.map((user) => (
                                 <tr key={user.id} className="transition-colors hover:bg-slate-50">
                                     <td className="py-3 font-medium text-slate-900">{user.name}</td>
                                     <td className="py-3 text-slate-600">{user.email}</td>
@@ -180,7 +198,46 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                         <p className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-500">
                             No users found for the current filters.
                         </p>
-                    ) : null}
+                    ) : (
+                        <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-sm text-slate-600">
+                                Showing {(currentPage - 1) * usersPerPage + 1}-
+                                {Math.min(currentPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length} users
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage((previousPage) => Math.max(1, previousPage - 1))}
+                                    disabled={currentPage === 1}
+                                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Previous
+                                </button>
+                                {pages.map((page) => (
+                                    <button
+                                        key={page}
+                                        type="button"
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`rounded-lg px-3 py-1.5 text-sm ${
+                                            page === currentPage
+                                                ? 'bg-slate-900 text-white'
+                                                : 'border border-slate-300 text-slate-700 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage((previousPage) => Math.min(totalPages, previousPage + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </motion.section>
             <AddUserModal open={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} />

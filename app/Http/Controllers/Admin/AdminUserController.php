@@ -43,7 +43,7 @@ class AdminUserController extends Controller
             ->when($filters['role'] !== '' && $filters['role'] !== 'all', function ($query) use ($filters) {
                 $query->where('role', $filters['role']);
             })
-            ->orderBy('name')
+            ->orderByDesc('created_at')
             ->get(['id', 'name', 'email', 'role', 'created_at'])
             ->map(function (User $user): array {
                 $role = is_string($user->role) && $user->role !== '' ? $user->role : 'student';
