@@ -155,16 +155,16 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                         <button
                             type="button"
                             onClick={() => setIsAddUserModalOpen(true)}
-                            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+                            className="inline-flex items-center justify-center rounded-xl border border-green-500 bg-green-100 px-4 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-200"
                         >
-                            Add User
+                            Bulk Upload
                         </button>
                         <button
                             type="button"
                             onClick={() => setIsAddUserModalOpen(true)}
                             className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
                         >
-                            Bulk Upload
+                            Add User
                         </button>
                     </div>
                 </div>
