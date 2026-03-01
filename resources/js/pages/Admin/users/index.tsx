@@ -1,9 +1,9 @@
-import React from 'react';
-import { Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Filter, Search, UserCog } from 'lucide-react';
+import { Filter, Search, Settings, UserCog } from 'lucide-react';
+import React from 'react';
+import AddUserModal from '@/components/Admin/AddUserModal';
+import ManageUserActionModal from '@/components/Admin/ManageUserActionModal';
 import AdminLayout from '../_layout';
-import { Settings } from 'lucide-react';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type UserStatus = 'active' | 'inactive';
@@ -30,21 +30,40 @@ const roleOptions: Array<UserRole | 'all'> = ['all', 'admin', 'student', 'advise
 const statusOptions: Array<UserStatus | 'all'> = ['all', 'active', 'inactive'];
 
 const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
+    const [managedUsers, setManagedUsers] = React.useState<UserRow[]>(users);
     const [search, setSearch] = React.useState(filters?.search ?? '');
     const [role, setRole] = React.useState<UserRole | 'all'>(filters?.role ?? 'all');
     const [status, setStatus] = React.useState<UserStatus | 'all'>(filters?.status ?? 'all');
+    const [isAddUserModalOpen, setIsAddUserModalOpen] = React.useState(false);
+    const [isManageUserModalOpen, setIsManageUserModalOpen] = React.useState(false);
+    const [selectedUser, setSelectedUser] = React.useState<UserRow | null>(null);
+
+    React.useEffect(() => {
+        setManagedUsers(users);
+    }, [users]);
 
     const filteredUsers = React.useMemo(() => {
         const query = search.trim().toLowerCase();
 
-        return users.filter((user) => {
+        return managedUsers.filter((user) => {
             const matchesQuery = !query || user.name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
             const matchesRole = role === 'all' || user.role === role;
             const matchesStatus = status === 'all' || user.status === status;
 
             return matchesQuery && matchesRole && matchesStatus;
         });
-    }, [users, search, role, status]);
+    }, [managedUsers, search, role, status]);
+
+    const openManageUserModal = (user: UserRow) => {
+        setSelectedUser(user);
+        setIsManageUserModalOpen(true);
+    };
+
+    const saveManagedUser = (updatedUser: UserRow) => {
+        setManagedUsers((previousUsers) => previousUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user)));
+        setIsManageUserModalOpen(false);
+        setSelectedUser(null);
+    };
 
     return (
         <AdminLayout title="User Management" subtitle="Manage all accounts and role assignments">
@@ -103,12 +122,13 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                             </select>
                         </div>
 
-                        <Link
-                            href="/admin/users/create"
+                        <button
+                            type="button"
+                            onClick={() => setIsAddUserModalOpen(true)}
                             className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
                         >
                             Add user
-                        </Link>
+                        </button>
                     </div>
                 </div>
 
@@ -145,6 +165,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                                     <td className="py-3 text-right">
                                         <button
                                             type="button"
+                                            onClick={() => openManageUserModal(user)}
                                             className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-300"
                                         >
                                             <Settings className="h-3 w-3" />
@@ -162,6 +183,16 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                     ) : null}
                 </div>
             </motion.section>
+            <AddUserModal open={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} />
+            <ManageUserActionModal
+                open={isManageUserModalOpen}
+                user={selectedUser}
+                onClose={() => {
+                    setIsManageUserModalOpen(false);
+                    setSelectedUser(null);
+                }}
+                onSave={saveManagedUser}
+            />
         </AdminLayout>
     );
 };
