@@ -30,7 +30,10 @@ const roleOptions: Array<UserRole | 'all'> = ['all', 'admin', 'student', 'advise
 const statusOptions: Array<UserStatus | 'all'> = ['all', 'active', 'inactive'];
 
 const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
-    const [managedUsers, setManagedUsers] = React.useState<UserRow[]>(users);
+    const initialUsers = React.useMemo(() => {
+        return Array.isArray(users) ? users : [];
+    }, [users]);
+    const [managedUsers, setManagedUsers] = React.useState<UserRow[]>(initialUsers);
     const [search, setSearch] = React.useState(filters?.search ?? '');
     const [role, setRole] = React.useState<UserRole | 'all'>(filters?.role ?? 'all');
     const [status, setStatus] = React.useState<UserStatus | 'all'>(filters?.status ?? 'all');
@@ -41,9 +44,9 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
     const usersPerPage = 5;
 
     React.useEffect(() => {
-        setManagedUsers(users);
+        setManagedUsers(initialUsers);
         setCurrentPage(1);
-    }, [users]);
+    }, [initialUsers]);
 
     const filteredUsers = React.useMemo(() => {
         const query = search.trim().toLowerCase();
@@ -62,6 +65,11 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
     }, [search, role, status]);
 
     const totalPages = Math.max(1, Math.ceil(filteredUsers.length / usersPerPage));
+
+    React.useEffect(() => {
+        setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
+    }, [totalPages]);
+
     const paginatedUsers = React.useMemo(() => {
         const startIndex = (currentPage - 1) * usersPerPage;
 
@@ -69,8 +77,12 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
     }, [filteredUsers, currentPage]);
 
     const pages = React.useMemo(() => {
-        return Array.from({ length: totalPages }, (_, index) => index + 1);
-    }, [totalPages]);
+        const maxVisiblePages = 5;
+        const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - (maxVisiblePages - 1)));
+        const endPage = Math.min(totalPages, startPage + (maxVisiblePages - 1));
+
+        return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+    }, [currentPage, totalPages]);
 
     const openManageUserModal = (user: UserRow) => {
         setSelectedUser(user);
@@ -213,6 +225,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                                 >
                                     Previous
                                 </button>
+                                {pages[0] !== 1 ? <span className="px-1 text-sm text-slate-500">...</span> : null}
                                 {pages.map((page) => (
                                     <button
                                         key={page}
@@ -227,6 +240,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                                         {page}
                                     </button>
                                 ))}
+                                {pages[pages.length - 1] !== totalPages ? <span className="px-1 text-sm text-slate-500">...</span> : null}
                                 <button
                                     type="button"
                                     onClick={() => setCurrentPage((previousPage) => Math.min(totalPages, previousPage + 1))}
