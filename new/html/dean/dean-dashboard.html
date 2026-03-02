@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dean Dashboard - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .status-badge.approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .status-badge.re-defense {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-badge.completed {
+            background: #e0f2fe;
+            color: #075985;
+        }
+
+        .progress-bar {
+            height: 0.5rem;
+            border-radius: 9999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.3s ease;
+        }
+
+        .notification-dot {
+            position: relative;
+        }
+
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .tab-active {
+            border-bottom: 2px solid #10b981;
+            color: #047857;
+            font-weight: 500;
+        }
+
+        .tab-link {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-link:hover {
+            color: #10b981;
+            border-bottom: 2px solid #a7f3d0;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .fixed-height-card {
+            height: 320px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+
+        .smooth-scroll {
+            scroll-behavior: smooth;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .summary-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .dept-card {
+            transition: all 0.3s ease;
+        }
+
+        .dept-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .signature-queue-item {
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .signature-queue-item:hover {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - COMPLETE DEAN SIDEBAR -->
+    <aside
+        class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-university text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Dean Portal</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">2nd Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">College</p>
+                    <p class="text-sm font-semibold text-white">Computing</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="dean-dashboard.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg shadow-emerald-600/20">
+                <i class="fas fa-tachometer-alt w-5"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">6</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Approval</p>
+            <a href="dean-pending-signatures.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Pending Signatures</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">4</span>
+            </a>
+            <a href="dean-approval-sheets.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-pdf w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Approval Sheets</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Reports</p>
+            <a href="dean-analytics.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-line w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Department Analytics</span>
+            </a>
+            <a href="dean-completion-reports.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Completion Reports</span>
+            </a>
+            <a href="dean-program-comparison.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-bar w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Program Comparison</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Oversight</p>
+            <a href="dean-all-groups.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">All Groups</span>
+                <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded-full">45</span>
+            </a>
+            <a href="dean-faculty-overview.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-user-tie w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Faculty Overview</span>
+            </a>
+            <a href="dean-defense-schedules.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Defense Schedules</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Settings</p>
+            <a href="dean-settings.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-cog w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Department Settings</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                    DR</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Dr. Roberto Reyes</p>
+                    <p class="text-xs text-slate-400">Dean, College of Computing</p>
+                </div>
+                <a href="instructor-dashboard.html"
+                    class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"
+                    title="Switch Role">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72 smooth-scroll">
+
+        <!-- TOP BAR -->
+        <div
+            class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40 shadow-sm">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Dean's Dashboard</h2>
+                <span class="bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-university"></i> College of Computing
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button
+                    class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <button
+                    class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <div class="relative">
+                        <select
+                            class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <option>Academic Year 2024-2025</option>
+                            <option>Academic Year 2023-2024</option>
+                            <option>All Time</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                    <div class="relative">
+                        <select
+                            class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <option>All Programs</option>
+                            <option>BS Information Technology</option>
+                            <option>BS Information Systems</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD CONTENT -->
+        <div class="p-8 space-y-8 mt-20 pb-12">
+            <!-- WELCOME BANNER -->
+            <div class="bg-gradient-to-r from-emerald-600 to-green-600 rounded-2xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">Welcome back, Dr. Reyes! 👋</h3>
+                        <p class="text-emerald-100">College of Computing · <span class="font-bold">45 active
+                                groups</span> across all programs</p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur rounded-xl px-6 py-3">
+                        <p class="text-sm text-emerald-200">Pending Your Signature</p>
+                        <p class="text-3xl font-bold">4</p>
+                        <p class="text-xs text-emerald-200">Approval sheets waiting</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KEY METRICS CARDS -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Total Groups</p>
+                            <p class="text-3xl font-bold text-slate-800">45</p>
+                            <p class="text-xs text-emerald-600 mt-2"><i class="fas fa-arrow-up"></i> +8 from last sem
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-users text-2xl text-emerald-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Completion Rate</p>
+                            <p class="text-3xl font-bold text-green-600">73%</p>
+                            <p class="text-xs text-green-600 mt-2"><i class="fas fa-chart-line"></i> 33/45 completed</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-check-circle text-2xl text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Average Grade</p>
+                            <p class="text-3xl font-bold text-amber-600">1.82</p>
+                            <p class="text-xs text-amber-600 mt-2">B+ average</p>
+                        </div>
+                        <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-star text-2xl text-amber-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Faculty</p>
+                            <p class="text-3xl font-bold text-blue-600">18</p>
+                            <p class="text-xs text-blue-600 mt-2">Advisers & Panelists</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-chalkboard-teacher text-2xl text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS ROW 1 - Program Comparison & Completion Trends -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Program Comparison Chart -->
+                <div class="bg-white rounded-xl border border-slate-100 p-5 fixed-height-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-chart-bar text-emerald-500"></i> Program Comparison
+                        </h3>
+                        <span class="text-xs text-slate-500">BSIT vs BSIS</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="programComparisonChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Completion Trends Chart -->
+                <div class="bg-white rounded-xl border border-slate-100 p-5 fixed-height-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-chart-line text-emerald-500"></i> Completion Trends
+                        </h3>
+                        <span class="text-xs text-slate-500">Last 6 Months</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="completionTrendsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS ROW 2 - Project Categories & Faculty Workload -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Project Categories -->
+                <div class="bg-white rounded-xl border border-slate-100 p-5 fixed-height-card">
+                    <h3 class="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fas fa-folder-open text-emerald-500"></i> Project Categories
+                    </h3>
+                    <div class="chart-wrapper">
+                        <canvas id="projectCategoriesChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Faculty Workload -->
+                <div class="bg-white rounded-xl border border-slate-100 p-5 fixed-height-card">
+                    <h3 class="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fas fa-user-tie text-emerald-500"></i> Faculty Workload
+                    </h3>
+                    <div class="chart-wrapper">
+                        <canvas id="facultyWorkloadChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PENDING SIGNATURES SECTION -->
+            <div class="bg-white rounded-xl border border-slate-100 p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-signature text-emerald-500"></i>
+                        Pending Your Signature
+                    </h2>
+                    <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm">4 documents waiting</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Group Alpha -->
+                    <div class="signature-queue-item bg-white border rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-file-pdf text-red-500 text-xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold">Group Alpha</h4>
+                                    <p class="text-xs text-slate-500">BSIT-3A · E-Learning Platform</p>
+                                </div>
+                            </div>
+                            <span class="status-badge pending">Pending</span>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="text-green-600"><i class="fas fa-check-circle"></i> Chair</span>
+                                <span class="text-green-600"><i class="fas fa-check-circle"></i> Panel (3)</span>
+                            </div>
+                            <span class="text-slate-400">Ready for Dean</span>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button
+                                class="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm hover:bg-emerald-700">
+                                <i class="fas fa-pen mr-1"></i> Sign
+                            </button>
+                            <button class="flex-1 border border-slate-200 py-2 rounded-lg text-sm hover:bg-slate-50">
+                                <i class="fas fa-eye mr-1"></i> Preview
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Group Beta -->
+                    <div class="signature-queue-item bg-white border rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-file-pdf text-red-500 text-xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold">Group Beta</h4>
+                                    <p class="text-xs text-slate-500">BSIT-3B · Inventory System</p>
+                                </div>
+                            </div>
+                            <span class="status-badge pending">Pending</span>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="text-green-600"><i class="fas fa-check-circle"></i> Chair</span>
+                                <span class="text-green-600"><i class="fas fa-check-circle"></i> Panel (3)</span>
+                            </div>
+                            <span class="text-slate-400">Ready for Dean</span>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button
+                                class="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm hover:bg-emerald-700">
+                                <i class="fas fa-pen mr-1"></i> Sign
+                            </button>
+                            <button class="flex-1 border border-slate-200 py-2 rounded-lg text-sm hover:bg-slate-50">
+                                <i class="fas fa-eye mr-1"></i> Preview
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Group Gamma -->
+                    <div class="signature-queue-item bg-white border rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-file-pdf text-red-500 text-xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold">Group Gamma</h4>
+                                    <p class="text-xs text-slate-500">BSIT-3C · Mobile Health App</p>
+                                </div>
+                            </div>
+                            <span class="status-badge pending">Pending</span>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="text-green-600"><i class="fas fa-check-circle"></i> Chair</span>
+                                <span class="text-green-600"><i class="fas fa-check-circle"></i> Panel (3)</span>
+                            </div>
+                            <span class="text-slate-400">Ready for Dean</span>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button
+                                class="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm hover:bg-emerald-700">
+                                <i class="fas fa-pen mr-1"></i> Sign
+                            </button>
+                            <button class="flex-1 border border-slate-200 py-2 rounded-lg text-sm hover:bg-slate-50">
+                                <i class="fas fa-eye mr-1"></i> Preview
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Group Delta -->
+                    <div class="signature-queue-item bg-white border rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-file-pdf text-red-500 text-xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold">Group Delta</h4>
+                                    <p class="text-xs text-slate-500">BSIS-3A · AI Chatbot</p>
+                                </div>
+                            </div>
+                            <span class="status-badge pending">Pending</span>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="text-green-600"><i class="fas fa-check-circle"></i> Chair</span>
+                                <span class="text-amber-600"><i class="fas fa-clock"></i> Panel (2/3)</span>
+                            </div>
+                            <span class="text-slate-400">Waiting for panel</span>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button class="flex-1 bg-slate-300 text-white py-2 rounded-lg text-sm cursor-not-allowed"
+                                disabled>
+                                <i class="fas fa-lock mr-1"></i> Locked
+                            </button>
+                            <button class="flex-1 border border-slate-200 py-2 rounded-lg text-sm hover:bg-slate-50">
+                                <i class="fas fa-eye mr-1"></i> Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <a href="dean-pending-signatures.html"
+                        class="text-emerald-600 hover:text-emerald-800 text-sm font-medium">
+                        View All Pending Signatures →
+                    </a>
+                </div>
+            </div>
+
+            <!-- DEPARTMENT OVERVIEW CARDS -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- BSIT Overview -->
+                <div
+                    class="dept-card bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border border-emerald-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-emerald-800">BS Information Technology</h3>
+                        <span class="bg-emerald-600 text-white px-3 py-1 rounded-full text-sm">3 sections</span>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Total Groups</span>
+                            <span class="font-semibold">28</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Completed</span>
+                            <span class="text-green-600 font-semibold">21 (75%)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Average Grade</span>
+                            <span class="font-semibold">1.78</span>
+                        </div>
+                        <div class="progress-bar mt-2">
+                            <div class="progress-fill bg-emerald-600" style="width: 75%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BSIS Overview -->
+                <div
+                    class="dept-card bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-blue-800">BS Information Systems</h3>
+                        <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-sm">2 sections</span>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Total Groups</span>
+                            <span class="font-semibold">17</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Completed</span>
+                            <span class="text-green-600 font-semibold">12 (71%)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Average Grade</span>
+                            <span class="font-semibold">1.92</span>
+                        </div>
+                        <div class="progress-bar mt-2">
+                            <div class="progress-fill bg-blue-600" style="width: 71%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECENT ACTIVITY & REPORTS -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-xl border border-slate-100 p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-history text-emerald-500"></i>
+                        Recent Department Activity
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <div class="flex-1">
+                                <p class="text-sm"><span class="font-medium">Group Alpha</span> approval sheet signed by
+                                    Dean</p>
+                                <p class="text-xs text-slate-400">10 minutes ago</p>
+                            </div>
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Completed</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <div class="flex-1">
+                                <p class="text-sm"><span class="font-medium">BSIT-3A</span> completed all defenses</p>
+                                <p class="text-xs text-slate-400">2 hours ago</p>
+                            </div>
+                            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Section</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg">
+                            <div class="w-2 h-2 bg-amber-500 rounded-full"></div>
+                            <div class="flex-1">
+                                <p class="text-sm"><span class="font-medium">3 new groups</span> ready for Dean's
+                                    signature</p>
+                                <p class="text-xs text-slate-400">5 hours ago</p>
+                            </div>
+                            <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Pending</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg">
+                            <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            <div class="flex-1">
+                                <p class="text-sm"><span class="font-medium">Monthly report</span> generated for
+                                    accreditation</p>
+                                <p class="text-xs text-slate-400">1 day ago</p>
+                            </div>
+                            <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Report</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Reports -->
+                <div class="bg-white rounded-xl border border-slate-100 p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-file-alt text-emerald-500"></i>
+                        Generate Reports
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="border rounded-lg p-4 hover:bg-slate-50 cursor-pointer transition">
+                            <i class="fas fa-file-pdf text-red-500 text-2xl mb-2"></i>
+                            <p class="font-medium text-sm">Completion Report</p>
+                            <p class="text-xs text-slate-400">All programs</p>
+                        </div>
+                        <div class="border rounded-lg p-4 hover:bg-slate-50 cursor-pointer transition">
+                            <i class="fas fa-file-excel text-green-500 text-2xl mb-2"></i>
+                            <p class="font-medium text-sm">Grade Summary</p>
+                            <p class="text-xs text-slate-400">By section</p>
+                        </div>
+                        <div class="border rounded-lg p-4 hover:bg-slate-50 cursor-pointer transition">
+                            <i class="fas fa-chart-bar text-blue-500 text-2xl mb-2"></i>
+                            <p class="font-medium text-sm">Program Comparison</p>
+                            <p class="text-xs text-slate-400">IT vs IS</p>
+                        </div>
+                        <div class="border rounded-lg p-4 hover:bg-slate-50 cursor-pointer transition">
+                            <i class="fas fa-user-tie text-purple-500 text-2xl mb-2"></i>
+                            <p class="font-medium text-sm">Faculty Load</p>
+                            <p class="text-xs text-slate-400">Adviser summary</p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button
+                            class="w-full bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700 transition">
+                            <i class="fas fa-download mr-2"></i> Download Department Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SIGNATURE PREVIEW -->
+            <div class="bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold mb-2">Your Digital Signature</h3>
+                        <p class="text-emerald-100 text-sm">Registered for official approval sheets</p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur rounded-xl px-8 py-4">
+                        <p class="text-2xl font-['Brush_Script_MT']">Dr. Roberto Reyes</p>
+                        <p class="text-xs text-emerald-200 text-center mt-1">Dean, College of Computing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize all charts
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // Program Comparison Chart (Bar) - BSIT vs BSIS only
+            new Chart(document.getElementById('programComparisonChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['BSIT', 'BSIS'],
+                    datasets: [
+                        {
+                            label: 'Total Groups',
+                            data: [28, 17],
+                            backgroundColor: '#10b981',
+                            borderRadius: 6,
+                            barPercentage: 0.6,
+                        },
+                        {
+                            label: 'Completed',
+                            data: [21, 12],
+                            backgroundColor: '#047857',
+                            borderRadius: 6,
+                            barPercentage: 0.6,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 30,
+                            grid: { display: false },
+                            ticks: { stepSize: 5 }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Completion Trends Chart (Line)
+            new Chart(document.getElementById('completionTrendsChart'), {
+                type: 'line',
+                data: {
+                    labels: ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'],
+                    datasets: [
+                        {
+                            label: 'Completed Projects',
+                            data: [5, 8, 12, 18, 25, 33],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { display: false }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Project Categories Chart (Pie)
+            new Chart(document.getElementById('projectCategoriesChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Web Dev', 'Mobile Apps', 'AI/ML', 'IoT', 'Data Science'],
+                    datasets: [{
+                        data: [40, 25, 15, 12, 8],
+                        backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12, padding: 8 }
+                        }
+                    }
+                }
+            });
+
+            // Faculty Workload Chart (Horizontal Bar)
+            new Chart(document.getElementById('facultyWorkloadChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Prof. Cruz', 'Prof. Reyes', 'Prof. Santos', 'Prof. Lim', 'Prof. Lopez'],
+                    datasets: [{
+                        label: 'Groups Assigned',
+                        data: [5, 4, 6, 3, 4],
+                        backgroundColor: '#10b981',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 7,
+                            grid: { display: false },
+                            ticks: { stepSize: 1 }
+                        },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

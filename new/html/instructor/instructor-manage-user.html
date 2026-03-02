@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage User - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .status-badge.active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .notification-dot {
+            position: relative;
+        }
+
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .set-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .set-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: #10b981;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.2s ease;
+        }
+
+        .file-upload-area:hover {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .summary-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - GREEN THEME -->
+    <aside
+        class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-chalkboard-teacher text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Instructor Portal</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Section</p>
+                    <p class="text-sm font-semibold text-white">BSIT-3A</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="instructor-dashboard.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">12</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Management</p>
+            <a href="instructor-group-management.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Group Management</span>
+                <i class="fas fa-chevron-right text-xs text-slate-500"></i>
+            </a>
+            <a href="instructor-manage-user.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg">
+                <i class="fas fa-user-plus w-5"></i>
+                <span class="flex-1">Manage User</span>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">New</span>
+            </a>
+            <a href="instructor-adviser-assignment.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-user-tie w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Adviser Assignment</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">3 slots</span>
+            </a>
+            <a href="instructor-defense-scheduling.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Defense Scheduling</span>
+                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Academic Control</p>
+            <a href="instructor-deadline-manager.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-clock w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Deadline Manager</span>
+            </a>
+            <a href="instructor-payment-verification.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-credit-card w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Payment Verification</span>
+            </a>
+            <a href="instructor-deployment-tracker.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-rocket w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Deployment Tracker</span>
+            </a>
+
+          
+            <a href="instructor-documents.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Documents</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                    PD</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Dela Cruz</p>
+                    <p class="text-xs text-slate-400">Capstone Coordinator</p>
+                </div>
+                <a href="panel-dashboard.html"
+                    class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"
+                    title="Switch to Panel">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72">
+
+        <!-- TOP BAR -->
+        <div
+            class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Manage User</h2>
+                <span class="bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-users"></i> Sections & Sets
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button
+                    class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <button
+                    class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <div class="relative">
+                        <select
+                            class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <option>BS Information Technology</option>
+                            <option>BS Information Systems</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                    <div class="relative">
+                        <select
+                            class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <option>Academic Year 2024-2025</option>
+                            <option>Academic Year 2023-2024</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MANAGE USER CONTENT -->
+        <div class="p-8 space-y-8 mt-20 pb-12">
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <p class="text-sm text-slate-500">Total Students</p>
+                    <p class="text-3xl font-bold">156</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <p class="text-sm text-slate-500">Active</p>
+                    <p class="text-3xl font-bold text-green-600">142</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <p class="text-sm text-slate-500">Inactive</p>
+                    <p class="text-3xl font-bold text-red-600">14</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6 hover-scale">
+                    <p class="text-sm text-slate-500">Sections</p>
+                    <p class="text-3xl font-bold text-emerald-600">6</p>
+                </div>
+            </div>
+
+
+            <!-- Section Cards Title -->
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-semibold text-slate-800">Select a Section/Set</h3>
+                <p class="text-sm text-slate-500">Click on a card to manage students</p>
+            </div>
+
+            <!-- Section Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- BSIT 3A Card -->
+                <a href="instructor-manage-user-set.html?set=bsit3a"
+                    class="set-card bg-white rounded-xl border border-slate-200 p-6 block">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div
+                                class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold mb-3">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h4 class="text-2xl font-bold text-slate-800">BSIT 3A</h4>
+                            <p class="text-sm text-slate-500">Bachelor of Science in Information Technology</p>
+                        </div>
+                        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium">Year
+                            3</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-50 rounded-lg p-3 text-center">
+                            <p class="text-2xl font-bold text-emerald-600">28</p>
+                            <p class="text-xs text-slate-500">Total Students</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3 text-center">
+                            <p class="text-2xl font-bold text-green-600">26</p>
+                            <p class="text-xs text-slate-500">Active</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center gap-1">
+                            <i class="fas fa-user-graduate text-slate-400"></i>
+                            <span class="text-slate-600">Adviser: Prof. Cruz</span>
+                        </div>
+                        <span class="text-emerald-600 font-medium">View Set →</span>
+                    </div>
+
+                    <!-- Progress bar for group formation -->
+                    <div class="mt-4">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Groups Formed</span>
+                            <span class="font-medium">6/7</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-emerald-600" style="width: 85%"></div>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- BSIT 3B Card -->
+                <a href="instructor-manage-user-set.html?set=bsit3b"
+                    class="set-card bg-white rounded-xl border border-slate-200 p-6 block">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div
+                                class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold mb-3">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h4 class="text-2xl font-bold text-slate-800">BSIT 3B</h4>
+                            <p class="text-sm text-slate-500">Bachelor of Science in Information Technology</p>
+                        </div>
+                        <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">Year 3</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-50 rounded-lg p-3 text-center">
+                            <p class="text-2xl font-bold text-blue-600">27</p>
+                            <p class="text-xs text-slate-500">Total Students</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3 text-center">
+                            <p class="text-2xl font-bold text-green-600">25</p>
+                            <p class="text-xs text-slate-500">Active</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center gap-1">
+                            <i class="fas fa-user-graduate text-slate-400"></i>
+                            <span class="text-slate-600">Adviser: Prof. Reyes</span>
+                        </div>
+                        <span class="text-blue-600 font-medium">View Set →</span>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Groups Formed</span>
+                            <span class="font-medium">5/6</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-blue-600" style="width: 83%"></div>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- BSIT 3C Card -->
+                <a href="instructor-manage-user-set.html?set=bsit3c"
+                    class="set-card bg-white rounded-xl border border-slate-200 p-6 block">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div
+                                class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold mb-3">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h4 class="text-2xl font-bold text-slate-800">BSIT 3C</h4>
+                            <p class="text-sm text-slate-500">Bachelor of Science in Information Technology</p>
+                        </div>
+                        <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">Year
+                            3</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-50 rounded-lg p-3 text-center">
+                            <p class="text-2xl font-bold text-purple-600">26</p>
+                            <p class="text-xs text-slate-500">Total Students</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3 text-center">
+                            <p class="text-2xl font-bold text-green-600">24</p>
+                            <p class="text-xs text-slate-500">Active</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center gap-1">
+                            <i class="fas fa-user-graduate text-slate-400"></i>
+                            <span class="text-slate-600">Adviser: Prof. Santos</span>
+                        </div>
+                        <span class="text-purple-600 font-medium">View Set →</span>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Groups Formed</span>
+                            <span class="font-medium">5/5</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-purple-600" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- BSIS 3A Card -->
+                <a href="instructor-manage-user-set.html?set=bsis3a"
+                    class="set-card bg-white rounded-xl border border-slate-200 p-6 block">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div
+                                class="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold mb-3">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h4 class="text-2xl font-bold text-slate-800">BSIS 3A</h4>
+                            <p class="text-sm text-slate-500">Bachelor of Science in Information Systems</p>
+                        </div>
+                        <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium">Year
+                            3</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-50 rounded-lg p-3 text-center">
+                            <p class="text-2xl font-bold text-amber-600">24</p>
+                            <p class="text-xs text-slate-500">Total Students</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3 text-center">
+                            <p class="text-2xl font-bold text-green-600">22</p>
+                            <p class="text-xs text-slate-500">Active</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center gap-1">
+                            <i class="fas fa-user-graduate text-slate-400"></i>
+                            <span class="text-slate-600">Adviser: Prof. Lim</span>
+                        </div>
+                        <span class="text-amber-600 font-medium">View Set →</span>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Groups Formed</span>
+                            <span class="font-medium">4/5</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-amber-600" style="width: 80%"></div>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- BSIS 3B Card -->
+                <a href="instructor-manage-user-set.html?set=bsis3b"
+                    class="set-card bg-white rounded-xl border border-slate-200 p-6 block">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div
+                                class="w-14 h-14 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold mb-3">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h4 class="text-2xl font-bold text-slate-800">BSIS 3B</h4>
+                            <p class="text-sm text-slate-500">Bachelor of Science in Information Systems</p>
+                        </div>
+                        <span class="bg-pink-100 text-pink-700 px-3 py-1 rounded-full text-sm font-medium">Year 3</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-50 rounded-lg p-3 text-center">
+                            <p class="text-2xl font-bold text-pink-600">23</p>
+                            <p class="text-xs text-slate-500">Total Students</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3 text-center">
+                            <p class="text-2xl font-bold text-green-600">21</p>
+                            <p class="text-xs text-slate-500">Active</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center gap-1">
+                            <i class="fas fa-user-graduate text-slate-400"></i>
+                            <span class="text-slate-600">Adviser: Prof. Villanueva</span>
+                        </div>
+                        <span class="text-pink-600 font-medium">View Set →</span>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Groups Formed</span>
+                            <span class="font-medium">4/5</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-pink-600" style="width: 80%"></div>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- BSIT 2A Card (different year) -->
+                <a href="instructor-manage-user-set.html?set=bsit2a"
+                    class="set-card bg-white rounded-xl border border-slate-200 p-6 block">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div
+                                class="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold mb-3">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h4 class="text-2xl font-bold text-slate-800">BSIT 2A</h4>
+                            <p class="text-sm text-slate-500">Bachelor of Science in Information Technology</p>
+                        </div>
+                        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium">Year
+                            2</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-50 rounded-lg p-3 text-center">
+                            <p class="text-2xl font-bold text-indigo-600">28</p>
+                            <p class="text-xs text-slate-500">Total Students</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3 text-center">
+                            <p class="text-2xl font-bold text-green-600">27</p>
+                            <p class="text-xs text-slate-500">Active</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center gap-1">
+                            <i class="fas fa-user-graduate text-slate-400"></i>
+                            <span class="text-slate-600">Adviser: Prof. Mendoza</span>
+                        </div>
+                        <span class="text-indigo-600 font-medium">View Set →</span>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Groups Formed</span>
+                            <span class="font-medium">0/7</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-slate-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+        </div>
+    </main>
+</body>
+
+</html>

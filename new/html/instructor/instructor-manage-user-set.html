@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BSIT 3A - Student List - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .status-badge.active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .role-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .role-badge.pm {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .role-badge.sa {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .role-badge.dev {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .role-badge.doc {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .role-badge.unassigned {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .notification-dot {
+            position: relative;
+        }
+
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .table-row-hover:hover {
+            background: #f8fafc;
+        }
+
+        .pagination-item {
+            transition: all 0.2s ease;
+        }
+
+        .pagination-item:hover {
+            background: #f1f5f9;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.2s ease;
+        }
+
+        .file-upload-area:hover {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - GREEN THEME -->
+    <aside
+        class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-chalkboard-teacher text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Instructor Portal</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Section</p>
+                    <p class="text-sm font-semibold text-white">BSIT-3A</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="instructor-dashboard.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">12</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Management</p>
+            <a href="instructor-group-management.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Group Management</span>
+                <i class="fas fa-chevron-right text-xs text-slate-500"></i>
+            </a>
+            <a href="instructor-manage-user.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg">
+                <i class="fas fa-user-plus w-5"></i>
+                <span class="flex-1">Manage User</span>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">New</span>
+            </a>
+            <a href="instructor-adviser-assignment.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-user-tie w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Adviser Assignment</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">3 slots</span>
+            </a>
+            <a href="instructor-defense-scheduling.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Defense Scheduling</span>
+                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Academic Control</p>
+            <a href="instructor-deadline-manager.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-clock w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Deadline Manager</span>
+            </a>
+            <a href="instructor-payment-verification.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-credit-card w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Payment Verification</span>
+            </a>
+            <a href="instructor-deployment-tracker.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-rocket w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Deployment Tracker</span>
+            </a>
+
+           
+            <a href="instructor-documents.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Documents</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                    PD</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Dela Cruz</p>
+                    <p class="text-xs text-slate-400">Capstone Coordinator</p>
+                </div>
+                <a href="panel-dashboard.html"
+                    class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"
+                    title="Switch to Panel">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72">
+
+        <!-- TOP BAR -->
+        <div
+            class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40">
+            <div class="flex items-center gap-4">
+                <a href="instructor-manage-user.html" class="text-slate-500 hover:text-slate-700 mr-2">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h2 class="text-2xl font-bold text-slate-800">BSIT 3A - Student List</h2>
+                <span class="bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-users"></i> 28 Students
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button
+                    class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <button
+                    class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <div class="relative">
+                        <select
+                            class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <option>BSIT 3A</option>
+                            <option>BSIT 3B</option>
+                            <option>BSIS 3A</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SET DETAILS CONTENT -->
+        <div class="p-8 space-y-6 mt-20 pb-12">
+            <!-- Set Information Header -->
+            <div class="bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-2xl font-bold mb-2">BSIT 3A</h3>
+                        <p class="text-emerald-100">Bachelor of Science in Information Technology · Year 3 · Section A
+                        </p>
+                        <div class="flex items-center gap-4 mt-3">
+                            <span class="bg-white/20 px-3 py-1 rounded-full text-sm"><i
+                                    class="fas fa-user-tie mr-1"></i> Adviser: Prof. Cruz</span>
+                            <span class="bg-white/20 px-3 py-1 rounded-full text-sm"><i
+                                    class="fas fa-calendar mr-1"></i> AY 2024-2025</span>
+                        </div>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur rounded-xl px-6 py-3 text-center">
+                        <p class="text-3xl font-bold">28</p>
+                        <p class="text-sm text-emerald-200">Total Students</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Excel Import for this Set -->
+            <div class="bg-white rounded-xl border p-6">
+                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-file-import text-emerald-600"></i>
+                    Import Students to BSIT 3A
+                </h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="file-upload-area rounded-xl p-6 text-center">
+                        <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2"></i>
+                        <p class="text-sm font-medium text-slate-700">Drag and drop Excel file here</p>
+                        <p class="text-xs text-slate-500 mb-3">or</p>
+                        <button class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700">
+                            <i class="fas fa-file-excel mr-2"></i> Choose File
+                        </button>
+                    </div>
+                    <div class="flex flex-col justify-center">
+                        <p class="text-sm text-slate-600 mb-2">Download template:</p>
+                        <a href="#" class="text-emerald-600 hover:text-emerald-800 flex items-center gap-2">
+                            <i class="fas fa-download"></i>
+                            student_import_template_bsit3a.xlsx
+                        </a>
+                        <p class="text-xs text-slate-400 mt-3">Upload will add/update students in this section</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="flex items-center justify-between">
+                <div class="flex gap-3">
+                    <button
+                        class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Add New Student
+                    </button>
+                    <button
+                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                        <i class="fas fa-file-excel"></i> Export List
+                    </button>
+                    <button
+                        class="bg-white border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                </div>
+                <div class="text-sm text-slate-500">
+                    <i class="fas fa-info-circle mr-1"></i> Last updated: March 15, 2026
+                </div>
+            </div>
+
+            <!-- Filter and Search -->
+            <div class="bg-white rounded-xl border p-4 flex flex-col md:flex-row gap-4">
+                <div class="flex-1 relative">
+                    <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" placeholder="Search by name, ID, or email..."
+                        class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                </div>
+                <div class="flex gap-2">
+                    <select class="border border-slate-200 rounded-lg px-4 py-2 text-sm">
+                        <option>All Status</option>
+                        <option>Active</option>
+                        <option>Inactive</option>
+                    </select>
+                    <select class="border border-slate-200 rounded-lg px-4 py-2 text-sm">
+                        <option>All Roles</option>
+                        <option>Project Manager</option>
+                        <option>System Analyst</option>
+                        <option>Programmer</option>
+                        <option>Documentarian</option>
+                        <option>Unassigned</option>
+                    </select>
+                    <select class="border border-slate-200 rounded-lg px-4 py-2 text-sm">
+                        <option>All Groups</option>
+                        <option>Group Alpha</option>
+                        <option>Group Beta</option>
+                        <option>Group Gamma</option>
+                        <option>Ungrouped</option>
+                    </select>
+                    <button class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">
+                        <i class="fas fa-filter mr-2"></i>Apply
+                    </button>
+                </div>
+            </div>
+
+            <!-- Students Table -->
+            <div class="bg-white rounded-xl border overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-slate-50 border-b">
+                            <tr>
+                                <th class="text-left py-4 px-6">
+                                    <input type="checkbox" class="rounded border-slate-300">
+                                </th>
+                                <th class="text-left py-4 px-6">Student ID</th>
+                                <th class="text-left py-4 px-6">Name</th>
+                                <th class="text-left py-4 px-6">Email</th>
+                                <th class="text-left py-4 px-6">Group</th>
+                                <th class="text-left py-4 px-6">Role</th>
+                                <th class="text-left py-4 px-6">Status</th>
+                                <th class="text-left py-4 px-6">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            <!-- Student 1 -->
+                            <tr class="table-row-hover">
+                                <td class="py-4 px-6">
+                                    <input type="checkbox" class="rounded border-slate-300">
+                                </td>
+                                <td class="py-4 px-6 font-medium">2024-0001</td>
+                                <td class="py-4 px-6">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">
+                                            JD</div>
+                                        <span class="font-medium">Juan Dela Cruz</span>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6">juan.delacruz@university.edu</td>
+                                <td class="py-4 px-6">Alpha</td>
+                                <td class="py-4 px-6">
+                                    <span class="role-badge pm px-2 py-1">Project Manager</span>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <span class="status-badge active px-3 py-1">Active</span>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <div class="flex gap-2">
+                                        <button class="text-blue-600 hover:text-blue-800" title="Edit"><i
+                                                class="fas fa-edit"></i></button>
+                                        <button class="text-green-600 hover:text-green-800" title="Reset Password"><i
+                                                class="fas fa-key"></i></button>
+                                        <button class="text-red-600 hover:text-red-800" title="Deactivate"><i
+                                                class="fas fa-ban"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Student 2 -->
+                            <tr class="table-row-hover">
+                                <td class="py-4 px-6">
+                                    <input type="checkbox" class="rounded border-slate-300">
+                                </td>
+                                <td class="py-4 px-6 font-medium">2024-0002</td>
+                                <td class="py-4 px-6">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">
+                                            MS</div>
+                                        <span class="font-medium">Maria Santos</span>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6">maria.santos@university.edu</td>
+                                <td class="py-4 px-6">Alpha</td>
+                                <td class="py-4 px-6">
+                                    <span class="role-badge sa px-2 py-1">System Analyst</span>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <span class="status-badge active px-3 py-1">Active</span>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <div class="flex gap-2">
+                                        <button class="text-blue-600 hover:text-blue-800"><i
+                                                class="fas fa-edit"></i></button>
+                                        <button class="text-green-600 hover:text-green-800"><i
+                                                class="fas fa-key"></i></button>
+                                        <button class="text-red-600 hover:text-red-800"><i
+                                                class="fas fa-ban"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Student 3 -->
+                            <tr class="table-row-hover">
+                                <td class="py-4 px-6">
+                                    <input type="checkbox" class="rounded border-slate-300">
+                                </td>
+                                <td class="py-4 px-6 font-medium">2024-0003</td>
+                                <td class="py-4 px-6">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs">
+                                            JR</div>
+                                        <span class="font-medium">Jose Reyes</span>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6">jose.reyes@university.edu</td>
+                                <td class="py-4 px-6">Alpha</td>
+                                <td class="py-4 px-6">
+                                    <span class="role-badge dev px-2 py-1">Programmer</span>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <span class="status-badge active px-3 py-1">Active</span>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <div class="flex gap-2">
+                                        <button class="text-blue-600 hover:text-blue-800"><i
+                                                class="fas fa-edit"></i></button>
+                                        <button class="text-green-600 hover:text-green-800"><i
+                                                class="fas fa-key"></i></button>
+                                        <button class="text-red-600 hover:text-red-800"><i
+                                                class="fas fa-ban"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Student 4 -->
+                            <tr class="table-row-hover">
+                                <td class="py-4 px-6">
+                                    <input type="checkbox" class="rounded border-slate-300">
+                                </td>
+                                <td class="py-4 px-6 font-medium">2024-0004</td>
+                                <td class="py-4 px-6">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white text-xs">
+                                            AT</div>
+                                        <span class="font-medium">Ana Torres</span>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6">ana.torres@university.edu</td>
+                                <td class="py-4 px-6">Alpha</td>
+                                <td class="py-4 px-6">
+                                    <span class="role-badge doc px-2 py-1">Documentarian</span>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <span class="status-badge active px-3 py-1">Active</span>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <div class="flex gap-2">
+                                        <button class="text-blue-600 hover:text-blue-800"><i
+                                                class="fas fa-edit"></i></button>
+                                        <button class="text-green-600 hover:text-green-800"><i
+                                                class="fas fa-key"></i></button>
+                                        <button class="text-red-600 hover:text-red-800"><i
+                                                class="fas fa-ban"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Student 5 - Ungrouped -->
+                            <tr class="table-row-hover">
+                                <td class="py-4 px-6">
+                                    <input type="checkbox" class="rounded border-slate-300">
+                                </td>
+                                <td class="py-4 px-6 font-medium">2024-0010</td>
+                                <td class="py-4 px-6">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-slate-400 flex items-center justify-center text-white text-xs">
+                                            ML</div>
+                                        <span class="font-medium">Mika Lopez</span>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6">mika.lopez@university.edu</td>
+                                <td class="py-4 px-6">-</td>
+                                <td class="py-4 px-6">
+                                    <span class="role-badge unassigned px-2 py-1">Unassigned</span>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <span class="status-badge active px-3 py-1">Active</span>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <div class="flex gap-2">
+                                        <button class="text-blue-600 hover:text-blue-800"><i
+                                                class="fas fa-edit"></i></button>
+                                        <button class="text-green-600 hover:text-green-800"><i
+                                                class="fas fa-key"></i></button>
+                                        <button class="text-red-600 hover:text-red-800"><i
+                                                class="fas fa-ban"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Student 6 - Inactive -->
+                            <tr class="table-row-hover">
+                                <td class="py-4 px-6">
+                                    <input type="checkbox" class="rounded border-slate-300">
+                                </td>
+                                <td class="py-4 px-6 font-medium">2024-0015</td>
+                                <td class="py-4 px-6">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-red-400 flex items-center justify-center text-white text-xs">
+                                            PV</div>
+                                        <span class="font-medium">Paolo Villanueva</span>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6">paolo.villanueva@university.edu</td>
+                                <td class="py-4 px-6">-</td>
+                                <td class="py-4 px-6">
+                                    <span class="role-badge unassigned px-2 py-1">Unassigned</span>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <span class="status-badge inactive px-3 py-1">Inactive</span>
+                                </td>
+                                <td class="py-4 px-6">
+                                    <div class="flex gap-2">
+                                        <button class="text-blue-600 hover:text-blue-800"><i
+                                                class="fas fa-edit"></i></button>
+                                        <button class="text-green-600 hover:text-green-800"><i
+                                                class="fas fa-play"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-slate-500">
+                    Showing <span class="font-medium">1</span> to <span class="font-medium">6</span> of <span
+                        class="font-medium">28</span> students
+                </div>
+                <div class="flex gap-2">
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center"
+                        disabled>
+                        <i class="fas fa-chevron-left text-sm"></i>
+                    </button>
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center">1</button>
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">2</button>
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">3</button>
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">4</button>
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">5</button>
+                    <button
+                        class="pagination-item w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+                        <i class="fas fa-chevron-right text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+    
+        </div>
+    </main>
+</body>
+
+</html>
