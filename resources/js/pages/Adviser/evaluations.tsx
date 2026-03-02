@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ClipboardCheck, Star } from 'lucide-react';
+import React, { useState } from 'react';
 import AdviserLayout from './_layout';
 
 type Recommendation = 'Ready for Defense' | 'Needs Revision' | 'Recommend Re-Defense';

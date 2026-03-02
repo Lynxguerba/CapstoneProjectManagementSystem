@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Search, ShieldAlert } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import StudentLayout from './_layout';
 
 type TitleItem = {

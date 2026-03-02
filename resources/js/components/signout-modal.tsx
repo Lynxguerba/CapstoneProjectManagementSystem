@@ -1,7 +1,7 @@
+import { useForm } from '@inertiajs/react';
+import { X, LogOut, AlertTriangle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, LogOut, AlertTriangle } from 'lucide-react';
-import { useForm } from '@inertiajs/react';
 
 interface SignOutModalProps {
     open: boolean;

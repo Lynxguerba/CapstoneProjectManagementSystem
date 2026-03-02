@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BadgeCheck, CreditCard, Crown, Mail, Shield, UserPlus, Users } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import StudentLayout from './_layout';
 
 type GroupMember = {

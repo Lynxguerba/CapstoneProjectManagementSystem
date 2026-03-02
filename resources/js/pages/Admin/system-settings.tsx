@@ -1,7 +1,7 @@
-import React from 'react';
 import { useForm } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Settings } from 'lucide-react';
+import React from 'react';
 import AdminLayout from './_layout';
 
 type SystemSettingsData = {

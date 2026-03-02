@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Settings, User } from 'lucide-react';
+import React, { useState } from 'react';
 import AdviserLayout from './_layout';
 
 const AdviserSettings = () => {

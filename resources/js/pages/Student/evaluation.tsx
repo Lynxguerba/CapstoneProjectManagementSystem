@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { MessageSquareText, Star } from 'lucide-react';
+import React, { useMemo } from 'react';
 import StudentLayout from './_layout';
 
 type ScoreItem = {

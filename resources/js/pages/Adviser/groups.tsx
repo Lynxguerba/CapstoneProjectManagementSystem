@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
 import { Link } from '@inertiajs/react';
+import { motion } from 'framer-motion';
 import { Filter, Search, Users } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import AdviserLayout from './_layout';
 
 type GroupStatus = 'On Track' | 'Needs Review' | 'For Defense' | 'Revision Cycle';

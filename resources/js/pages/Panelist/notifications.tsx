@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bell, Filter, Search } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import PanelLayout from './_layout';
 
 type NotificationTone = 'info' | 'success' | 'warning' | 'danger';

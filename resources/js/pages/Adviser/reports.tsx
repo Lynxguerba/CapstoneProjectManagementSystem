@@ -1,6 +1,6 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp } from 'lucide-react';
+import React from 'react';
 import AdviserLayout from './_layout';
 
 const AdviserReports = () => {

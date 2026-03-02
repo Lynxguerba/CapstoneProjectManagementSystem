@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CalendarClock, FileText, FolderOpen, Scale, Users } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import AdviserLayout from './_layout';
 
 type TabKey = 'overview' | 'concepts' | 'documents' | 'evaluation' | 'schedule' | 'verdict';

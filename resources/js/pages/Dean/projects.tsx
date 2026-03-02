@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import React, { useMemo, useState } from 'react';
 import DeanLayout from './_layout';
 
 type ProjectStatus = 'Proposed' | 'Active' | 'Completed' | 'On Hold' | 'Archived';

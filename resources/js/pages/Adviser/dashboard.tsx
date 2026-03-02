@@ -1,8 +1,8 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { CalendarClock, ClipboardCheck, FileText, FolderOpen, LayoutDashboard, Scale, Users } from 'lucide-react';
 import { Box, Typography } from '@mui/material';
 import { LineChart, PieChart } from '@mui/x-charts';
+import { motion } from 'framer-motion';
+import { CalendarClock, ClipboardCheck, FileText, FolderOpen, LayoutDashboard, Scale, Users } from 'lucide-react';
+import React from 'react';
 import AdviserLayout from './_layout';
 
 type DashboardNotification = {

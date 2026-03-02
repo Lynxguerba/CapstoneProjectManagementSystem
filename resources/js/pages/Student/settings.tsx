@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
+import React, { useState } from 'react';
 import StudentLayout from './_layout';
 
 const StudentSettings = () => {

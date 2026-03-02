@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, CalendarDays, List } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import AdviserLayout from './_layout';
 
 type ViewMode = 'calendar' | 'list';

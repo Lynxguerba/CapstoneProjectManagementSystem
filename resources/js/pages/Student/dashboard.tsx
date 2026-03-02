@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import { Box, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Bell, CalendarClock, CheckCircle2, Clock3, CreditCard, FileCheck2, GraduationCap, ShieldAlert } from 'lucide-react';
-import { Box, Typography } from '@mui/material';
+import React, { useMemo } from 'react';
 import StudentLayout from './_layout';
 
 type ProgressStep = {

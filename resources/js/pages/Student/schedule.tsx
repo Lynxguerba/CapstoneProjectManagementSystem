@@ -1,6 +1,6 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { CalendarDays, Lock, MapPin, Timer } from 'lucide-react';
+import React from 'react';
 import StudentLayout from './_layout';
 
 type DefenseType = 'Outline Defense' | 'Pre-Deployment Defense' | 'Final Defense';

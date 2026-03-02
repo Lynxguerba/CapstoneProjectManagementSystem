@@ -289,7 +289,11 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                 </div>
             </motion.section>
             <AddUserModal open={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} />
-            <BulkUploadModal open={isBulkUploadModalOpen} onClose={() => setIsBulkUploadModalOpen(false)} />
+            <BulkUploadModal
+                open={isBulkUploadModalOpen}
+                onClose={() => setIsBulkUploadModalOpen(false)}
+                existingUsers={managedUsers}
+            />
             <ManageUserActionModal
                 open={isManageUserModalOpen}
                 user={selectedUser}

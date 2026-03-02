@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { MessageSquareText, PieChart as PieIcon, Search } from 'lucide-react';
+import React, { useMemo } from 'react';
 import PanelLayout from '../_layout';
 
 type CommentType = 'Suggestion' | 'Issue/Error' | 'Approval/Good Practice' | 'Question/Clarification';

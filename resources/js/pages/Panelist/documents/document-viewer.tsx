@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Download, FileText, MessageSquareText, Minus, Plus, Save } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import PanelLayout from '../_layout';
 
 type CommentType = 'Suggestion' | 'Issue/Error' | 'Approval/Good Practice' | 'Question/Clarification';

@@ -22,6 +22,9 @@ type PreviewRow = CsvUserRow & {
 type BulkUploadModalProps = {
     open: boolean;
     onClose: () => void;
+    existingUsers?: Array<{
+        email: string;
+    }>;
 };
 
 type BulkUploadForm = {
@@ -65,15 +68,36 @@ const parseCsvLine = (line: string): string[] => {
     return values.map((value) => value.replace(/^"|"$/g, '').trim());
 };
 
-const BulkUploadModal = ({ open, onClose }: BulkUploadModalProps) => {
+const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalProps) => {
     const [fileName, setFileName] = React.useState('');
     const [previewRows, setPreviewRows] = React.useState<PreviewRow[]>([]);
+    const [selectedRowLines, setSelectedRowLines] = React.useState<number[]>([]);
     const [showReviewModal, setShowReviewModal] = React.useState(false);
     const [fileError, setFileError] = React.useState('');
 
     const { data, setData, post, processing, errors, clearErrors, reset } = useForm<BulkUploadForm>({
         rows: [],
     });
+    const existingUserEmails = React.useMemo(() => {
+        return new Set(existingUsers.map((user) => user.email.trim().toLowerCase()));
+    }, [existingUsers]);
+    const selectedRowLinesSet = React.useMemo(() => {
+        return new Set(selectedRowLines);
+    }, [selectedRowLines]);
+
+    useEffect(() => {
+        const selectedRows = previewRows
+            .filter((row) => row.issues.length === 0 && selectedRowLinesSet.has(row.line))
+            .map((row) => ({
+                name: row.name,
+                email: row.email,
+                role: row.role,
+                status: row.status,
+                password: row.password,
+            }));
+
+        setData('rows', selectedRows);
+    }, [previewRows, selectedRowLinesSet, setData]);
 
     useEffect(() => {
         if (!open) {
@@ -104,6 +128,7 @@ const BulkUploadModal = ({ open, onClose }: BulkUploadModalProps) => {
     const clearUploadState = () => {
         setFileName('');
         setPreviewRows([]);
+        setSelectedRowLines([]);
         setShowReviewModal(false);
         setFileError('');
         clearErrors();
@@ -165,6 +190,8 @@ const BulkUploadModal = ({ open, onClose }: BulkUploadModalProps) => {
                 issues.push('Email format is invalid.');
             } else if (emailTracker.has(email.toLowerCase())) {
                 issues.push('Duplicate email in CSV.');
+            } else if (existingUserEmails.has(email.toLowerCase())) {
+                issues.push('User email already exists in the table.');
             }
 
             if (!availableRoles.includes(roleValue as UserRole)) {
@@ -193,16 +220,7 @@ const BulkUploadModal = ({ open, onClose }: BulkUploadModalProps) => {
         });
 
         setPreviewRows(parsedPreviewRows);
-        setData(
-            'rows',
-            parsedPreviewRows.map((row) => ({
-                name: row.name,
-                email: row.email,
-                role: row.role,
-                status: row.status,
-                password: row.password,
-            })),
-        );
+        setSelectedRowLines(parsedPreviewRows.filter((row) => row.issues.length === 0).map((row) => row.line));
         setFileError('');
         setShowReviewModal(true);
     };
@@ -228,9 +246,20 @@ const BulkUploadModal = ({ open, onClose }: BulkUploadModalProps) => {
 
     const invalidRowsCount = previewRows.filter((row) => row.issues.length > 0).length;
     const validRowsCount = previewRows.length - invalidRowsCount;
+    const selectedRowsCount = data.rows.length;
+
+    const toggleRowSelection = (line: number) => {
+        setSelectedRowLines((previousSelectedRows) => {
+            if (previousSelectedRows.includes(line)) {
+                return previousSelectedRows.filter((selectedLine) => selectedLine !== line);
+            }
+
+            return [...previousSelectedRows, line];
+        });
+    };
 
     const importRows = () => {
-        if (invalidRowsCount > 0 || data.rows.length === 0) {
+        if (data.rows.length === 0) {
             return;
         }
 
@@ -345,6 +374,7 @@ const BulkUploadModal = ({ open, onClose }: BulkUploadModalProps) => {
                             <div className="flex flex-wrap items-center gap-3 text-sm">
                                 <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">Valid: {validRowsCount}</span>
                                 <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700">With issues: {invalidRowsCount}</span>
+                                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">Selected: {selectedRowsCount}</span>
                                 <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-slate-700">Total rows: {previewRows.length}</span>
                             </div>
 
@@ -352,22 +382,23 @@ const BulkUploadModal = ({ open, onClose }: BulkUploadModalProps) => {
                                 <table className="w-full text-sm">
                                     <thead className="sticky top-0 bg-slate-100">
                                         <tr className="text-left text-slate-700">
-                                            <th className="px-3 py-2 font-semibold">Line</th>
+                                            {/* <th className="px-3 py-2 font-semibold">Line</th> */}
                                             <th className="px-3 py-2 font-semibold">Name</th>
                                             <th className="px-3 py-2 font-semibold">Email</th>
                                             <th className="px-3 py-2 font-semibold">Role</th>
-                                            <th className="px-3 py-2 font-semibold">Status</th>
+                                            {/* <th className="px-3 py-2 font-semibold">Status</th> */}
                                             <th className="px-3 py-2 font-semibold">Issues</th>
+                                            <th className="px-3 py-2 font-semibold">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {previewRows.map((row) => (
                                             <tr key={`${row.line}-${row.email}`} className={row.issues.length > 0 ? 'bg-rose-50' : ''}>
-                                                <td className="px-3 py-2">{row.line}</td>
+                                                {/* <td className="px-3 py-2">{row.line}</td> */}
                                                 <td className="px-3 py-2">{row.name}</td>
                                                 <td className="px-3 py-2">{row.email}</td>
                                                 <td className="px-3 py-2 capitalize">{row.role}</td>
-                                                <td className="px-3 py-2 capitalize">{row.status}</td>
+                                                {/* <td className="px-3 py-2 capitalize">{row.status}</td> */}
                                                 <td className="px-3 py-2">
                                                     {row.issues.length > 0 ? (
                                                         <ul className="list-disc pl-4 text-xs text-rose-700">
@@ -377,6 +408,19 @@ const BulkUploadModal = ({ open, onClose }: BulkUploadModalProps) => {
                                                         </ul>
                                                     ) : (
                                                         <span className="text-xs text-emerald-700">Ready to import</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    {row.issues.length > 0 ? (
+                                                        <span className="text-xs text-slate-400">Not selectable</span>
+                                                    ) : (
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedRowLinesSet.has(row.line)}
+                                                            onChange={() => toggleRowSelection(row.line)}
+                                                            disabled={processing}
+                                                            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        />
                                                     )}
                                                 </td>
                                             </tr>
@@ -403,10 +447,10 @@ const BulkUploadModal = ({ open, onClose }: BulkUploadModalProps) => {
                                 <button
                                     type="button"
                                     onClick={importRows}
-                                    disabled={processing || invalidRowsCount > 0 || previewRows.length === 0}
+                                    disabled={processing || selectedRowsCount === 0}
                                     className="rounded-lg bg-emerald-600 px-5 py-2 font-medium text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    {processing ? 'Importing...' : 'Approve and Import'}
+                                    {processing ? 'Importing...' : `Approve and Import (${selectedRowsCount})`}
                                 </button>
                             </div>
                         </div>

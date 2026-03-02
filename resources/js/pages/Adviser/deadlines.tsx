@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarClock, Clock, X } from 'lucide-react';
+import React, { useState } from 'react';
 import AdviserLayout from './_layout';
 
 type Deadline = {

@@ -1,6 +1,6 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Filter, Search } from 'lucide-react';
+import React from 'react';
 import AdminLayout from './_layout';
 
 type AuditSeverity = 'info' | 'warning' | 'critical';

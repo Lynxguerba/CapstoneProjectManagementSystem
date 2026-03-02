@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import React, { useMemo, useState } from 'react';
 import InstructorLayout from './_layout';
 
 type Verdict = 'Approved' | 'Re-Defense';

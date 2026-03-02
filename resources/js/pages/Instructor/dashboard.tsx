@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Sidebar from '../../components/sidebar';
-import { CheckCircle2, ClipboardList, Layers3, TriangleAlert, Users } from 'lucide-react';
 import { Box, Typography } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle2, ClipboardList, Layers3, TriangleAlert, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import Sidebar from '../../components/sidebar';
 
 interface Member {
     fullName: string;

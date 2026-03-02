@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { usePage } from '@inertiajs/react';
+import { motion } from 'framer-motion';
+import React, { useState } from 'react';
 import InstructorLayout from './_layout';
 
 const SettingsPage = () => {

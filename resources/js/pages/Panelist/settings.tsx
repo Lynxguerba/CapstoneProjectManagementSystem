@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Shield, User } from 'lucide-react';
+import React, { useState } from 'react';
 import PanelLayout from './_layout';
 
 const PanelistSettings = () => {

@@ -1,8 +1,8 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { FileArchive, Clock3, FolderKanban, ShieldCheck, Users } from 'lucide-react';
 import { Box } from '@mui/material';
 import { LineChart, PieChart } from '@mui/x-charts';
+import { motion } from 'framer-motion';
+import { FileArchive, Clock3, FolderKanban, ShieldCheck, Users } from 'lucide-react';
+import React from 'react';
 import AdminLayout from './_layout';
 
 type DashboardStats = {

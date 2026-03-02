@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Scale, Users } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import PanelLayout from '../_layout';
 
 type Verdict = 'Approve' | 'Re-Defense';
