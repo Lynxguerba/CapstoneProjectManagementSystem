@@ -14,19 +14,6 @@ use Inertia\Response;
 
 class AdminUserController extends Controller
 {
-    /**
-     * @var array<int, string>
-     */
-    private const AVAILABLE_ROLES = [
-        'admin',
-        'student',
-        'adviser',
-        'instructor',
-        'panelist',
-        'dean',
-        'program_chairperson',
-    ];
-
     public function index(Request $request): Response
     {
         $filters = [
@@ -69,13 +56,6 @@ class AdminUserController extends Controller
                 'role' => $filters['role'] !== '' ? $filters['role'] : 'all',
                 'status' => 'all',
             ],
-        ]);
-    }
-
-    public function create(): Response
-    {
-        return Inertia::render('Admin/users/create', [
-            'availableRoles' => self::AVAILABLE_ROLES,
         ]);
     }
 

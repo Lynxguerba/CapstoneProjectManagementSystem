@@ -29,7 +29,6 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::prefix('admin')->middleware([EnsureWebAuthenticated::class, EnsureRole::class.':admin'])->group(function () {
     Route::get('/dashboard', AdminDashboardController::class)->name('admin.dashboard');
     Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
-    Route::get('/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
     Route::post('/users', [AdminUserController::class, 'store'])->name('admin.users.store');
     Route::post('/users/bulk', [AdminUserController::class, 'bulkStore'])->name('admin.users.bulk-store');
     Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');

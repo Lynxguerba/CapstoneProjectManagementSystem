@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import {
     LayoutDashboard,
@@ -21,13 +20,26 @@ import {
     X,
     LogOut,
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 import logoCpms from '../assets/logo-cpms.png';
 import SignOutModal from './signout-modal';
 
+type SidebarAuthUser = {
+    role?: string;
+    name?: string;
+    email?: string;
+};
+
+type SidebarPageProps = {
+    auth?: {
+        user?: SidebarAuthUser;
+    };
+};
+
 const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => {
-    const page = usePage() as any;
-    const { auth } = page.props as any;
+    const page = usePage<SidebarPageProps>();
+    const { auth } = page.props;
     const user = auth?.user;
     const role = user?.role || 'student';
     const currentUrl: string = page.url ?? '';
@@ -89,7 +101,6 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                 return [
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
                     { icon: Users, label: 'User Management', href: '/admin/users' },
-                    { icon: BookOpen, label: 'Create Users', href: '/admin/users/create' },
                     { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
                     { icon: Archive, label: 'Audit Logs', href: '/admin/audit-logs' },
                 ];
