@@ -16,7 +16,13 @@ Route::get('/', function () {
     if (Auth::guard('web')->check()) {
         $user = Auth::guard('web')->user();
 
-        return redirect()->route($user->role.'.dashboard');
+        if ($user !== null) {
+            $routeName = (string) $user->role.'.dashboard';
+
+            if (Route::has($routeName)) {
+                return redirect()->route($routeName);
+            }
+        }
     }
 
     return Inertia::render('login');
@@ -24,6 +30,9 @@ Route::get('/', function () {
 
 Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::post('/switch-role', [LoginController::class, 'switchRole'])
+    ->middleware(EnsureWebAuthenticated::class)
+    ->name('role.switch');
 
 // ADMIN ROUTES (protected)
 Route::prefix('admin')->middleware([EnsureWebAuthenticated::class, EnsureRole::class.':admin'])->group(function () {
@@ -212,14 +221,14 @@ Route::prefix('dean')->middleware([AuthenticateMiddleware::class, EnsureRole::cl
     })->name('dean.projects');
     Route::get('/project-details', function () {
         return Inertia::render('Dean/project-details');
-    })->name('dean.project-details');  
+    })->name('dean.project-details');
     Route::get('/students', function () {
         return Inertia::render('Dean/students');
     })->name('dean.students');
     Route::get('/settings', function () {
         return Inertia::render('Dean/settings');
     })->name('dean.settings');
-    Route::get('/reports', function () {    
+    Route::get('/reports', function () {
         return Inertia::render('Dean/reports');
     })->name('dean.reports');
 });

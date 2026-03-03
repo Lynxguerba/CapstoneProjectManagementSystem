@@ -11,7 +11,7 @@ type CsvUserRow = {
     first_name: string;
     last_name: string;
     email: string;
-    role: UserRole;
+    roles: UserRole[];
     status: UserStatus;
     password: string;
 };
@@ -74,6 +74,57 @@ const parseCsvLine = (line: string): string[] => {
     return values.map((value) => value.replace(/^"|"$/g, '').trim());
 };
 
+const normalizeRoleToken = (rawRole: string): UserRole | null => {
+    const normalized = rawRole
+        .trim()
+        .toLowerCase()
+        .replace(/-/g, '_')
+        .replace(/\s+/g, '_');
+
+    if (normalized === 'advisor') {
+        return 'adviser';
+    }
+
+    if (normalized === 'program_chair' || normalized === 'programchair') {
+        return 'program_chairperson';
+    }
+
+    if (availableRoles.includes(normalized as UserRole)) {
+        return normalized as UserRole;
+    }
+
+    return null;
+};
+
+const parseRoles = (roleCell: string): { roles: UserRole[]; hasInvalidRole: boolean } => {
+    const parts = roleCell
+        .split(/[;,|]/)
+        .flatMap((part) => part.split('/'))
+        .map((part) => part.trim())
+        .filter((part) => part !== '');
+
+    const normalizedRoles: UserRole[] = [];
+    let hasInvalidRole = false;
+
+    parts.forEach((part) => {
+        const normalizedRole = normalizeRoleToken(part);
+
+        if (normalizedRole === null) {
+            hasInvalidRole = true;
+            return;
+        }
+
+        if (!normalizedRoles.includes(normalizedRole)) {
+            normalizedRoles.push(normalizedRole);
+        }
+    });
+
+    return {
+        roles: normalizedRoles,
+        hasInvalidRole,
+    };
+};
+
 const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalProps) => {
     const [fileName, setFileName] = React.useState('');
     const [previewRows, setPreviewRows] = React.useState<PreviewRow[]>([]);
@@ -98,7 +149,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                 first_name: row.first_name,
                 last_name: row.last_name,
                 email: row.email,
-                role: row.role,
+                roles: row.roles,
                 status: row.status,
                 password: row.password,
             }));
@@ -182,10 +233,11 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
             const firstName = values[headerIndex.first_name] ?? '';
             const lastName = values[headerIndex.last_name] ?? '';
             const email = values[headerIndex.email] ?? '';
-            const roleValue = (values[headerIndex.role] ?? '').toLowerCase();
+            const rawRoleValue = values[headerIndex.role] ?? '';
             const password = values[headerIndex.password] ?? '';
             const rawStatus = values[headerIndex.status] ?? 'active';
             const statusValue = rawStatus.toLowerCase() as UserStatus;
+            const parsedRoles = parseRoles(rawRoleValue);
             const issues: string[] = [];
 
             if (lastName === '') {
@@ -206,8 +258,12 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                 issues.push('User email already exists in the table.');
             }
 
-            if (!availableRoles.includes(roleValue as UserRole)) {
-                issues.push('Role is invalid.');
+            if (parsedRoles.roles.length === 0) {
+                issues.push('At least one role is required.');
+            }
+
+            if (parsedRoles.hasInvalidRole) {
+                issues.push('One or more roles are invalid.');
             }
 
             if (!availableStatuses.includes(statusValue)) {
@@ -225,7 +281,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                 first_name: firstName,
                 last_name: lastName,
                 email,
-                role: (roleValue as UserRole) || 'student',
+                roles: parsedRoles.roles,
                 status: availableStatuses.includes(statusValue) ? statusValue : 'active',
                 password,
                 issues,
@@ -320,13 +376,11 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
 
                     <div className="space-y-4 p-4">
                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-                            Upload a CSV file with headers: 
+                            Upload a CSV file with headers:
                             <br />
-                            <span className="font-semibold">
-                                Last Name, First Name, Email, Role, Password, and optionally Status. 
-                            </span>
+                            <span className="font-semibold">Last Name, First Name, Email, Role, Password, and optionally Status.</span>
                             <br />
-                            You can review and select which valid rows to import before finalizing. Existing user emails in the system will be flagged as issues in the preview.
+                            Use commas in the Role column for multiple roles (example: Adviser, Panelist, Instructor).
                         </div>
 
                         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
@@ -399,12 +453,10 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                                 <table className="w-full text-sm">
                                     <thead className="sticky top-0 bg-slate-100">
                                         <tr className="text-left text-slate-700">
-                                            {/* <th className="px-3 py-2 font-semibold">Line</th> */}
                                             <th className="px-3 py-2 font-semibold">Last Name</th>
                                             <th className="px-3 py-2 font-semibold">First Name</th>
                                             <th className="px-3 py-2 font-semibold">Email</th>
-                                            <th className="px-3 py-2 font-semibold">Role</th>
-                                            {/* <th className="px-3 py-2 font-semibold">Status</th> */}
+                                            <th className="px-3 py-2 font-semibold">Roles</th>
                                             <th className="px-3 py-2 font-semibold">Issues</th>
                                             <th className="px-3 py-2 font-semibold">Action</th>
                                         </tr>
@@ -412,12 +464,10 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                                     <tbody className="divide-y divide-slate-100">
                                         {previewRows.map((row) => (
                                             <tr key={`${row.line}-${row.email}`} className={row.issues.length > 0 ? 'bg-rose-50' : ''}>
-                                                {/* <td className="px-3 py-2">{row.line}</td> */}
                                                 <td className="px-3 py-2">{row.last_name}</td>
                                                 <td className="px-3 py-2">{row.first_name}</td>
                                                 <td className="px-3 py-2">{row.email}</td>
-                                                <td className="px-3 py-2 capitalize">{row.role}</td>
-                                                {/* <td className="px-3 py-2 capitalize">{row.status}</td> */}
+                                                <td className="px-3 py-2 capitalize">{row.roles.join(', ').replaceAll('_', ' ')}</td>
                                                 <td className="px-3 py-2">
                                                     {row.issues.length > 0 ? (
                                                         <ul className="list-disc pl-4 text-xs text-rose-700">

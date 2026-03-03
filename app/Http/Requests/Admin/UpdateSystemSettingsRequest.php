@@ -11,7 +11,7 @@ class UpdateSystemSettingsRequest extends FormRequest
     {
         $user = $this->user();
 
-        return $user !== null && $user->role === 'admin';
+        return $user !== null && $user->hasRole('admin');
     }
 
     /**

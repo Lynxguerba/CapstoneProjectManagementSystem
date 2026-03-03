@@ -1,0 +1,60 @@
+Last Name,First Name,Email,Role,Password
+Smith,James,james.smith@example.com,"Instructor, Panelist",JSmith_4821
+Johnson,Maria,maria.johnson@example.com,Student,MJohnson_9012
+Williams,Robert,robert.williams@example.com,"Adviser, Panelist, Instructor",RWilliams_3354
+Brown,Patricia,patricia.brown@example.com,Student,PBrown_1189
+Jones,Michael,michael.jones@example.com,Student,MJones_7720
+Garcia,Linda,linda.garcia@example.com,"Adviser, Panelist",LGarcia_5541
+Miller,David,david.miller@example.com,Student,DMiller_2093
+Davis,Elizabeth,elizabeth.davis@example.com,"Adviser, Panelist",EDavis_6617
+Rodriguez,Richard,richard.rodriguez@example.com,Student,RRodriguez_8842
+Martinez,Susan,susan.martinez@example.com,Student,SMartinez_3105
+Hernandez,Joseph,joseph.hernandez@example.com,"Instructor, Panelist",JHernandez_2298
+Lopez,Jessica,jessica.lopez@example.com,Student,JLopez_4473
+Gonzalez,Thomas,thomas.gonzalez@example.com,"Adviser, Panelist",TGonzalez_1928
+Wilson,Sarah,sarah.wilson@example.com,Student,SWilson_7034
+Anderson,Charles,charles.anderson@example.com,Student,CAnderson_5151
+Thomas,Karen,karen.thomas@example.com,"Instructor, Panelist",KThomas_9923
+Taylor,Christopher,chris.taylor@example.com,Student,CTaylor_6047
+Moore,Nancy,nancy.moore@example.com,Panelist,NMoore_8210
+Jackson,Matthew,matthew.jackson@example.com,Student,MJackson_2736
+Martin,Margaret,margaret.martin@example.com,Student,MMartin_5582
+Lee,Anthony,anthony.lee@example.com,"Instructor, Panelist",ALee_3914
+Perez,Betty,betty.perez@example.com,Student,BPerez_7401
+Thompson,Mark,mark.thompson@example.com,"Adviser, Panelist",MThompson_6122
+White,Sandra,sandra.white@example.com,Student,SWhite_9088
+Harris,Steven,steven.harris@example.com,Student,SHarris_4329
+Sanchez,Ashley,ashley.sanchez@example.com,"Instructor, Panelist",ASanchez_1567
+Clark,Paul,paul.clark@example.com,Student,PClark_8834
+Ramirez,Kimberly,kim.ramirez@example.com,"Adviser, Panelist",KRamirez_2119
+Lewis,Joshua,joshua.lewis@example.com,Student,JLewis_5002
+Robinson,Emily,emily.robinson@example.com,Student,ERobinson_3764
+Walker,Kevin,kevin.walker@example.com,"Instructor, Panelist",KWalker_9281
+Young,Donna,donna.young@example.com,Student,DYoung_1445
+Allen,Brian,brian.allen@example.com,Panelist,BAllen_6672
+King,Michelle,michelle.king@example.com,Student,MKing_8390
+Wright,Ronald,ronald.wright@example.com,Student,RWright_2231
+Scott,Dorothy,dorothy.scott@example.com,Panelist,DScott_4756
+Torres,Timothy,timothy.torres@example.com,Student,TTorres_5908
+Nguyen,Carol,carol.nguyen@example.com,"Adviser, Panelist",CNguyen_3142
+Hill,Jason,jason.hill@example.com,Student,JHill_7763
+Flores,Amanda,amanda.flores@example.com,Student,AFlores_1029
+Green,Edward,edward.green@example.com,"Adviser, Panelist",EGreen_8495
+Adams,Melissa,melissa.adams@example.com,Student,MAdams_2304
+Nelson,Gary,gary.nelson@example.com,"Adviser, Panelist",GNelson_6610
+Baker,Deborah,deborah.baker@example.com,Student,DBaker_4982
+Hall,Nicholas,nicholas.hall@example.com,Student,NHall_3317
+Rivera,Rebecca,rebecca.rivera@example.com,"Instructor, Panelist",RRivera_7025
+Campbell,Scott,scott.campbell@example.com,Student,SCampbell_1149
+Mitchell,Laura,laura.mitchell@example.com,Panelist,LMitchell_9826
+Carter,Eric,eric.carter@example.com,Student,ECarter_5538
+Roberts,Cynthia,cynthia.roberts@example.com,Student,CRoberts_2097
+Darwin,Charls,programchair@example.com,"Program Chair, Panelist, Adviser",password
+Manzano,Dean,dean@example.com,"Dean, Panelist, Adviser",password
+Admin,User,admin@example.com,Admin,password
+Cruz,Juan,juan.cruz@example.com,Student,JCruz_1234
+Santos,Maria,maria.santos@example.com,Panelist,MSantos_5678
+Reyes,Pedro,pedro.reyes@example.com,Student,PReyes_9012
+Ramos,Elena,elena.ramos@example.com,Panelist,ERamos_3456
+Dela Cruz,Antonio,antonio.delacruz@example.com,Student,ADelaCruz_7890
+Villanueva,Roberto,roberto.villanueva@example.com,Panelist,RVilla_2291

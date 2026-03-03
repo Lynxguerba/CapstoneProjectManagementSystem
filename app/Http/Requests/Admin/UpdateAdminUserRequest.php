@@ -2,24 +2,12 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateAdminUserRequest extends FormRequest
 {
-    /**
-     * @var array<int, string>
-     */
-    private const AVAILABLE_ROLES = [
-        'admin',
-        'student',
-        'adviser',
-        'instructor',
-        'panelist',
-        'dean',
-        'program_chairperson',
-    ];
-
     /**
      * @var array<int, string>
      */
@@ -32,7 +20,7 @@ class UpdateAdminUserRequest extends FormRequest
     {
         $user = $this->user();
 
-        return $user !== null && $user->role === 'admin';
+        return $user !== null && $user->hasRole('admin');
     }
 
     /**
@@ -46,7 +34,7 @@ class UpdateAdminUserRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user'))],
-            'role' => ['required', 'string', Rule::in(self::AVAILABLE_ROLES)],
+            'role' => ['required', 'string', Rule::in(Role::slugs())],
             'status' => ['required', 'string', Rule::in(self::AVAILABLE_STATUSES)],
         ];
     }

@@ -17,7 +17,7 @@ type AddUserForm = {
     first_name: string;
     last_name: string;
     email: string;
-    role: UserRole;
+    roles: UserRole[];
     status: UserStatus;
     password: string;
 };
@@ -29,7 +29,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
         first_name: '',
         last_name: '',
         email: '',
-        role: availableRoles[0] ?? 'student',
+        roles: [availableRoles[0] ?? 'student'],
         status: 'active',
         password: '',
     });
@@ -67,6 +67,20 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
             },
         });
     };
+
+    const toggleRole = (role: UserRole) => {
+        addUserForm.setData('roles',
+            addUserForm.data.roles.includes(role)
+                ? addUserForm.data.roles.filter((assignedRole) => assignedRole !== role)
+                : [...addUserForm.data.roles, role],
+        );
+    };
+    const formErrors = addUserForm.errors as Record<string, string | undefined>;
+    const roleError =
+        addUserForm.errors.roles ??
+        formErrors['roles.0'] ??
+        formErrors['roles.1'] ??
+        formErrors['roles.2'];
 
     if (!open) {
         return null;
@@ -143,19 +157,21 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
                     </div>
 
                     <div>
-                        <label className="text-sm font-semibold text-slate-700">Role</label>
-                        <select
-                            value={addUserForm.data.role}
-                            onChange={(event) => addUserForm.setData('role', event.target.value as UserRole)}
-                            className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                        >
+                        <label className="text-sm font-semibold text-slate-700">Roles</label>
+                        <div className="mt-1.5 grid grid-cols-1 gap-2 rounded-xl border border-slate-300 bg-slate-50 p-3 sm:grid-cols-2">
                             {availableRoles.map((role) => (
-                                <option key={role} value={role} className="capitalize">
-                                    {role}
-                                </option>
+                                <label key={role} className="flex items-center gap-2 text-sm text-slate-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={addUserForm.data.roles.includes(role)}
+                                        onChange={() => toggleRole(role)}
+                                        className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                    />
+                                    <span className="capitalize">{role.replaceAll('_', ' ')}</span>
+                                </label>
                             ))}
-                        </select>
-                        {addUserForm.errors.role ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.role}</p> : null}
+                        </div>
+                        {roleError ? <p className="mt-1 text-xs text-rose-600">{roleError}</p> : null}
                     </div>
 
                     <div>

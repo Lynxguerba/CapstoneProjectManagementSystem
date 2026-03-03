@@ -27,6 +27,7 @@ import SignOutModal from './signout-modal';
 
 type SidebarAuthUser = {
     role?: string;
+    roles?: string[];
     name?: string;
     email?: string;
 };
@@ -272,7 +273,12 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                         Sign Out
                     </button>
                 </div>
-                <SignOutModal open={showModal} onClose={() => setShowModal(false)} />
+                <SignOutModal
+                    open={showModal}
+                    onClose={() => setShowModal(false)}
+                    activeRole={role}
+                    assignedRoles={user?.roles ?? []}
+                />
 
                 <style>{`
           .cpms-scroll {

@@ -16,6 +16,7 @@ type UserRow = {
     fullName: string;
     email: string;
     role: UserRole;
+    roles: UserRole[];
     status: UserStatus;
     createdAt: string;
 };
@@ -57,7 +58,7 @@ const AdminUserManagement = ({ users = [], filters }: AdminUserManagementProps) 
 
         return managedUsers.filter((user) => {
             const matchesQuery = !query || user.fullName.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
-            const matchesRole = role === 'all' || user.role === role;
+            const matchesRole = role === 'all' || user.roles.includes(role);
             const matchesStatus = status === 'all' || user.status === status;
 
             return matchesQuery && matchesRole && matchesStatus;
@@ -180,7 +181,7 @@ const AdminUserManagement = ({ users = [], filters }: AdminUserManagementProps) 
                             <tr className="border-b border-slate-200 text-left text-slate-600">
                                 <th className="py-3 font-semibold">Fullname</th>
                                 <th className="py-3 font-semibold">Email</th>
-                                <th className="py-3 font-semibold">Role</th>
+                                <th className="py-3 font-semibold">Roles</th>
                                 <th className="py-3 font-semibold">Status</th>
                                 <th className="py-3 font-semibold">Created</th>
                                 <th className="py-3 text-right font-semibold">Actions</th>
@@ -191,7 +192,7 @@ const AdminUserManagement = ({ users = [], filters }: AdminUserManagementProps) 
                                 <tr key={user.id} className="transition-colors hover:bg-slate-50">
                                     <td className="py-3 font-medium text-slate-900">{user.fullName}</td>
                                     <td className="py-3 text-slate-600">{user.email}</td>
-                                    <td className="py-3 text-slate-700 capitalize">{user.role}</td>
+                                    <td className="py-3 text-slate-700 capitalize">{user.roles.join(', ').replaceAll('_', ' ')}</td>
                                     <td className="py-3">
                                         <span
                                             className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${

@@ -20,7 +20,7 @@ class UserSeeder extends Seeder
             $firstName = str($role)->replace('_', ' ')->title()->toString();
             $lastName = 'User';
 
-            User::query()->updateOrCreate(
+            $user = User::query()->updateOrCreate(
                 ['email' => $role.'@example.com'],
                 [
                     'name' => $displayName,
@@ -31,6 +31,8 @@ class UserSeeder extends Seeder
                     'status' => 'active',
                 ]
             );
+
+            $user->syncRoles([$role]);
         }
     }
 }

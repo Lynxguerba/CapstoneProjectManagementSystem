@@ -14,6 +14,7 @@ type ManagedUser = {
     lastName: string;
     email: string;
     role: UserRole;
+    roles: UserRole[];
     status: UserStatus;
     createdAt: string;
 };
@@ -225,6 +226,7 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                                             fullName,
                                             email: data.email,
                                             role: data.role,
+                                            roles: [data.role],
                                             status: data.status,
                                         });
                                         clearErrors();

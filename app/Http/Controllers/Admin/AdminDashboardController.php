@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use App\Models\User;
-use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -27,12 +27,11 @@ class AdminDashboardController extends Controller
     {
         $totalUsers = User::query()->count();
 
-        /** @var Collection<string, int|string> $roleCounts */
-        $roleCounts = User::query()
-            ->selectRaw('role, COUNT(*) as aggregate')
-            ->whereNotNull('role')
-            ->groupBy('role')
-            ->pluck('aggregate', 'role');
+        $roleCounts = Role::query()
+            ->whereIn('slug', array_keys(self::ROLE_VISUALS))
+            ->withCount('users')
+            ->get()
+            ->pluck('users_count', 'slug');
 
         $roleDistribution = collect(self::ROLE_VISUALS)
             ->map(function (array $visual, string $role) use ($roleCounts): array {
