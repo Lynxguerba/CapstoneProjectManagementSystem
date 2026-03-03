@@ -207,6 +207,21 @@ Route::prefix('dean')->middleware([AuthenticateMiddleware::class, EnsureRole::cl
     Route::get('/dashboard', function () {
         return Inertia::render('Dean/dashboard');
     })->name('dean.dashboard');
+    Route::get('/projects', function () {
+        return Inertia::render('Dean/projects');
+    })->name('dean.projects');
+    Route::get('/project-details', function () {
+        return Inertia::render('Dean/project-details');
+    })->name('dean.project-details');  
+    Route::get('/students', function () {
+        return Inertia::render('Dean/students');
+    })->name('dean.students');
+    Route::get('/settings', function () {
+        return Inertia::render('Dean/settings');
+    })->name('dean.settings');
+    Route::get('/reports', function () {    
+        return Inertia::render('Dean/reports');
+    })->name('dean.reports');
 });
 
 // PROGRAM CHAIRPERSON ROUTES (protected)
