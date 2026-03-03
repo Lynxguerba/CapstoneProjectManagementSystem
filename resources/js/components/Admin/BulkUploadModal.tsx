@@ -7,7 +7,8 @@ type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'd
 type UserStatus = 'active' | 'inactive';
 
 type CsvUserRow = {
-    name: string;
+    first_name: string;
+    last_name: string;
     email: string;
     role: UserRole;
     status: UserStatus;
@@ -33,7 +34,7 @@ type BulkUploadForm = {
 
 const availableRoles: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 const availableStatuses: UserStatus[] = ['active', 'inactive'];
-const requiredHeaders = ['name', 'email', 'role', 'password'] as const;
+const requiredHeaders = ['last_name', 'first_name', 'email', 'role', 'password'] as const;
 
 const parseCsvLine = (line: string): string[] => {
     const values: string[] = [];
@@ -89,7 +90,8 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
         const selectedRows = previewRows
             .filter((row) => row.issues.length === 0 && selectedRowLinesSet.has(row.line))
             .map((row) => ({
-                name: row.name,
+                first_name: row.first_name,
+                last_name: row.last_name,
                 email: row.email,
                 role: row.role,
                 status: row.status,
@@ -172,7 +174,8 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
         const emailTracker = new Set<string>();
         const parsedPreviewRows: PreviewRow[] = lines.slice(1).map((line, lineIndex) => {
             const values = parseCsvLine(line);
-            const name = values[headerIndex.name] ?? '';
+            const firstName = values[headerIndex.first_name] ?? '';
+            const lastName = values[headerIndex.last_name] ?? '';
             const email = values[headerIndex.email] ?? '';
             const roleValue = (values[headerIndex.role] ?? '').toLowerCase();
             const password = values[headerIndex.password] ?? '';
@@ -180,8 +183,12 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
             const statusValue = rawStatus.toLowerCase() as UserStatus;
             const issues: string[] = [];
 
-            if (name === '') {
-                issues.push('Name is required.');
+            if (lastName === '') {
+                issues.push('Last name is required.');
+            }
+
+            if (firstName === '') {
+                issues.push('First name is required.');
             }
 
             if (email === '') {
@@ -210,7 +217,8 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
 
             return {
                 line: lineIndex + 2,
-                name,
+                first_name: firstName,
+                last_name: lastName,
                 email,
                 role: (roleValue as UserRole) || 'student',
                 status: availableStatuses.includes(statusValue) ? statusValue : 'active',
@@ -307,7 +315,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
 
                     <div className="space-y-4 p-4">
                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-                            Upload a CSV file with headers: `name,email,role,password,status`.
+                            Upload a CSV file with headers: `last_name,first_name,email,role,password,status`.
                             <br />
                             `status` is optional and defaults to `active`.
                         </div>
@@ -383,7 +391,8 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                                     <thead className="sticky top-0 bg-slate-100">
                                         <tr className="text-left text-slate-700">
                                             {/* <th className="px-3 py-2 font-semibold">Line</th> */}
-                                            <th className="px-3 py-2 font-semibold">Name</th>
+                                            <th className="px-3 py-2 font-semibold">Last Name</th>
+                                            <th className="px-3 py-2 font-semibold">First Name</th>
                                             <th className="px-3 py-2 font-semibold">Email</th>
                                             <th className="px-3 py-2 font-semibold">Role</th>
                                             {/* <th className="px-3 py-2 font-semibold">Status</th> */}
@@ -395,7 +404,8 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                                         {previewRows.map((row) => (
                                             <tr key={`${row.line}-${row.email}`} className={row.issues.length > 0 ? 'bg-rose-50' : ''}>
                                                 {/* <td className="px-3 py-2">{row.line}</td> */}
-                                                <td className="px-3 py-2">{row.name}</td>
+                                                <td className="px-3 py-2">{row.last_name}</td>
+                                                <td className="px-3 py-2">{row.first_name}</td>
                                                 <td className="px-3 py-2">{row.email}</td>
                                                 <td className="px-3 py-2 capitalize">{row.role}</td>
                                                 {/* <td className="px-3 py-2 capitalize">{row.status}</td> */}

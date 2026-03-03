@@ -44,7 +44,8 @@ class StoreBulkAdminUsersRequest extends FormRequest
     {
         return [
             'rows' => ['required', 'array', 'min:1'],
-            'rows.*.name' => ['required', 'string', 'max:255'],
+            'rows.*.first_name' => ['required', 'string', 'max:255'],
+            'rows.*.last_name' => ['required', 'string', 'max:255'],
             'rows.*.email' => ['required', 'string', 'email', 'max:255', 'distinct', 'unique:users,email'],
             'rows.*.role' => ['required', 'string', Rule::in(self::AVAILABLE_ROLES)],
             'rows.*.status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],

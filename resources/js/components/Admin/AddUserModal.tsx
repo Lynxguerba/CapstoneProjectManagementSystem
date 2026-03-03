@@ -13,7 +13,8 @@ type AddUserModalProps = {
 };
 
 type AddUserForm = {
-    name: string;
+    first_name: string;
+    last_name: string;
     email: string;
     role: UserRole;
     status: UserStatus;
@@ -24,7 +25,8 @@ const defaultRoles: UserRole[] = ['admin', 'student', 'adviser', 'instructor', '
 
 const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserModalProps) => {
     const addUserForm = useForm<AddUserForm>({
-        name: '',
+        first_name: '',
+        last_name: '',
         email: '',
         role: availableRoles[0] ?? 'student',
         status: 'active',
@@ -104,15 +106,27 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
                 </div>
 
                 <form onSubmit={submitForm} className="space-y-4 p-4">
-                    <div>
-                        <label className="text-sm font-semibold text-slate-700">Full name</label>
-                        <input
-                            value={addUserForm.data.name}
-                            onChange={(event) => addUserForm.setData('name', event.target.value)}
-                            placeholder="Juan Dela Cruz"
-                            className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                        />
-                        {addUserForm.errors.name ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.name}</p> : null}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700">Last Name</label>
+                            <input
+                                value={addUserForm.data.last_name}
+                                onChange={(event) => addUserForm.setData('last_name', event.target.value)}
+                                placeholder="Dela Cruz"
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            />
+                            {addUserForm.errors.last_name ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.last_name}</p> : null}
+                        </div>
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700">First Name</label>
+                            <input
+                                value={addUserForm.data.first_name}
+                                onChange={(event) => addUserForm.setData('first_name', event.target.value)}
+                                placeholder="Juan"
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            />
+                            {addUserForm.errors.first_name ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.first_name}</p> : null}
+                        </div>
                     </div>
 
                     <div>

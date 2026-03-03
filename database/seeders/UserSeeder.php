@@ -17,11 +17,15 @@ class UserSeeder extends Seeder
 
         foreach ($roles as $role) {
             $displayName = str($role)->replace('_', ' ')->title()->toString().' User';
+            $firstName = str($role)->replace('_', ' ')->title()->toString();
+            $lastName = 'User';
 
             User::query()->updateOrCreate(
                 ['email' => $role.'@example.com'],
                 [
                     'name' => $displayName,
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
                     'password' => Hash::make('password'),
                     'role' => $role,
                     'status' => 'active',

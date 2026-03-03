@@ -11,7 +11,9 @@ type UserStatus = 'active' | 'inactive';
 
 type UserRow = {
     id: number;
-    name: string;
+    firstName: string;
+    lastName: string;
+    fullName: string;
     email: string;
     role: UserRole;
     status: UserStatus;
@@ -54,7 +56,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
         const query = search.trim().toLowerCase();
 
         return managedUsers.filter((user) => {
-            const matchesQuery = !query || user.name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
+            const matchesQuery = !query || user.fullName.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
             const matchesRole = role === 'all' || user.role === role;
             const matchesStatus = status === 'all' || user.status === status;
 
@@ -176,7 +178,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-slate-200 text-left text-slate-600">
-                                <th className="py-3 font-semibold">Name</th>
+                                <th className="py-3 font-semibold">Fullname</th>
                                 <th className="py-3 font-semibold">Email</th>
                                 <th className="py-3 font-semibold">Role</th>
                                 <th className="py-3 font-semibold">Status</th>
@@ -187,7 +189,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                         <tbody className="divide-y divide-slate-100">
                             {paginatedUsers.map((user) => (
                                 <tr key={user.id} className="transition-colors hover:bg-slate-50">
-                                    <td className="py-3 font-medium text-slate-900">{user.name}</td>
+                                    <td className="py-3 font-medium text-slate-900">{user.fullName}</td>
                                     <td className="py-3 text-slate-600">{user.email}</td>
                                     <td className="py-3 text-slate-700 capitalize">{user.role}</td>
                                     <td className="py-3">

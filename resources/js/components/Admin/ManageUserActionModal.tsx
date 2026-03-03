@@ -8,7 +8,9 @@ type UserStatus = 'active' | 'inactive';
 
 type ManagedUser = {
     id: number;
-    name: string;
+    fullName: string;
+    firstName: string;
+    lastName: string;
     email: string;
     role: UserRole;
     status: UserStatus;
@@ -24,7 +26,8 @@ type ManageUserActionModalProps = {
 
 const roleOptions: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 type ManageUserForm = {
-    name: string;
+    first_name: string;
+    last_name: string;
     email: string;
     role: UserRole;
     status: UserStatus;
@@ -32,7 +35,8 @@ type ManageUserForm = {
 
 const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserActionModalProps) => {
     const { data, setData, errors, processing, clearErrors, put } = useForm<ManageUserForm>({
-        name: '',
+        first_name: '',
+        last_name: '',
         email: '',
         role: 'student',
         status: 'active',
@@ -52,7 +56,8 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
         initializedUserIdRef.current = user.id;
         clearErrors();
         setData({
-            name: user.name,
+            first_name: user.firstName,
+            last_name: user.lastName,
             email: user.email,
             role: user.role,
             status: user.status,
@@ -118,18 +123,29 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                     <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
                         <p className="text-sm font-semibold text-emerald-900">Managing account</p>
                         <p className="text-xs text-emerald-800">
-                            {user.name} ({user.email})
+                            {user.fullName} ({user.email})
                         </p>
                     </div>
 
-                    <div>
-                        <label className="text-sm font-semibold text-slate-700">Full name</label>
-                        <input
-                            value={data.name}
-                            onChange={(event) => setData('name', event.target.value)}
-                            className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                        />
-                        {errors.name ? <p className="mt-1 text-xs text-rose-600">{errors.name}</p> : null}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700">Last Name</label>
+                            <input
+                                value={data.last_name}
+                                onChange={(event) => setData('last_name', event.target.value)}
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            />
+                            {errors.last_name ? <p className="mt-1 text-xs text-rose-600">{errors.last_name}</p> : null}
+                        </div>
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700">First Name</label>
+                            <input
+                                value={data.first_name}
+                                onChange={(event) => setData('first_name', event.target.value)}
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            />
+                            {errors.first_name ? <p className="mt-1 text-xs text-rose-600">{errors.first_name}</p> : null}
+                        </div>
                     </div>
 
                     <div>
@@ -197,9 +213,13 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                                     preserveScroll: true,
                                     preserveState: false,
                                     onSuccess: () => {
+                                        const fullName = [data.last_name, data.first_name].filter((part) => part.trim() !== '').join(', ');
+
                                         onSave({
                                             ...user,
-                                            name: data.name,
+                                            firstName: data.first_name,
+                                            lastName: data.last_name,
+                                            fullName,
                                             email: data.email,
                                             role: data.role,
                                             status: data.status,
