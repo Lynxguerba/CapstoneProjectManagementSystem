@@ -150,9 +150,10 @@ const AdminDashboard = ({
                             <p className="mt-1 text-sm text-slate-500">Breakdown of registered users by their system role.</p>
                         </div>
 
-                        <Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                             <PieChart
                                 height={260}
+                                margin={{left: 90}}
                                 series={[
                                     {
                                         data: pieData,
