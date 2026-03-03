@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
 import { Filter, Search, Settings, Upload, UserCog } from 'lucide-react';
 import React from 'react';
-import AddUserModal from '@/components/Admin/AddUserModal';
-import BulkUploadModal from '@/components/Admin/BulkUploadModal';
-import ManageUserActionModal from '@/components/Admin/ManageUserActionModal';
-import AdminLayout from '../_layout';
+import AddUserModal from '../../components/Admin/AddUserModal';
+import BulkUploadModal from '../../components/Admin/BulkUploadModal';
+import ManageUserActionModal from '../../components/Admin/ManageUserActionModal';
+import AdminLayout from './_layout';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type UserStatus = 'active' | 'inactive';
@@ -20,7 +20,7 @@ type UserRow = {
     createdAt: string;
 };
 
-type AdminUsersIndexProps = {
+type AdminUserManagementProps = {
     users?: UserRow[];
     filters?: {
         search?: string;
@@ -32,7 +32,7 @@ type AdminUsersIndexProps = {
 const roleOptions: Array<UserRole | 'all'> = ['all', 'admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 const statusOptions: Array<UserStatus | 'all'> = ['all', 'active', 'inactive'];
 
-const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
+const AdminUserManagement = ({ users = [], filters }: AdminUserManagementProps) => {
     const initialUsers = React.useMemo(() => {
         return Array.isArray(users) ? users : [];
     }, [users]);
@@ -309,4 +309,4 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
     );
 };
 
-export default AdminUsersIndex;
+export default AdminUserManagement;

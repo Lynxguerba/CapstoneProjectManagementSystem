@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { UserPlus, X } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { store } from '../../routes/admin/users';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type UserStatus = 'active' | 'inactive';
@@ -57,7 +58,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
     const submitForm = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        addUserForm.post('/admin/users', {
+        addUserForm.post(store.url(), {
             preserveScroll: true,
             preserveState: false,
             onSuccess: () => {

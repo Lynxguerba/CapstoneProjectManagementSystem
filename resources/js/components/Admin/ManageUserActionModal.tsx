@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { Settings, UserCheck, X } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { update } from '../../routes/admin/users';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type UserStatus = 'active' | 'inactive';
@@ -211,7 +212,7 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                             type="button"
                             disabled={processing}
                             onClick={() => {
-                                put(`/admin/users/${user.id}`, {
+                                put(update.url(user.id), {
                                     preserveScroll: true,
                                     preserveState: false,
                                     onSuccess: () => {

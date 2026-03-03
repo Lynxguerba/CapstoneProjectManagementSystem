@@ -57,7 +57,7 @@ class AdminUserController extends Controller
             })
             ->values();
 
-        return Inertia::render('Admin/users/index', [
+        return Inertia::render('Admin/user-management', [
             'users' => $users,
             'filters' => [
                 'search' => $filters['search'],
@@ -136,5 +136,4 @@ class AdminUserController extends Controller
 
         return is_string($fallbackName) ? $fallbackName : '';
     }
-
 }

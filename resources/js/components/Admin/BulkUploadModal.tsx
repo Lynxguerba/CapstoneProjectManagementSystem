@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { CheckCircle2, FileSpreadsheet, Upload, X } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { bulkStore } from '../../routes/admin/users';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type UserStatus = 'active' | 'inactive';
@@ -275,7 +276,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
             return;
         }
 
-        post('/admin/users/bulk', {
+        post(bulkStore.url(), {
             preserveScroll: true,
             preserveState: false,
             onSuccess: () => {
