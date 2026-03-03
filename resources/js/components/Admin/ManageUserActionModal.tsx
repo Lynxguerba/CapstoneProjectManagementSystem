@@ -104,7 +104,10 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                 }
             }}
         >
-            <div className="max-h-[90vh] w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
+            <div
+                className="max-h-[90vh] w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl"
+                onMouseDown={(event) => event.stopPropagation()}
+            >
                 <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                     <div className="flex items-center gap-2">
                         <Settings className="h-5 w-5 text-emerald-800" />
@@ -129,15 +132,6 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="text-sm font-semibold text-slate-700">Last Name</label>
-                            <input
-                                value={data.last_name}
-                                onChange={(event) => setData('last_name', event.target.value)}
-                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                            />
-                            {errors.last_name ? <p className="mt-1 text-xs text-rose-600">{errors.last_name}</p> : null}
-                        </div>
-                        <div>
                             <label className="text-sm font-semibold text-slate-700">First Name</label>
                             <input
                                 value={data.first_name}
@@ -145,6 +139,16 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                                 className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                             />
                             {errors.first_name ? <p className="mt-1 text-xs text-rose-600">{errors.first_name}</p> : null}
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700">Last Name</label>
+                            <input
+                                value={data.last_name}
+                                onChange={(event) => setData('last_name', event.target.value)}
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            />
+                            {errors.last_name ? <p className="mt-1 text-xs text-rose-600">{errors.last_name}</p> : null}
                         </div>
                     </div>
 
@@ -190,9 +194,7 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                         </div>
                     </div>
 
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                        Created at: {user.createdAt}
-                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">Created at: {user.createdAt}</div>
                 </div>
 
                 <div className="border-t border-slate-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
