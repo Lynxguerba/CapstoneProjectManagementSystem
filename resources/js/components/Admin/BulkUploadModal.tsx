@@ -320,6 +320,12 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                     <div className="space-y-4 p-4">
                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
                             Upload a CSV file with headers: 
+                            <br />
+                            <span className="font-semibold">
+                                Last Name, First Name, Email, Role, Password, and optionally Status. 
+                            </span>
+                            <br />
+                            You can review and select which valid rows to import before finalizing. Existing user emails in the system will be flagged as issues in the preview.
                         </div>
 
                         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
