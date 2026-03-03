@@ -159,7 +159,7 @@ const AdminUsersIndex = ({ users = [], filters }: AdminUsersIndexProps) => {
                             className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                         >
                             <Upload className="h-4 w-4" />
-                            Bulk upload
+                            Bulk Upload
                         </button>
 
                         <button
