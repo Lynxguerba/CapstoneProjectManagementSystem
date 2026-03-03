@@ -36,6 +36,10 @@ const availableRoles: UserRole[] = ['admin', 'student', 'adviser', 'instructor',
 const availableStatuses: UserStatus[] = ['active', 'inactive'];
 const requiredHeaders = ['last_name', 'first_name', 'email', 'role', 'password'] as const;
 
+const normalizeHeader = (header: string): string => {
+    return header.trim().toLowerCase().replace(/[\s-]+/g, '_');
+};
+
 const parseCsvLine = (line: string): string[] => {
     const values: string[] = [];
     let currentValue = '';
@@ -158,7 +162,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
             return;
         }
 
-        const headers = parseCsvLine(lines[0]).map((header) => header.toLowerCase());
+        const headers = parseCsvLine(lines[0]).map((header) => normalizeHeader(header));
         const headerIndex = headers.reduce<Record<string, number>>((accumulator, header, index) => {
             accumulator[header] = index;
 
@@ -315,9 +319,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
 
                     <div className="space-y-4 p-4">
                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-                            Upload a CSV file with headers: `last_name,first_name,email,role,password,status`.
-                            <br />
-                            `status` is optional and defaults to `active`.
+                            Upload a CSV file with headers: 
                         </div>
 
                         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
