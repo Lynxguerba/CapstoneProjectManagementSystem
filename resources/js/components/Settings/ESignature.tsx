@@ -12,6 +12,7 @@ type ESignatureProps = {
 
 const ESignature = ({ initialSignature = '', upsertUrl = '/adviser/settings/e-signature', deleteUrl = '/adviser/settings/e-signature' }: ESignatureProps) => {
     const [showESignatureModal, setShowESignatureModal] = useState(false);
+    const [isESignatureModalAppearing, setIsESignatureModalAppearing] = useState(false);
     const [registeredSignature, setRegisteredSignature] = useState(initialSignature);
     const [isSignaturePadEmpty, setIsSignaturePadEmpty] = useState(true);
     const signaturePadRef = useRef<SignatureCanvas | null>(null);
@@ -61,6 +62,22 @@ const ESignature = ({ initialSignature = '', upsertUrl = '/adviser/settings/e-si
             window.removeEventListener('keydown', onKeyDown);
         };
     }, [showESignatureModal, signatureForm.processing]);
+
+    useEffect(() => {
+        if (!showESignatureModal) {
+            setIsESignatureModalAppearing(false);
+            return;
+        }
+
+        setIsESignatureModalAppearing(false);
+        const animationFrame = window.requestAnimationFrame(() => {
+            setIsESignatureModalAppearing(true);
+        });
+
+        return () => {
+            window.cancelAnimationFrame(animationFrame);
+        };
+    }, [showESignatureModal]);
 
     // Load existing signature into canvas when modal opens
     useEffect(() => {
@@ -170,7 +187,9 @@ const ESignature = ({ initialSignature = '', upsertUrl = '/adviser/settings/e-si
             {showESignatureModal && typeof document !== 'undefined'
                 ? createPortal(
                       <div
-                          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+                          className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity duration-200 ${
+                              isESignatureModalAppearing ? 'opacity-100' : 'opacity-0'
+                          }`}
                           role="dialog"
                           aria-modal="true"
                           onMouseDown={(event) => {
@@ -180,7 +199,9 @@ const ESignature = ({ initialSignature = '', upsertUrl = '/adviser/settings/e-si
                           }}
                       >
                           <div
-                              className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-2xl"
+                              className={`max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-2xl transition-all duration-200 ${
+                                  isESignatureModalAppearing ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-95 opacity-0'
+                              }`}
                               onMouseDown={(event) => event.stopPropagation()}
                           >
                               <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3">

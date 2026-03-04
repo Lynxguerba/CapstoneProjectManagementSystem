@@ -126,6 +126,8 @@ const parseRoles = (roleCell: string): { roles: UserRole[]; hasInvalidRole: bool
 };
 
 const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalProps) => {
+    const [isMainModalAppearing, setIsMainModalAppearing] = React.useState(false);
+    const [isReviewModalAppearing, setIsReviewModalAppearing] = React.useState(false);
     const [fileName, setFileName] = React.useState('');
     const [previewRows, setPreviewRows] = React.useState<PreviewRow[]>([]);
     const [selectedRowLines, setSelectedRowLines] = React.useState<number[]>([]);
@@ -182,6 +184,38 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
             window.removeEventListener('keydown', onKeyDown);
         };
     }, [open, onClose, processing, showReviewModal]);
+
+    useEffect(() => {
+        if (!open) {
+            setIsMainModalAppearing(false);
+            return;
+        }
+
+        setIsMainModalAppearing(false);
+        const animationFrame = window.requestAnimationFrame(() => {
+            setIsMainModalAppearing(true);
+        });
+
+        return () => {
+            window.cancelAnimationFrame(animationFrame);
+        };
+    }, [open]);
+
+    useEffect(() => {
+        if (!showReviewModal) {
+            setIsReviewModalAppearing(false);
+            return;
+        }
+
+        setIsReviewModalAppearing(false);
+        const animationFrame = window.requestAnimationFrame(() => {
+            setIsReviewModalAppearing(true);
+        });
+
+        return () => {
+            window.cancelAnimationFrame(animationFrame);
+        };
+    }, [showReviewModal]);
 
     const clearUploadState = () => {
         setFileName('');
@@ -349,7 +383,9 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
     return createPortal(
         <>
             <div
-                className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+                className={`fixed inset-0 z-[9998] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity duration-200 ${
+                    isMainModalAppearing ? 'opacity-100' : 'opacity-0'
+                }`}
                 role="dialog"
                 aria-modal="true"
                 onMouseDown={(event) => {
@@ -358,7 +394,12 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                     }
                 }}
             >
-                <div className="w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
+                <div
+                    className={`w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl transition-all duration-200 ${
+                        isMainModalAppearing ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-95 opacity-0'
+                    }`}
+                    onMouseDown={(event) => event.stopPropagation()}
+                >
                     <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                         <div className="flex items-center gap-2">
                             <Upload className="h-5 w-5 text-emerald-800" />
@@ -416,7 +457,9 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
 
             {showReviewModal ? (
                 <div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+                    className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm transition-opacity duration-200 ${
+                        isReviewModalAppearing ? 'opacity-100' : 'opacity-0'
+                    }`}
                     role="dialog"
                     aria-modal="true"
                     onMouseDown={(event) => {
@@ -425,7 +468,12 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                         }
                     }}
                 >
-                    <div className="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-xl bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
+                    <div
+                        className={`max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-xl bg-white shadow-2xl transition-all duration-200 ${
+                            isReviewModalAppearing ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-95 opacity-0'
+                        }`}
+                        onMouseDown={(event) => event.stopPropagation()}
+                    >
                         <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                             <div className="flex items-center gap-2">
                                 <CheckCircle2 className="h-5 w-5 text-emerald-800" />

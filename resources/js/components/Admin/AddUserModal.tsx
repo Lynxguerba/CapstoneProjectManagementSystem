@@ -25,6 +25,7 @@ type AddUserForm = {
 const defaultRoles: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 
 const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserModalProps) => {
+    const [isAppearing, setIsAppearing] = React.useState(false);
     const addUserForm = useForm<AddUserForm>({
         first_name: '',
         last_name: '',
@@ -54,6 +55,22 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
             window.removeEventListener('keydown', onKeyDown);
         };
     }, [open, onClose, addUserForm.processing]);
+
+    useEffect(() => {
+        if (!open) {
+            setIsAppearing(false);
+            return;
+        }
+
+        setIsAppearing(false);
+        const animationFrame = window.requestAnimationFrame(() => {
+            setIsAppearing(true);
+        });
+
+        return () => {
+            window.cancelAnimationFrame(animationFrame);
+        };
+    }, [open]);
 
     const submitForm = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -92,7 +109,9 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
 
     return createPortal(
         <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity duration-200 ${
+                isAppearing ? 'opacity-100' : 'opacity-0'
+            }`}
             role="dialog"
             aria-modal="true"
             onMouseDown={(event) => {
@@ -102,7 +121,9 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
             }}
         >
             <div
-                className="max-h-[90vh] w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl"
+                className={`max-h-[90vh] w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl transition-all duration-200 ${
+                    isAppearing ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-95 opacity-0'
+                }`}
                 onMouseDown={(event) => event.stopPropagation()}
             >
                 <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
