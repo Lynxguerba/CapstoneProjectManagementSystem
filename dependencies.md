@@ -16,6 +16,7 @@ BACKEND:
 # cd capstoneprojectmanagementsystem
 # composer run dev
 
+
 DATEBASE SETUP:
     DB_CONNECTION=mysql
     DB_HOST=127.0.0.1
