@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminSystemSettingsController;
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Adviser\UpdateAdviserPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\EnsureWebAuthenticated;
@@ -169,6 +170,7 @@ Route::prefix('adviser')->middleware([AuthenticateMiddleware::class, EnsureRole:
     Route::get('/settings', function () {
         return Inertia::render('Adviser/settings');
     })->name('adviser.settings');
+    Route::put('/settings/password', UpdateAdviserPasswordController::class)->name('adviser.settings.password.update');
 });
 
 // PANELIST ROUTES (protected)

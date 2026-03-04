@@ -8,6 +8,7 @@ FRONTEND:
 # npm install @mui/material @emotion/react @emotion/styled
 # npm install @mui/icons-material
 # npm ls @mui/x-charts
+# npm install react-signature-canvas
 
 BACKEND:
 # composer global require laravel/installer
