@@ -90,8 +90,20 @@ Route::prefix('instructor')->middleware([AuthenticateMiddleware::class, EnsureRo
         return Inertia::render('Instructor/reports');
     })->name('instructor.reports');
     Route::get('/settings', function () {
-        return Inertia::render('Instructor/settings');
+        $user = Auth::guard('web')->user();
+        $user?->loadMissing('eSignature');
+
+        return Inertia::render('Instructor/settings', [
+            'eSignature' => $user?->eSignature !== null
+                ? [
+                    'signatureData' => $user->eSignature->signature_data,
+                    'mimeType' => $user->eSignature->mime_type,
+                ]
+                : null,
+        ]);
     })->name('instructor.settings');
+    Route::put('/settings/e-signature', UpsertAdviserESignatureController::class)->name('instructor.settings.e-signature.upsert');
+    Route::delete('/settings/e-signature', DeleteAdviserESignatureController::class)->name('instructor.settings.e-signature.delete');
 });
 
 // STUDENT ROUTES (protected)
@@ -223,8 +235,20 @@ Route::prefix('panelist')->middleware([AuthenticateMiddleware::class, EnsureRole
         return Inertia::render('Panelist/notifications');
     })->name('panelist.notifications');
     Route::get('/settings', function () {
-        return Inertia::render('Panelist/settings');
+        $user = Auth::guard('web')->user();
+        $user?->loadMissing('eSignature');
+
+        return Inertia::render('Panelist/settings', [
+            'eSignature' => $user?->eSignature !== null
+                ? [
+                    'signatureData' => $user->eSignature->signature_data,
+                    'mimeType' => $user->eSignature->mime_type,
+                ]
+                : null,
+        ]);
     })->name('panelist.settings');
+    Route::put('/settings/e-signature', UpsertAdviserESignatureController::class)->name('panelist.settings.e-signature.upsert');
+    Route::delete('/settings/e-signature', DeleteAdviserESignatureController::class)->name('panelist.settings.e-signature.delete');
 });
 
 // DEAN ROUTES (protected)
@@ -242,8 +266,20 @@ Route::prefix('dean')->middleware([AuthenticateMiddleware::class, EnsureRole::cl
         return Inertia::render('Dean/students');
     })->name('dean.students');
     Route::get('/settings', function () {
-        return Inertia::render('Dean/settings');
+        $user = Auth::guard('web')->user();
+        $user?->loadMissing('eSignature');
+
+        return Inertia::render('Dean/settings', [
+            'eSignature' => $user?->eSignature !== null
+                ? [
+                    'signatureData' => $user->eSignature->signature_data,
+                    'mimeType' => $user->eSignature->mime_type,
+                ]
+                : null,
+        ]);
     })->name('dean.settings');
+    Route::put('/settings/e-signature', UpsertAdviserESignatureController::class)->name('dean.settings.e-signature.upsert');
+    Route::delete('/settings/e-signature', DeleteAdviserESignatureController::class)->name('dean.settings.e-signature.delete');
     Route::get('/reports', function () {
         return Inertia::render('Dean/reports');
     })->name('dean.reports');

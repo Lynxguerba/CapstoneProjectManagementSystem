@@ -11,7 +11,7 @@ class UpsertAdviserESignatureRequest extends FormRequest
     {
         $user = $this->user();
 
-        return $user !== null && $user->hasRole('adviser');
+        return $user !== null;
     }
 
     /**

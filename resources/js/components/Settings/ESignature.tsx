@@ -6,9 +6,11 @@ import SignatureCanvas from 'react-signature-canvas';
 
 type ESignatureProps = {
     initialSignature?: string;
+    upsertUrl?: string;
+    deleteUrl?: string;
 };
 
-const ESignature = ({ initialSignature = '' }: ESignatureProps) => {
+const ESignature = ({ initialSignature = '', upsertUrl = '/adviser/settings/e-signature', deleteUrl = '/adviser/settings/e-signature' }: ESignatureProps) => {
     const [showESignatureModal, setShowESignatureModal] = useState(false);
     const [registeredSignature, setRegisteredSignature] = useState(initialSignature);
     const [isSignaturePadEmpty, setIsSignaturePadEmpty] = useState(true);
@@ -82,7 +84,7 @@ const ESignature = ({ initialSignature = '' }: ESignatureProps) => {
             mime_type: 'image/png',
         }));
 
-        signatureForm.put('/adviser/settings/e-signature', {
+        signatureForm.put(upsertUrl, {
             preserveScroll: true,
             onSuccess: () => {
                 setRegisteredSignature(signatureDataUrl);
@@ -96,7 +98,7 @@ const ESignature = ({ initialSignature = '' }: ESignatureProps) => {
     };
 
     const removeSignature = (): void => {
-        router.delete('/adviser/settings/e-signature', {
+        router.delete(deleteUrl, {
             preserveScroll: true,
             onSuccess: () => {
                 signaturePadRef.current?.clear();

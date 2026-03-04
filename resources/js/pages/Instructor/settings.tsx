@@ -1,91 +1,110 @@
 import { usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import React, { useState } from 'react';
+import { Settings, Shield, User } from 'lucide-react';
+import { useState } from 'react';
 import InstructorLayout from './_layout';
+import PasswordManager from '@/components/Settings/PasswordManager';
+import ESignature from '@/components/Settings/ESignature';
 
-const SettingsPage = () => {
-    const { auth } = usePage().props as any;
+type InstructorUser = {
+    id?: number | string;
+    name?: string;
+    email?: string;
+    role?: string;
+    roles?: string[];
+};
+
+type InstructorPageProps = {
+    auth?: {
+        user?: InstructorUser;
+    };
+    eSignature?: {
+        signatureData: string;
+        mimeType: string;
+    } | null;
+};
+
+const formatRole = (role: string): string => {
+    return role
+        .split('_')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
+
+const InstructorSettings = () => {
+    const { auth, eSignature } = usePage<InstructorPageProps>().props;
     const user = auth?.user;
+    const assignedRoles = user?.roles?.length ? user.roles : user?.role ? [user.role] : ['instructor'];
 
     const [name, setName] = useState(user?.name ?? 'Instructor');
     const [email, setEmail] = useState(user?.email ?? 'instructor@example.com');
-    const [theme, setTheme] = useState<'system' | 'light' | 'dark'>('system');
 
     return (
-        <InstructorLayout title="Profile & Settings" subtitle="Account settings (UI only)">
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
-                    <h3 className="text-lg font-semibold text-slate-800">Profile</h3>
-                    <p className="mt-1 text-sm text-slate-500">Updates here do not save (dummy)</p>
-
-                    <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <InstructorLayout title="Settings" subtitle="Profile details, assigned role, and e-signature setup">
+            <div className="space-y-6">
+                <motion.section
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+                >
+                    <div className="flex items-center gap-2">
+                        <Settings size={18} className="text-slate-700" />
                         <div>
-                            <label className="text-sm font-semibold text-slate-700">Full Name</label>
+                            <div className="text-lg font-semibold text-slate-900">Account Settings</div>
+                            <div className="text-sm text-slate-500">Profile details from your account and role assignment.</div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+                        <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                            <div className="flex items-center gap-2">
+                                <User size={18} className="text-slate-700" />
+                                <div className="text-sm font-semibold text-slate-900">Profile</div>
+                            </div>
+
+                            <label className="mt-4 block text-sm font-semibold text-slate-700">Name</label>
                             <input
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                             />
-                        </div>
-                        <div>
-                            <label className="text-sm font-semibold text-slate-700">Email</label>
+
+                            <label className="mt-4 block text-sm font-semibold text-slate-700">Email</label>
                             <input
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                             />
+
+                            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <div className="flex items-center gap-2">
+                                    <Shield size={16} className="text-slate-700" />
+                                    <div className="text-sm font-semibold text-slate-900">Assigned Role</div>
+                                </div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {assignedRoles.map((role) => (
+                                        <span
+                                            key={role}
+                                            className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800"
+                                        >
+                                            {formatRole(role)}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
+                        <PasswordManager />
+                        <ESignature
+                            initialSignature={eSignature?.signatureData ?? ''}
+                            upsertUrl="/instructor/settings/e-signature"
+                            deleteUrl="/instructor/settings/e-signature"
+                        />
+                                    
                     </div>
-
-                    <div className="mt-6 flex flex-wrap gap-3">
-                        <button
-                            onClick={() => alert('UI only: saved profile')}
-                            className="rounded-xl bg-gradient-to-r from-slate-700 to-slate-900 px-6 py-3 font-semibold text-white transition-all hover:shadow-lg"
-                        >
-                            Save Changes
-                        </button>
-                        <button
-                            onClick={() => alert('UI only: reset password')}
-                            className="rounded-xl border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-800 transition-all hover:bg-slate-50"
-                        >
-                            Reset Password
-                        </button>
-                    </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold text-slate-800">Preferences</h3>
-                    <p className="mt-1 text-sm text-slate-500">UI-only toggles</p>
-
-                    <div className="mt-6 space-y-4">
-                        <div>
-                            <label className="text-sm font-semibold text-slate-700">Theme</label>
-                            <select
-                                value={theme}
-                                onChange={(e) => setTheme(e.target.value as any)}
-                                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="system">System</option>
-                                <option value="light">Light</option>
-                                <option value="dark">Dark</option>
-                            </select>
-                        </div>
-
-                        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-                            <div className="text-sm font-semibold text-slate-800">Notifications</div>
-                            <div className="mt-2 text-sm text-slate-600">Enable alerts for deadlines, evaluations, and payments.</div>
-                            <button
-                                onClick={() => alert('UI only: toggled notifications')}
-                                className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-                            >
-                                Toggle
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </motion.div>
+                </motion.section>
+            </div>
         </InstructorLayout>
     );
 };
 
-export default SettingsPage;
+export default InstructorSettings;
