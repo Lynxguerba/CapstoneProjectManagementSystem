@@ -31,7 +31,7 @@ type ManageUserForm = {
     first_name: string;
     last_name: string;
     email: string;
-    role: UserRole;
+    roles: UserRole[];
     status: UserStatus;
 };
 
@@ -40,10 +40,12 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
         first_name: '',
         last_name: '',
         email: '',
-        role: 'student',
+        roles: [roleOptions[0] ?? 'student'],
         status: 'active',
     });
     const initializedUserIdRef = React.useRef<number | null>(null);
+    const roleDropdownRef = React.useRef<HTMLDivElement | null>(null);
+    const [isRoleDropdownOpen, setIsRoleDropdownOpen] = React.useState(false);
 
     useEffect(() => {
         if (user === null) {
@@ -61,10 +63,40 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
             first_name: user.firstName,
             last_name: user.lastName,
             email: user.email,
-            role: user.role,
+            roles: user.roles.length > 0 ? user.roles : [user.role],
             status: user.status,
         });
+        setIsRoleDropdownOpen(false);
     }, [user, clearErrors, setData]);
+
+    const toggleRole = (role: UserRole) => {
+        setData(
+            'roles',
+            data.roles.includes(role) ? data.roles.filter((assignedRole) => assignedRole !== role) : [...data.roles, role],
+        );
+    };
+
+    const formErrors = errors as Record<string, string | undefined>;
+    const roleError = errors.roles ?? formErrors['roles.0'] ?? formErrors['roles.1'] ?? formErrors['roles.2'];
+    const selectedRoleLabel = data.roles.length > 0 ? data.roles.map((role) => role.replaceAll('_', ' ')).join(', ') : 'Select roles';
+
+    useEffect(() => {
+        if (!isRoleDropdownOpen) {
+            return;
+        }
+
+        const onMouseDown = (event: MouseEvent) => {
+            if (roleDropdownRef.current !== null && !roleDropdownRef.current.contains(event.target as Node)) {
+                setIsRoleDropdownOpen(false);
+            }
+        };
+
+        window.addEventListener('mousedown', onMouseDown);
+
+        return () => {
+            window.removeEventListener('mousedown', onMouseDown);
+        };
+    }, [isRoleDropdownOpen]);
 
     useEffect(() => {
         if (!open) {
@@ -107,7 +139,7 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
             }}
         >
             <div
-                className="max-h-[90vh] w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl"
+                className="max-h-[90vh] w-full max-w-xl overflow-visible rounded-xl bg-white shadow-2xl"
                 onMouseDown={(event) => event.stopPropagation()}
             >
                 <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
@@ -167,19 +199,35 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="text-sm font-semibold text-slate-700">Role</label>
-                            <select
-                                value={data.role}
-                                onChange={(event) => setData('role', event.target.value as UserRole)}
-                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                            >
-                                {roleOptions.map((role) => (
-                                    <option key={role} value={role} className="capitalize">
-                                        {role}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.role ? <p className="mt-1 text-xs text-rose-600">{errors.role}</p> : null}
+                            <label className="text-sm font-semibold text-slate-700">Roles</label>
+                            <div ref={roleDropdownRef} className="relative mt-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsRoleDropdownOpen((previousOpenState) => !previousOpenState)}
+                                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-left text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                >
+                                    {selectedRoleLabel}
+                                </button>
+
+                                {isRoleDropdownOpen ? (
+                                    <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {roleOptions.map((role) => (
+                                                <label key={role} className="flex items-center gap-2 text-sm text-slate-700">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={data.roles.includes(role)}
+                                                        onChange={() => toggleRole(role)}
+                                                        className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                                    />
+                                                    <span className="capitalize">{role.replaceAll('_', ' ')}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </div>
+                            {roleError ? <p className="mt-1 text-xs text-rose-600">{roleError}</p> : null}
                         </div>
 
                         <div>
@@ -218,6 +266,7 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                                     preserveState: false,
                                     onSuccess: () => {
                                         const fullName = [data.last_name, data.first_name].filter((part) => part.trim() !== '').join(', ');
+                                        const assignedRoles = data.roles.length > 0 ? data.roles : [user.role];
 
                                         onSave({
                                             ...user,
@@ -225,8 +274,8 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                                             lastName: data.last_name,
                                             fullName,
                                             email: data.email,
-                                            role: data.role,
-                                            roles: [data.role],
+                                            role: assignedRoles[0] ?? 'student',
+                                            roles: assignedRoles,
                                             status: data.status,
                                         });
                                         clearErrors();

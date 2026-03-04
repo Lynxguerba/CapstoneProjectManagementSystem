@@ -34,7 +34,8 @@ class UpdateAdminUserRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user'))],
-            'role' => ['required', 'string', Rule::in(Role::slugs())],
+            'roles' => ['required', 'array', 'min:1'],
+            'roles.*' => ['required', 'string', Rule::in(Role::slugs())],
             'status' => ['required', 'string', Rule::in(self::AVAILABLE_STATUSES)],
         ];
     }
@@ -45,7 +46,10 @@ class UpdateAdminUserRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'role.in' => 'The selected role is invalid.',
+            'roles.required' => 'At least one role is required.',
+            'roles.array' => 'Roles must be sent as a list.',
+            'roles.min' => 'At least one role is required.',
+            'roles.*.in' => 'One or more selected roles are invalid.',
             'status.in' => 'The selected status is invalid.',
         ];
     }

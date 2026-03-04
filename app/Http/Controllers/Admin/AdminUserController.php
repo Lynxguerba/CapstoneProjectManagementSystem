@@ -105,6 +105,11 @@ class AdminUserController extends Controller
     public function update(UpdateAdminUserRequest $request, User $user): RedirectResponse
     {
         $validated = $request->validated();
+        $roles = collect($validated['roles'])
+            ->map(fn (string $role): ?string => Role::normalizeRole($role))
+            ->filter()
+            ->values();
+        $activeRole = $roles->first() ?? 'student';
         $name = $this->buildDisplayName($validated['first_name'], $validated['last_name']);
 
         $user->update([
@@ -112,11 +117,11 @@ class AdminUserController extends Controller
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
             'email' => $validated['email'],
-            'role' => $validated['role'],
+            'role' => $activeRole,
             'status' => $validated['status'],
         ]);
 
-        $user->syncRoles([$validated['role']]);
+        $user->syncRoles($roles->all());
 
         return redirect()->route('admin.users.index')->with('success', 'User account updated successfully.');
     }
