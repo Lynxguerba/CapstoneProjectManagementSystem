@@ -249,7 +249,7 @@ const AdviserSettings = () => {
                         <div className="rounded-2xl border border-slate-200 bg-white p-6">
                             <div className="flex items-center gap-2">
                                 <Lock size={18} className="text-slate-700" />
-                                <div className="text-sm font-semibold text-slate-900">Change Password</div>
+                                <div className="text-sm font-semibold text-slate-900">Password Manager</div>
                             </div>
 
                             {passwordSuccessMessage !== '' && (
@@ -350,7 +350,7 @@ const AdviserSettings = () => {
                             <div className="flex items-center gap-2">
                                 <PenTool size={18} className="text-slate-700" />
                                 <div>
-                                    <div className="text-sm font-semibold text-slate-900">E-Signature Registration</div>
+                                    <div className="text-sm font-semibold text-slate-900">E-Signature</div>
                                     <div className="text-xs text-slate-500">Register or update your mouse-drawn digital signature.</div>
                                 </div>
                             </div>
