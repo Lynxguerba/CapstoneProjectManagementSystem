@@ -25,6 +25,24 @@ const ESignature = ({ initialSignature = '', upsertUrl = '/adviser/settings/e-si
         setRegisteredSignature(initialSignature);
     }, [initialSignature]);
 
+    const resolveRoleAwareEndpoint = (fallbackUrl: string): string => {
+        if (typeof window === 'undefined') {
+            return fallbackUrl;
+        }
+
+        const rolePrefix = window.location.pathname.split('/').filter(Boolean)[0] ?? '';
+        const supportedRolePrefixes = ['adviser', 'dean', 'panelist', 'instructor'];
+
+        if (supportedRolePrefixes.includes(rolePrefix)) {
+            return `/${rolePrefix}/settings/e-signature`;
+        }
+
+        return fallbackUrl;
+    };
+
+    const effectiveUpsertUrl = resolveRoleAwareEndpoint(upsertUrl);
+    const effectiveDeleteUrl = resolveRoleAwareEndpoint(deleteUrl);
+
     // Escape key + body scroll lock
     useEffect(() => {
         if (!showESignatureModal) return;
@@ -84,7 +102,7 @@ const ESignature = ({ initialSignature = '', upsertUrl = '/adviser/settings/e-si
             mime_type: 'image/png',
         }));
 
-        signatureForm.put(upsertUrl, {
+        signatureForm.put(effectiveUpsertUrl, {
             preserveScroll: true,
             onSuccess: () => {
                 setRegisteredSignature(signatureDataUrl);
@@ -98,7 +116,7 @@ const ESignature = ({ initialSignature = '', upsertUrl = '/adviser/settings/e-si
     };
 
     const removeSignature = (): void => {
-        router.delete(deleteUrl, {
+        router.delete(effectiveDeleteUrl, {
             preserveScroll: true,
             onSuccess: () => {
                 signaturePadRef.current?.clear();
