@@ -175,7 +175,17 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { icon: FileText, label: 'Reports', href: '/dean/reports' },
                 ];
             case 'program_chairperson':
-                return commonItems;
+                return [
+                    { icon: LayoutDashboard, label: 'Dashboard', href: '/program_chairperson/dashboard' },
+                    { icon: FileText, label: 'Pre-Deployment Letters', href: '/program_chairperson/pre-deployment-letters' },
+                    { icon: ClipboardCheck, label: 'Deployment Approval', href: '/program_chairperson/deployment-approval' },
+                    { icon: Archive, label: 'Deployment Monitoring', href: '/program_chairperson/deployment-monitoring' },
+                    { icon: FolderOpen, label: 'Post-Deployment Review', href: '/program_chairperson/post-deployment-review' },
+                    { icon: BookOpen, label: 'Document Approval', href: '/program_chairperson/document-approval' },
+                    { icon: Clock, label: 'Deployment History', href: '/program_chairperson/deployment-history' },
+                    { icon: Bell, label: 'Notifications', href: '/program_chairperson/notifications' },
+                    { icon: Settings, label: 'Settings', href: '/program_chairperson/settings' },
+                ];
             default:
                 return commonItems;
         }
