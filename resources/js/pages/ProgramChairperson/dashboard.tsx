@@ -149,30 +149,40 @@ const ProgramChairpersonDashboard = () => {
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                         <h3 className="text-lg font-semibold text-slate-900">Pending Approvals by Category</h3>
                         <p className="mt-1 text-sm text-slate-500">MUI chart distribution (dummy data).</p>
-                        <Box sx={{ mt: 1 }}>
-                            <PieChart
-                                height={260}
-                                series={[
-                                    {
-                                        data: [...approvalsByCategory],
-                                        innerRadius: 55,
-                                        outerRadius: 100,
-                                        paddingAngle: 3,
-                                        cornerRadius: 5,
-                                    },
-                                ]}
-                                slotProps={{ legend: { hidden: true } }}
-                            />
-                        </Box>
-                        <div className="mt-2 grid grid-cols-2 gap-2">
-                            {approvalsByCategory.map((item) => (
-                                <div key={item.id} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-700">
-                                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                                    <span className="font-semibold">{item.label}</span>
-                                    <span className="ml-auto tabular-nums">{item.value}</span>
+                        <Box sx={{ mt: 2 }}>
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                <div className="flex flex-1 justify-center">
+                                    <PieChart
+                                        height={260}
+                                        series={[
+                                            {
+                                                data: [...approvalsByCategory],
+                                                innerRadius: 55,
+                                                outerRadius: 100,
+                                                paddingAngle: 3,
+                                                cornerRadius: 5,
+                                                highlightScope: { faded: 'global', highlighted: 'item' },
+                                                faded: { innerRadius: 55, additionalRadius: -4, color: 'gray' },
+                                            },
+                                        ]}
+                                        slotProps={{ legend: { hidden: true } }}
+                                    />
                                 </div>
-                            ))}
-                        </div>
+
+                                <div className="lg:w-40">
+                                    <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Legend</div>
+                                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 lg:grid-cols-1">
+                                        {approvalsByCategory.map((item) => (
+                                            <div key={item.id} className="flex items-center gap-2 text-sm text-slate-700">
+                                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                                                <span className="truncate font-medium">{item.label}</span>
+                                                <span className="ml-auto text-slate-500 tabular-nums">{item.value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </Box>
                     </div>
                 </motion.section>
             </div>
