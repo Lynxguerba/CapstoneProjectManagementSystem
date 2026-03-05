@@ -5,6 +5,7 @@ import { useState } from 'react';
 import DeanLayout from './_layout';
 import PasswordManager from '@/components/Settings/PasswordManager';
 import ESignature from '@/components/Settings/ESignature';
+import ProfileCard from '@/components/Settings/ProfileCard';
 
 type DeanUser = {
     id?: number | string;
@@ -56,43 +57,7 @@ const DeanSettings = () => {
                     </div>
 
                     <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-                        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                            <div className="flex items-center gap-2">
-                                <User size={18} className="text-slate-700" />
-                                <div className="text-sm font-semibold text-slate-900">Profile</div>
-                            </div>
-
-                            <label className="mt-4 block text-sm font-semibold text-slate-700">Name</label>
-                            <input
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                            />
-
-                            <label className="mt-4 block text-sm font-semibold text-slate-700">Email</label>
-                            <input
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                            />
-
-                            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                <div className="flex items-center gap-2">
-                                    <Shield size={16} className="text-slate-700" />
-                                    <div className="text-sm font-semibold text-slate-900">Assigned Role</div>
-                                </div>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {assignedRoles.map((role) => (
-                                        <span
-                                            key={role}
-                                            className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800"
-                                        >
-                                            {formatRole(role)}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
+                        <ProfileCard name={name} email={email} assignedRoles={assignedRoles} />
                         <PasswordManager />
                         <ESignature
                             initialSignature={eSignature?.signatureData ?? ''}
