@@ -1,4 +1,5 @@
 import { Box, Typography } from '@mui/material';
+import { BarChart, PieChart } from '@mui/x-charts';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, ClipboardList, Layers3, TriangleAlert, Users } from 'lucide-react';
 import React, { useState } from 'react';
@@ -366,121 +367,40 @@ const Dashboard = () => {
                                     <p className="mt-1 text-sm text-slate-500">Distribution snapshot</p>
                                 </div>
 
-                                {(() => {
-                                    const total = defenseStatus.reduce((a, b) => a + b.value, 0);
+                                <div className="mt-6">
+                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                        <div className="flex flex-1 justify-center">
+                                            <PieChart
+                                                height={260}
+                                                series={[
+                                                    {
+                                                        data: [...defenseStatus],
+                                                        innerRadius: 60,
+                                                        outerRadius: 100,
+                                                        paddingAngle: 3,
+                                                        cornerRadius: 6,
+                                                        highlightScope: { faded: 'global', highlighted: 'item' },
+                                                        faded: { innerRadius: 60, additionalRadius: -4, color: 'gray' },
+                                                    },
+                                                ]}
+                                                slotProps={{ legend: { hidden: true } }}
+                                            />
+                                        </div>
 
-                                    const viewBoxSize = 200;
-                                    const center = viewBoxSize / 2;
-                                    const radius = 70;
-                                    const strokeWidth = 18;
-                                    const circumference = 2 * Math.PI * radius;
-
-                                    return (
-                                        <div className="mt-6">
-                                            <div className="flex items-center justify-center">
-                                                <motion.div
-                                                    initial={{ opacity: 0, scale: 0.96 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    transition={{ duration: 0.5 }}
-                                                >
-                                                    <Box className="relative h-40 w-40 sm:h-44 sm:w-44 md:h-48 md:w-48" sx={{ position: 'relative' }}>
-                                                        <svg
-                                                            width="100%"
-                                                            height="100%"
-                                                            viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
-                                                            preserveAspectRatio="xMidYMid meet"
-                                                        >
-                                                            <circle
-                                                                cx={center}
-                                                                cy={center}
-                                                                r={radius}
-                                                                fill="none"
-                                                                stroke="#e2e8f0"
-                                                                strokeWidth={strokeWidth}
-                                                            />
-
-                                                            {(() => {
-                                                                let offset = 0;
-                                                                return defenseStatus.map((d) => {
-                                                                    const pct = total === 0 ? 0 : d.value / total;
-                                                                    const segment = pct * circumference;
-                                                                    const dashOffset = circumference - offset;
-                                                                    offset += segment;
-
-                                                                    return (
-                                                                        <circle
-                                                                            key={d.label}
-                                                                            cx={center}
-                                                                            cy={center}
-                                                                            r={radius}
-                                                                            fill="none"
-                                                                            stroke={d.color}
-                                                                            strokeWidth={strokeWidth}
-                                                                            strokeLinecap="round"
-                                                                            strokeDasharray={`${segment} ${circumference - segment}`}
-                                                                            strokeDashoffset={dashOffset}
-                                                                            transform={`rotate(-90 ${center} ${center})`}
-                                                                        />
-                                                                    );
-                                                                });
-                                                            })()}
-                                                        </svg>
-
-                                                        <Box
-                                                            sx={{
-                                                                position: 'absolute',
-                                                                inset: 0,
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                textAlign: 'center',
-                                                            }}
-                                                        >
-                                                            <Box>
-                                                                <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: 24, lineHeight: 1 }}>
-                                                                    {total}
-                                                                </Typography>
-                                                                <Typography
-                                                                    sx={{
-                                                                        mt: 0.5,
-                                                                        fontSize: 11,
-                                                                        fontWeight: 700,
-                                                                        letterSpacing: '0.08em',
-                                                                        textTransform: 'uppercase',
-                                                                        color: '#64748b',
-                                                                    }}
-                                                                >
-                                                                    Total
-                                                                </Typography>
-                                                            </Box>
-                                                        </Box>
-                                                    </Box>
-                                                </motion.div>
-                                            </div>
-
-                                            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                                {defenseStatus.map((d) => {
-                                                    const pct = total === 0 ? 0 : Math.round((d.value / total) * 100);
-                                                    return (
-                                                        <div
-                                                            key={d.label}
-                                                            className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-3"
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: d.color }} />
-                                                                <div className="truncate text-xs font-semibold text-slate-700">{d.label}</div>
-                                                            </div>
-                                                            <div className="text-xs whitespace-nowrap text-slate-500">
-                                                                {d.value} ({pct}%)
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
+                                        <div className="lg:w-40">
+                                            <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Legend</div>
+                                            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 lg:grid-cols-1">
+                                                {defenseStatus.map((item) => (
+                                                    <div key={item.label} className="flex items-center gap-2 text-sm text-slate-700">
+                                                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                                                        <span className="truncate font-medium">{item.label}</span>
+                                                        <span className="ml-auto text-slate-500 tabular-nums">{item.value}</span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
-                                    );
-                                })()}
-                            </div>
+                                    </div>
+                                </div>                            </div>
                         </div>
 
                         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
