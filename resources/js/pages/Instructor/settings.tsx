@@ -56,37 +56,29 @@ const InstructorSettings = () => {
                     </div>
 
                     <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-                        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                            <div className="flex items-center gap-2">
-                                <User size={18} className="text-slate-700" />
-                                <div className="text-sm font-semibold text-slate-900">Profile</div>
+                        <div className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-6 text-center">
+                            {/* Avatar */}
+                            <div className="mt-2 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 shadow-md">
+                                <span className="text-2xl font-bold text-white">{name?.charAt(0)?.toUpperCase() ?? '?'}</span>
                             </div>
 
-                            <label className="mt-4 block text-sm font-semibold text-slate-700">Name</label>
-                            <input
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                            />
+                            {/* Identity */}
+                            <p className="mt-4 text-base font-bold text-slate-900">{name}</p>
+                            <p className="text-sm text-slate-500">{email}</p>
 
-                            <label className="mt-4 block text-sm font-semibold text-slate-700">Email</label>
-                            <input
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                            />
-
-                            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                <div className="flex items-center gap-2">
-                                    <Shield size={16} className="text-slate-700" />
-                                    <div className="text-sm font-semibold text-slate-900">Assigned Role</div>
+                            {/* Roles */}
+                            <div className="mt-5 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <div className="flex items-center justify-center gap-2">
+                                    <Shield size={15} className="text-slate-500" />
+                                    <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">Assigned Roles</span>
                                 </div>
-                                <div className="mt-3 flex flex-wrap gap-2">
+                                <div className="mt-3 flex flex-wrap justify-center gap-2">
                                     {assignedRoles.map((role) => (
                                         <span
                                             key={role}
-                                            className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800"
+                                            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"
                                         >
+                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                                             {formatRole(role)}
                                         </span>
                                     ))}
@@ -99,7 +91,6 @@ const InstructorSettings = () => {
                             upsertUrl="/instructor/settings/e-signature"
                             deleteUrl="/instructor/settings/e-signature"
                         />
-                                    
                     </div>
                 </motion.section>
             </div>
