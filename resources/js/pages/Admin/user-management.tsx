@@ -300,11 +300,12 @@ const AdminUserManagement = ({ users = [], filters }: AdminUserManagementProps) 
             <ManageUserActionModal
                 open={isManageUserModalOpen}
                 user={selectedUser}
+                submitUrl={selectedUser ? `/admin/users/${selectedUser.id}` : ''}
                 onClose={() => {
                     setIsManageUserModalOpen(false);
                     setSelectedUser(null);
                 }}
-                onSave={saveManagedUser}
+                onSave={(updatedUser) => saveManagedUser(updatedUser as UserRow)}
             />
         </AdminLayout>
     );

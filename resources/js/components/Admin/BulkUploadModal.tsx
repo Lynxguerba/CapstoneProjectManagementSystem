@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { bulkStore } from '../../routes/admin/users';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
-type FacultyRole = 'admin' | 'faculty';
+type FacultyRole = 'admin' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type UserStatus = 'active' | 'inactive';
 type StudentProgram = 'BSIT' | 'BSIS';
 type EntityType = 'user' | 'faculty' | 'student';
@@ -32,11 +32,11 @@ type BulkUploadModalProps = {
 };
 
 type BulkUploadForm = {
-    rows: Array<Record<string, unknown>>;
+    rows: Array<Record<string, string | Array<string> | undefined>>;
 };
 
 const availableRoles: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
-const availableFacultyRoles: FacultyRole[] = ['admin', 'faculty'];
+const availableFacultyRoles: FacultyRole[] = ['admin', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 const availableStatuses: UserStatus[] = ['active', 'inactive'];
 const studentPrograms: StudentProgram[] = ['BSIT', 'BSIS'];
 

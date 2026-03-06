@@ -20,7 +20,7 @@ class FacultyFactory extends Factory
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
-            'roles' => fake()->randomElement(['admin', 'faculty']),
+            'roles' => fake()->randomElement(['admin', 'adviser', 'panelist', 'instructor', 'dean', 'program_chairperson']),
             'status' => fake()->randomElement(['active', 'inactive']),
         ];
     }

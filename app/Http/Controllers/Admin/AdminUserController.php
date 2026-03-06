@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminUserRequest;
 use App\Http\Requests\Admin\StoreBulkAdminUsersRequest;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
+use App\Http\Requests\Admin\UpdateFacultyRequest;
+use App\Http\Requests\Admin\UpdateStudentRequest;
 use App\Models\Faculty;
 use App\Models\Role;
 use App\Models\Student;
@@ -18,6 +20,18 @@ use Inertia\Response;
 
 class AdminUserController extends Controller
 {
+    /**
+     * @var array<int, string>
+     */
+    private const FACULTY_ASSIGNABLE_ROLES = [
+        'admin',
+        'adviser',
+        'panelist',
+        'instructor',
+        'dean',
+        'program_chairperson',
+    ];
+
     public function index(Request $request): Response
     {
         $filters = [
@@ -85,9 +99,8 @@ class AdminUserController extends Controller
 
         if ($entityType === 'faculty') {
             $roles = collect($validated['roles'] ?? [])
-                ->map(function (string $role): ?string {
-                    return in_array($role, ['admin', 'faculty'], true) ? $role : null;
-                })
+                ->map(fn (string $role): ?string => Role::normalizeRole($role))
+                ->filter(fn (?string $role): bool => is_string($role) && in_array($role, self::FACULTY_ASSIGNABLE_ROLES, true))
                 ->filter()
                 ->values();
 
@@ -95,7 +108,7 @@ class AdminUserController extends Controller
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
                 'email' => $validated['email'],
-                'roles' => $roles->first() ?? 'faculty',
+                'roles' => $roles->first() ?? 'adviser',
                 'status' => $validated['status'] ?? 'active',
             ]);
 
@@ -170,9 +183,8 @@ class AdminUserController extends Controller
         if ($entityType === 'faculty') {
             collect($validated['rows'])->each(function (array $row): void {
                 $roles = collect($row['roles'] ?? [])
-                    ->map(function (string $role): ?string {
-                        return in_array($role, ['admin', 'faculty'], true) ? $role : null;
-                    })
+                    ->map(fn (string $role): ?string => Role::normalizeRole($role))
+                    ->filter(fn (?string $role): bool => is_string($role) && in_array($role, self::FACULTY_ASSIGNABLE_ROLES, true))
                     ->filter()
                     ->values();
 
@@ -180,7 +192,7 @@ class AdminUserController extends Controller
                     'first_name' => $row['first_name'],
                     'last_name' => $row['last_name'],
                     'email' => $row['email'],
-                    'roles' => $roles->first() ?? 'faculty',
+                    'roles' => $roles->first() ?? 'adviser',
                     'status' => $row['status'] ?? 'active',
                 ]);
             });
@@ -226,6 +238,37 @@ class AdminUserController extends Controller
         });
 
         return redirect()->route('admin.users.index')->with('success', 'Users uploaded successfully.');
+    }
+
+    public function updateStudent(UpdateStudentRequest $request, Student $student): RedirectResponse
+    {
+        $validated = $request->validated();
+
+        $student->update([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'email' => $validated['email'],
+            'program' => $validated['program'],
+            'status' => $validated['status'],
+        ]);
+
+        return redirect()->route('admin.users.students')->with('success', 'Student account updated successfully.');
+    }
+
+    public function updateFaculty(UpdateFacultyRequest $request, Faculty $faculty): RedirectResponse
+    {
+        $validated = $request->validated();
+        $normalizedRole = Role::normalizeRole($validated['roles'][0] ?? '') ?? 'adviser';
+
+        $faculty->update([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'email' => $validated['email'],
+            'roles' => in_array($normalizedRole, self::FACULTY_ASSIGNABLE_ROLES, true) ? $normalizedRole : 'adviser',
+            'status' => $validated['status'],
+        ]);
+
+        return redirect()->route('admin.users.faculty')->with('success', 'Faculty account updated successfully.');
     }
 
     public function students(Request $request): Response
@@ -280,7 +323,7 @@ class AdminUserController extends Controller
             'role' => $request->string('role')->toString(),
         ];
 
-        $facultyRoles = ['admin', 'faculty'];
+        $facultyRoles = self::FACULTY_ASSIGNABLE_ROLES;
 
         $faculties = Faculty::query()
             ->when($filters['search'] !== '', function (Builder $query) use ($filters) {

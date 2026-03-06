@@ -2,47 +2,56 @@ import { useForm } from '@inertiajs/react';
 import { Settings, UserCheck, X } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { update } from '../../routes/admin/users';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
+type FacultyRole = Exclude<UserRole, 'student'>;
 type UserStatus = 'active' | 'inactive';
+type StudentProgram = 'BSIT' | 'BSIS';
+type ManageMode = 'user' | 'student' | 'faculty';
 
 type ManagedUser = {
     id: number;
     fullName: string;
     firstName: string;
     lastName: string;
-    email: string;
-    role: UserRole;
-    roles: UserRole[];
+    email?: string;
+    role?: UserRole;
+    roles?: UserRole[];
     status: UserStatus;
     createdAt: string;
+    program?: StudentProgram;
 };
 
 type ManageUserActionModalProps = {
     open: boolean;
     user: ManagedUser | null;
+    mode?: ManageMode;
+    submitUrl: string;
     onClose: () => void;
     onSave: (updatedUser: ManagedUser) => void;
 };
 
-const roleOptions: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 type ManageUserForm = {
     first_name: string;
     last_name: string;
     email: string;
     roles: UserRole[];
     status: UserStatus;
+    program: StudentProgram;
 };
 
-const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserActionModalProps) => {
+const userRoleOptions: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
+const facultyRoleOptions: FacultyRole[] = ['admin', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
+
+const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, onSave }: ManageUserActionModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
     const { data, setData, errors, processing, clearErrors, put } = useForm<ManageUserForm>({
         first_name: '',
         last_name: '',
         email: '',
-        roles: [roleOptions[0] ?? 'student'],
+        roles: [userRoleOptions[0] ?? 'student'],
         status: 'active',
+        program: 'BSIT',
     });
     const initializedUserIdRef = React.useRef<number | null>(null);
     const roleDropdownRef = React.useRef<HTMLDivElement | null>(null);
@@ -63,9 +72,10 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
         setData({
             first_name: user.firstName,
             last_name: user.lastName,
-            email: user.email,
-            roles: user.roles.length > 0 ? user.roles : [user.role],
+            email: user.email ?? '',
+            roles: user.roles && user.roles.length > 0 ? user.roles : [user.role ?? 'student'],
             status: user.status,
+            program: user.program ?? 'BSIT',
         });
         setIsRoleDropdownOpen(false);
     }, [user, clearErrors, setData]);
@@ -136,13 +146,11 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
         };
     }, [open]);
 
-    if (!open || user === null) {
+    if (!open || user === null || typeof document === 'undefined') {
         return null;
     }
 
-    if (typeof document === 'undefined') {
-        return null;
-    }
+    const modalTitle = mode === 'student' ? 'Manage Student' : mode === 'faculty' ? 'Manage Faculty' : 'Manage User';
 
     return createPortal(
         <div
@@ -166,7 +174,7 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                 <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                     <div className="flex items-center gap-2">
                         <Settings className="h-5 w-5 text-emerald-800" />
-                        <h2 className="text-lg font-bold text-emerald-900">Manage User</h2>
+                        <h2 className="text-lg font-bold text-emerald-900">{modalTitle}</h2>
                     </div>
                     <button
                         type="button"
@@ -181,7 +189,8 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                     <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
                         <p className="text-sm font-semibold text-emerald-900">Managing account</p>
                         <p className="text-xs text-emerald-800">
-                            {user.fullName} ({user.email})
+                            {user.fullName}
+                            {data.email !== '' ? ` (${data.email})` : ''}
                         </p>
                     </div>
 
@@ -219,37 +228,72 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <label className="text-sm font-semibold text-slate-700">Roles</label>
-                            <div ref={roleDropdownRef} className="relative mt-1.5">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsRoleDropdownOpen((previousOpenState) => !previousOpenState)}
-                                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-left text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                        {mode === 'student' ? (
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700">Program</label>
+                                <select
+                                    value={data.program}
+                                    onChange={(event) => setData('program', event.target.value as StudentProgram)}
+                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                                 >
-                                    {selectedRoleLabel}
-                                </button>
-
-                                {isRoleDropdownOpen ? (
-                                    <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {roleOptions.map((role) => (
-                                                <label key={role} className="flex items-center gap-2 text-sm text-slate-700">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={data.roles.includes(role)}
-                                                        onChange={() => toggleRole(role)}
-                                                        className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                                    />
-                                                    <span className="capitalize">{role.replaceAll('_', ' ')}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ) : null}
+                                    <option value="BSIT">BSIT</option>
+                                    <option value="BSIS">BSIS</option>
+                                </select>
+                                {errors.program ? <p className="mt-1 text-xs text-rose-600">{errors.program}</p> : null}
                             </div>
-                            {roleError ? <p className="mt-1 text-xs text-rose-600">{roleError}</p> : null}
-                        </div>
+                        ) : null}
+
+                        {mode === 'faculty' ? (
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700">Role</label>
+                                <select
+                                    value={(data.roles[0] as FacultyRole | undefined) ?? 'adviser'}
+                                    onChange={(event) => setData('roles', [event.target.value as FacultyRole])}
+                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                >
+                                    {facultyRoleOptions.map((roleOption) => (
+                                        <option key={roleOption} value={roleOption}>
+                                            {roleOption.replaceAll('_', ' ')}
+                                        </option>
+                                    ))}
+                                </select>
+                                {roleError ? <p className="mt-1 text-xs text-rose-600">{roleError}</p> : null}
+                            </div>
+                        ) : null}
+
+                        {mode === 'user' ? (
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700">Roles</label>
+                                <div ref={roleDropdownRef} className="relative mt-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsRoleDropdownOpen((previousOpenState) => !previousOpenState)}
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-left text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                    >
+                                        {selectedRoleLabel}
+                                    </button>
+
+                                    {isRoleDropdownOpen ? (
+                                        <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {userRoleOptions.map((roleOption) => (
+                                                    <label key={roleOption} className="flex items-center gap-2 text-sm text-slate-700">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={data.roles.includes(roleOption)}
+                                                            onChange={() => toggleRole(roleOption)}
+                                                            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                                        />
+                                                        <span className="capitalize">{roleOption.replaceAll('_', ' ')}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </div>
+                                {roleError ? <p className="mt-1 text-xs text-rose-600">{roleError}</p> : null}
+                            </div>
+                        ) : null}
 
                         <div>
                             <label className="text-sm font-semibold text-slate-700">Status</label>
@@ -282,12 +326,12 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                             type="button"
                             disabled={processing}
                             onClick={() => {
-                                put(update.url(user.id), {
+                                put(submitUrl, {
                                     preserveScroll: true,
                                     preserveState: false,
                                     onSuccess: () => {
                                         const fullName = [data.last_name, data.first_name].filter((part) => part.trim() !== '').join(', ');
-                                        const assignedRoles = data.roles.length > 0 ? data.roles : [user.role];
+                                        const assignedRoles = data.roles.length > 0 ? data.roles : [user.role ?? 'student'];
 
                                         onSave({
                                             ...user,
@@ -298,6 +342,7 @@ const ManageUserActionModal = ({ open, user, onClose, onSave }: ManageUserAction
                                             role: assignedRoles[0] ?? 'student',
                                             roles: assignedRoles,
                                             status: data.status,
+                                            program: data.program,
                                         });
                                         clearErrors();
                                     },

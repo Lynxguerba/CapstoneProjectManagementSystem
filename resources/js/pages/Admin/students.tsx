@@ -3,6 +3,7 @@ import { Filter, Search, Settings, Upload } from 'lucide-react';
 import React from 'react';
 import AddUserModal from '../../components/Admin/AddUserModal';
 import BulkUploadModal from '../../components/Admin/BulkUploadModal';
+import ManageUserActionModal from '../../components/Admin/ManageUserActionModal';
 import AdminLayout from './_layout';
 
 type StudentProgram = 'BSIT' | 'BSIS';
@@ -39,6 +40,8 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
     const [status, setStatus] = React.useState<StudentFilterStatus>('all');
     const [isAddUserModalOpen, setIsAddUserModalOpen] = React.useState(false);
     const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = React.useState(false);
+    const [isManageUserModalOpen, setIsManageUserModalOpen] = React.useState(false);
+    const [selectedStudent, setSelectedStudent] = React.useState<StudentRow | null>(null);
     const [currentPage, setCurrentPage] = React.useState(1);
     const usersPerPage = 10;
 
@@ -86,6 +89,17 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
 
         return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
     }, [currentPage, totalPages]);
+
+    const openManageStudentModal = (student: StudentRow) => {
+        setSelectedStudent(student);
+        setIsManageUserModalOpen(true);
+    };
+
+    const saveManagedStudent = (updatedStudent: StudentRow) => {
+        setManagedStudents((previousStudents) => previousStudents.map((student) => (student.id === updatedStudent.id ? updatedStudent : student)));
+        setIsManageUserModalOpen(false);
+        setSelectedStudent(null);
+    };
 
     return (
         <AdminLayout title="Students Management" subtitle="Manage student records by program">
@@ -179,6 +193,7 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                     <td className="px-6 py-3 text-right">
                                         <button
                                             type="button"
+                                            onClick={() => openManageStudentModal(user)}
                                             className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
                                         >
                                             <Settings className="h-3 w-3" />
@@ -266,6 +281,17 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                 onClose={() => setIsBulkUploadModalOpen(false)}
                 existingUsers={managedStudents}
                 userType="student"
+            />
+            <ManageUserActionModal
+                open={isManageUserModalOpen}
+                user={selectedStudent}
+                mode="student"
+                submitUrl={selectedStudent ? `/admin/users/students/${selectedStudent.id}` : ''}
+                onClose={() => {
+                    setIsManageUserModalOpen(false);
+                    setSelectedStudent(null);
+                }}
+                onSave={(updatedUser) => saveManagedStudent(updatedUser as StudentRow)}
             />
         </AdminLayout>
     );

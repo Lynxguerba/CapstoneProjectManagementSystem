@@ -16,6 +16,18 @@ class StoreBulkAdminUsersRequest extends FormRequest
         'inactive',
     ];
 
+    /**
+     * @var array<int, string>
+     */
+    private const FACULTY_ASSIGNABLE_ROLES = [
+        'admin',
+        'adviser',
+        'panelist',
+        'instructor',
+        'dean',
+        'program_chairperson',
+    ];
+
     public function authorize(): bool
     {
         $user = $this->user();
@@ -39,7 +51,7 @@ class StoreBulkAdminUsersRequest extends FormRequest
                 'rows.*.last_name' => ['required', 'string', 'max:255'],
                 'rows.*.email' => ['required', 'string', 'email', 'max:255', 'distinct', 'unique:faculties,email'],
                 'rows.*.roles' => ['required', 'array', 'min:1'],
-                'rows.*.roles.*' => ['required', 'string', Rule::in(['admin', 'faculty'])],
+                'rows.*.roles.*' => ['required', 'string', Rule::in(self::FACULTY_ASSIGNABLE_ROLES)],
                 'rows.*.status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             ];
         }

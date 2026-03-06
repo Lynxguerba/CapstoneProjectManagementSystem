@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { store } from '../../routes/admin/users';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
-type FacultyRole = 'admin' | 'faculty';
+type FacultyRole = 'admin' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type UserStatus = 'active' | 'inactive';
 type StudentProgram = 'BSIT' | 'BSIS';
 type EntityType = 'user' | 'faculty' | 'student';
@@ -28,7 +28,7 @@ type AddUserForm = {
 };
 
 const defaultRoles: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
-const facultyRoles: FacultyRole[] = ['admin', 'faculty'];
+const facultyRoles: FacultyRole[] = ['admin', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 
 const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType = 'user' }: AddUserModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
