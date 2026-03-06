@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class LoginController extends Controller
 {
@@ -23,6 +24,18 @@ class LoginController extends Controller
         'instructor' => 'instructor.dashboard',
         'dean' => 'dean.dashboard',
         'program_chairperson' => 'program_chairperson.dashboard',
+    ];
+
+    /**
+     * @var array<int, string>
+     */
+    private const FACULTY_ROLES = [
+        'admin',
+        'adviser',
+        'panelist',
+        'instructor',
+        'dean',
+        'program_chairperson',
     ];
 
     public function store(Request $request): RedirectResponse
@@ -43,9 +56,15 @@ class LoginController extends Controller
 
         $user = User::query()->with('roles:id,slug')->where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password) || ! $user->hasRole($requestedRole)) {
+        if (! $user || ! $this->passwordMatches($user, (string) $request->input('password'))) {
             return back()->withErrors([
                 'email' => 'The provided credentials do not match our records.',
+            ]);
+        }
+
+        if (! $this->canAccessRequestedRole($user, $requestedRole)) {
+            return back()->withErrors([
+                'role' => 'You are not assigned to the selected role.',
             ]);
         }
 
@@ -100,5 +119,48 @@ class LoginController extends Controller
         }
 
         return redirect()->route(self::ROLE_DASHBOARD_ROUTES[$requestedRole]);
+    }
+
+    private function canAccessRequestedRole(User $user, string $requestedRole): bool
+    {
+        if ($user->hasRole($requestedRole)) {
+            return true;
+        }
+
+        if (! in_array($requestedRole, self::FACULTY_ROLES, true)) {
+            return false;
+        }
+
+        $normalizedActiveRole = Str::of((string) $user->role)
+            ->trim()
+            ->lower()
+            ->replace('-', '_')
+            ->replace(' ', '_')
+            ->value();
+
+        if ($normalizedActiveRole === 'faculty') {
+            return true;
+        }
+
+        return collect(self::FACULTY_ROLES)->contains(
+            fn (string $role): bool => $role !== 'student' && $user->hasRole($role)
+        );
+    }
+
+    private function passwordMatches(User $user, string $plainPassword): bool
+    {
+        if (Hash::check($plainPassword, (string) $user->password)) {
+            return true;
+        }
+
+        if ((string) $user->password !== $plainPassword) {
+            return false;
+        }
+
+        $user->forceFill([
+            'password' => $plainPassword,
+        ])->save();
+
+        return true;
     }
 }
