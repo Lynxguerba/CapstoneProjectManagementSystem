@@ -67,6 +67,8 @@ class Role extends Model
             'instructo' => 'instructor',
             'program_chair' => 'program_chairperson',
             'programchair' => 'program_chairperson',
+            'panel_chair' => 'program_chairperson',
+            'panelchair' => 'program_chairperson',
         ];
 
         $normalizedRole = $aliases[$normalizedRole] ?? $normalizedRole;
