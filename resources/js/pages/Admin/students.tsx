@@ -177,7 +177,7 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                 <tr key={user.id} className="transition-colors hover:bg-slate-50">
                                     <td className="px-6 py-3 font-medium text-slate-900">{user.fullName}</td>
                                     <td className="px-6 py-3 text-slate-600">{user.email ?? 'N/A'}</td>
-                                    <td className="px-6 py-3 text-slate-700">{user.program}</td>
+                                    <td className="px-6 py-3 text-slate-700">{user.program || 'N/A'}</td>
                                     <td className="px-6 py-3">
                                         <span
                                             className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${
@@ -286,7 +286,7 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                 open={isManageUserModalOpen}
                 user={selectedStudent}
                 mode="student"
-                submitUrl={selectedStudent ? `/admin/users/students/${selectedStudent.id}` : ''}
+                submitUrl={selectedStudent ? `/admin/users/${selectedStudent.id}?from=student` : ''}
                 onClose={() => {
                     setIsManageUserModalOpen(false);
                     setSelectedStudent(null);

@@ -30,6 +30,12 @@ class UpdateAdminUserRequest extends FormRequest
      */
     public function rules(): array
     {
+        $programRules = ['nullable', 'string', Rule::exists('programs', 'code')];
+
+        if ($this->query('from') === 'student') {
+            $programRules = ['required', 'string', Rule::exists('programs', 'code')];
+        }
+
         return [
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
@@ -37,6 +43,7 @@ class UpdateAdminUserRequest extends FormRequest
             'roles' => ['required', 'array', 'min:1'],
             'roles.*' => ['required', 'string', Rule::in(Role::slugs())],
             'status' => ['required', 'string', Rule::in(self::AVAILABLE_STATUSES)],
+            'program' => $programRules,
         ];
     }
 
@@ -51,6 +58,8 @@ class UpdateAdminUserRequest extends FormRequest
             'roles.min' => 'At least one role is required.',
             'roles.*.in' => 'One or more selected roles are invalid.',
             'status.in' => 'The selected status is invalid.',
+            'program.required' => 'Program is required for student records.',
+            'program.exists' => 'Selected program is invalid.',
         ];
     }
 }

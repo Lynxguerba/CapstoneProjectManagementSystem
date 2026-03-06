@@ -46,7 +46,7 @@ class StoreAdminUserRequest extends FormRequest
             return [
                 'first_name' => ['required', 'string', 'max:255'],
                 'last_name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'email', 'max:255', 'unique:faculties,email'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'roles' => ['required', 'array', 'min:1'],
                 'roles.*' => ['required', 'string', Rule::in(self::FACULTY_ASSIGNABLE_ROLES)],
                 'status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
@@ -57,8 +57,8 @@ class StoreAdminUserRequest extends FormRequest
             return [
                 'first_name' => ['required', 'string', 'max:255'],
                 'last_name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'email', 'max:255', 'unique:students,email'],
-                'program' => ['required', 'string', Rule::in(['BSIT', 'BSIS'])],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'program' => ['required', 'string', Rule::exists('programs', 'code')],
                 'password' => ['required', 'string', 'min:8', 'max:255'],
                 'status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             ];
@@ -72,6 +72,7 @@ class StoreAdminUserRequest extends FormRequest
             'roles.*' => ['required', 'string', Rule::in(Role::slugs())],
             'status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             'password' => ['required', 'string', 'min:8', 'max:255'],
+            'program' => ['nullable', 'string', Rule::exists('programs', 'code')],
         ];
     }
 
@@ -85,7 +86,7 @@ class StoreAdminUserRequest extends FormRequest
         if ($entityType === 'student') {
             return [
                 'program.required' => 'Program is required.',
-                'program.in' => 'Program must be BSIT or BSIS.',
+                'program.exists' => 'Selected program is invalid.',
                 'email.required' => 'Email is required.',
                 'email.email' => 'Email must be a valid email address.',
                 'email.unique' => 'This student email is already in use.',
@@ -101,6 +102,7 @@ class StoreAdminUserRequest extends FormRequest
             'roles.min' => 'At least one role is required.',
             'roles.*.in' => 'One or more selected roles are invalid.',
             'status.in' => 'The selected status is invalid.',
+            'program.exists' => 'Selected program is invalid.',
         ];
     }
 }
