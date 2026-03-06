@@ -43,6 +43,13 @@ type ManageUserForm = {
 
 const userRoleOptions: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 const facultyRoleOptions: FacultyRole[] = ['admin', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
+const formatRoleLabel = (role: string): string => {
+    if (role === 'program_chairperson') {
+        return 'Prog Chair';
+    }
+
+    return role.replaceAll('_', ' ');
+};
 
 const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, onSave }: ManageUserActionModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
@@ -92,7 +99,7 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
 
     const formErrors = errors as Record<string, string | undefined>;
     const roleError = errors.roles ?? formErrors['roles.0'] ?? formErrors['roles.1'] ?? formErrors['roles.2'];
-    const selectedRoleLabel = data.roles.length > 0 ? data.roles.map((role) => role.replaceAll('_', ' ')).join(', ') : 'Select roles';
+    const selectedRoleLabel = data.roles.length > 0 ? data.roles.map((role) => formatRoleLabel(role)).join(', ') : 'Select roles';
 
     useEffect(() => {
         if (!isRoleDropdownOpen) {
@@ -248,18 +255,20 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
 
                         {mode === 'faculty' ? (
                             <div>
-                                <label className="text-sm font-semibold text-slate-700">Role</label>
-                                <select
-                                    value={(data.roles[0] as FacultyRole | undefined) ?? 'adviser'}
-                                    onChange={(event) => setData('roles', [event.target.value as FacultyRole])}
-                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                                >
+                                <label className="text-sm font-semibold text-slate-700">Roles</label>
+                                <div className="mt-1.5 grid grid-cols-1 gap-2 rounded-xl border border-slate-300 bg-slate-50 p-3 sm:grid-cols-2">
                                     {facultyRoleOptions.map((roleOption) => (
-                                        <option key={roleOption} value={roleOption}>
-                                            {roleOption.replaceAll('_', ' ')}
-                                        </option>
+                                        <label key={roleOption} className="flex items-center gap-2 text-sm text-slate-700">
+                                            <input
+                                                type="checkbox"
+                                                checked={data.roles.includes(roleOption)}
+                                                onChange={() => toggleRole(roleOption)}
+                                                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                            />
+                                            <span className="capitalize">{formatRoleLabel(roleOption)}</span>
+                                        </label>
                                     ))}
-                                </select>
+                                </div>
                                 {roleError ? <p className="mt-1 text-xs text-rose-600">{roleError}</p> : null}
                             </div>
                         ) : null}
@@ -287,7 +296,7 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
                                                             onChange={() => toggleRole(roleOption)}
                                                             className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                                                         />
-                                                        <span className="capitalize">{roleOption.replaceAll('_', ' ')}</span>
+                                                        <span className="capitalize">{formatRoleLabel(roleOption)}</span>
                                                     </label>
                                                 ))}
                                             </div>

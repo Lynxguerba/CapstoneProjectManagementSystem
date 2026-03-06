@@ -29,6 +29,13 @@ type AddUserForm = {
 
 const defaultRoles: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 const facultyRoles: FacultyRole[] = ['admin', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
+const formatRoleLabel = (role: string): string => {
+    if (role === 'program_chairperson') {
+        return 'Prog Chair';
+    }
+
+    return role.replaceAll('_', ' ');
+};
 
 const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType = 'user' }: AddUserModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
@@ -276,7 +283,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
                                                 onChange={() => toggleRole(role)}
                                                 className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                                             />
-                                            <span className="capitalize">{role.replaceAll('_', ' ')}</span>
+                                            <span className="capitalize">{formatRoleLabel(role)}</span>
                                         </label>
                                     ))}
                                 </div>
