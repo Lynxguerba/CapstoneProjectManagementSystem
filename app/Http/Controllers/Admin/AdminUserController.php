@@ -172,6 +172,10 @@ class AdminUserController extends Controller
 
         $user->syncRoles($roles->all());
 
+        if ($request->string('from')->toString() === 'faculty') {
+            return redirect()->route('admin.users.faculty')->with('success', 'User account updated successfully.');
+        }
+
         return redirect()->route('admin.users.index')->with('success', 'User account updated successfully.');
     }
 
@@ -325,35 +329,59 @@ class AdminUserController extends Controller
 
         $facultyRoles = self::FACULTY_ASSIGNABLE_ROLES;
 
-        $faculties = Faculty::query()
+        $faculties = User::query()
+            ->with('roles:id,slug')
+            ->where(function (Builder $query) use ($facultyRoles) {
+                $query
+                    ->whereIn('role', $facultyRoles)
+                    ->orWhereHas('roles', function (Builder $roleQuery) use ($facultyRoles) {
+                        $roleQuery->whereIn('slug', $facultyRoles);
+                    });
+            })
             ->when($filters['search'] !== '', function (Builder $query) use ($filters) {
                 $query->where(function (Builder $innerQuery) use ($filters) {
                     $innerQuery
                         ->where('first_name', 'like', '%'.$filters['search'].'%')
                         ->orWhere('last_name', 'like', '%'.$filters['search'].'%')
+                        ->orWhere('name', 'like', '%'.$filters['search'].'%')
                         ->orWhere('email', 'like', '%'.$filters['search'].'%');
                 });
             })
             ->when($filters['role'] !== '' && $filters['role'] !== 'all' && in_array($filters['role'], $facultyRoles), function (Builder $query) use ($filters) {
-                $query->where('roles', $filters['role']);
+                $query->where(function (Builder $innerQuery) use ($filters) {
+                    $innerQuery
+                        ->where('role', $filters['role'])
+                        ->orWhereHas('roles', function (Builder $roleQuery) use ($filters) {
+                            $roleQuery->where('slug', $filters['role']);
+                        });
+                });
             })
-            ->orderByDesc('created_at')
-            ->get(['id', 'first_name', 'last_name', 'email', 'roles', 'status', 'created_at'])
-            ->map(function (Faculty $faculty): array {
-                $firstName = trim($faculty->first_name);
-                $lastName = trim($faculty->last_name);
-                $fullName = trim($lastName.', '.$firstName, ', ');
+            ->orderByDesc('users.created_at')
+            ->get(['id', 'name', 'first_name', 'last_name', 'email', 'role', 'status', 'created_at'])
+            ->map(function (User $user) use ($facultyRoles): array {
+                $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+                $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+                $fullName = $this->buildFullName($firstName, $lastName, $user->name);
+                $roleSlugs = collect($user->roleSlugs())
+                    ->filter(fn (string $role): bool => in_array($role, $facultyRoles, true))
+                    ->values()
+                    ->all();
+                $fallbackRole = is_string($user->role) && in_array($user->role, $facultyRoles, true)
+                    ? $user->role
+                    : 'adviser';
+                $resolvedRoles = count($roleSlugs) > 0 ? $roleSlugs : [$fallbackRole];
+                $status = is_string($user->status) && $user->status !== '' ? $user->status : 'active';
 
                 return [
-                    'id' => $faculty->id,
+                    'id' => $user->id,
                     'firstName' => $firstName,
                     'lastName' => $lastName,
                     'fullName' => $fullName,
-                    'email' => $faculty->email,
-                    'role' => $faculty->roles,
-                    'roles' => [$faculty->roles],
-                    'status' => $faculty->status,
-                    'createdAt' => $faculty->created_at?->format('Y-m-d') ?? '',
+                    'email' => $user->email,
+                    'role' => $resolvedRoles[0],
+                    'roles' => $resolvedRoles,
+                    'status' => $status,
+                    'createdAt' => $user->created_at?->format('Y-m-d') ?? '',
                 ];
             })
             ->values();

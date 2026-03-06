@@ -268,7 +268,7 @@ const AdminFaculty = ({ faculties = [], filters }: AdminFacultyProps) => {
                 open={isManageUserModalOpen}
                 user={selectedFaculty}
                 mode="faculty"
-                submitUrl={selectedFaculty ? `/admin/users/faculty/${selectedFaculty.id}` : ''}
+                submitUrl={selectedFaculty ? `/admin/users/${selectedFaculty.id}?from=faculty` : ''}
                 onClose={() => {
                     setIsManageUserModalOpen(false);
                     setSelectedFaculty(null);
