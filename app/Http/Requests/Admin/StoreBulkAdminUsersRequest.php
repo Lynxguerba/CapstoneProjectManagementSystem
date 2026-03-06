@@ -52,6 +52,7 @@ class StoreBulkAdminUsersRequest extends FormRequest
                 'rows.*.email' => ['required', 'string', 'email', 'max:255', 'distinct', 'unique:users,email'],
                 'rows.*.roles' => ['required', 'array', 'min:1'],
                 'rows.*.roles.*' => ['required', 'string', Rule::in(self::FACULTY_ASSIGNABLE_ROLES)],
+                'rows.*.password' => ['required', 'string', 'min:8', 'max:255'],
                 'rows.*.status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             ];
         }
@@ -109,6 +110,8 @@ class StoreBulkAdminUsersRequest extends FormRequest
             'rows.*.email.unique' => 'One or more email addresses already exist.',
             'rows.*.roles.required' => 'Each row must include at least one role.',
             'rows.*.roles.*.in' => 'One or more roles are invalid.',
+            'rows.*.password.required' => 'Each row must include a password.',
+            'rows.*.password.min' => 'Each password must be at least 8 characters.',
             'rows.*.status.in' => 'One or more statuses are invalid.',
             'rows.*.program.in' => 'Program must be BSIT or BSIS.',
         ];
