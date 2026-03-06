@@ -174,6 +174,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                         last_name: row.last_name,
                         email: row.email,
                         roles: row.roles,
+                        password: row.password,
                         status: row.status,
                     };
                 }
@@ -283,7 +284,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
         const requiredHeaders = userType === 'student'
             ? (['last_name', 'first_name', 'email', 'program', 'password'] as const)
             : userType === 'faculty'
-                ? (['last_name', 'first_name', 'email', 'role'] as const)
+                ? (['last_name', 'first_name', 'email', 'role', 'password'] as const)
                 : (['last_name', 'first_name', 'email', 'role', 'password'] as const);
 
         const headers = parseCsvLine(lines[0]).map((header) => normalizeHeader(header));
@@ -387,7 +388,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
             }
 
             let password: string | undefined;
-            if (userType === 'user') {
+            if (userType === 'user' || userType === 'faculty') {
                 password = values[headerIndex.password] ?? '';
 
                 if (password.length < 8) {
@@ -478,7 +479,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
     const csvGuide = userType === 'student'
         ? 'Last Name, First Name, Email, Program, Password, and optionally Status'
         : userType === 'faculty'
-            ? 'Last Name, First Name, Email, Role, and optionally Status'
+            ? 'Last Name, First Name, Email, Role, Password, and optionally Status'
             : 'Last Name, First Name, Email, Role, Password, and optionally Status';
 
     return createPortal(

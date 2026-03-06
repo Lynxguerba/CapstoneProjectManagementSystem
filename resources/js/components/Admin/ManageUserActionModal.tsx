@@ -38,6 +38,7 @@ type ManageUserForm = {
     roles: UserRole[];
     status: UserStatus;
     program: StudentProgram;
+    password: string;
 };
 
 const userRoleOptions: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
@@ -52,6 +53,7 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
         roles: [userRoleOptions[0] ?? 'student'],
         status: 'active',
         program: 'BSIT',
+        password: '',
     });
     const initializedUserIdRef = React.useRef<number | null>(null);
     const roleDropdownRef = React.useRef<HTMLDivElement | null>(null);
@@ -76,6 +78,7 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
             roles: user.roles && user.roles.length > 0 ? user.roles : [user.role ?? 'student'],
             status: user.status,
             program: user.program ?? 'BSIT',
+            password: '',
         });
         setIsRoleDropdownOpen(false);
     }, [user, clearErrors, setData]);
@@ -310,6 +313,18 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
                     </div>
 
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">Created at: {user.createdAt}</div>
+
+                    <div>
+                        <label className="text-sm font-semibold text-slate-700">New Password (optional)</label>
+                        <input
+                            type="password"
+                            value={data.password}
+                            onChange={(event) => setData('password', event.target.value)}
+                            placeholder="Leave blank to keep current password"
+                            className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                        />
+                        {errors.password ? <p className="mt-1 text-xs text-rose-600">{errors.password}</p> : null}
+                    </div>
                 </div>
 
                 <div className="border-t border-slate-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">

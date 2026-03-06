@@ -1,11 +1,34 @@
+import { useForm } from '@inertiajs/react';
 import React from 'react';
+import { useState } from 'react';
 import backgroundImg from '../assets/background.jpg';
 import loginCoverImg from '../assets/loginright.jpg';
 import cpmsLogo from '../assets/logo-cpms.png';
-import '../../css/pages/login.css';
 import { ROLE_OPTIONS } from '../types/auth';
-import { useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import '../../css/pages/login.css';
+
+const ROLE_REDIRECTS: Record<string, string> = {
+    admin: '/admin/dashboard',
+    student: '/student/dashboard',
+    adviser: '/adviser/dashboard',
+    panelist: '/panelist/dashboard',
+    instructor: '/instructor/dashboard',
+    dean: '/dean/dashboard',
+    program_chairperson: '/program_chairperson/dashboard',
+};
+
+const normalizeRole = (role: string): string => {
+    const normalizedRole = role.trim().toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_');
+    const aliases: Record<string, string> = {
+        advisor: 'adviser',
+        program_chair: 'program_chairperson',
+        programchair: 'program_chairperson',
+        panel_chair: 'program_chairperson',
+        panelchair: 'program_chairperson',
+    };
+
+    return aliases[normalizedRole] ?? normalizedRole;
+};
 
 export default function LoginPage() {
     const { data, setData, post, processing, errors } = useForm({
@@ -16,17 +39,29 @@ export default function LoginPage() {
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        const requestedRole = normalizeRole(data.role);
 
         post('/login', {
             onSuccess: () => {
-                if (data.role === 'student') {
-                    window.location.href = '/student/dashboard';
+                const redirectPath = ROLE_REDIRECTS[requestedRole];
+
+                if (redirectPath) {
+                    window.location.assign(redirectPath);
                 }
             },
         });
     };
 
-    const roles = ROLE_OPTIONS;
+    const roles = ROLE_OPTIONS.map((roleOption) => {
+        if (roleOption.value === 'program_chairperson') {
+            return {
+                ...roleOption,
+                label: 'Panel Chair',
+            };
+        }
+
+        return roleOption;
+    });
 
     // VIEW TOGGLE STATE FOR PASSWORD
     const [showPassword, setShowPassword] = useState(false);

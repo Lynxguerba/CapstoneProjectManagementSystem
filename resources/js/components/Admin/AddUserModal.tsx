@@ -287,9 +287,11 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
                         </>
                     )}
 
-                    {userType === 'user' ? (
+                    {userType !== 'student' ? (
                         <div>
-                            <label className="text-sm font-semibold text-slate-700">Temporary password</label>
+                            <label className="text-sm font-semibold text-slate-700">
+                                {userType === 'faculty' ? 'Password' : 'Temporary password'}
+                            </label>
                             <input
                                 type="password"
                                 value={addUserForm.data.password}
