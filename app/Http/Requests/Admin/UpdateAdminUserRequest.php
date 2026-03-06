@@ -42,6 +42,7 @@ class UpdateAdminUserRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user'))],
             'roles' => ['required', 'array', 'min:1'],
             'roles.*' => ['required', 'string', Rule::in(Role::slugs())],
+            'password' => ['nullable', 'string', 'min:8', 'max:255'],
             'status' => ['required', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             'program' => $programRules,
         ];
@@ -57,6 +58,7 @@ class UpdateAdminUserRequest extends FormRequest
             'roles.array' => 'Roles must be sent as a list.',
             'roles.min' => 'At least one role is required.',
             'roles.*.in' => 'One or more selected roles are invalid.',
+            'password.min' => 'Password must be at least 8 characters.',
             'status.in' => 'The selected status is invalid.',
             'program.required' => 'Program is required for student records.',
             'program.in' => 'Program must be BSIT or BSIS.',
