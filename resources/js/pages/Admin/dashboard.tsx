@@ -91,7 +91,7 @@ const AdminDashboard = ({
     }));
 
     return (
-        <AdminLayout title="Dashboard" subtitle="High-level administration overview">
+        <AdminLayout title="Dashboard" subtitle="Administration Overview">
             <div className="space-y-6">
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}

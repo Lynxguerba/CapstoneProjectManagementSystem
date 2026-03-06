@@ -152,7 +152,126 @@ class AdminUserController extends Controller
             $user->syncRoles($roles->all());
         });
 
-        return redirect()->route('admin.users.index')->with('success', 'Users imported successfully.');
+        return redirect()->route('admin.users.index')->with('success', 'Users uploaded successfully.');
+    }
+
+    public function students(Request $request): Response
+    {
+        $filters = [
+            'search' => $request->string('search')->toString(),
+        ];
+
+        $users = User::query()
+            ->with('roles:id,slug')
+            ->whereHas('roles', function (Builder $roleQuery) {
+                $roleQuery->where('slug', 'student');
+            })
+            ->when($filters['search'] !== '', function (Builder $query) use ($filters) {
+                $query->where(function (Builder $innerQuery) use ($filters) {
+                    $innerQuery
+                        ->where('first_name', 'like', '%'.$filters['search'].'%')
+                        ->orWhere('last_name', 'like', '%'.$filters['search'].'%')
+                        ->orWhere('name', 'like', '%'.$filters['search'].'%')
+                        ->orWhere('email', 'like', '%'.$filters['search'].'%');
+                });
+            })
+            ->orderByDesc('created_at')
+            ->get(['id', 'name', 'first_name', 'last_name', 'email', 'role', 'status', 'created_at'])
+            ->map(function (User $user): array {
+                $roleSlugs = $user->roleSlugs();
+                $role = is_string($user->role) && $user->role !== ''
+                    ? $user->role
+                    : ($roleSlugs[0] ?? 'student');
+                $resolvedRoles = count($roleSlugs) > 0 ? $roleSlugs : [$role];
+                $status = is_string($user->status) && $user->status !== '' ? $user->status : 'active';
+                $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+                $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+                $fullName = $this->buildFullName($firstName, $lastName, $user->name);
+
+                return [
+                    'id' => $user->id,
+                    'firstName' => $firstName,
+                    'lastName' => $lastName,
+                    'fullName' => $fullName,
+                    'email' => $user->email,
+                    'role' => $role,
+                    'roles' => $resolvedRoles,
+                    'status' => $status,
+                    'createdAt' => $user->created_at?->format('Y-m-d') ?? '',
+                ];
+            })
+            ->values();
+
+        return Inertia::render('Admin/students', [
+            'users' => $users,
+            'filters' => [
+                'search' => $filters['search'],
+            ],
+        ]);
+    }
+
+    public function faculty(Request $request): Response
+    {
+        $filters = [
+            'search' => $request->string('search')->toString(),
+            'role' => $request->string('role')->toString(),
+        ];
+
+        $facultyRoles = ['adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
+
+        $users = User::query()
+            ->with('roles:id,slug')
+            ->whereHas('roles', function (Builder $roleQuery) use ($facultyRoles) {
+                $roleQuery->whereIn('slug', $facultyRoles);
+            })
+            ->when($filters['search'] !== '', function (Builder $query) use ($filters) {
+                $query->where(function (Builder $innerQuery) use ($filters) {
+                    $innerQuery
+                        ->where('first_name', 'like', '%'.$filters['search'].'%')
+                        ->orWhere('last_name', 'like', '%'.$filters['search'].'%')
+                        ->orWhere('name', 'like', '%'.$filters['search'].'%')
+                        ->orWhere('email', 'like', '%'.$filters['search'].'%');
+                });
+            })
+            ->when($filters['role'] !== '' && $filters['role'] !== 'all' && in_array($filters['role'], $facultyRoles), function (Builder $query) use ($filters) {
+                $query->whereHas('roles', function (Builder $roleQuery) use ($filters) {
+                    $roleQuery->where('slug', $filters['role']);
+                });
+            })
+            ->orderByDesc('created_at')
+            ->get(['id', 'name', 'first_name', 'last_name', 'email', 'role', 'status', 'created_at'])
+            ->map(function (User $user): array {
+                $roleSlugs = $user->roleSlugs();
+                $role = is_string($user->role) && $user->role !== ''
+                    ? $user->role
+                    : ($roleSlugs[0] ?? 'adviser');
+                $resolvedRoles = count($roleSlugs) > 0 ? $roleSlugs : [$role];
+                $status = is_string($user->status) && $user->status !== '' ? $user->status : 'active';
+                $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+                $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+                $fullName = $this->buildFullName($firstName, $lastName, $user->name);
+
+                return [
+                    'id' => $user->id,
+                    'firstName' => $firstName,
+                    'lastName' => $lastName,
+                    'fullName' => $fullName,
+                    'email' => $user->email,
+                    'role' => $role,
+                    'roles' => $resolvedRoles,
+                    'status' => $status,
+                    'createdAt' => $user->created_at?->format('Y-m-d') ?? '',
+                ];
+            })
+            ->values();
+
+        return Inertia::render('Admin/faculty', [
+            'users' => $users,
+            'filters' => [
+                'search' => $filters['search'],
+                'role' => $filters['role'] !== '' ? $filters['role'] : 'all',
+            ],
+        ]);
     }
 
     private function buildDisplayName(string $firstName, string $lastName): string

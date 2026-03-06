@@ -19,7 +19,9 @@ import {
     Menu,
     X,
     LogOut,
+    GraduationCap,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 import logoCpms from '../assets/logo-cpms.png';
@@ -37,6 +39,10 @@ type SidebarPageProps = {
         user?: SidebarAuthUser;
     };
 };
+
+type MenuItem =
+    | { icon: LucideIcon; label: string; href?: string; isSection?: false }
+    | { label: string; isSection: true };
 
 const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => {
     const page = usePage<SidebarPageProps>();
@@ -90,8 +96,8 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
         return currentUrl === href || currentUrl.startsWith(`${href}/`);
     };
 
-    const getMenuItems = (role: string) => {
-        const commonItems = [
+    const getMenuItems = (role: string): MenuItem[] => {
+        const commonItems: MenuItem[] = [
             { icon: LayoutDashboard, label: 'Dashboard', href: '#' },
             { icon: FolderOpen, label: 'Documents', href: '#' },
             { icon: Settings, label: 'Settings', href: '#' },
@@ -100,8 +106,11 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
         switch (role) {
             case 'admin':
                 return [
+                    { label: 'Main', isSection: true },
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
-                    { icon: Users, label: 'User Management', href: '/admin/users' },
+                    { label: 'User Management', isSection: true },
+                    { icon: GraduationCap, label: 'Students', href: '/admin/users/students' },
+                    { icon: BookOpen, label: 'Faculty', href: '/admin/users/faculty' },
                     { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
                     { icon: Archive, label: 'Audit Logs', href: '/admin/audit-logs' },
                 ];
@@ -239,7 +248,16 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                 <nav className="cpms-scroll mt-4 min-h-0 flex-1 overflow-y-auto px-4">
                     <div className="space-y-1.5 pb-4">
                         {menuItems.map((item) => {
+                            if (item.isSection) {
+                                return (
+                                    <div key={item.label} className="mt-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                        {item.label}
+                                    </div>
+                                );
+                            }
+
                             const active = isActiveHref(item.href);
+                            const ItemIcon = item.icon;
 
                             return (
                                 <Link
@@ -252,7 +270,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <item.icon size={20} className={active ? 'text-white' : 'text-slate-400 group-hover:text-green-400'} />
+                                        <ItemIcon size={20} className={active ? 'text-white' : 'text-slate-400 group-hover:text-green-400'} />
                                         <span className="text-sm font-medium">{item.label}</span>
                                     </div>
                                     {!active && (
@@ -283,12 +301,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                         Sign Out
                     </button>
                 </div>
-                <SignOutModal
-                    open={showModal}
-                    onClose={() => setShowModal(false)}
-                    activeRole={role}
-                    assignedRoles={user?.roles ?? []}
-                />
+                <SignOutModal open={showModal} onClose={() => setShowModal(false)} activeRole={role} assignedRoles={user?.roles ?? []} />
 
                 <style>{`
           .cpms-scroll {
