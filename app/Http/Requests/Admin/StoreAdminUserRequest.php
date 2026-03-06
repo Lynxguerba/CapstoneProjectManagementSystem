@@ -49,6 +49,7 @@ class StoreAdminUserRequest extends FormRequest
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'roles' => ['required', 'array', 'min:1'],
                 'roles.*' => ['required', 'string', Rule::in(self::FACULTY_ASSIGNABLE_ROLES)],
+                'password' => ['required', 'string', 'min:8', 'max:255'],
                 'status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             ];
         }
@@ -101,6 +102,8 @@ class StoreAdminUserRequest extends FormRequest
             'roles.array' => 'Roles must be sent as a list.',
             'roles.min' => 'At least one role is required.',
             'roles.*.in' => 'One or more selected roles are invalid.',
+            'password.required' => 'Password is required.',
+            'password.min' => 'Password must be at least 8 characters.',
             'status.in' => 'The selected status is invalid.',
             'program.in' => 'Program must be BSIT or BSIS.',
         ];
