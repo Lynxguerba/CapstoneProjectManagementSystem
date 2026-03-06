@@ -17,5 +17,23 @@ class Student extends Model
         'first_name',
         'last_name',
         'program',
+        'password',
     ];
+
+    /**
+     * @var list<string>
+     */
+    protected $hidden = [
+        'password',
+    ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'password' => 'hashed',
+        ];
+    }
 }

@@ -5,8 +5,8 @@ import { useState } from 'react';
 import ESignature from '@/components/Settings/ESignature';
 import PasswordManager from '@/components/Settings/PasswordManager';
 
-import ProgramChairpersonLayout from './_layout';
 import ProfileCard from '@/components/Settings/ProfileCard';
+import ProgramChairpersonLayout from './_layout';
 
 type ProgramChairpersonUser = {
     id?: number | string;

@@ -5,19 +5,20 @@ import { createPortal } from 'react-dom';
 import { bulkStore } from '../../routes/admin/users';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
+type FacultyRole = 'admin' | 'faculty';
 type UserStatus = 'active' | 'inactive';
+type StudentProgram = 'BSIT' | 'BSIS';
+type EntityType = 'user' | 'faculty' | 'student';
 
-type CsvUserRow = {
+type PreviewRow = {
+    line: number;
     first_name: string;
     last_name: string;
-    email: string;
-    roles: UserRole[];
-    status: UserStatus;
-    password: string;
-};
-
-type PreviewRow = CsvUserRow & {
-    line: number;
+    email?: string;
+    roles?: string[];
+    status?: UserStatus;
+    password?: string;
+    program?: StudentProgram;
     issues: string[];
 };
 
@@ -27,15 +28,17 @@ type BulkUploadModalProps = {
     existingUsers?: Array<{
         email: string;
     }>;
+    userType?: EntityType;
 };
 
 type BulkUploadForm = {
-    rows: CsvUserRow[];
+    rows: Array<Record<string, unknown>>;
 };
 
 const availableRoles: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
+const availableFacultyRoles: FacultyRole[] = ['admin', 'faculty'];
 const availableStatuses: UserStatus[] = ['active', 'inactive'];
-const requiredHeaders = ['last_name', 'first_name', 'email', 'role', 'password'] as const;
+const studentPrograms: StudentProgram[] = ['BSIT', 'BSIS'];
 
 const normalizeHeader = (header: string): string => {
     return header.trim().toLowerCase().replace(/[\s-]+/g, '_');
@@ -74,7 +77,7 @@ const parseCsvLine = (line: string): string[] => {
     return values.map((value) => value.replace(/^"|"$/g, '').trim());
 };
 
-const normalizeRoleToken = (rawRole: string): UserRole | null => {
+const normalizeRoleToken = (rawRole: string): string | null => {
     const normalized = rawRole
         .trim()
         .toLowerCase()
@@ -89,21 +92,21 @@ const normalizeRoleToken = (rawRole: string): UserRole | null => {
         return 'program_chairperson';
     }
 
-    if (availableRoles.includes(normalized as UserRole)) {
-        return normalized as UserRole;
+    if (availableRoles.includes(normalized as UserRole) || availableFacultyRoles.includes(normalized as FacultyRole)) {
+        return normalized;
     }
 
     return null;
 };
 
-const parseRoles = (roleCell: string): { roles: UserRole[]; hasInvalidRole: boolean } => {
+const parseRoles = (roleCell: string): { roles: string[]; hasInvalidRole: boolean } => {
     const parts = roleCell
         .split(/[;,|]/)
         .flatMap((part) => part.split('/'))
         .map((part) => part.trim())
         .filter((part) => part !== '');
 
-    const normalizedRoles: UserRole[] = [];
+    const normalizedRoles: string[] = [];
     let hasInvalidRole = false;
 
     parts.forEach((part) => {
@@ -125,7 +128,7 @@ const parseRoles = (roleCell: string): { roles: UserRole[]; hasInvalidRole: bool
     };
 };
 
-const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalProps) => {
+const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' }: BulkUploadModalProps) => {
     const [isMainModalAppearing, setIsMainModalAppearing] = React.useState(false);
     const [isReviewModalAppearing, setIsReviewModalAppearing] = React.useState(false);
     const [fileName, setFileName] = React.useState('');
@@ -137,9 +140,11 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
     const { data, setData, post, processing, errors, clearErrors, reset } = useForm<BulkUploadForm>({
         rows: [],
     });
+
     const existingUserEmails = React.useMemo(() => {
         return new Set(existingUsers.map((user) => user.email.trim().toLowerCase()));
     }, [existingUsers]);
+
     const selectedRowLinesSet = React.useMemo(() => {
         return new Set(selectedRowLines);
     }, [selectedRowLines]);
@@ -147,17 +152,38 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
     useEffect(() => {
         const selectedRows = previewRows
             .filter((row) => row.issues.length === 0 && selectedRowLinesSet.has(row.line))
-            .map((row) => ({
-                first_name: row.first_name,
-                last_name: row.last_name,
-                email: row.email,
-                roles: row.roles,
-                status: row.status,
-                password: row.password,
-            }));
+            .map((row) => {
+                if (userType === 'student') {
+                    return {
+                        first_name: row.first_name,
+                        last_name: row.last_name,
+                        program: row.program,
+                        password: row.password,
+                    };
+                }
+
+                if (userType === 'faculty') {
+                    return {
+                        first_name: row.first_name,
+                        last_name: row.last_name,
+                        email: row.email,
+                        roles: row.roles,
+                        status: row.status,
+                    };
+                }
+
+                return {
+                    first_name: row.first_name,
+                    last_name: row.last_name,
+                    email: row.email,
+                    roles: row.roles,
+                    status: row.status,
+                    password: row.password,
+                };
+            });
 
         setData('rows', selectedRows);
-    }, [previewRows, selectedRowLinesSet, setData]);
+    }, [previewRows, selectedRowLinesSet, setData, userType]);
 
     useEffect(() => {
         if (!open) {
@@ -244,9 +270,15 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
             .filter((line) => line.length > 0);
 
         if (lines.length <= 1) {
-            setFileError('CSV file must include a header row and at least one user row.');
+            setFileError('CSV file must include a header row and at least one row.');
             return;
         }
+
+        const requiredHeaders = userType === 'student'
+            ? (['last_name', 'first_name', 'program', 'password'] as const)
+            : userType === 'faculty'
+                ? (['last_name', 'first_name', 'email', 'role'] as const)
+                : (['last_name', 'first_name', 'email', 'role', 'password'] as const);
 
         const headers = parseCsvLine(lines[0]).map((header) => normalizeHeader(header));
         const headerIndex = headers.reduce<Record<string, number>>((accumulator, header, index) => {
@@ -266,12 +298,6 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
             const values = parseCsvLine(line);
             const firstName = values[headerIndex.first_name] ?? '';
             const lastName = values[headerIndex.last_name] ?? '';
-            const email = values[headerIndex.email] ?? '';
-            const rawRoleValue = values[headerIndex.role] ?? '';
-            const password = values[headerIndex.password] ?? '';
-            const rawStatus = values[headerIndex.status] ?? 'active';
-            const statusValue = rawStatus.toLowerCase() as UserStatus;
-            const parsedRoles = parseRoles(rawRoleValue);
             const issues: string[] = [];
 
             if (lastName === '') {
@@ -282,6 +308,34 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                 issues.push('First name is required.');
             }
 
+            if (userType === 'student') {
+                const rawProgram = (values[headerIndex.program] ?? '').toUpperCase();
+                const password = values[headerIndex.password] ?? '';
+
+                if (!studentPrograms.includes(rawProgram as StudentProgram)) {
+                    issues.push('Program must be BSIT or BSIS.');
+                }
+
+                if (password.length < 8) {
+                    issues.push('Password must be at least 8 characters.');
+                }
+
+                return {
+                    line: lineIndex + 2,
+                    first_name: firstName,
+                    last_name: lastName,
+                    program: studentPrograms.includes(rawProgram as StudentProgram) ? (rawProgram as StudentProgram) : undefined,
+                    password,
+                    issues,
+                };
+            }
+
+            const email = values[headerIndex.email] ?? '';
+            const rawRoleValue = values[headerIndex.role] ?? '';
+            const parsedRoles = parseRoles(rawRoleValue);
+            const rawStatus = values[headerIndex.status] ?? 'active';
+            const statusValue = rawStatus.toLowerCase() as UserStatus;
+
             if (email === '') {
                 issues.push('Email is required.');
             } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -289,14 +343,15 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
             } else if (emailTracker.has(email.toLowerCase())) {
                 issues.push('Duplicate email in CSV.');
             } else if (existingUserEmails.has(email.toLowerCase())) {
-                issues.push('User email already exists in the table.');
+                issues.push('Email already exists in this table.');
             }
 
+            const allowedRoles = userType === 'faculty' ? availableFacultyRoles : availableRoles;
             if (parsedRoles.roles.length === 0) {
                 issues.push('At least one role is required.');
             }
 
-            if (parsedRoles.hasInvalidRole) {
+            if (parsedRoles.hasInvalidRole || parsedRoles.roles.some((role) => !allowedRoles.includes(role as never))) {
                 issues.push('One or more roles are invalid.');
             }
 
@@ -304,8 +359,13 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                 issues.push('Status is invalid.');
             }
 
-            if (password.length < 8) {
-                issues.push('Password must be at least 8 characters.');
+            let password: string | undefined;
+            if (userType === 'user') {
+                password = values[headerIndex.password] ?? '';
+
+                if (password.length < 8) {
+                    issues.push('Password must be at least 8 characters.');
+                }
             }
 
             emailTracker.add(email.toLowerCase());
@@ -366,19 +426,33 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
             return;
         }
 
-        post(bulkStore.url(), {
-            preserveScroll: true,
-            preserveState: false,
-            onSuccess: () => {
-                clearUploadState();
-                onClose();
+        post(
+            bulkStore.url({
+                query: {
+                    type: userType,
+                },
+            }),
+            {
+                preserveScroll: true,
+                preserveState: false,
+                onSuccess: () => {
+                    clearUploadState();
+                    onClose();
+                },
             },
-        });
+        );
     };
 
     if (!open || typeof document === 'undefined') {
         return null;
     }
+
+    const uploadLabel = userType === 'student' ? 'Bulk Upload Students' : userType === 'faculty' ? 'Bulk Upload Faculty' : 'Bulk Upload Users';
+    const csvGuide = userType === 'student'
+        ? 'Last Name, First Name, Program, Password'
+        : userType === 'faculty'
+            ? 'Last Name, First Name, Email, Role, and optionally Status'
+            : 'Last Name, First Name, Email, Role, Password, and optionally Status';
 
     return createPortal(
         <>
@@ -403,7 +477,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                     <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                         <div className="flex items-center gap-2">
                             <Upload className="h-5 w-5 text-emerald-800" />
-                            <h2 className="text-lg font-bold text-emerald-900">Bulk Upload Users</h2>
+                            <h2 className="text-lg font-bold text-emerald-900">{uploadLabel}</h2>
                         </div>
                         <button
                             type="button"
@@ -419,9 +493,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
                             Upload a CSV file with headers:
                             <br />
-                            <span className="font-semibold">Last Name, First Name, Email, Role, Password, and optionally Status.</span>
-                            <br />
-                            Use commas in the Role column for multiple roles (example: Adviser, Panelist, Instructor).
+                            <span className="font-semibold">{csvGuide}</span>
                         </div>
 
                         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
@@ -503,19 +575,21 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [] }: BulkUploadModalP
                                         <tr className="text-left text-slate-700">
                                             <th className="px-3 py-2 font-semibold">Last Name</th>
                                             <th className="px-3 py-2 font-semibold">First Name</th>
-                                            <th className="px-3 py-2 font-semibold">Email</th>
-                                            <th className="px-3 py-2 font-semibold">Roles</th>
+                                            {userType === 'student' ? <th className="px-3 py-2 font-semibold">Program</th> : null}
+                                            {userType !== 'student' ? <th className="px-3 py-2 font-semibold">Email</th> : null}
+                                            {userType !== 'student' ? <th className="px-3 py-2 font-semibold">Roles</th> : null}
                                             <th className="px-3 py-2 font-semibold">Issues</th>
                                             <th className="px-3 py-2 font-semibold">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {previewRows.map((row) => (
-                                            <tr key={`${row.line}-${row.email}`} className={row.issues.length > 0 ? 'bg-rose-50' : ''}>
+                                            <tr key={`${row.line}-${row.first_name}-${row.last_name}`} className={row.issues.length > 0 ? 'bg-rose-50' : ''}>
                                                 <td className="px-3 py-2">{row.last_name}</td>
                                                 <td className="px-3 py-2">{row.first_name}</td>
-                                                <td className="px-3 py-2">{row.email}</td>
-                                                <td className="px-3 py-2 capitalize">{row.roles.join(', ').replaceAll('_', ' ')}</td>
+                                                {userType === 'student' ? <td className="px-3 py-2">{row.program ?? '-'}</td> : null}
+                                                {userType !== 'student' ? <td className="px-3 py-2">{row.email}</td> : null}
+                                                {userType !== 'student' ? <td className="px-3 py-2 capitalize">{(row.roles ?? []).join(', ').replaceAll('_', ' ')}</td> : null}
                                                 <td className="px-3 py-2">
                                                     {row.issues.length > 0 ? (
                                                         <ul className="list-disc pl-4 text-xs text-rose-700">

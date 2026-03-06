@@ -2,10 +2,10 @@ import { usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Settings, Shield, User } from 'lucide-react';
 import { useState } from 'react';
-import InstructorLayout from './_layout';
-import PasswordManager from '@/components/Settings/PasswordManager';
 import ESignature from '@/components/Settings/ESignature';
+import PasswordManager from '@/components/Settings/PasswordManager';
 import ProfileCard from '@/components/Settings/ProfileCard';
+import InstructorLayout from './_layout';
 
 type InstructorUser = {
     id?: number | string;

@@ -17,7 +17,13 @@ export default function LoginPage() {
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        post('/login');
+        post('/login', {
+            onSuccess: () => {
+                if (data.role === 'student') {
+                    window.location.href = '/student/dashboard';
+                }
+            },
+        });
     };
 
     const roles = ROLE_OPTIONS;

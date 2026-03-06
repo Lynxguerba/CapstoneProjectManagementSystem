@@ -3,64 +3,61 @@ import { Filter, Search, Settings, Upload } from 'lucide-react';
 import React from 'react';
 import AddUserModal from '../../components/Admin/AddUserModal';
 import BulkUploadModal from '../../components/Admin/BulkUploadModal';
-import ManageUserActionModal from '../../components/Admin/ManageUserActionModal';
 import AdminLayout from './_layout';
 
-type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
+type FacultyRole = 'admin' | 'faculty';
 type UserStatus = 'active' | 'inactive';
 
-type UserRow = {
+type FacultyRow = {
     id: number;
     firstName: string;
     lastName: string;
     fullName: string;
     email: string;
-    role: UserRole;
-    roles: UserRole[];
+    role: FacultyRole;
+    roles: FacultyRole[];
     status: UserStatus;
     createdAt: string;
 };
 
 type AdminFacultyProps = {
-    users?: UserRow[];
+    faculties?: FacultyRow[];
     filters?: {
         search?: string;
-        role?: UserRole | 'all';
+        role?: FacultyRole | 'all';
     };
 };
 
-const facultyRoleOptions: Array<UserRole | 'all'> = ['all', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
+const facultyRoleOptions: Array<FacultyRole | 'all'> = ['all', 'admin', 'faculty'];
 
-const AdminFaculty = ({ users = [], filters }: AdminFacultyProps) => {
-    const initialUsers = React.useMemo(() => {
-        return Array.isArray(users) ? users : [];
-    }, [users]);
+const AdminFaculty = ({ faculties = [], filters }: AdminFacultyProps) => {
+    const initialFaculties = React.useMemo(() => {
+        return Array.isArray(faculties) ? faculties : [];
+    }, [faculties]);
 
-    const [managedUsers, setManagedUsers] = React.useState<UserRow[]>(initialUsers);
+    const [managedFaculties, setManagedFaculties] = React.useState<FacultyRow[]>(initialFaculties);
     const [search, setSearch] = React.useState(filters?.search ?? '');
-    const [role, setRole] = React.useState<UserRole | 'all'>(filters?.role ?? 'all');
+    const [role, setRole] = React.useState<FacultyRole | 'all'>(filters?.role ?? 'all');
     const [isAddUserModalOpen, setIsAddUserModalOpen] = React.useState(false);
     const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = React.useState(false);
-    const [isManageUserModalOpen, setIsManageUserModalOpen] = React.useState(false);
-    const [selectedUser, setSelectedUser] = React.useState<UserRow | null>(null);
     const [currentPage, setCurrentPage] = React.useState(1);
     const usersPerPage = 10;
 
     React.useEffect(() => {
-        setManagedUsers(initialUsers);
+        setManagedFaculties(initialFaculties);
         setCurrentPage(1);
-    }, [initialUsers]);
+    }, [initialFaculties]);
 
     const filteredUsers = React.useMemo(() => {
         const query = search.trim().toLowerCase();
 
-        return managedUsers.filter((user) => {
+        return managedFaculties.filter((user) => {
             const matchesQuery = !query || user.fullName.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
             const matchesRole = role === 'all' || user.roles.includes(role);
 
             return matchesQuery && matchesRole;
         });
-    }, [managedUsers, search, role]);
+    }, [managedFaculties, search, role]);
 
     React.useEffect(() => {
         setCurrentPage(1);
@@ -86,22 +83,10 @@ const AdminFaculty = ({ users = [], filters }: AdminFacultyProps) => {
         return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
     }, [currentPage, totalPages]);
 
-    const openManageUserModal = (user: UserRow) => {
-        setSelectedUser(user);
-        setIsManageUserModalOpen(true);
-    };
-
-    const saveManagedUser = (updatedUser: UserRow) => {
-        setManagedUsers((previousUsers) => previousUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user)));
-        setIsManageUserModalOpen(false);
-        setSelectedUser(null);
-    };
-
     return (
-        <AdminLayout title="Faculty Management" subtitle="Manage faculty accounts and their information">
+        <AdminLayout title="Faculty Management" subtitle="Manage faculty records and account details">
             <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
                 <div className="flex items-center justify-between">
-                    {/* Left side: Search and Filter */}
                     <div className="flex items-center gap-3">
                         <div className="relative">
                             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -117,7 +102,7 @@ const AdminFaculty = ({ users = [], filters }: AdminFacultyProps) => {
                             <Filter className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <select
                                 value={role}
-                                onChange={(event) => setRole(event.target.value as UserRole | 'all')}
+                                onChange={(event) => setRole(event.target.value as FacultyRole | 'all')}
                                 className="w-40 rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm capitalize focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                             >
                                 {facultyRoleOptions.map((option) => (
@@ -129,7 +114,6 @@ const AdminFaculty = ({ users = [], filters }: AdminFacultyProps) => {
                         </div>
                     </div>
 
-                    {/* Right side: Action Buttons */}
                     <div className="flex items-center gap-3">
                         <button
                             type="button"
@@ -158,7 +142,7 @@ const AdminFaculty = ({ users = [], filters }: AdminFacultyProps) => {
                                 <th className="px-6 py-3 font-semibold">Roles</th>
                                 <th className="px-6 py-3 font-semibold">Status</th>
                                 <th className="px-6 py-3 font-semibold">Created</th>
-                                <th className="px-6 py-3 text-right font-semibold">Actions</th>
+                                <th className="px-6 py-3 text-right font-semibold">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -182,10 +166,10 @@ const AdminFaculty = ({ users = [], filters }: AdminFacultyProps) => {
                                     <td className="px-6 py-3 text-right">
                                         <button
                                             type="button"
-                                            onClick={() => openManageUserModal(user)}
-                                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-300"
+                                            className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
                                         >
-                                            <Settings className="h-4 w-4" />
+                                            <Settings className="h-3 w-3" />
+                                            Manage
                                         </button>
                                     </td>
                                 </tr>
@@ -263,17 +247,8 @@ const AdminFaculty = ({ users = [], filters }: AdminFacultyProps) => {
                     </div>
                 )}
             </motion.section>
-            <AddUserModal open={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} />
-            <BulkUploadModal open={isBulkUploadModalOpen} onClose={() => setIsBulkUploadModalOpen(false)} existingUsers={managedUsers} />
-            <ManageUserActionModal
-                open={isManageUserModalOpen}
-                user={selectedUser}
-                onClose={() => {
-                    setIsManageUserModalOpen(false);
-                    setSelectedUser(null);
-                }}
-                onSave={saveManagedUser}
-            />
+            <AddUserModal open={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} userType="faculty" />
+            <BulkUploadModal open={isBulkUploadModalOpen} onClose={() => setIsBulkUploadModalOpen(false)} existingUsers={managedFaculties} userType="faculty" />
         </AdminLayout>
     );
 };

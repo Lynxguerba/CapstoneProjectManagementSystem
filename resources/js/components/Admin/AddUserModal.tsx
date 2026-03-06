@@ -5,34 +5,44 @@ import { createPortal } from 'react-dom';
 import { store } from '../../routes/admin/users';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
+type FacultyRole = 'admin' | 'faculty';
 type UserStatus = 'active' | 'inactive';
+type StudentProgram = 'BSIT' | 'BSIS';
+type EntityType = 'user' | 'faculty' | 'student';
 
 type AddUserModalProps = {
     open: boolean;
     onClose: () => void;
     availableRoles?: UserRole[];
+    userType?: EntityType;
 };
 
 type AddUserForm = {
     first_name: string;
     last_name: string;
     email: string;
-    roles: UserRole[];
+    roles: string[];
     status: UserStatus;
     password: string;
+    program: StudentProgram;
 };
 
 const defaultRoles: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
+const facultyRoles: FacultyRole[] = ['admin', 'faculty'];
 
-const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserModalProps) => {
+const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType = 'user' }: AddUserModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
+    const roleOptions = userType === 'faculty' ? facultyRoles : availableRoles;
+    const initialRole = roleOptions[0] ?? 'student';
+
     const addUserForm = useForm<AddUserForm>({
         first_name: '',
         last_name: '',
         email: '',
-        roles: [availableRoles[0] ?? 'student'],
+        roles: [initialRole],
         status: 'active',
         password: '',
+        program: 'BSIT',
     });
 
     useEffect(() => {
@@ -72,26 +82,40 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
         };
     }, [open]);
 
+    useEffect(() => {
+        addUserForm.setData('roles', [initialRole]);
+    }, [addUserForm, initialRole]);
+
     const submitForm = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        addUserForm.post(store.url(), {
-            preserveScroll: true,
-            preserveState: false,
-            onSuccess: () => {
-                addUserForm.reset();
-                onClose();
+        addUserForm.post(
+            store.url({
+                query: {
+                    type: userType,
+                },
+            }),
+            {
+                preserveScroll: true,
+                preserveState: false,
+                onSuccess: () => {
+                    addUserForm.reset();
+                    addUserForm.setData('program', 'BSIT');
+                    addUserForm.setData('roles', [initialRole]);
+                    onClose();
+                },
             },
-        });
+        );
     };
 
-    const toggleRole = (role: UserRole) => {
+    const toggleRole = (role: string) => {
         addUserForm.setData('roles',
             addUserForm.data.roles.includes(role)
                 ? addUserForm.data.roles.filter((assignedRole) => assignedRole !== role)
                 : [...addUserForm.data.roles, role],
         );
     };
+
     const formErrors = addUserForm.errors as Record<string, string | undefined>;
     const roleError =
         addUserForm.errors.roles ??
@@ -99,13 +123,12 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
         formErrors['roles.1'] ??
         formErrors['roles.2'];
 
-    if (!open) {
+    if (!open || typeof document === 'undefined') {
         return null;
     }
 
-    if (typeof document === 'undefined') {
-        return null;
-    }
+    const modalTitle = userType === 'student' ? 'Add Student' : userType === 'faculty' ? 'Add Faculty' : 'Add User';
+    const submitLabel = userType === 'student' ? 'Create Student' : userType === 'faculty' ? 'Create Faculty' : 'Create User';
 
     return createPortal(
         <div
@@ -129,7 +152,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
                 <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                     <div className="flex items-center gap-2">
                         <UserPlus className="h-5 w-5 text-emerald-800" />
-                        <h2 className="text-lg font-bold text-emerald-900">Add User</h2>
+                        <h2 className="text-lg font-bold text-emerald-900">{modalTitle}</h2>
                     </div>
                     <button
                         type="button"
@@ -165,60 +188,93 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
                         </div>
                     </div>
 
-                    <div>
-                        <label className="text-sm font-semibold text-slate-700">Email</label>
-                        <input
-                            type="email"
-                            value={addUserForm.data.email}
-                            onChange={(event) => addUserForm.setData('email', event.target.value)}
-                            placeholder="user@campus.edu"
-                            className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                        />
-                        {addUserForm.errors.email ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.email}</p> : null}
-                    </div>
+                    {userType === 'student' ? (
+                        <>
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700">Program</label>
+                                <select
+                                    value={addUserForm.data.program}
+                                    onChange={(event) => addUserForm.setData('program', event.target.value as StudentProgram)}
+                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                >
+                                    <option value="BSIT">BSIT</option>
+                                    <option value="BSIS">BSIS</option>
+                                </select>
+                                {addUserForm.errors.program ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.program}</p> : null}
+                            </div>
 
-                    <div>
-                        <label className="text-sm font-semibold text-slate-700">Roles</label>
-                        <div className="mt-1.5 grid grid-cols-1 gap-2 rounded-xl border border-slate-300 bg-slate-50 p-3 sm:grid-cols-2">
-                            {availableRoles.map((role) => (
-                                <label key={role} className="flex items-center gap-2 text-sm text-slate-700">
-                                    <input
-                                        type="checkbox"
-                                        checked={addUserForm.data.roles.includes(role)}
-                                        onChange={() => toggleRole(role)}
-                                        className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                    />
-                                    <span className="capitalize">{role.replaceAll('_', ' ')}</span>
-                                </label>
-                            ))}
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700">Password</label>
+                                <input
+                                    type="password"
+                                    value={addUserForm.data.password}
+                                    onChange={(event) => addUserForm.setData('password', event.target.value)}
+                                    placeholder="At least 8 characters"
+                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                />
+                                {addUserForm.errors.password ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.password}</p> : null}
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700">Email</label>
+                                <input
+                                    type="email"
+                                    value={addUserForm.data.email}
+                                    onChange={(event) => addUserForm.setData('email', event.target.value)}
+                                    placeholder="user@campus.edu"
+                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                />
+                                {addUserForm.errors.email ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.email}</p> : null}
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700">Roles</label>
+                                <div className="mt-1.5 grid grid-cols-1 gap-2 rounded-xl border border-slate-300 bg-slate-50 p-3 sm:grid-cols-2">
+                                    {roleOptions.map((role) => (
+                                        <label key={role} className="flex items-center gap-2 text-sm text-slate-700">
+                                            <input
+                                                type="checkbox"
+                                                checked={addUserForm.data.roles.includes(role)}
+                                                onChange={() => toggleRole(role)}
+                                                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                            />
+                                            <span className="capitalize">{role.replaceAll('_', ' ')}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                                {roleError ? <p className="mt-1 text-xs text-rose-600">{roleError}</p> : null}
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700">Status</label>
+                                <select
+                                    value={addUserForm.data.status}
+                                    onChange={(event) => addUserForm.setData('status', event.target.value as UserStatus)}
+                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                >
+                                    <option value="active">active</option>
+                                    <option value="inactive">inactive</option>
+                                </select>
+                                {addUserForm.errors.status ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.status}</p> : null}
+                            </div>
+                        </>
+                    )}
+
+                    {userType === 'user' ? (
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700">Temporary password</label>
+                            <input
+                                type="password"
+                                value={addUserForm.data.password}
+                                onChange={(event) => addUserForm.setData('password', event.target.value)}
+                                placeholder="At least 8 characters"
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            />
+                            {addUserForm.errors.password ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.password}</p> : null}
                         </div>
-                        {roleError ? <p className="mt-1 text-xs text-rose-600">{roleError}</p> : null}
-                    </div>
-
-                    <div>
-                        <label className="text-sm font-semibold text-slate-700">Status</label>
-                        <select
-                            value={addUserForm.data.status}
-                            onChange={(event) => addUserForm.setData('status', event.target.value as UserStatus)}
-                            className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                        >
-                            <option value="active">active</option>
-                            <option value="inactive">inactive</option>
-                        </select>
-                        {addUserForm.errors.status ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.status}</p> : null}
-                    </div>
-
-                    <div>
-                        <label className="text-sm font-semibold text-slate-700">Temporary password</label>
-                        <input
-                            type="password"
-                            value={addUserForm.data.password}
-                            onChange={(event) => addUserForm.setData('password', event.target.value)}
-                            placeholder="At least 8 characters"
-                            className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                        />
-                        {addUserForm.errors.password ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.password}</p> : null}
-                    </div>
+                    ) : null}
 
                     <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
                         <button
@@ -234,7 +290,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles }: AddUserM
                             disabled={addUserForm.processing}
                             className="rounded-lg bg-emerald-600 px-5 py-2 font-medium text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            {addUserForm.processing ? 'Creating...' : 'Create User'}
+                            {addUserForm.processing ? 'Creating...' : submitLabel}
                         </button>
                     </div>
                 </form>
