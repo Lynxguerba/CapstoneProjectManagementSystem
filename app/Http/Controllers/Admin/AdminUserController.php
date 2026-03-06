@@ -12,9 +12,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -114,7 +112,7 @@ class AdminUserController extends Controller
                 'email' => $validated['email'],
                 'role' => $activeRole,
                 'status' => $validated['status'] ?? 'active',
-                'password' => Hash::make(Str::password(24)),
+                'password' => $validated['password'],
             ]);
 
             $user->syncRoles($roles->all());
@@ -205,6 +203,9 @@ class AdminUserController extends Controller
             'email' => $validated['email'],
             'role' => $activeRole,
             'status' => $validated['status'],
+            'password' => is_string($validated['password'] ?? null) && $validated['password'] !== ''
+                ? $validated['password']
+                : $user->password,
         ]);
 
         $user->syncRoles($roles->all());
@@ -244,7 +245,7 @@ class AdminUserController extends Controller
                     'email' => $row['email'],
                     'role' => $activeRole,
                     'status' => $row['status'] ?? 'active',
-                    'password' => Hash::make(Str::password(24)),
+                    'password' => (string) $row['password'],
                 ]);
 
                 $user->syncRoles($roles->all());
