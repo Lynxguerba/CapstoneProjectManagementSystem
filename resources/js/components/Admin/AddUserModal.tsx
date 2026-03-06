@@ -32,6 +32,7 @@ const facultyRoles: FacultyRole[] = ['admin', 'adviser', 'instructor', 'panelist
 
 const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType = 'user' }: AddUserModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
+    const hasInitializedRolesRef = React.useRef(false);
     const roleOptions = userType === 'faculty' ? facultyRoles : availableRoles;
     const initialRole = roleOptions[0] ?? 'student';
 
@@ -83,8 +84,18 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
     }, [open]);
 
     useEffect(() => {
+        if (!open) {
+            hasInitializedRolesRef.current = false;
+            return;
+        }
+
+        if (hasInitializedRolesRef.current) {
+            return;
+        }
+
         addUserForm.setData('roles', [initialRole]);
-    }, [addUserForm, initialRole]);
+        hasInitializedRolesRef.current = true;
+    }, [open, initialRole, addUserForm]);
 
     const submitForm = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
