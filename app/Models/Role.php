@@ -64,6 +64,7 @@ class Role extends Model
 
         $aliases = [
             'advisor' => 'adviser',
+            'instructo' => 'instructor',
             'program_chair' => 'program_chairperson',
             'programchair' => 'program_chairperson',
         ];

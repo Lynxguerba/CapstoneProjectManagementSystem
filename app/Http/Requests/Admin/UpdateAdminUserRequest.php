@@ -30,10 +30,10 @@ class UpdateAdminUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $programRules = ['nullable', 'string', Rule::exists('programs', 'code')];
+        $programRules = ['nullable', 'string', Rule::in(['BSIT', 'BSIS'])];
 
         if ($this->query('from') === 'student') {
-            $programRules = ['required', 'string', Rule::exists('programs', 'code')];
+            $programRules = ['required', 'string', Rule::in(['BSIT', 'BSIS'])];
         }
 
         return [
@@ -59,7 +59,7 @@ class UpdateAdminUserRequest extends FormRequest
             'roles.*.in' => 'One or more selected roles are invalid.',
             'status.in' => 'The selected status is invalid.',
             'program.required' => 'Program is required for student records.',
-            'program.exists' => 'Selected program is invalid.',
+            'program.in' => 'Program must be BSIT or BSIS.',
         ];
     }
 }

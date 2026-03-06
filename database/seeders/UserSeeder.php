@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Program;
+use App\Models\StudentProgram;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -15,8 +15,6 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $roles = ['admin', 'student', 'adviser', 'panelist', 'instructor', 'dean', 'program_chairperson'];
-        $bsitProgramId = Program::query()->where('code', 'BSIT')->value('id');
-
         foreach ($roles as $role) {
             $displayName = str($role)->replace('_', ' ')->title()->toString().' User';
             $firstName = str($role)->replace('_', ' ')->title()->toString();
@@ -31,11 +29,19 @@ class UserSeeder extends Seeder
                     'password' => Hash::make('password'),
                     'role' => $role,
                     'status' => 'active',
-                    'program_id' => $role === 'student' ? $bsitProgramId : null,
                 ]
             );
 
             $user->syncRoles([$role]);
+
+            if ($role === 'student') {
+                StudentProgram::query()->updateOrCreate(
+                    ['student_id' => $user->id],
+                    ['program' => 'BSIT']
+                );
+            } else {
+                $user->studentProgram()->delete();
+            }
         }
     }
 }

@@ -58,7 +58,7 @@ class StoreAdminUserRequest extends FormRequest
                 'first_name' => ['required', 'string', 'max:255'],
                 'last_name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-                'program' => ['required', 'string', Rule::exists('programs', 'code')],
+                'program' => ['required', 'string', Rule::in(['BSIT', 'BSIS'])],
                 'password' => ['required', 'string', 'min:8', 'max:255'],
                 'status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             ];
@@ -72,7 +72,7 @@ class StoreAdminUserRequest extends FormRequest
             'roles.*' => ['required', 'string', Rule::in(Role::slugs())],
             'status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             'password' => ['required', 'string', 'min:8', 'max:255'],
-            'program' => ['nullable', 'string', Rule::exists('programs', 'code')],
+            'program' => ['nullable', 'string', Rule::in(['BSIT', 'BSIS'])],
         ];
     }
 
@@ -86,7 +86,7 @@ class StoreAdminUserRequest extends FormRequest
         if ($entityType === 'student') {
             return [
                 'program.required' => 'Program is required.',
-                'program.exists' => 'Selected program is invalid.',
+                'program.in' => 'Program must be BSIT or BSIS.',
                 'email.required' => 'Email is required.',
                 'email.email' => 'Email must be a valid email address.',
                 'email.unique' => 'This student email is already in use.',
@@ -102,7 +102,7 @@ class StoreAdminUserRequest extends FormRequest
             'roles.min' => 'At least one role is required.',
             'roles.*.in' => 'One or more selected roles are invalid.',
             'status.in' => 'The selected status is invalid.',
-            'program.exists' => 'Selected program is invalid.',
+            'program.in' => 'Program must be BSIT or BSIS.',
         ];
     }
 }

@@ -4,7 +4,6 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -28,7 +27,6 @@ class User extends Authenticatable
         'password',
         'role',
         'status',
-        'program_id',
     ];
 
     /**
@@ -59,14 +57,14 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class);
     }
 
-    public function program(): BelongsTo
-    {
-        return $this->belongsTo(Program::class);
-    }
-
     public function eSignature(): HasOne
     {
         return $this->hasOne(ESignature::class);
+    }
+
+    public function studentProgram(): HasOne
+    {
+        return $this->hasOne(StudentProgram::class, 'student_id');
     }
 
     public function hasRole(string $role): bool
@@ -77,15 +75,30 @@ class User extends Authenticatable
             return false;
         }
 
-        if ($this->relationLoaded('roles')) {
-            return $this->roles->contains(fn (Role $assignedRole): bool => $assignedRole->slug === $normalizedRole);
-        }
+        $assignedRoles = $this->relationLoaded('roles')
+            ? $this->roles->pluck('slug')->all()
+            : $this->roles()->pluck('slug')->all();
 
-        if ($this->roles()->where('slug', $normalizedRole)->exists()) {
+        $hasAssignedRole = collect($assignedRoles)
+            ->map(fn (string $assignedRole): ?string => Role::normalizeRole($assignedRole))
+            ->filter()
+            ->contains($normalizedRole);
+
+        if ($hasAssignedRole) {
             return true;
         }
 
-        return $this->role === $normalizedRole;
+        $legacyRoles = collect(explode(',', (string) $this->role))
+            ->map(fn (string $legacyRole): ?string => Role::normalizeRole($legacyRole))
+            ->filter()
+            ->values()
+            ->all();
+
+        if (count($legacyRoles) > 0) {
+            return in_array($normalizedRole, $legacyRoles, true);
+        }
+
+        return Role::normalizeRole((string) $this->role) === $normalizedRole;
     }
 
     /**

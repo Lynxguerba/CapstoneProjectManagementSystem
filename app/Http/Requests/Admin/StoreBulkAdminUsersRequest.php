@@ -62,7 +62,7 @@ class StoreBulkAdminUsersRequest extends FormRequest
                 'rows.*.first_name' => ['required', 'string', 'max:255'],
                 'rows.*.last_name' => ['required', 'string', 'max:255'],
                 'rows.*.email' => ['required', 'string', 'email', 'max:255', 'distinct', 'unique:users,email'],
-                'rows.*.program' => ['required', 'string', Rule::exists('programs', 'code')],
+                'rows.*.program' => ['required', 'string', Rule::in(['BSIT', 'BSIS'])],
                 'rows.*.password' => ['required', 'string', 'min:8', 'max:255'],
                 'rows.*.status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             ];
@@ -77,7 +77,7 @@ class StoreBulkAdminUsersRequest extends FormRequest
             'rows.*.roles.*' => ['required', 'string', Rule::in(Role::slugs())],
             'rows.*.status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             'rows.*.password' => ['required', 'string', 'min:8', 'max:255'],
-            'rows.*.program' => ['nullable', 'string', Rule::exists('programs', 'code')],
+            'rows.*.program' => ['nullable', 'string', Rule::in(['BSIT', 'BSIS'])],
         ];
     }
 
@@ -96,7 +96,7 @@ class StoreBulkAdminUsersRequest extends FormRequest
                 'rows.*.email.distinct' => 'Duplicate student emails were found in the uploaded CSV file.',
                 'rows.*.email.unique' => 'One or more student emails already exist.',
                 'rows.*.program.required' => 'Each row must include a program.',
-                'rows.*.program.exists' => 'Selected program is invalid.',
+                'rows.*.program.in' => 'Program must be BSIT or BSIS.',
                 'rows.*.password.required' => 'Each row must include a password.',
                 'rows.*.password.min' => 'Each password must be at least 8 characters.',
                 'rows.*.status.in' => 'Each status must be active or inactive.',
@@ -110,7 +110,7 @@ class StoreBulkAdminUsersRequest extends FormRequest
             'rows.*.roles.required' => 'Each row must include at least one role.',
             'rows.*.roles.*.in' => 'One or more roles are invalid.',
             'rows.*.status.in' => 'One or more statuses are invalid.',
-            'rows.*.program.exists' => 'Selected program is invalid.',
+            'rows.*.program.in' => 'Program must be BSIT or BSIS.',
         ];
     }
 }

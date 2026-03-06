@@ -6,13 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminUserRequest;
 use App\Http\Requests\Admin\StoreBulkAdminUsersRequest;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
-use App\Models\Program;
 use App\Models\Role;
+use App\Models\StudentProgram;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -123,7 +124,6 @@ class AdminUserController extends Controller
 
         if ($entityType === 'student') {
             $name = $this->buildDisplayName($validated['first_name'], $validated['last_name']);
-            $programId = $this->resolveProgramId($validated['program']);
 
             $user = User::query()->create([
                 'name' => $name,
@@ -133,10 +133,10 @@ class AdminUserController extends Controller
                 'role' => 'student',
                 'status' => $validated['status'] ?? 'active',
                 'password' => $validated['password'],
-                'program_id' => $programId,
             ]);
 
             $user->syncRoles(['student']);
+            $this->syncStudentProfile($user, $validated['program'], true);
 
             return redirect()->route('admin.users.students')->with('success', 'Student created successfully.');
         }
@@ -158,10 +158,10 @@ class AdminUserController extends Controller
             'role' => $activeRole,
             'status' => $validated['status'] ?? 'active',
             'password' => $validated['password'],
-            'program_id' => in_array('student', $roles->all(), true) ? $this->resolveProgramId($programCode) : null,
         ]);
 
         $user->syncRoles($roles->all());
+        $this->syncStudentProfile($user, $programCode, in_array('student', $roles->all(), true));
 
         return redirect()->route('admin.users.index')->with('success', 'User account created successfully.');
     }
@@ -193,14 +193,10 @@ class AdminUserController extends Controller
         $activeRole = $roles->first() ?? 'student';
         $name = $this->buildDisplayName($validated['first_name'], $validated['last_name']);
 
-        $programId = null;
-
-        if (in_array('student', $roles->all(), true)) {
-            $programCode = is_string($validated['program'] ?? null)
-                ? $validated['program']
-                : ($user->program?->code);
-            $programId = $this->resolveProgramId($programCode);
-        }
+        $isStudent = in_array('student', $roles->all(), true);
+        $programCode = is_string($validated['program'] ?? null)
+            ? $validated['program']
+            : $user->studentProgram?->program;
 
         $user->update([
             'name' => $name,
@@ -209,10 +205,10 @@ class AdminUserController extends Controller
             'email' => $validated['email'],
             'role' => $activeRole,
             'status' => $validated['status'],
-            'program_id' => $programId,
         ]);
 
         $user->syncRoles($roles->all());
+        $this->syncStudentProfile($user, $programCode, $isStudent);
 
         if ($from === 'faculty') {
             return redirect()->route('admin.users.faculty')->with('success', 'User account updated successfully.');
@@ -260,7 +256,6 @@ class AdminUserController extends Controller
         if ($entityType === 'student') {
             collect($validated['rows'])->each(function (array $row): void {
                 $name = $this->buildDisplayName($row['first_name'], $row['last_name']);
-                $programId = $this->resolveProgramId($row['program']);
 
                 $user = User::query()->create([
                     'name' => $name,
@@ -270,10 +265,10 @@ class AdminUserController extends Controller
                     'role' => 'student',
                     'status' => $row['status'] ?? 'active',
                     'password' => $row['password'],
-                    'program_id' => $programId,
                 ]);
 
                 $user->syncRoles(['student']);
+                $this->syncStudentProfile($user, $row['program'], true);
             });
 
             return redirect()->route('admin.users.students')->with('success', 'Students uploaded successfully.');
@@ -296,10 +291,10 @@ class AdminUserController extends Controller
                 'role' => $activeRole,
                 'status' => $row['status'] ?? 'active',
                 'password' => $row['password'],
-                'program_id' => in_array('student', $roles->all(), true) ? $this->resolveProgramId($row['program'] ?? null) : null,
             ]);
 
             $user->syncRoles($roles->all());
+            $this->syncStudentProfile($user, $row['program'] ?? null, in_array('student', $roles->all(), true));
         });
 
         return redirect()->route('admin.users.index')->with('success', 'Users uploaded successfully.');
@@ -310,37 +305,57 @@ class AdminUserController extends Controller
         $filters = [
             'search' => $request->string('search')->toString(),
         ];
+        $hasStudentProgramTable = $this->hasStudentProgramTable();
 
-        $students = User::query()
-            ->with(['roles:id,slug', 'program:id,code,name'])
-            ->where(function (Builder $query) {
+        $studentsQuery = User::query()
+            ->where(function (Builder $query): void {
                 $query
                     ->where('role', 'student')
-                    ->orWhereHas('roles', function (Builder $roleQuery) {
+                    ->orWhereHas('roles', function (Builder $roleQuery): void {
                         $roleQuery->where('slug', 'student');
                     });
-            })
-            ->when($filters['search'] !== '', function (Builder $query) use ($filters) {
-                $query->where(function (Builder $innerQuery) use ($filters) {
-                    $innerQuery
-                        ->where('first_name', 'like', '%'.$filters['search'].'%')
-                        ->orWhere('last_name', 'like', '%'.$filters['search'].'%')
-                        ->orWhere('name', 'like', '%'.$filters['search'].'%')
-                        ->orWhere('email', 'like', '%'.$filters['search'].'%')
-                        ->orWhereHas('program', function (Builder $programQuery) use ($filters) {
-                            $programQuery
-                                ->where('code', 'like', '%'.$filters['search'].'%')
-                                ->orWhere('name', 'like', '%'.$filters['search'].'%');
-                        });
+            });
+
+        if ($hasStudentProgramTable) {
+            $studentsQuery
+                ->with(['roles:id,slug', 'studentProgram:id,student_id,program'])
+                ->when($filters['search'] !== '', function (Builder $query) use ($filters): void {
+                    $query->where(function (Builder $innerQuery) use ($filters): void {
+                        $innerQuery
+                            ->where('first_name', 'like', '%'.$filters['search'].'%')
+                            ->orWhere('last_name', 'like', '%'.$filters['search'].'%')
+                            ->orWhere('name', 'like', '%'.$filters['search'].'%')
+                            ->orWhere('email', 'like', '%'.$filters['search'].'%')
+                            ->orWhereHas('studentProgram', function (Builder $programQuery) use ($filters): void {
+                                $programQuery->where('program', 'like', '%'.$filters['search'].'%');
+                            });
+                    });
                 });
-            })
+        } else {
+            $studentsQuery
+                ->with('roles:id,slug')
+                ->when($filters['search'] !== '', function (Builder $query) use ($filters): void {
+                    $query->where(function (Builder $innerQuery) use ($filters): void {
+                        $innerQuery
+                            ->where('first_name', 'like', '%'.$filters['search'].'%')
+                            ->orWhere('last_name', 'like', '%'.$filters['search'].'%')
+                            ->orWhere('name', 'like', '%'.$filters['search'].'%')
+                            ->orWhere('email', 'like', '%'.$filters['search'].'%');
+                    });
+                });
+        }
+
+        $students = $studentsQuery
             ->orderByDesc('users.created_at')
             ->get(['id', 'name', 'first_name', 'last_name', 'email', 'status', 'created_at'])
-            ->map(function (User $student): array {
+            ->map(function (User $student) use ($hasStudentProgramTable): array {
                 $firstName = is_string($student->first_name) ? trim($student->first_name) : '';
                 $lastName = is_string($student->last_name) ? trim($student->last_name) : '';
                 $fullName = $this->buildFullName($firstName, $lastName, $student->name);
                 $status = is_string($student->status) && $student->status !== '' ? $student->status : 'active';
+                $program = $hasStudentProgramTable
+                    ? $student->studentProgram?->program
+                    : null;
 
                 return [
                     'id' => $student->id,
@@ -348,7 +363,7 @@ class AdminUserController extends Controller
                     'lastName' => $lastName,
                     'fullName' => $fullName,
                     'email' => $student->email,
-                    'program' => $student->program?->code ?? 'BSIT',
+                    'program' => $program,
                     'status' => $status,
                     'createdAt' => $student->created_at?->format('Y-m-d') ?? '',
                 ];
@@ -438,15 +453,44 @@ class AdminUserController extends Controller
         ]);
     }
 
-    private function resolveProgramId(?string $programCode): ?int
+    private function normalizeStudentProgram(?string $programCode): ?string
     {
         if (! is_string($programCode) || trim($programCode) === '') {
             return null;
         }
 
-        return Program::query()
-            ->where('code', trim($programCode))
-            ->value('id');
+        $normalizedCode = strtoupper(trim($programCode));
+
+        if (! in_array($normalizedCode, ['BSIT', 'BSIS'], true)) {
+            return null;
+        }
+
+        return $normalizedCode;
+    }
+
+    private function syncStudentProfile(User $user, ?string $programCode, bool $isStudent): void
+    {
+        if (! $this->hasStudentProgramTable()) {
+            return;
+        }
+
+        if (! $isStudent) {
+            $user->studentProgram()->delete();
+
+            return;
+        }
+
+        $resolvedProgram = $this->normalizeStudentProgram($programCode) ?? 'BSIT';
+
+        StudentProgram::query()->updateOrCreate(
+            ['student_id' => $user->id],
+            ['program' => $resolvedProgram]
+        );
+    }
+
+    private function hasStudentProgramTable(): bool
+    {
+        return Schema::hasTable('student_program');
     }
 
     private function buildDisplayName(string $firstName, string $lastName): string

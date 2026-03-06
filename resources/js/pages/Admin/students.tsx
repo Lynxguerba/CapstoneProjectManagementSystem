@@ -17,21 +17,59 @@ type StudentRow = {
     lastName: string;
     fullName: string;
     email?: string;
-    program: StudentProgram;
+    program?: StudentProgram;
     status: StudentStatus;
     createdAt: string;
 };
 
+type RawStudentRow = Omit<StudentRow, 'program'> & {
+    program?: unknown;
+};
+
 type AdminStudentsProps = {
-    students?: StudentRow[];
+    students?: RawStudentRow[];
     filters?: {
         search?: string;
     };
 };
 
+const normalizeProgramCode = (value: unknown): StudentProgram | undefined => {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+
+    const normalizedProgram = value.trim().toUpperCase();
+
+    if (normalizedProgram === 'BSIT' || normalizedProgram === 'BSIS') {
+        return normalizedProgram;
+    }
+
+    return undefined;
+};
+
+const resolveStudentProgram = (student: RawStudentRow): StudentProgram | undefined => {
+    const directProgram = normalizeProgramCode(student.program);
+    if (directProgram !== undefined) {
+        return directProgram;
+    }
+
+    if (student.program !== null && typeof student.program === 'object' && 'code' in student.program) {
+        return normalizeProgramCode(student.program.code);
+    }
+
+    return undefined;
+};
+
 const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
     const initialStudents = React.useMemo(() => {
-        return Array.isArray(students) ? students : [];
+        if (!Array.isArray(students)) {
+            return [];
+        }
+
+        return students.map((student) => ({
+            ...student,
+            program: resolveStudentProgram(student),
+        }));
     }, [students]);
 
     const [managedStudents, setManagedStudents] = React.useState<StudentRow[]>(initialStudents);
@@ -54,10 +92,11 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
         const query = search.trim().toLowerCase();
 
         return managedStudents.filter((user) => {
+            const programCode = (user.program ?? '').toLowerCase();
             const matchesQuery =
                 !query ||
                 user.fullName.toLowerCase().includes(query) ||
-                user.program.toLowerCase().includes(query) ||
+                programCode.includes(query) ||
                 (user.email ?? '').toLowerCase().includes(query);
             const matchesProgram = program === 'all' || user.program === program;
             const matchesStatus = status === 'all' || user.status === status;
@@ -177,7 +216,7 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                 <tr key={user.id} className="transition-colors hover:bg-slate-50">
                                     <td className="px-6 py-3 font-medium text-slate-900">{user.fullName}</td>
                                     <td className="px-6 py-3 text-slate-600">{user.email ?? 'N/A'}</td>
-                                    <td className="px-6 py-3 text-slate-700">{user.program || 'N/A'}</td>
+                                    <td className="px-6 py-3 text-slate-700">{user.program ?? 'Not Assigned'}</td>
                                     <td className="px-6 py-3">
                                         <span
                                             className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${
