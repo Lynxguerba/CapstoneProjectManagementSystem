@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Search, Settings, Upload } from 'lucide-react';
+import { Filter, Search, Settings, Upload } from 'lucide-react';
 import React from 'react';
 import AddUserModal from '../../components/Admin/AddUserModal';
 import BulkUploadModal from '../../components/Admin/BulkUploadModal';
@@ -7,6 +7,8 @@ import AdminLayout from './_layout';
 
 type StudentProgram = 'BSIT' | 'BSIS';
 type StudentStatus = 'active' | 'inactive';
+type StudentFilterProgram = StudentProgram | 'all';
+type StudentFilterStatus = StudentStatus | 'all';
 
 type StudentRow = {
     id: number;
@@ -33,6 +35,8 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
 
     const [managedStudents, setManagedStudents] = React.useState<StudentRow[]>(initialStudents);
     const [search, setSearch] = React.useState(filters?.search ?? '');
+    const [program, setProgram] = React.useState<StudentFilterProgram>('all');
+    const [status, setStatus] = React.useState<StudentFilterStatus>('all');
     const [isAddUserModalOpen, setIsAddUserModalOpen] = React.useState(false);
     const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = React.useState(false);
     const [currentPage, setCurrentPage] = React.useState(1);
@@ -52,14 +56,16 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                 user.fullName.toLowerCase().includes(query) ||
                 user.program.toLowerCase().includes(query) ||
                 (user.email ?? '').toLowerCase().includes(query);
+            const matchesProgram = program === 'all' || user.program === program;
+            const matchesStatus = status === 'all' || user.status === status;
 
-            return matchesQuery;
+            return matchesQuery && matchesProgram && matchesStatus;
         });
-    }, [managedStudents, search]);
+    }, [managedStudents, search, program, status]);
 
     React.useEffect(() => {
         setCurrentPage(1);
-    }, [search]);
+    }, [search, program, status]);
 
     const totalPages = Math.max(1, Math.ceil(filteredUsers.length / usersPerPage));
 
@@ -85,7 +91,7 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
         <AdminLayout title="Students Management" subtitle="Manage student records by program">
             <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex items-center gap-3">
                         <div className="relative">
                             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <input
@@ -95,6 +101,30 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                 onChange={(event) => setSearch(event.target.value)}
                                 className="w-64 rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                             />
+                        </div>
+                        <div className="relative">
+                            <Filter className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <select
+                                value={program}
+                                onChange={(event) => setProgram(event.target.value as StudentFilterProgram)}
+                                className="w-36 rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                            >
+                                <option value="all">All Programs</option>
+                                <option value="BSIT">BSIT</option>
+                                <option value="BSIS">BSIS</option>
+                            </select>
+                        </div>
+                        <div className="relative">
+                            <Filter className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <select
+                                value={status}
+                                onChange={(event) => setStatus(event.target.value as StudentFilterStatus)}
+                                className="w-36 rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm capitalize focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="active">active</option>
+                                <option value="inactive">inactive</option>
+                            </select>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
