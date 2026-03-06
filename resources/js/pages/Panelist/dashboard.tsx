@@ -96,7 +96,7 @@ const PanelistDashboard = () => {
     ] as const;
 
     return (
-        <PanelLayout title="Dashboard" subtitle="Evaluation workspace overview (UI only)">
+        <PanelLayout title="Dashboard" subtitle="Panel Evaluation workspace overview">
             <div className="space-y-8">
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}
@@ -116,7 +116,6 @@ const PanelistDashboard = () => {
                                 <div>
                                     <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{card.label}</div>
                                     <div className="mt-2 text-3xl font-bold text-slate-900">{card.value}</div>
-                                    <div className="mt-3 text-sm text-slate-600">Dummy summary</div>
                                 </div>
                                 <div
                                     className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${card.tone} flex items-center justify-center shadow-lg transition-transform group-hover:scale-105`}
