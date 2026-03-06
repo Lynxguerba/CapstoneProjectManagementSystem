@@ -191,6 +191,18 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
                     {userType === 'student' ? (
                         <>
                             <div>
+                                <label className="text-sm font-semibold text-slate-700">Email</label>
+                                <input
+                                    type="email"
+                                    value={addUserForm.data.email}
+                                    onChange={(event) => addUserForm.setData('email', event.target.value)}
+                                    placeholder="student@campus.edu"
+                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                />
+                                {addUserForm.errors.email ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.email}</p> : null}
+                            </div>
+
+                            <div>
                                 <label className="text-sm font-semibold text-slate-700">Program</label>
                                 <select
                                     value={addUserForm.data.program}
@@ -213,6 +225,19 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
                                     className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                                 />
                                 {addUserForm.errors.password ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.password}</p> : null}
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700">Status</label>
+                                <select
+                                    value={addUserForm.data.status}
+                                    onChange={(event) => addUserForm.setData('status', event.target.value as UserStatus)}
+                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                >
+                                    <option value="active">active</option>
+                                    <option value="inactive">inactive</option>
+                                </select>
+                                {addUserForm.errors.status ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.status}</p> : null}
                             </div>
                         </>
                     ) : (

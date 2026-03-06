@@ -106,8 +106,10 @@ class AdminUserController extends Controller
             Student::query()->create([
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
+                'email' => $validated['email'],
                 'program' => $validated['program'],
                 'password' => $validated['password'],
+                'status' => $validated['status'] ?? 'active',
             ]);
 
             return redirect()->route('admin.users.students')->with('success', 'Student created successfully.');
@@ -191,8 +193,10 @@ class AdminUserController extends Controller
                 Student::query()->create([
                     'first_name' => $row['first_name'],
                     'last_name' => $row['last_name'],
+                    'email' => $row['email'],
                     'program' => $row['program'],
                     'password' => $row['password'],
+                    'status' => $row['status'] ?? 'active',
                 ]);
             });
 
@@ -236,22 +240,26 @@ class AdminUserController extends Controller
                     $innerQuery
                         ->where('first_name', 'like', '%'.$filters['search'].'%')
                         ->orWhere('last_name', 'like', '%'.$filters['search'].'%')
+                        ->orWhere('email', 'like', '%'.$filters['search'].'%')
                         ->orWhere('program', 'like', '%'.$filters['search'].'%');
                 });
             })
             ->orderByDesc('created_at')
-            ->get(['id', 'first_name', 'last_name', 'program', 'created_at'])
+            ->get(['id', 'first_name', 'last_name', 'email', 'program', 'status', 'created_at'])
             ->map(function (Student $student): array {
                 $firstName = trim($student->first_name);
                 $lastName = trim($student->last_name);
                 $fullName = trim($lastName.', '.$firstName, ', ');
+                $status = is_string($student->status) && $student->status !== '' ? $student->status : 'active';
 
                 return [
                     'id' => $student->id,
                     'firstName' => $firstName,
                     'lastName' => $lastName,
                     'fullName' => $fullName,
+                    'email' => $student->email,
                     'program' => $student->program,
+                    'status' => $status,
                     'createdAt' => $student->created_at?->format('Y-m-d') ?? '',
                 ];
             })

@@ -45,8 +45,10 @@ class StoreAdminUserRequest extends FormRequest
             return [
                 'first_name' => ['required', 'string', 'max:255'],
                 'last_name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:students,email'],
                 'program' => ['required', 'string', Rule::in(['BSIT', 'BSIS'])],
                 'password' => ['required', 'string', 'min:8', 'max:255'],
+                'status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             ];
         }
 
@@ -72,8 +74,12 @@ class StoreAdminUserRequest extends FormRequest
             return [
                 'program.required' => 'Program is required.',
                 'program.in' => 'Program must be BSIT or BSIS.',
+                'email.required' => 'Email is required.',
+                'email.email' => 'Email must be a valid email address.',
+                'email.unique' => 'This student email is already in use.',
                 'password.required' => 'Password is required.',
                 'password.min' => 'Password must be at least 8 characters.',
+                'status.in' => 'Status must be active or inactive.',
             ];
         }
 

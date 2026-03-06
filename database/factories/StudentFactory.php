@@ -19,8 +19,10 @@ class StudentFactory extends Factory
         return [
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
+            'email' => fake()->unique()->safeEmail(),
             'program' => fake()->randomElement(['BSIT', 'BSIS']),
             'password' => 'password',
+            'status' => fake()->randomElement(['active', 'inactive']),
         ];
     }
 }

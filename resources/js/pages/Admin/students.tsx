@@ -6,6 +6,7 @@ import BulkUploadModal from '../../components/Admin/BulkUploadModal';
 import AdminLayout from './_layout';
 
 type StudentProgram = 'BSIT' | 'BSIS';
+type StudentStatus = 'active' | 'inactive';
 
 type StudentRow = {
     id: number;
@@ -14,6 +15,7 @@ type StudentRow = {
     fullName: string;
     email?: string;
     program: StudentProgram;
+    status: StudentStatus;
     createdAt: string;
 };
 
@@ -81,16 +83,11 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
 
     return (
         <AdminLayout title="Students Management" subtitle="Manage student records by program">
-            <motion.section
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="space-y-6"
-            >
+            <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="Search students..."
@@ -126,6 +123,7 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                 <th className="px-6 py-3 font-semibold">Fullname</th>
                                 <th className="px-6 py-3 font-semibold">Email</th>
                                 <th className="px-6 py-3 font-semibold">Program</th>
+                                <th className="px-6 py-3 font-semibold">Status</th>
                                 <th className="px-6 py-3 font-semibold">Created</th>
                                 <th className="px-6 py-3 text-right font-semibold">Action</th>
                             </tr>
@@ -136,13 +134,25 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                     <td className="px-6 py-3 font-medium text-slate-900">{user.fullName}</td>
                                     <td className="px-6 py-3 text-slate-600">{user.email ?? 'N/A'}</td>
                                     <td className="px-6 py-3 text-slate-700">{user.program}</td>
+                                    <td className="px-6 py-3">
+                                        <span
+                                            className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${
+                                                user.status === 'active'
+                                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                                    : 'border-slate-300 bg-slate-100 text-slate-700'
+                                            }`}
+                                        >
+                                            {user.status}
+                                        </span>
+                                    </td>
                                     <td className="px-6 py-3 text-slate-600">{user.createdAt}</td>
                                     <td className="px-6 py-3 text-right">
                                         <button
                                             type="button"
-                                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-300"
+                                            className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
                                         >
                                             <Settings className="h-3 w-3" />
+                                            Manage
                                         </button>
                                     </td>
                                 </tr>
@@ -158,8 +168,8 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                 ) : (
                     <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-sm text-slate-600">
-                            Showing {(currentPage - 1) * usersPerPage + 1}-
-                            {Math.min(currentPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length} students
+                            Showing {(currentPage - 1) * usersPerPage + 1}-{Math.min(currentPage * usersPerPage, filteredUsers.length)} of{' '}
+                            {filteredUsers.length} students
                         </p>
                         <div className="flex items-center gap-2">
                             <button
@@ -189,17 +199,13 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                     type="button"
                                     onClick={() => setCurrentPage(page)}
                                     className={`rounded-lg px-3 py-1.5 text-sm ${
-                                        page === currentPage
-                                            ? 'bg-slate-900 text-white'
-                                            : 'border border-slate-300 text-slate-700 hover:bg-slate-100'
+                                        page === currentPage ? 'bg-slate-900 text-white' : 'border border-slate-300 text-slate-700 hover:bg-slate-100'
                                     }`}
                                 >
                                     {page}
                                 </button>
                             ))}
-                            {pages[pages.length - 1] !== totalPages && (
-                                <span className="px-1 text-sm text-slate-500">...</span>
-                            )}
+                            {pages[pages.length - 1] !== totalPages && <span className="px-1 text-sm text-slate-500">...</span>}
                             <button
                                 type="button"
                                 onClick={() => setCurrentPage((previousPage) => Math.min(totalPages, previousPage + 1))}
@@ -225,7 +231,12 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                 )}
             </motion.section>
             <AddUserModal open={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} userType="student" />
-            <BulkUploadModal open={isBulkUploadModalOpen} onClose={() => setIsBulkUploadModalOpen(false)} userType="student" />
+            <BulkUploadModal
+                open={isBulkUploadModalOpen}
+                onClose={() => setIsBulkUploadModalOpen(false)}
+                existingUsers={managedStudents}
+                userType="student"
+            />
         </AdminLayout>
     );
 };

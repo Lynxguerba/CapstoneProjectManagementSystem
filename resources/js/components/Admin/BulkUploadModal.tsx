@@ -26,7 +26,7 @@ type BulkUploadModalProps = {
     open: boolean;
     onClose: () => void;
     existingUsers?: Array<{
-        email: string;
+        email?: string;
     }>;
     userType?: EntityType;
 };
@@ -142,7 +142,11 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
     });
 
     const existingUserEmails = React.useMemo(() => {
-        return new Set(existingUsers.map((user) => user.email.trim().toLowerCase()));
+        return new Set(
+            existingUsers
+                .map((user) => user.email?.trim().toLowerCase())
+                .filter((email): email is string => typeof email === 'string' && email !== ''),
+        );
     }, [existingUsers]);
 
     const selectedRowLinesSet = React.useMemo(() => {
@@ -157,8 +161,10 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                     return {
                         first_name: row.first_name,
                         last_name: row.last_name,
+                        email: row.email,
                         program: row.program,
                         password: row.password,
+                        status: row.status,
                     };
                 }
 
@@ -275,7 +281,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
         }
 
         const requiredHeaders = userType === 'student'
-            ? (['last_name', 'first_name', 'program', 'password'] as const)
+            ? (['last_name', 'first_name', 'email', 'program', 'password'] as const)
             : userType === 'faculty'
                 ? (['last_name', 'first_name', 'email', 'role'] as const)
                 : (['last_name', 'first_name', 'email', 'role', 'password'] as const);
@@ -309,8 +315,21 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
             }
 
             if (userType === 'student') {
+                const email = values[headerIndex.email] ?? '';
                 const rawProgram = (values[headerIndex.program] ?? '').toUpperCase();
                 const password = values[headerIndex.password] ?? '';
+                const rawStatus = values[headerIndex.status] ?? 'active';
+                const statusValue = rawStatus.toLowerCase() as UserStatus;
+
+                if (email === '') {
+                    issues.push('Email is required.');
+                } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    issues.push('Email format is invalid.');
+                } else if (emailTracker.has(email.toLowerCase())) {
+                    issues.push('Duplicate email in CSV.');
+                } else if (existingUserEmails.has(email.toLowerCase())) {
+                    issues.push('Email already exists in this table.');
+                }
 
                 if (!studentPrograms.includes(rawProgram as StudentProgram)) {
                     issues.push('Program must be BSIT or BSIS.');
@@ -320,12 +339,20 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                     issues.push('Password must be at least 8 characters.');
                 }
 
+                if (!availableStatuses.includes(statusValue)) {
+                    issues.push('Status is invalid.');
+                }
+
+                emailTracker.add(email.toLowerCase());
+
                 return {
                     line: lineIndex + 2,
                     first_name: firstName,
                     last_name: lastName,
+                    email,
                     program: studentPrograms.includes(rawProgram as StudentProgram) ? (rawProgram as StudentProgram) : undefined,
                     password,
+                    status: availableStatuses.includes(statusValue) ? statusValue : 'active',
                     issues,
                 };
             }
@@ -449,7 +476,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
 
     const uploadLabel = userType === 'student' ? 'Bulk Upload Students' : userType === 'faculty' ? 'Bulk Upload Faculty' : 'Bulk Upload Users';
     const csvGuide = userType === 'student'
-        ? 'Last Name, First Name, Program, Password'
+        ? 'Last Name, First Name, Email, Program, Password, and optionally Status'
         : userType === 'faculty'
             ? 'Last Name, First Name, Email, Role, and optionally Status'
             : 'Last Name, First Name, Email, Role, Password, and optionally Status';
@@ -575,6 +602,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                                         <tr className="text-left text-slate-700">
                                             <th className="px-3 py-2 font-semibold">Last Name</th>
                                             <th className="px-3 py-2 font-semibold">First Name</th>
+                                            {userType === 'student' ? <th className="px-3 py-2 font-semibold">Email</th> : null}
                                             {userType === 'student' ? <th className="px-3 py-2 font-semibold">Program</th> : null}
                                             {userType !== 'student' ? <th className="px-3 py-2 font-semibold">Email</th> : null}
                                             {userType !== 'student' ? <th className="px-3 py-2 font-semibold">Roles</th> : null}
@@ -587,6 +615,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                                             <tr key={`${row.line}-${row.first_name}-${row.last_name}`} className={row.issues.length > 0 ? 'bg-rose-50' : ''}>
                                                 <td className="px-3 py-2">{row.last_name}</td>
                                                 <td className="px-3 py-2">{row.first_name}</td>
+                                                {userType === 'student' ? <td className="px-3 py-2">{row.email ?? '-'}</td> : null}
                                                 {userType === 'student' ? <td className="px-3 py-2">{row.program ?? '-'}</td> : null}
                                                 {userType !== 'student' ? <td className="px-3 py-2">{row.email}</td> : null}
                                                 {userType !== 'student' ? <td className="px-3 py-2 capitalize">{(row.roles ?? []).join(', ').replaceAll('_', ' ')}</td> : null}
