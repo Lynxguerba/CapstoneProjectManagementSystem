@@ -601,8 +601,8 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                                 <table className="w-full text-sm">
                                     <thead className="sticky top-0 bg-slate-100">
                                         <tr className="text-left text-slate-700">
-                                            <th className="px-3 py-2 font-semibold">Last Name</th>
                                             <th className="px-3 py-2 font-semibold">First Name</th>
+                                            <th className="px-3 py-2 font-semibold">Last Name</th>
                                             {userType === 'student' ? <th className="px-3 py-2 font-semibold">Email</th> : null}
                                             {userType === 'student' ? <th className="px-3 py-2 font-semibold">Program</th> : null}
                                             {userType !== 'student' ? <th className="px-3 py-2 font-semibold">Email</th> : null}
