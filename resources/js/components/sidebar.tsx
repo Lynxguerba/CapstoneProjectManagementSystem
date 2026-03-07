@@ -40,9 +40,7 @@ type SidebarPageProps = {
     };
 };
 
-type MenuItem =
-    | { icon: LucideIcon; label: string; href?: string; isSection?: false }
-    | { label: string; isSection: true };
+type MenuItem = { icon: LucideIcon; label: string; href?: string; isSection?: false } | { label: string; isSection: true };
 
 const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => {
     const page = usePage<SidebarPageProps>();
@@ -207,50 +205,45 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
             <button
                 type="button"
                 onClick={() => setIsMobileOpen((v) => !v)}
-                className="fixed top-4 left-4 z-[60] inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white/90 text-slate-800 shadow-sm backdrop-blur md:hidden"
+                className="fixed top-3 left-3 z-[60] inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white/90 text-slate-800 shadow-sm backdrop-blur md:hidden"
                 aria-label={isMobileOpen ? 'Close navigation' : 'Open navigation'}
             >
-                <span className="relative h-5 w-5">
+                <span className="relative h-4 w-4">
                     <Menu
-                        size={20}
+                        size={18}
                         className={`absolute inset-0 transition-all duration-300 ${isMobileOpen ? 'scale-75 rotate-90 opacity-0' : 'scale-100 rotate-0 opacity-100'}`}
                     />
                     <X
-                        size={20}
+                        size={18}
                         className={`absolute inset-0 transition-all duration-300 ${isMobileOpen ? 'scale-100 rotate-0 opacity-100' : 'scale-75 -rotate-90 opacity-0'}`}
                     />
                 </span>
             </button>
 
             <div
-                className={`fixed inset-0 z-[55] bg-black/50 backdrop-blur-sm transition-opacity duration-300 md:hidden ${isMobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+                className={`fixed inset-0 z-[55] bg-black/40 backdrop-blur-sm transition-opacity duration-300 md:hidden ${isMobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
                 onClick={() => setIsMobileOpen(false)}
             />
 
             <aside
-                className={`fixed inset-y-0 left-0 z-[56] flex w-64 transform flex-col border-r border-slate-800 bg-green-900 text-slate-300 shadow-xl transition-transform duration-300 ease-out will-change-transform md:translate-x-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+                className={`fixed inset-y-0 left-0 z-[56] flex w-56 transform flex-col border-r border-slate-800 bg-green-900 text-slate-300 shadow-xl transition-transform duration-300 ease-out will-change-transform md:translate-x-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
             >
-                {/* Brand Section */}
-                <div className="flex flex-col items-center p-8">
-                    <div className="relative mb-4">
-                        <div className="absolute inset-0 rounded-full"></div>
-                        <img
-                            src={logoCpms}
-                            alt="CPMS Logo"
-                            className="relative h-20 w-20 rounded-2xl bg-transparent object-cover transition-transform duration-300 hover:scale-105"
-                        />
+                {/* Brand Section - Tightened */}
+                <div className="flex flex-col items-center p-5">
+                    <div className="relative mb-2">
+                        <img src={logoCpms} alt="CPMS Logo" className="relative h-14 w-14 rounded-xl bg-transparent object-cover" />
                     </div>
-                    <h1 className="text-xl font-bold tracking-tight text-white">Capstone Projects</h1>
-                    <p className="text-[10px] font-bold tracking-[0.2em] text-slate-300 uppercase">Management System</p>
+                    <h1 className="text-lg font-bold tracking-tight text-white">Capstone Projects</h1>
+                    <p className="text-[9px] font-bold tracking-[0.15em] text-slate-400 uppercase">Management System</p>
                 </div>
 
-                {/* Navigation */}
-                <nav className="cpms-scroll mt-4 min-h-0 flex-1 overflow-y-auto px-4">
-                    <div className="space-y-1.5 pb-4">
+                {/* Navigation - Compressed items */}
+                <nav className="cpms-scroll mt-2 min-h-0 flex-1 overflow-y-auto px-3">
+                    <div className="space-y-1 pb-3">
                         {menuItems.map((item) => {
                             if (item.isSection) {
                                 return (
-                                    <div key={item.label} className="mt-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                    <div key={item.label} className="mt-3 px-3 py-1 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
                                         {item.label}
                                     </div>
                                 );
@@ -264,70 +257,41 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                                     key={item.label}
                                     href={item.href ?? '#'}
                                     onClick={() => setIsMobileOpen(false)}
-                                    preserveScroll
-                                    className={`group flex items-center justify-between rounded-xl px-4 py-3 transition-all duration-200 ${
-                                        active ? 'bg-green-600 text-white shadow-lg shadow-green-900/20' : 'hover:bg-slate-800 hover:text-slate-100'
+                                    className={`group flex items-center justify-between rounded-lg px-3 py-2 transition-all duration-200 ${
+                                        active ? 'bg-green-600 text-white shadow-md' : 'hover:bg-slate-800 hover:text-slate-100'
                                     }`}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <ItemIcon size={20} className={active ? 'text-white' : 'text-slate-400 group-hover:text-green-400'} />
-                                        <span className="text-sm font-medium">{item.label}</span>
+                                    <div className="flex items-center gap-2.5">
+                                        <ItemIcon size={18} className={active ? 'text-white' : 'text-slate-400 group-hover:text-green-400'} />
+                                        <span className="text-xs font-medium">{item.label}</span>
                                     </div>
-                                    {!active && (
-                                        <ChevronRight size={14} className="text-slate-500 opacity-0 transition-opacity group-hover:opacity-100" />
-                                    )}
+                                    {!active && <ChevronRight size={12} className="text-slate-600 opacity-0 group-hover:opacity-100" />}
                                 </Link>
                             );
                         })}
                     </div>
                 </nav>
 
-                {/* Profile Section */}
-                <div className="m-4 mt-auto flex-shrink-0 rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
-                    <div className="mb-3 flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-green-500 to-green-400 text-[10px] font-bold text-white">
+                {/* Profile Section - Downsized */}
+                <div className="m-3 mt-auto flex-shrink-0 rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+                    <div className="mb-2 flex items-center gap-2">
+                        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-green-500 to-green-400 text-[9px] font-bold text-white">
                             {role.substring(0, 3).toUpperCase()}
                         </div>
                         <div className="flex flex-col overflow-hidden">
-                            <span className="truncate text-sm font-semibold text-slate-200">{user?.name || capitalizeRole(role)}</span>
-                            <span className="text-[10px] text-slate-500">{user?.email}</span>
+                            <span className="truncate text-xs font-semibold text-slate-200">{user?.name || capitalizeRole(role)}</span>
+                            <span className="truncate text-[9px] text-slate-500">{user?.email}</span>
                         </div>
                     </div>
                     <button
-                        className="flex w-full items-center justify-center gap-2 border-t border-slate-800/50 py-2 text-xs font-medium text-slate-400 transition-colors hover:text-red-400"
+                        className="flex w-full items-center justify-center gap-2 border-t border-slate-800/50 pt-2 text-[11px] font-medium text-slate-400 hover:text-red-400"
                         onClick={() => setShowModal(true)}
                     >
-                        <LogOut size={14} />
+                        <LogOut size={12} />
                         Sign Out
                     </button>
                 </div>
                 <SignOutModal open={showModal} onClose={() => setShowModal(false)} activeRole={role} assignedRoles={user?.roles ?? []} />
-
-                <style>{`
-          .cpms-scroll {
-            scrollbar-width: thin;
-            scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
-          }
-
-          .cpms-scroll::-webkit-scrollbar {
-            width: 8px;
-          }
-
-          .cpms-scroll::-webkit-scrollbar-track {
-            background: transparent;
-          }
-
-          .cpms-scroll::-webkit-scrollbar-thumb {
-            background-color: rgba(148, 163, 184, 0.35);
-            border-radius: 9999px;
-            border: 2px solid transparent;
-            background-clip: content-box;
-          }
-
-          .cpms-scroll::-webkit-scrollbar-thumb:hover {
-            background-color: rgba(148, 163, 184, 0.55);
-          }
-        `}</style>
             </aside>
         </>
     );
