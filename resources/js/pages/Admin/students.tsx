@@ -237,9 +237,7 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                                 user.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
                                             }`}
                                         >
-                                            <span
-                                                className={`h-1.5 w-1.5 rounded-full ${user.status === 'active' ? 'bg-emerald-500' : 'bg-slate-400'}`}
-                                            />
+                                        
                                             {user.status}
                                         </span>
                                     </td>
