@@ -51,6 +51,13 @@ Route::prefix('admin')->middleware([EnsureWebAuthenticated::class, EnsureRole::c
     Route::get('/audit-logs', function () {
         return Inertia::render('Admin/audit-logs');
     })->name('admin.audit-logs');
+
+    Route::get('/project-repository', function () {
+        return Inertia::render('Admin/project-repository'); 
+    })->name('admin.repository');
+    Route::get('/backup-restore', function () {
+        return Inertia::render('Admin/backup-restore'); 
+    })->name('admin.backup-restore');
 });
 
 // INSTRUCTOR ROUTES (protected)
