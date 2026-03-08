@@ -20,6 +20,8 @@ import {
     X,
     LogOut,
     GraduationCap,
+    FolderArchive,
+    History
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -108,7 +110,10 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
                     { label: 'User Management', isSection: true },
                     { icon: GraduationCap, label: 'Students', href: '/admin/users/students' },
-                    { icon: BookOpen, label: 'Faculty', href: '/admin/users/faculty' },
+                    { icon: BookOpen, label: 'Faculties', href: '/admin/users/faculty' },
+                    { label: 'Archive', isSection: true },
+                    { icon: FolderArchive, label: 'Project Repository ', href: '/admin/project-repository' },
+                    { icon: History, label: 'Backup & Restore ', href: '/admin/backup-restore' },
                     { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
                     { icon: Archive, label: 'Audit Logs', href: '/admin/audit-logs' },
                 ];
@@ -243,7 +248,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                         {menuItems.map((item) => {
                             if (item.isSection) {
                                 return (
-                                    <div key={item.label} className="mt-3 px-3 py-1 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                                    <div key={item.label} className="mt-3 px-3 py-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
                                         {item.label}
                                     </div>
                                 );
