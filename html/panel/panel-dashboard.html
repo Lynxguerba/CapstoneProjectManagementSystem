@@ -115,6 +115,24 @@
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
         }
        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+       
+        .fixed-height-card {
+            height: 320px;
+            display: flex;
+            flex-direction: column;
+        }
+       
+        .chart-wrapper {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+       
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -134,11 +152,11 @@
     <aside class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
         <div class="p-6 border-b border-slate-700/50">
             <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-graduation-cap text-2xl text-white"></i>
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-users text-2xl text-white"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Capstone MS</h1>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Capstone MS</h1>
                     <p class="text-xs text-slate-400">v2.0 · Panel Portal</p>
                 </div>
             </div>
@@ -157,7 +175,7 @@
        
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
-            <a href="panel-dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-600/20">
+            <a href="panel-dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-600/20">
                 <i class="fas fa-tachometer-alt w-5"></i>
                 <span class="flex-1">Dashboard</span>
                 <span class="bg-white/20 text-xs px-2 py-1 rounded-full">3</span>
@@ -165,30 +183,30 @@
            
             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Evaluation</p>
             <a href="panel-review.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
-                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-purple-400"></i>
                 <span class="flex-1">For Review</span>
                 <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">2</span>
             </a>
             <a href="panel-defense.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
-                <i class="fas fa-gavel w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <i class="fas fa-gavel w-5 text-slate-400 group-hover:text-purple-400"></i>
                 <span class="flex-1">For Defense</span>
                 <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">1</span>
             </a>
             <a href="panel-signature.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
-                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-purple-400"></i>
                 <span class="flex-1">For Signature</span>
                 <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded-full">3</span>
             </a>
            
             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Schedule</p>
             <a href="panel-schedule.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
-                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-purple-400"></i>
                 <span class="flex-1">My Defense Schedule</span>
             </a>
            
             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Records</p>
             <a href="panel-completed.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
-                <i class="fas fa-check-circle w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <i class="fas fa-check-circle w-5 text-slate-400 group-hover:text-purple-400"></i>
                 <span class="flex-1">Completed</span>
                 <span class="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">4</span>
             </a>
@@ -211,7 +229,7 @@
     <!-- MAIN CONTENT -->
     <main class="flex-1 flex flex-col overflow-y-auto ml-72 smooth-scroll">
 
-        <!-- TOP BAR - COMPLETE WITH PROGRAM, PHASE, SETTINGS, AND ROLE SWITCHER -->
+        <!-- TOP BAR -->
         <div class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40 shadow-sm">
             <div class="flex items-center gap-4">
                 <h2 class="text-2xl font-bold text-slate-800">Panel Dashboard</h2>
@@ -221,30 +239,23 @@
             </div>
 
             <div class="flex items-center gap-4">
-                <!-- Notification Bell -->
                 <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
                     <i class="fas fa-bell text-slate-600"></i>
                 </button>
-               
-                <!-- Settings Icon -->
                 <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
                     <i class="fas fa-cog text-slate-600"></i>
                 </button>
                
-                <!-- Program, Phase, and Role Selectors -->
                 <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
-                    <!-- Program Switch -->
                     <div class="relative">
-                        <select id="programSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                        <select class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
                             <option value="bsit" selected>BS Information Technology</option>
                             <option value="bsis">BS Information Systems</option>
                         </select>
                         <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
                     </div>
-
-                    <!-- Phase Switch -->
                     <div class="relative">
-                        <select id="phaseSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                        <select class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
                             <option value="concept" selected>Phase 1: Concept</option>
                             <option value="outline">Phase 2: Outline</option>
                             <option value="predeployment">Phase 3: Pre-Deployment</option>
@@ -253,10 +264,8 @@
                         </select>
                         <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
                     </div>
-
-                    <!-- Role Switch -->
                     <div class="relative">
-                        <select id="roleSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                        <select class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
                             <option value="panel" selected>Panel Member</option>
                             <option value="panelChair">Panel Chair</option>
                             <option value="adviser">Adviser</option>
@@ -271,13 +280,13 @@
         <!-- DASHBOARD CONTENT -->
         <div class="p-8 space-y-8 mt-20 pb-12">
             <!-- WELCOME BANNER -->
-            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 text-white">
+            <div class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 text-white">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h3 class="text-xl font-bold mb-2">Welcome back, Prof. Juan Perez!</h3>
+                        <h3 class="text-xl font-bold mb-2">Welcome back, Prof. Juan Perez! 👋</h3>
                         <p class="text-purple-100">You have <span class="font-bold">3 groups</span> assigned for evaluation this week</p>
                     </div>
-                    <div class="bg-white/20 backdrop-blur rounded-xl px-4 py-3">
+                    <div class="bg-white/20 backdrop-blur rounded-xl px-6 py-3">
                         <p class="text-sm">Next Defense:</p>
                         <p class="text-lg font-bold">Today 2:00 PM</p>
                         <p class="text-xs text-purple-200">Room 201 - Group Alpha</p>
@@ -285,7 +294,7 @@
                 </div>
             </div>
 
-            <!-- QUICK STATS -->
+            <!-- QUICK STATS ROW -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <a href="panel-review.html" class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm block">
                     <div class="flex items-start justify-between">
@@ -340,179 +349,441 @@
                 </a>
             </div>
 
-            <!-- Assigned Groups -->
-            <div class="bg-white rounded-2xl border border-slate-100 p-6">
-                <h3 class="text-lg font-semibold mb-4">My Assigned Groups</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Group Card 1 -->
-                    <div class="bg-white border rounded-xl p-5 hover:shadow-lg transition">
-                        <div class="flex items-start justify-between mb-3">
-                            <div>
-                                <h4 class="font-semibold text-lg">Group Alpha</h4>
-                                <p class="text-xs text-slate-500">Project: E-Learning Platform</p>
-                            </div>
-                            <span class="status-badge for-defense">For Defense</span>
-                        </div>
-                        <div class="space-y-2 mb-3">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-user-tie text-slate-400 w-4"></i>
-                                <span class="text-sm">Adviser: Prof. Cruz</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-users text-slate-400 w-4"></i>
-                                <span class="text-sm">5 members</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-calendar text-slate-400 w-4"></i>
-                                <span class="text-sm">Defense: Today 2:00 PM</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-door-open text-slate-400 w-4"></i>
-                                <span class="text-sm">Room 201</span>
-                            </div>
-                        </div>
-                        <div class="border-t pt-3">
-                            <a href="panel-defense.html" class="block w-full bg-amber-600 text-white py-2 rounded-lg hover:bg-amber-700 text-sm text-center">
-                                Start Evaluation
-                            </a>
-                        </div>
+            <!-- CHARTS SECTION - 3 ROWS OF VISUALIZATIONS -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Chart 1: Evaluation Status Distribution (Doughnut) -->
+                <div class="fixed-height-card bg-white rounded-xl border border-slate-100 p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-chart-pie text-purple-500"></i> Evaluation Status
+                        </h3>
+                        <span class="text-xs text-slate-500">Current AY</span>
                     </div>
-
-                    <!-- Group Card 2 -->
-                    <div class="bg-white border rounded-xl p-5 hover:shadow-lg transition">
-                        <div class="flex items-start justify-between mb-3">
-                            <div>
-                                <h4 class="font-semibold text-lg">Group Beta</h4>
-                                <p class="text-xs text-slate-500">Project: Inventory System</p>
-                            </div>
-                            <span class="status-badge for-review">For Review</span>
-                        </div>
-                        <div class="space-y-2 mb-3">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-user-tie text-slate-400 w-4"></i>
-                                <span class="text-sm">Adviser: Prof. Reyes</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-users text-slate-400 w-4"></i>
-                                <span class="text-sm">4 members</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-file-pdf text-slate-400 w-4"></i>
-                                <span class="text-sm">Concept Paper ready</span>
-                            </div>
-                        </div>
-                        <div class="border-t pt-3">
-                            <a href="panel-review.html" class="block w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm text-center">
-                                Review Document
-                            </a>
-                        </div>
+                    <div class="chart-wrapper">
+                        <canvas id="evaluationStatusChart"></canvas>
                     </div>
+                    <div class="mt-2 text-xs text-slate-500 text-center">
+                        <span class="inline-block w-3 h-3 bg-blue-500 rounded-full mr-1"></span> For Review: 2
+                        <span class="inline-block w-3 h-3 bg-amber-500 rounded-full ml-3 mr-1"></span> For Defense: 1
+                        <span class="inline-block w-3 h-3 bg-purple-500 rounded-full ml-3 mr-1"></span> For Signature: 3
+                        <span class="inline-block w-3 h-3 bg-green-500 rounded-full ml-3 mr-1"></span> Completed: 4
+                    </div>
+                </div>
 
-                    <!-- Group Card 3 -->
-                    <div class="bg-white border rounded-xl p-5 hover:shadow-lg transition">
-                        <div class="flex items-start justify-between mb-3">
-                            <div>
-                                <h4 class="font-semibold text-lg">Group Gamma</h4>
-                                <p class="text-xs text-slate-500">Project: Mobile Health App</p>
-                            </div>
-                            <span class="status-badge for-signature">For Signature</span>
-                        </div>
-                        <div class="space-y-2 mb-3">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-user-tie text-slate-400 w-4"></i>
-                                <span class="text-sm">Adviser: Prof. Santos</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-users text-slate-400 w-4"></i>
-                                <span class="text-sm">4 members</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-check-circle text-green-500 w-4"></i>
-                                <span class="text-sm">Approved by Chair</span>
-                            </div>
-                        </div>
-                        <div class="border-t pt-3">
-                            <a href="panel-signature.html" class="block w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 text-sm text-center">
-                                Sign Document
-                            </a>
-                        </div>
+                <!-- Chart 2: Weekly Defense Schedule (Bar Chart) -->
+                <div class="fixed-height-card bg-white rounded-xl border border-slate-100 p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-calendar-week text-amber-500"></i> Weekly Defense Load
+                        </h3>
+                        <span class="text-xs text-slate-500">This Week</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="weeklyDefenseChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 3: Document Review Progress (Line Chart) -->
+                <div class="fixed-height-card bg-white rounded-xl border border-slate-100 p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-chart-line text-green-500"></i> Review Progress
+                        </h3>
+                        <span class="text-xs text-slate-500">Last 7 Days</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="reviewProgressChart"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- Recent Activity -->
-            <div class="bg-white rounded-2xl border border-slate-100 p-6">
-                <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
-                <div class="space-y-3">
-                    <div class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-lg">
-                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <div class="flex-1">
-                            <p class="text-sm"><span class="font-medium">Group Gamma</span> ready for digital signature</p>
-                            <p class="text-xs text-slate-500">10 minutes ago</p>
+            <!-- SECOND ROW OF CHARTS - More detailed metrics -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 4: Groups by Project Category (Horizontal Bar) -->
+                <div class="bg-white rounded-xl border border-slate-100 p-5">
+                    <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-tag text-pink-500"></i> Groups by Project Category
+                    </h3>
+                    <div class="h-64">
+                        <canvas id="projectCategoryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 5: Panel Workload Comparison (Radar Chart) -->
+                <div class="bg-white rounded-xl border border-slate-100 p-5">
+                    <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-users text-indigo-500"></i> Panel Workload Distribution
+                    </h3>
+                    <div class="h-64">
+                        <canvas id="panelWorkloadChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- THIRD ROW - Timeline and Activity -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 6: Defense Schedule Timeline (Gantt-style) -->
+                <div class="bg-white rounded-xl border border-slate-100 p-5">
+                    <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-clock text-cyan-500"></i> Upcoming Defense Timeline
+                    </h3>
+                    <div class="space-y-4">
+                        <!-- Timeline Item 1 -->
+                        <div class="relative">
+                            <div class="flex items-center mb-1">
+                                <span class="text-sm font-medium w-24">Today 2:00 PM</span>
+                                <span class="text-sm font-medium text-slate-700">Group Alpha</span>
+                                <span class="ml-auto text-xs text-slate-500">Room 201</span>
+                            </div>
+                            <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                                <div class="bg-amber-500 h-3 rounded-full" style="width: 75%"></div>
+                            </div>
+                        </div>
+                        <!-- Timeline Item 2 -->
+                        <div class="relative">
+                            <div class="flex items-center mb-1">
+                                <span class="text-sm font-medium w-24">Mar 18, 1:00 PM</span>
+                                <span class="text-sm font-medium text-slate-700">Group Delta</span>
+                                <span class="ml-auto text-xs text-slate-500">Room 202</span>
+                            </div>
+                            <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                                <div class="bg-blue-500 h-3 rounded-full" style="width: 45%"></div>
+                            </div>
+                        </div>
+                        <!-- Timeline Item 3 -->
+                        <div class="relative">
+                            <div class="flex items-center mb-1">
+                                <span class="text-sm font-medium w-24">Mar 25, 9:00 AM</span>
+                                <span class="text-sm font-medium text-slate-700">Group Epsilon</span>
+                                <span class="ml-auto text-xs text-slate-500">Room 203</span>
+                            </div>
+                            <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                                <div class="bg-purple-500 h-3 rounded-full" style="width: 20%"></div>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-lg">
-                        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <div class="flex-1">
-                            <p class="text-sm"><span class="font-medium">Prof. Santos (Chair)</span> approved Group Beta</p>
-                            <p class="text-xs text-slate-500">2 hours ago</p>
-                        </div>
+                </div>
+
+                <!-- Chart 7: Recent Activity Heat Map -->
+                <div class="bg-white rounded-xl border border-slate-100 p-5">
+                    <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-fire text-orange-500"></i> Activity Heat Map (Last 30 Days)
+                    </h3>
+                    <div class="grid grid-cols-7 gap-1">
+                        <!-- Generate 35 squares for heat map (5 weeks) -->
+                        <div class="aspect-square bg-green-200 rounded hover:bg-green-300 transition cursor-pointer" title="High activity"></div>
+                        <div class="aspect-square bg-green-300 rounded hover:bg-green-400 transition cursor-pointer" title="Very high activity"></div>
+                        <div class="aspect-square bg-green-100 rounded hover:bg-green-200 transition cursor-pointer" title="Medium activity"></div>
+                        <div class="aspect-square bg-slate-100 rounded hover:bg-slate-200 transition cursor-pointer" title="No activity"></div>
+                        <div class="aspect-square bg-green-200 rounded hover:bg-green-300 transition cursor-pointer" title="High activity"></div>
+                        <div class="aspect-square bg-green-300 rounded hover:bg-green-400 transition cursor-pointer" title="Very high activity"></div>
+                        <div class="aspect-square bg-green-400 rounded hover:bg-green-500 transition cursor-pointer" title="Peak activity"></div>
+                       
+                        <div class="aspect-square bg-green-100 rounded hover:bg-green-200 transition cursor-pointer" title="Medium activity"></div>
+                        <div class="aspect-square bg-slate-100 rounded hover:bg-slate-200 transition cursor-pointer" title="No activity"></div>
+                        <div class="aspect-square bg-green-200 rounded hover:bg-green-300 transition cursor-pointer" title="High activity"></div>
+                        <div class="aspect-square bg-green-300 rounded hover:bg-green-400 transition cursor-pointer" title="Very high activity"></div>
+                        <div class="aspect-square bg-green-400 rounded hover:bg-green-500 transition cursor-pointer" title="Peak activity"></div>
+                        <div class="aspect-square bg-green-300 rounded hover:bg-green-400 transition cursor-pointer" title="Very high activity"></div>
+                        <div class="aspect-square bg-green-200 rounded hover:bg-green-300 transition cursor-pointer" title="High activity"></div>
+                       
+                        <div class="aspect-square bg-green-100 rounded hover:bg-green-200 transition cursor-pointer" title="Medium activity"></div>
+                        <div class="aspect-square bg-green-200 rounded hover:bg-green-300 transition cursor-pointer" title="High activity"></div>
+                        <div class="aspect-square bg-green-300 rounded hover:bg-green-400 transition cursor-pointer" title="Very high activity"></div>
+                        <div class="aspect-square bg-green-200 rounded hover:bg-green-300 transition cursor-pointer" title="High activity"></div>
+                        <div class="aspect-square bg-slate-100 rounded hover:bg-slate-200 transition cursor-pointer" title="No activity"></div>
+                        <div class="aspect-square bg-green-100 rounded hover:bg-green-200 transition cursor-pointer" title="Medium activity"></div>
+                        <div class="aspect-square bg-green-200 rounded hover:bg-green-300 transition cursor-pointer" title="High activity"></div>
+                       
+                        <div class="aspect-square bg-green-300 rounded hover:bg-green-400 transition cursor-pointer" title="Very high activity"></div>
+                        <div class="aspect-square bg-green-400 rounded hover:bg-green-500 transition cursor-pointer" title="Peak activity"></div>
+                        <div class="aspect-square bg-green-300 rounded hover:bg-green-400 transition cursor-pointer" title="Very high activity"></div>
+                        <div class="aspect-square bg-green-200 rounded hover:bg-green-300 transition cursor-pointer" title="High activity"></div>
+                        <div class="aspect-square bg-green-100 rounded hover:bg-green-200 transition cursor-pointer" title="Medium activity"></div>
+                        <div class="aspect-square bg-slate-100 rounded hover:bg-slate-200 transition cursor-pointer" title="No activity"></div>
+                        <div class="aspect-square bg-green-100 rounded hover:bg-green-200 transition cursor-pointer" title="Medium activity"></div>
+                       
+                        <div class="aspect-square bg-green-200 rounded hover:bg-green-300 transition cursor-pointer" title="High activity"></div>
+                        <div class="aspect-square bg-green-300 rounded hover:bg-green-400 transition cursor-pointer" title="Very high activity"></div>
+                        <div class="aspect-square bg-green-200 rounded hover:bg-green-300 transition cursor-pointer" title="High activity"></div>
+                        <div class="aspect-square bg-green-100 rounded hover:bg-green-200 transition cursor-pointer" title="Medium activity"></div>
+                        <div class="aspect-square bg-slate-100 rounded hover:bg-slate-200 transition cursor-pointer" title="No activity"></div>
+                        <div class="aspect-square bg-green-100 rounded hover:bg-green-200 transition cursor-pointer" title="Medium activity"></div>
+                        <div class="aspect-square bg-green-200 rounded hover:bg-green-300 transition cursor-pointer" title="High activity"></div>
                     </div>
+                    <div class="flex justify-between mt-2 text-xs text-slate-400">
+                        <span>30 days ago</span>
+                        <span>Today</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ASSIGNED GROUPS TABLE -->
+            <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">My Assigned Groups</h3>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">
+                            <i class="fas fa-download mr-1"></i> Export
+                        </button>
+                    </div>
+                </div>
+               
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50">
+                            <tr class="text-slate-500">
+                                <th class="text-left py-3 px-4">Group</th>
+                                <th class="text-left py-3 px-4">Project</th>
+                                <th class="text-left py-3 px-4">Adviser</th>
+                                <th class="text-left py-3 px-4">Status</th>
+                                <th class="text-left py-3 px-4">Defense Schedule</th>
+                                <th class="text-left py-3 px-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 font-medium">Group Alpha</td>
+                                <td class="py-3 px-4">E-Learning Platform</td>
+                                <td class="py-3 px-4">Prof. Cruz</td>
+                                <td class="py-3 px-4"><span class="status-badge for-defense">For Defense</span></td>
+                                <td class="py-3 px-4">Today 2:00 PM · Room 201</td>
+                                <td class="py-3 px-4">
+                                    <a href="panel-defense.html" class="text-purple-600 hover:text-purple-800">View</a>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 font-medium">Group Beta</td>
+                                <td class="py-3 px-4">Inventory System</td>
+                                <td class="py-3 px-4">Prof. Reyes</td>
+                                <td class="py-3 px-4"><span class="status-badge for-review">For Review</span></td>
+                                <td class="py-3 px-4">Mar 18, 1:00 PM · Room 202</td>
+                                <td class="py-3 px-4">
+                                    <a href="panel-review.html" class="text-purple-600 hover:text-purple-800">Review</a>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 font-medium">Group Gamma</td>
+                                <td class="py-3 px-4">Mobile Health App</td>
+                                <td class="py-3 px-4">Prof. Santos</td>
+                                <td class="py-3 px-4"><span class="status-badge for-signature">For Signature</span></td>
+                                <td class="py-3 px-4">Mar 25, 9:00 AM · Room 203</td>
+                                <td class="py-3 px-4">
+                                    <a href="panel-signature.html" class="text-purple-600 hover:text-purple-800">Sign</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
-        // Program switch handler
-        document.getElementById("programSwitch").addEventListener("change", function() {
-            const program = this.value;
-            showNotification('Switched to ' + (program === 'bsit' ? 'BS Information Technology' : 'BS Information Systems'));
-        });
+        // Initialize all charts when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+           
+            // Chart 1: Evaluation Status Distribution (Doughnut)
+            new Chart(document.getElementById('evaluationStatusChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['For Review', 'For Defense', 'For Signature', 'Completed'],
+                    datasets: [{
+                        data: [2, 1, 3, 4],
+                        backgroundColor: ['#3b82f6', '#f59e0b', '#a855f7', '#10b981'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b'
+                        }
+                    }
+                }
+            });
 
-        // Phase switch handler
-        document.getElementById("phaseSwitch").addEventListener("change", function() {
-            const phase = this.value;
-            const phaseNames = {
-                'concept': 'Phase 1: Concept',
-                'outline': 'Phase 2: Outline',
-                'predeployment': 'Phase 3: Pre-Deployment',
-                'deployment': 'Phase 4: Deployment',
-                'final': 'Phase 5: Final'
-            };
-            showNotification('Switched to ' + phaseNames[phase]);
-        });
+            // Chart 2: Weekly Defense Schedule (Bar Chart)
+            new Chart(document.getElementById('weeklyDefenseChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                    datasets: [{
+                        label: 'Defenses',
+                        data: [1, 2, 3, 1, 2, 1],
+                        backgroundColor: '#f59e0b',
+                        borderRadius: 6,
+                        barPercentage: 0.6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { display: false },
+                            ticks: { stepSize: 1 }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
 
-        // Role switch handler
-        document.getElementById("roleSwitch").addEventListener("change", function() {
-            const role = this.value;
-            switch(role) {
-                case 'panelChair':
-                    window.location.href = 'panel-chair.html';
-                    break;
-                case 'adviser':
-                    window.location.href = 'adviser.html';
-                    break;
-                case 'instructor':
-                    window.location.href = 'instructor-dashboard.html';
-                    break;
-                default:
-                    showNotification('Staying in Panel view');
+            // Chart 3: Review Progress (Line Chart)
+            new Chart(document.getElementById('reviewProgressChart'), {
+                type: 'line',
+                data: {
+                    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+                    datasets: [
+                        {
+                            label: 'Documents Reviewed',
+                            data: [3, 5, 4, 6, 8, 7, 9],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { display: false }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // Chart 4: Groups by Project Category (Horizontal Bar)
+            new Chart(document.getElementById('projectCategoryChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Web Dev', 'Mobile Apps', 'AI/ML', 'IoT', 'Data Science'],
+                    datasets: [{
+                        label: 'Number of Groups',
+                        data: [6, 4, 3, 2, 3],
+                        backgroundColor: ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { display: false }
+                        },
+                        y: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // Chart 5: Panel Workload Comparison (Radar Chart)
+            new Chart(document.getElementById('panelWorkloadChart'), {
+                type: 'radar',
+                data: {
+                    labels: ['Prof. Santos', 'Prof. Lopez', 'Prof. Reyes', 'Prof. Cruz', 'You'],
+                    datasets: [{
+                        label: 'Groups Assigned',
+                        data: [5, 4, 6, 3, 4],
+                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                        borderColor: '#8b5cf6',
+                        pointBackgroundColor: '#8b5cf6',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#8b5cf6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            grid: { color: '#e2e8f0' }
+                        }
+                    }
+                }
+            });
+
+            // Role switch handler
+            document.querySelectorAll('select')[2].addEventListener('change', function() {
+                const role = this.value;
+                switch(role) {
+                    case 'panelChair':
+                        window.location.href = 'panel-chair-dashboard.html';
+                        break;
+                    case 'adviser':
+                        window.location.href = 'adviser.html';
+                        break;
+                    case 'instructor':
+                        window.location.href = 'instructor-dashboard.html';
+                        break;
+                    default:
+                        // Stay on panel dashboard
+                        showNotification('Staying in Panel view');
+                }
+            });
+
+            // Program switch handler
+            document.querySelectorAll('select')[0].addEventListener('change', function() {
+                showNotification('Program changed to ' + this.options[this.selectedIndex].text);
+            });
+
+            // Phase switch handler
+            document.querySelectorAll('select')[1].addEventListener('change', function() {
+                showNotification('Phase changed to ' + this.options[this.selectedIndex].text);
+            });
+
+            // Notification function
+            function showNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
+                notification.innerHTML = message;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
             }
         });
-
-        // Settings click handler
-        document.querySelector('.fa-cog').parentElement.addEventListener('click', function() {
-            showNotification('Settings opened');
-        });
-
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
-            notification.innerHTML = message;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 3000);
-        }
     </script>
 </body>
 </html>
