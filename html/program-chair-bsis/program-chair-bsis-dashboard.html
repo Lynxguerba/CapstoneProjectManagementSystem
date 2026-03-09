@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BSIS Program Chair Dashboard - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .status-badge.approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .status-badge.program-review {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .progress-bar {
+            height: 0.5rem;
+            border-radius: 9999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.3s ease;
+        }
+
+        .notification-dot {
+            position: relative;
+        }
+
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .fixed-height-card {
+            height: 320px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+
+        .smooth-scroll {
+            scroll-behavior: smooth;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .summary-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .program-outcome-item {
+            transition: all 0.2s ease;
+        }
+
+        .program-outcome-item:hover {
+            background: #f8fafc;
+            transform: translateX(4px);
+        }
+
+        .bsis-gradient {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - GREEN THEME (Same as BSIT) -->
+    <aside
+        class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-database text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · BSIS Program Chair</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">2nd Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Program</p>
+                    <p class="text-sm font-semibold text-white">BS Information Systems</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="program-chair-bsis-dashboard.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg shadow-emerald-600/20">
+                <i class="fas fa-tachometer-alt w-5"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">6</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Approval</p>
+            <a href="program-chair-bsis-pending.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Pending Signatures</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+            <a href="program-chair-bsis-approved.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-pdf w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Approved Sheets</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Program Oversight
+            </p>
+            <a href="program-chair-bsis-groups.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">BSIS Groups</span>
+                <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded-full">17</span>
+            </a>
+            <a href="program-chair-bsis-sections.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-layer-group w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Sections</span>
+                <span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+            <a href="program-chair-bsis-faculty.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chalkboard-teacher w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">BSIS Faculty</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Curriculum</p>
+            <a href="program-chair-bsis-outcomes.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tasks w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Program Outcomes</span>
+            </a>
+            <a href="program-chair-bsis-courses.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-book w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Course Mapping</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Analytics</p>
+            <a href="program-chair-bsis-analytics.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-line w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">BSIS Analytics</span>
+            </a>
+            <a href="program-chair-bsis-reports.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Program Reports</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Schedule</p>
+            <a href="program-chair-bsis-defense.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">BSIS Defenses</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Settings</p>
+            <a href="program-chair-bsis-settings.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-cog w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Program Settings</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                    JL</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Dr. Juan Lopez</p>
+                    <p class="text-xs text-slate-400">Program Chair, BSIS</p>
+                </div>
+                <a href="program-chair-bsit-dashboard.html"
+                    class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"
+                    title="Switch to BSIT">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72 smooth-scroll">
+
+        <!-- TOP BAR -->
+        <div
+            class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40 shadow-sm">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">BSIS Program Chair Dashboard</h2>
+                <span class="bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-database"></i> Information Systems
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button
+                    class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <button
+                    class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <div class="relative">
+                        <select
+                            class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <option>Academic Year 2024-2025</option>
+                            <option>Academic Year 2023-2024</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD CONTENT -->
+        <div class="p-8 space-y-8 mt-20 pb-12">
+            <!-- WELCOME BANNER - BSIS SPECIFIC (Green Theme) -->
+            <div class="bsis-gradient rounded-2xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">Welcome back, Dr. Lopez! 📊</h3>
+                        <p class="text-emerald-100">BS Information Systems · <span class="font-bold">17 active
+                                groups</span> across 2 sections</p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur rounded-xl px-6 py-3">
+                        <p class="text-sm text-emerald-200">Pending Your Signature</p>
+                        <p class="text-3xl font-bold">3</p>
+                        <p class="text-xs text-emerald-200">BSIS approval sheets</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KEY METRICS - BSIS SPECIFIC (Green Theme) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">BSIS Groups</p>
+                            <p class="text-3xl font-bold text-slate-800">17</p>
+                            <p class="text-xs text-emerald-600 mt-2">2 sections</p>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-users text-2xl text-emerald-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Completion Rate</p>
+                            <p class="text-3xl font-bold text-green-600">71%</p>
+                            <p class="text-xs text-green-600 mt-2">12/17 completed</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-check-circle text-2xl text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Project Categories</p>
+                            <p class="text-3xl font-bold text-emerald-600">4</p>
+                            <p class="text-xs text-emerald-600 mt-2">Different types</p>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-folder-open text-2xl text-emerald-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">BSIS Faculty</p>
+                            <p class="text-3xl font-bold text-emerald-600">8</p>
+                            <p class="text-xs text-emerald-600 mt-2">Advisers & Panelists</p>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-chalkboard-teacher text-2xl text-emerald-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS ROW - BSIS SPECIFIC (Green Theme) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 1: BSIS Project Categories Distribution -->
+                <div class="bg-white rounded-xl border border-slate-100 p-5 fixed-height-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-chart-pie text-emerald-500"></i> BSIS Project Categories
+                        </h3>
+                        <span class="text-xs text-slate-500">By Domain</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="bsisCategoriesChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: BSIS Faculty Workload Distribution -->
+                <div class="bg-white rounded-xl border border-slate-100 p-5 fixed-height-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-chart-bar text-emerald-500"></i> Faculty Workload
+                        </h3>
+                        <span class="text-xs text-slate-500">Groups per Adviser</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="bsisFacultyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW CHARTS ROW 2 - Additional Relevant Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 3: BSIS Section Performance Comparison -->
+                <div class="bg-white rounded-xl border border-slate-100 p-5 fixed-height-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-chart-line text-emerald-500"></i> Section Performance
+                        </h3>
+                        <span class="text-xs text-slate-500">Completion by Section</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="bsisSectionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 4: BSIS Project Complexity Distribution -->
+                <div class="bg-white rounded-xl border border-slate-100 p-5 fixed-height-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-chart-bar text-emerald-500"></i> Project Complexity
+                        </h3>
+                        <span class="text-xs text-slate-500">By Scope</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="bsisComplexityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTIONS OVERVIEW - BSIS SPECIFIC (Green Theme) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- BSIS-3A -->
+                <div class="bg-white rounded-xl border border-slate-100 p-6 hover-scale">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-emerald-700">BSIS-3A</h3>
+                        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm">24 students</span>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Groups:</span>
+                            <span class="font-semibold">6</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Completed:</span>
+                            <span class="text-green-600 font-semibold">4 (67%)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Adviser:</span>
+                            <span class="font-semibold">Prof. Lim</span>
+                        </div>
+                        <div class="progress-bar mt-2">
+                            <div class="progress-fill bg-emerald-600" style="width: 67%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BSIS-3B -->
+                <div class="bg-white rounded-xl border border-slate-100 p-6 hover-scale">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-emerald-700">BSIS-3B</h3>
+                        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm">23 students</span>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Groups:</span>
+                            <span class="font-semibold">6</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Completed:</span>
+                            <span class="text-green-600 font-semibold">5 (83%)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Adviser:</span>
+                            <span class="font-semibold">Prof. Villanueva</span>
+                        </div>
+                        <div class="progress-bar mt-2">
+                            <div class="progress-fill bg-emerald-600" style="width: 83%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PENDING SIGNATURES - BSIS SPECIFIC (Green Theme) -->
+            <div class="bg-white rounded-xl border border-slate-100 p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-signature text-emerald-500"></i>
+                        BSIS Pending Signatures
+                    </h2>
+                    <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm">3 documents</span>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- Group Delta -->
+                    <div class="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-file-pdf text-red-500"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium">Group Delta</p>
+                                <p class="text-xs text-slate-500">BSIS-3A · AI Chatbot</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs text-amber-600">Panel Chair ✓</span>
+                            <span class="text-xs text-emerald-600 font-medium">Ready for You</span>
+                            <button
+                                class="bg-emerald-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-emerald-700">Sign</button>
+                        </div>
+                    </div>
+
+                    <!-- Group Epsilon -->
+                    <div class="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-file-pdf text-red-500"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium">Group Epsilon</p>
+                                <p class="text-xs text-slate-500">BSIS-3B · Business Analytics</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs text-amber-600">Panel Chair ✓</span>
+                            <span class="text-xs text-emerald-600 font-medium">Ready for You</span>
+                            <button
+                                class="bg-emerald-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-emerald-700">Sign</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROGRAM OUTCOMES - BSIS SPECIFIC (Green Theme) -->
+            <div class="bg-white rounded-xl border border-slate-100 p-6">
+                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-tasks text-emerald-500"></i>
+                    BSIS Program Outcomes Achievement
+                </h3>
+                <div class="space-y-4">
+                    <div class="program-outcome-item p-3 rounded-lg">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium">A - Analyze business requirements</span>
+                            <span class="text-emerald-600 font-medium">89%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-emerald-600" style="width: 89%"></div>
+                        </div>
+                    </div>
+                    <div class="program-outcome-item p-3 rounded-lg">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium">B - Design information systems</span>
+                            <span class="text-emerald-600 font-medium">86%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-emerald-600" style="width: 86%"></div>
+                        </div>
+                    </div>
+                    <div class="program-outcome-item p-3 rounded-lg">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium">C - Manage data and databases</span>
+                            <span class="text-emerald-600 font-medium">91%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-emerald-600" style="width: 91%"></div>
+                        </div>
+                    </div>
+                    <div class="program-outcome-item p-3 rounded-lg">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium">D - Understand business processes</span>
+                            <span class="text-emerald-600 font-medium">88%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill bg-emerald-600" style="width: 88%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECENT PROGRAM ACTIVITY -->
+            <div class="bg-white rounded-xl border border-slate-100 p-6">
+                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-history text-emerald-500"></i>
+                    Recent BSIS Activity
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg">
+                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <div class="flex-1">
+                            <p class="text-sm"><span class="font-medium">Group Delta</span> approved by Panel Chair</p>
+                            <p class="text-xs text-slate-400">1 hour ago</p>
+                        </div>
+                        <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">Ready for
+                            You</span>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg">
+                        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <div class="flex-1">
+                            <p class="text-sm"><span class="font-medium">BSIS-3B</span> completed all defenses</p>
+                            <p class="text-xs text-slate-400">3 hours ago</p>
+                        </div>
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Section Complete</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SIGNATURE PREVIEW -->
+            <div class="bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold mb-2">Your Digital Signature</h3>
+                        <p class="text-emerald-100 text-sm">Program Chair, BS Information Systems</p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur rounded-xl px-8 py-4">
+                        <p class="text-2xl font-['Brush_Script_MT']">Dr. Juan Lopez</p>
+                        <p class="text-xs text-emerald-200 text-center mt-1">Program Chair, BSIS</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Chart 1: BSIS Project Categories Distribution
+            new Chart(document.getElementById('bsisCategoriesChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Business Analytics', 'Database Systems', 'ERP Systems', 'E-commerce'],
+                    datasets: [{
+                        data: [6, 5, 3, 3],
+                        backgroundColor: ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12 }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: BSIS Faculty Workload
+            new Chart(document.getElementById('bsisFacultyChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Prof. Lim', 'Prof. Villanueva', 'Prof. Mendoza', 'Prof. Tan'],
+                    datasets: [{
+                        label: 'Groups Assigned',
+                        data: [4, 4, 3, 3],
+                        backgroundColor: '#10b981',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { display: false }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Chart 3: BSIS Section Performance
+            new Chart(document.getElementById('bsisSectionChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['BSIS-3A', 'BSIS-3B'],
+                    datasets: [
+                        {
+                            label: 'Completed',
+                            data: [4, 5],
+                            backgroundColor: '#10b981'
+                        },
+                        {
+                            label: 'In Progress',
+                            data: [2, 1],
+                            backgroundColor: '#f59e0b'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 6,
+                            grid: { display: false }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Chart 4: BSIS Project Complexity Distribution
+            new Chart(document.getElementById('bsisComplexityChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Enterprise-wide', 'Departmental', 'Standalone'],
+                    datasets: [{
+                        data: [5, 7, 5],
+                        backgroundColor: ['#10b981', '#34d399', '#6ee7b7'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12 }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

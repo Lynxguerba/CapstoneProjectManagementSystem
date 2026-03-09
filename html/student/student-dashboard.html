@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-badge.approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .status-badge.review {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-badge.rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-badge.submitted {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-badge.resubmit {
+            background: #fed7aa;
+            color: #9a3412;
+        }
+
+        .status-badge.final {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #10b981;
+        }
+
+        .role-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .role-badge.pm {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .role-badge.sa {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .role-badge.doc {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .role-badge.dev {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .progress-bar {
+            height: 0.5rem;
+            border-radius: 9999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.3s ease;
+        }
+
+        .notification-dot {
+            position: relative;
+        }
+
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #1e40af;
+            font-weight: 500;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+        }
+
+        .fixed-height-card {
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR -->
+    <aside
+        class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-users text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Student Portal</p>
+                </div>
+            </div>
+            <div class="bg-slate-700/50 rounded-xl p-3 mt-2">
+                <p class="text-xs text-slate-400">Your Group</p>
+                <p class="text-lg font-semibold text-white">Group Alpha</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="role-badge pm text-xs">Project Manager</span>
+                    <span class="text-xs text-slate-400">BSIT-3A</span>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="student-dashboard.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-lg">
+                <i class="fas fa-tachometer-alt w-5"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Project</p>
+            <a href="student-concept.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-lightbulb w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Concept Submission</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+            <a href="student-documents.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Documents</span>
+            </a>
+            <a href="student-feedback.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-comments w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Feedback & Comments</span>
+                <span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Schedule</p>
+            <a href="student-schedule.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Defense Schedule</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Results</p>
+            <a href="student-results.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-check-circle w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Evaluation Results</span>
+            </a>
+            <a href="student-approval.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-pdf w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Approval Sheets</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                    JD</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Juan Dela Cruz</p>
+                    <p class="text-xs text-slate-400">Project Manager · Group Alpha</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72">
+        <div
+            class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40">
+            <h2 class="text-2xl font-bold text-slate-800">Student Dashboard</h2>
+            <div class="flex items-center gap-4">
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <div class="flex items-center gap-3 border-l pl-4">
+                    <select class="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
+                        <option>BS Information Technology</option>
+                        <option>BS Information Systems</option>
+                    </select>
+                    <select class="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
+                        <option>Phase 1: Concept</option>
+                        <option>Phase 2: Outline</option>
+                        <option>Phase 3: Pre-Deployment</option>
+                        <option>Phase 4: Deployment</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-8 space-y-8 mt-20 pb-12">
+            <!-- Welcome Banner -->
+            <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 text-white">
+                <div class="flex justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">Welcome back, Juan! 👋</h3>
+                        <p>Your group is in <span class="font-bold">Phase 1: Concept Submission</span></p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur rounded-xl px-6 py-3">
+                        <p class="text-sm">Next Deadline</p>
+                        <p class="text-lg font-bold">Concept Paper</p>
+                        <p class="text-xs">March 10, 2026 · in 3 days</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUICK STATS -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Project Status</p>
+                            <p class="text-2xl font-bold text-emerald-600">Concept</p>
+                            <p class="text-xs text-slate-500 mt-2">Phase 1 of 4</p>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-flag text-2xl text-emerald-600"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar mt-4">
+                        <div class="progress-fill bg-emerald-600" style="width: 25%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Documents</p>
+                            <p class="text-2xl font-bold text-blue-600">4/6</p>
+                            <p class="text-xs text-slate-500 mt-2">2 pending</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-file-alt text-2xl text-blue-600"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar mt-4">
+                        <div class="progress-fill bg-blue-600" style="width: 66%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Feedback</p>
+                            <p class="text-2xl font-bold text-amber-600">3</p>
+                            <p class="text-xs text-slate-500 mt-2">From advisor & panel</p>
+                        </div>
+                        <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-comments text-2xl text-amber-600"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar mt-4">
+                        <div class="progress-fill bg-amber-600" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Days Left</p>
+                            <p class="text-2xl font-bold text-red-600">3</p>
+                            <p class="text-xs text-slate-500 mt-2">Until deadline</p>
+                        </div>
+                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-clock text-2xl text-red-600"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar mt-4">
+                        <div class="progress-fill bg-red-600" style="width: 75%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS SECTION - Professional Visualizations -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Project Progress Chart (Doughnut) -->
+                <div class="fixed-height-card bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-chart-pie text-emerald-500"></i> Project Progress
+                        </h3>
+                        <span class="text-xs text-slate-500">Overall</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                    <div class="mt-3 text-xs text-center text-slate-500">
+                        <span class="inline-flex items-center gap-2 mr-3"><span
+                                class="w-2 h-2 bg-emerald-500 rounded-full"></span> Completed 25%</span>
+                        <span class="inline-flex items-center gap-2"><span
+                                class="w-2 h-2 bg-slate-200 rounded-full"></span> Remaining 75%</span>
+                    </div>
+                </div>
+
+                <!-- Final Approved Titles Chart (Doughnut) -->
+                <div class="fixed-height-card bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-check-circle text-emerald-500"></i> Final Approved Titles
+                        </h3>
+                        <span class="text-xs text-slate-500">All Groups</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="titlesChart"></canvas>
+                    </div>
+                    <div class="mt-3 text-xs text-center text-slate-500">
+                        <span class="inline-flex items-center gap-2 mr-3"><span
+                                class="w-2 h-2 bg-emerald-500 rounded-full"></span> Approved 4</span>
+                        <span class="inline-flex items-center gap-2"><span
+                                class="w-2 h-2 bg-amber-500 rounded-full"></span> In Review 8</span>
+                    </div>
+                </div>
+
+                <!-- Document Types Chart (Bar) -->
+                <div class="fixed-height-card bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-chart-bar text-blue-500"></i> Documents by Type
+                        </h3>
+                        <span class="text-xs text-slate-500">24 files</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="documentChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FINAL APPROVED TITLES REPOSITORY -->
+            <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold flex items-center gap-2">
+                        <i class="fas fa-check-circle text-emerald-500"></i>
+                        Final Approved Titles Repository
+                    </h3>
+                    <span class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full">4 Final Titles</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="border-l-4 border-l-emerald-500 bg-emerald-50 rounded-r-xl p-4">
+                        <p class="font-medium text-emerald-800">AI-Powered Learning Management System with Predictive
+                            Analytics</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <p class="text-xs text-emerald-600">Group Alpha · Finalized on March 10, 2026</p>
+                            <span class="status-badge final text-xs">Final Title</span>
+                        </div>
+                    </div>
+                    <div class="border-l-4 border-l-emerald-500 bg-emerald-50 rounded-r-xl p-4">
+                        <p class="font-medium text-emerald-800">Cloud-Based Inventory Management with Barcode
+                            Integration</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <p class="text-xs text-emerald-600">Group Beta · Finalized on March 9, 2026</p>
+                            <span class="status-badge final text-xs">Final Title</span>
+                        </div>
+                    </div>
+                    <div class="border-l-4 border-l-emerald-500 bg-emerald-50 rounded-r-xl p-4">
+                        <p class="font-medium text-emerald-800">Mobile Health Tracker with AI-Powered Insights</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <p class="text-xs text-emerald-600">Group Gamma · Finalized on March 8, 2026</p>
+                            <span class="status-badge final text-xs">Final Title</span>
+                        </div>
+                    </div>
+                    <div class="border-l-4 border-l-emerald-500 bg-emerald-50 rounded-r-xl p-4">
+                        <p class="font-medium text-emerald-800">Student Portfolio System with Analytics Dashboard</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <p class="text-xs text-emerald-600">Group Delta · Finalized on March 7, 2026</p>
+                            <span class="status-badge final text-xs">Final Title</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 bg-amber-50 rounded-lg flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle text-amber-600"></i>
+                    <p class="text-sm text-amber-700">These are the final approved titles. Do not submit concepts
+                        similar to these titles to avoid duplication.</p>
+                </div>
+            </div>
+
+            <!-- Team Members -->
+            <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-users text-emerald-500"></i>
+                    Your Team Members
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
+                            JD</div>
+                        <div>
+                            <p class="font-medium">Juan Dela Cruz</p>
+                            <p class="text-xs text-slate-500">Project Manager</p>
+                            <span class="role-badge pm text-xs mt-1 inline-block">Full Access</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div
+                            class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-lg">
+                            MS</div>
+                        <div>
+                            <p class="font-medium">Maria Santos</p>
+                            <p class="text-xs text-slate-500">System Analyst</p>
+                            <span class="role-badge sa text-xs mt-1 inline-block">Full Access</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div
+                            class="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                            JR</div>
+                        <div>
+                            <p class="font-medium">Jose Reyes</p>
+                            <p class="text-xs text-slate-500">Programmer</p>
+                            <span class="role-badge dev text-xs mt-1 inline-block">View Only</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div
+                            class="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold text-lg">
+                            AT</div>
+                        <div>
+                            <p class="font-medium">Ana Torres</p>
+                            <p class="text-xs text-slate-500">Documentarian</p>
+                            <span class="role-badge doc text-xs mt-1 inline-block">View Only</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <a href="student-concept.html"
+                    class="bg-white rounded-xl border p-6 hover:shadow-lg transition hover:-translate-y-1">
+                    <i class="fas fa-lightbulb text-3xl text-emerald-500 mb-3"></i>
+                    <h3 class="font-semibold text-lg">Concept Submission</h3>
+                    <p class="text-sm text-slate-500">Submit and track your project concepts</p>
+                    <span class="inline-block mt-2 text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">2
+                        pending</span>
+                </a>
+                <a href="student-documents.html"
+                    class="bg-white rounded-xl border p-6 hover:shadow-lg transition hover:-translate-y-1">
+                    <i class="fas fa-file-alt text-3xl text-blue-500 mb-3"></i>
+                    <h3 class="font-semibold text-lg">Documents</h3>
+                    <p class="text-sm text-slate-500">Manage and view all project files</p>
+                </a>
+                <a href="student-feedback.html"
+                    class="bg-white rounded-xl border p-6 hover:shadow-lg transition hover:-translate-y-1">
+                    <i class="fas fa-comments text-3xl text-purple-500 mb-3"></i>
+                    <h3 class="font-semibold text-lg">Feedback</h3>
+                    <p class="text-sm text-slate-500">View advisor and panel comments</p>
+                    <span class="inline-block mt-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">3
+                        new</span>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Progress Chart (Doughnut)
+        const progressCtx = document.getElementById('progressChart').getContext('2d');
+        new Chart(progressCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'Remaining'],
+                datasets: [{
+                    data: [25, 75],
+                    backgroundColor: ['#10b981', '#e2e8f0'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { backgroundColor: '#1e293b' }
+                }
+            }
+        });
+
+        // Final Approved Titles Chart
+        const titlesCtx = document.getElementById('titlesChart').getContext('2d');
+        new Chart(titlesCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Final Approved', 'In Review'],
+                datasets: [{
+                    data: [4, 8],
+                    backgroundColor: ['#10b981', '#f59e0b'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { backgroundColor: '#1e293b' }
+                }
+            }
+        });
+
+        // Document Types Chart (Bar)
+        const docCtx = document.getElementById('documentChart').getContext('2d');
+        new Chart(docCtx, {
+            type: 'bar',
+            data: {
+                labels: ['PDF', 'DOC', 'PPT', 'ZIP'],
+                datasets: [{
+                    label: 'Number of Files',
+                    data: [12, 6, 4, 2],
+                    backgroundColor: ['#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6'],
+                    borderRadius: 6,
+                    barPercentage: 0.6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { backgroundColor: '#1e293b' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { stepSize: 5, color: '#64748b' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { color: '#64748b' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
