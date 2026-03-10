@@ -179,8 +179,8 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { icon: Printer, label: 'Minutes & Approval Sheet', href: '/instructor/minutes' },
                     { icon: Clock, label: 'Deadline Management', href: '/instructor/deadlines' },
                     { icon: Archive, label: 'Deployment & Archiving', href: '/instructor/deployment' },
+                    { label: "Settings", isSection: true },
                     { icon: Bell, label: 'Notifications', href: '/instructor/notifications' },
-                    { icon: BarChart3, label: 'Reports & Analytics', href: '/instructor/reports' },
                     { icon: Settings, label: 'Profile & Settings', href: '/instructor/settings' },
                 ];
 

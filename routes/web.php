@@ -102,9 +102,6 @@ Route::prefix('instructor')->middleware([AuthenticateMiddleware::class, EnsureRo
     Route::get('/notifications', function () {
         return Inertia::render('Instructor/notifications');
     })->name('instructor.notifications');
-    Route::get('/reports', function () {
-        return Inertia::render('Instructor/reports');
-    })->name('instructor.reports');
     Route::get('/settings', function () {
         $user = Auth::guard('web')->user();
         $user?->loadMissing('eSignature');
