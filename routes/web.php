@@ -71,15 +71,19 @@ Route::prefix('instructor')->middleware([AuthenticateMiddleware::class, EnsureRo
     Route::get('/students', function () {
         return Inertia::render('Instructor/students');
     })->name('instructor.students');
+    Route::get('/adviser-assignment', function () {
+        return Inertia::render('Instructor/adviser-assignment');
+    })->name('instructor.adviser-assignment');
+     Route::get('/scheduling', function () {
+        return Inertia::render('Instructor/scheduling');
+    })->name('instructor.scheduling');
     Route::get('/titles', function () {
         return Inertia::render('Instructor/titles');
     })->name('instructor.titles');
     Route::get('/concepts', function () {
         return Inertia::render('Instructor/concepts');
     })->name('instructor.concepts');
-    Route::get('/scheduling', function () {
-        return Inertia::render('Instructor/scheduling');
-    })->name('instructor.scheduling');
+   
     Route::get('/evaluation', function () {
         return Inertia::render('Instructor/evaluation');
     })->name('instructor.evaluation');

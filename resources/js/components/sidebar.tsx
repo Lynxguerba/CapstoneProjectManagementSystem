@@ -21,7 +21,9 @@ import {
     LogOut,
     GraduationCap,
     FolderArchive,
-    History
+    History,
+    LayoutList,
+    UserRoundCog
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -166,10 +168,12 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/instructor/dashboard' },
                     { label: "Management", isSection: true },
                     { icon: Users, label: 'Students', href: '/instructor/students' },
-                    { icon: Users, label: 'Groups Management', href: '/instructor/groups' },
+                    { icon: LayoutList, label: 'Groups Management', href: '/instructor/groups' },
+                    { icon: UserRoundCog, label: 'Adviser Assignment', href: '/instructor/adviser-assignment' },
+                    { icon: Calendar, label: 'Defense Scheduling', href: '/instructor/scheduling' },
+                    { label: "Academic Control", isSection: true },
                     { icon: BookOpen, label: 'Title Repository', href: '/instructor/titles' },
                     { icon: FileText, label: 'Concept Review', href: '/instructor/concepts' },
-                    { icon: Calendar, label: 'Defense Scheduling', href: '/instructor/scheduling' },
                     { icon: ClipboardCheck, label: 'Evaluation Monitoring', href: '/instructor/evaluation' },
                     { icon: Scale, label: 'Verdict Management', href: '/instructor/verdict' },
                     { icon: Printer, label: 'Minutes & Approval Sheet', href: '/instructor/minutes' },
