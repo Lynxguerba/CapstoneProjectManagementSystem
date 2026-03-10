@@ -194,7 +194,7 @@ const InstructorStudents = () => {
                             >
                                 {programs.map(program => (
                                     <option key={program} value={program}>
-                                        {program === 'All' ? 'All Programs' : program.split(' ').slice(0, 3).join(' ')}
+                                        {program === 'All' ? 'BSIT, BSIS' : program.split(' ').slice(0, 3).join(' ')}
                                     </option>
                                 ))}
                             </select>
