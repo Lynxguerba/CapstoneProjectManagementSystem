@@ -192,11 +192,23 @@ const InstructorStudents = () => {
                                 onChange={(e) => setSelectedProgram(e.target.value)}
                                 className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-4 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                             >
-                                {programs.map(program => (
-                                    <option key={program} value={program}>
-                                        {program === 'All' ? 'BSIT, BSIS' : program.split(' ').slice(0, 3).join(' ')}
-                                    </option>
-                                ))}
+                                {programs.map(program => {
+                                    let displayText;
+                                    if (program === 'All') {
+                                        displayText = 'All Programs';
+                                    } else if (program === 'Bachelor of Science in Information Technology') {
+                                        displayText = 'BSIT';
+                                    } else if (program === 'Bachelor of Science in Information Systems') {
+                                        displayText = 'BSIS';
+                                    } else {
+                                        displayText = program.split(' ').slice(0, 3).join(' ');
+                                    }
+                                    return (
+                                        <option key={program} value={program}>
+                                            {displayText}
+                                        </option>
+                                    );
+                                })}
                             </select>
                         </div>
                          <button
@@ -287,10 +299,6 @@ const InstructorStudents = () => {
                                         <div className="flex items-center gap-2 text-xs text-slate-600">
                                             <Calendar className="h-3.5 w-3.5" />
                                             <span>{set.schoolYear}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-xs text-slate-600">
-                                            <BookOpen className="h-3.5 w-3.5" />
-                                            <span>{set.setNumber}</span>
                                         </div>
                                     </div>
 
