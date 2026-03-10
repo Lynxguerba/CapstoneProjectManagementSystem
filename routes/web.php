@@ -68,6 +68,9 @@ Route::prefix('instructor')->middleware([AuthenticateMiddleware::class, EnsureRo
     Route::get('/groups', function () {
         return Inertia::render('Instructor/groups');
     })->name('instructor.groups');
+    Route::get('/students', function () {
+        return Inertia::render('Instructor/students');
+    })->name('instructor.students');
     Route::get('/titles', function () {
         return Inertia::render('Instructor/titles');
     })->name('instructor.titles');

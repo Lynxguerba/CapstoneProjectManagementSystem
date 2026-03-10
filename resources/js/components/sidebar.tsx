@@ -164,6 +164,8 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                 return [
                     { label: "Main", isSection: true },
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/instructor/dashboard' },
+                    { label: "Management", isSection: true },
+                    { icon: Users, label: 'Students', href: '/instructor/students' },
                     { icon: Users, label: 'Groups Management', href: '/instructor/groups' },
                     { icon: BookOpen, label: 'Title Repository', href: '/instructor/titles' },
                     { icon: FileText, label: 'Concept Review', href: '/instructor/concepts' },
@@ -234,6 +236,26 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
             <aside
                 className={`fixed inset-y-0 left-0 z-[56] flex w-56 transform flex-col border-r border-slate-800 bg-green-900 text-slate-300 shadow-xl transition-transform duration-300 ease-out will-change-transform md:translate-x-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
             >
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                        .cpms-scroll::-webkit-scrollbar {
+                            width: 6px;
+                        }
+                        .cpms-scroll::-webkit-scrollbar-track {
+                            background: transparent;
+                        }
+                        .cpms-scroll::-webkit-scrollbar-thumb {
+                            background: #09be8293;
+                            border-radius: 3px;
+                        }
+                        .cpms-scroll::-webkit-scrollbar-thumb:hover {
+                            background: #00af78ff;
+                        }
+                        .cpms-scroll::-webkit-scrollbar-button {
+                            display: none;
+                        }
+                    `
+                }} />
                 {/* Brand Section - Tightened */}
                 <div className="flex flex-col items-center p-5">
                     <div className="relative mb-2">

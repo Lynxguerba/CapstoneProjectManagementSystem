@@ -299,12 +299,12 @@ const Dashboard = () => {
                                             <h3 className="flex items-center gap-2 font-semibold text-slate-800">
                                                 <Users className="h-5 w-5 text-blue-500" /> Active Groups
                                             </h3>
-                                            <button className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 hover:shadow-sm active:scale-95">
+                                            <button className="rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 hover:shadow-sm active:scale-95">
                                                 View
                                             </button>
                                         </div>
 
-                                        <div className="flex-1 overflow-x-auto">
+                                        <div className="flex-1 overflow-x-auto rounded-lg">
                                             <table className="w-full border border-slate-100 text-sm">
                                                 <thead>
                                                     <tr className="bg-slate-100 text-slate-600">
@@ -314,7 +314,7 @@ const Dashboard = () => {
                                                         <th className="px-4 py-3 text-left font-medium">Status</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100">
+                                                <tbody className="divide-y divide-slate-100 rounded-lg">
                                                     {groups.map((group, idx) => (
                                                         <tr
                                                             key={idx}
