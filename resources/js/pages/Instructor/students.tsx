@@ -1,125 +1,135 @@
 import { motion } from 'framer-motion';
-import { ChevronRight, Filter, Search, Settings, Upload } from 'lucide-react';
-import React from 'react';
-import AddUserModal from '../../components/Admin/AddUserModal';
-import BulkUploadModal from '../../components/Admin/BulkUploadModal';
-import ManageUserActionModal from '../../components/Admin/ManageUserActionModal';
+import {
+    ChevronRight,
+    Filter,
+    Search,
+    Settings,
+    Upload,
+    Plus,
+    Eye,
+    Edit3,
+    Users,
+    Calendar,
+    BookOpen,
+    GraduationCap,
+    Grid3X3,
+    List,
+    LayoutGrid
+} from 'lucide-react';
+import React, { useState } from 'react';
 import InstructorLayout from './_layout';
 
-type StudentProgram = 'BSIT' | 'BSIS';
-type StudentStatus = 'active' | 'inactive';
-type StudentFilterProgram = StudentProgram | 'all';
-type StudentFilterStatus = StudentStatus | 'all';
-
-type StudentRow = {
-    id: number;
-    firstName: string;
-    lastName: string;
-    fullName: string;
-    email?: string;
-    program?: StudentProgram;
-    status: StudentStatus;
-    createdAt: string;
-};
-
-type RawStudentRow = Omit<StudentRow, 'program'> & {
-    program?: unknown;
-};
-
-type AdminStudentsProps = {
-    students?: RawStudentRow[];
-    filters?: {
-        search?: string;
-    };
-};
-
-const normalizeProgramCode = (value: unknown): StudentProgram | undefined => {
-    if (typeof value !== 'string') {
-        return undefined;
-    }
-
-    const normalizedProgram = value.trim().toUpperCase();
-
-    if (normalizedProgram === 'BSIT' || normalizedProgram === 'BSIS') {
-        return normalizedProgram;
-    }
-
-    return undefined;
-};
-
-const resolveStudentProgram = (student: RawStudentRow): StudentProgram | undefined => {
-    const directProgram = normalizeProgramCode(student.program);
-    if (directProgram !== undefined) {
-        return directProgram;
-    }
-
-    if (student.program !== null && typeof student.program === 'object' && 'code' in student.program) {
-        return normalizeProgramCode(student.program.code);
-    }
-
-    return undefined;
-};
-
-const InstructorStudents = ({ students = [], filters }: AdminStudentsProps) => {
-    const initialStudents = React.useMemo(() => {
-        if (!Array.isArray(students)) {
-            return [];
+const InstructorStudents = () => {
+    // Sample data for student sets/programs
+    const studentSets = [
+        {
+            id: 1,
+            name: 'BSIT Capstone 2025-2026',
+            program: 'Bachelor of Science in Information Technology',
+            schoolYear: '2025-2026',
+            setNumber: 'Set A',
+            totalStudents: 45,
+            groups: 9,
+            status: 'Active',
+            description: 'Information Technology Capstone Projects'
+        },
+        {
+            id: 2,
+            name: 'BSIS Capstone 2025-2026',
+            program: 'Bachelor of Science in Information Systems',
+            schoolYear: '2025-2026',
+            setNumber: 'Set B',
+            totalStudents: 38,
+            groups: 8,
+            status: 'Active',
+            description: 'Information Systems Capstone Projects'
+        },
+        {
+            id: 3,
+            name: 'BSIT Capstone 2024-2025',
+            program: 'Bachelor of Science in Information Technology',
+            schoolYear: '2024-2025',
+            setNumber: 'Set A',
+            totalStudents: 42,
+            groups: 8,
+            status: 'Completed',
+            description: 'Information Technology Capstone Projects'
+        },
+        {
+            id: 4,
+            name: 'BSIS Capstone 2024-2025',
+            program: 'Bachelor of Science in Information Systems',
+            schoolYear: '2024-2025',
+            setNumber: 'Set B',
+            totalStudents: 35,
+            groups: 7,
+            status: 'Completed',
+            description: 'Information Systems Capstone Projects'
+        },
+        {
+            id: 5,
+            name: 'BSIT Capstone 2023-2024',
+            program: 'Bachelor of Science in Information Technology',
+            schoolYear: '2023-2024',
+            setNumber: 'Set A',
+            totalStudents: 48,
+            groups: 10,
+            status: 'Completed',
+            description: 'Information Technology Capstone Projects'
+        },
+        {
+            id: 6,
+            name: 'BSIS Capstone 2023-2024',
+            program: 'Bachelor of Science in Information Systems',
+            schoolYear: '2023-2024',
+            setNumber: 'Set B',
+            totalStudents: 41,
+            groups: 8,
+            status: 'Completed',
+            description: 'Information Systems Capstone Projects'
         }
+    ];
 
-        return students.map((student) => ({
-            ...student,
-            program: resolveStudentProgram(student),
-        }));
-    }, [students]);
+    // Filter states
+    const [selectedSchoolYear, setSelectedSchoolYear] = useState('All');
+    const [selectedSet, setSelectedSet] = useState('All');
+    const [selectedProgram, setSelectedProgram] = useState('All');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
 
-    const [managedStudents, setManagedStudents] = React.useState<StudentRow[]>(initialStudents);
-    const [search, setSearch] = React.useState(filters?.search ?? '');
-    const [program, setProgram] = React.useState<StudentFilterProgram>('all');
-    const [status, setStatus] = React.useState<StudentFilterStatus>('all');
-    const [isAddUserModalOpen, setIsAddUserModalOpen] = React.useState(false);
-    const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = React.useState(false);
-    const [isManageUserModalOpen, setIsManageUserModalOpen] = React.useState(false);
-    const [selectedStudent, setSelectedStudent] = React.useState<StudentRow | null>(null);
-    const [currentPage, setCurrentPage] = React.useState(1);
-    const usersPerPage = 10;
+    // Filter options
+    const schoolYears = ['All', '2025-2026', '2024-2025', '2023-2024'];
+    const sets = ['All', 'Set A', 'Set B', 'Set C'];
+    const programs = [
+        'All',
+        'Bachelor of Science in Information Technology',
+        'Bachelor of Science in Information Systems'
+    ];
 
-    React.useEffect(() => {
-        setManagedStudents(initialStudents);
-        setCurrentPage(1);
-    }, [initialStudents]);
+    // Filter the student sets
+    const filteredSets = studentSets.filter(set => {
+        const matchesYear = selectedSchoolYear === 'All' || set.schoolYear === selectedSchoolYear;
+        const matchesSet = selectedSet === 'All' || set.setNumber === selectedSet;
+        const matchesProgram = selectedProgram === 'All' || set.program === selectedProgram;
+        const matchesSearch = set.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            set.program.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const filteredUsers = React.useMemo(() => {
-        const query = search.trim().toLowerCase();
+        return matchesYear && matchesSet && matchesProgram && matchesSearch;
+    });
 
-        return managedStudents.filter((user) => {
-            const programCode = (user.program ?? '').toLowerCase();
-            const matchesQuery =
-                !query ||
-                user.fullName.toLowerCase().includes(query) ||
-                programCode.includes(query) ||
-                (user.email ?? '').toLowerCase().includes(query);
-            const matchesProgram = program === 'all' || user.program === program;
-            const matchesStatus = status === 'all' || user.status === status;
-
-            return matchesQuery && matchesProgram && matchesStatus;
-        });
-    }, [managedStudents, search, program, status]);
-
-    React.useEffect(() => {
-        setCurrentPage(1);
-    }, [search, program, status]);
-
-    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / usersPerPage));
+    // Pagination logic
+    const totalPages = Math.max(1, Math.ceil(filteredSets.length / itemsPerPage));
 
     React.useEffect(() => {
         setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
     }, [totalPages]);
 
-    const paginatedUsers = React.useMemo(() => {
-        const startIndex = (currentPage - 1) * usersPerPage;
-
-        return filteredUsers.slice(startIndex, startIndex + usersPerPage);
-    }, [filteredUsers, currentPage]);
+    const paginatedSets = React.useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredSets.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredSets, currentPage]);
 
     const pages = React.useMemo(() => {
         const maxVisiblePages = 5;
@@ -129,16 +139,10 @@ const InstructorStudents = ({ students = [], filters }: AdminStudentsProps) => {
         return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
     }, [currentPage, totalPages]);
 
-    const openManageStudentModal = (student: StudentRow) => {
-        setSelectedStudent(student);
-        setIsManageUserModalOpen(true);
-    };
-
-    const saveManagedStudent = (updatedStudent: StudentRow) => {
-        setManagedStudents((previousStudents) => previousStudents.map((student) => (student.id === updatedStudent.id ? updatedStudent : student)));
-        setIsManageUserModalOpen(false);
-        setSelectedStudent(null);
-    };
+    // Reset to page 1 when filters change
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, selectedSchoolYear, selectedSet, selectedProgram]);
 
     return (
         <InstructorLayout title="Students Management" subtitle="Manage student records by program">
@@ -146,27 +150,19 @@ const InstructorStudents = ({ students = [], filters }: AdminStudentsProps) => {
                 {/* Action Bar */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex flex-wrap items-center gap-2">
-                        <div className="relative">
-                            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                            <input
-                                type="text"
-                                placeholder="Search students..."
-                                value={search}
-                                onChange={(event) => setSearch(event.target.value)}
-                                className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm transition-all outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 md:w-64"
-                            />
-                        </div>
 
                         <div className="relative">
                             <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                             <select
-                                value={program}
-                                onChange={(event) => setProgram(event.target.value as StudentFilterProgram)}
+                                value={selectedSchoolYear}
+                                onChange={(e) => setSelectedSchoolYear(e.target.value)}
                                 className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                             >
-                                <option value="all">All Programs</option>
-                                <option value="BSIT">BSIT</option>
-                                <option value="BSIS">BSIS</option>
+                                {schoolYears.map(year => (
+                                    <option key={year} value={year}>
+                                        {year === 'All' ? 'All Years' : year}
+                                    </option>
+                                ))}
                             </select>
                         </div>
 
@@ -175,102 +171,245 @@ const InstructorStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                 <ChevronRight size={12} className="rotate-90" />
                             </div>
                             <select
-                                value={status}
-                                onChange={(event) => setStatus(event.target.value as StudentFilterStatus)}
+                                value={selectedSet}
+                                onChange={(e) => setSelectedSet(e.target.value)}
                                 className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-4 text-xs capitalize shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                             >
-                                <option value="all">All Statuses</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                {sets.map(set => (
+                                    <option key={set} value={set}>
+                                        {set === 'All' ? 'All Sets' : set}
+                                    </option>
+                                ))}
                             </select>
                         </div>
+
+                        <div className="relative">
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                                <ChevronRight size={12} className="rotate-90" />
+                            </div>
+                            <select
+                                value={selectedProgram}
+                                onChange={(e) => setSelectedProgram(e.target.value)}
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-4 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                            >
+                                {programs.map(program => (
+                                    <option key={program} value={program}>
+                                        {program === 'All' ? 'All Programs' : program.split(' ').slice(0, 3).join(' ')}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                         <button
+                            type="button"
+                            onClick={() => {
+                                setSelectedSchoolYear('All');
+                                setSelectedSet('All');
+                                setSelectedProgram('All');
+                                setSearchTerm('');
+                            }}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900"
+                        >
+                            Clear Filters
+                        </button>
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* Grid Layout Controller */}
+                        <div className="flex items-center rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+                            <button
+                                onClick={() => setViewMode('card')}
+                                className={`flex items-center justify-center rounded-md px-2 py-1.5 text-xs font-medium transition-all ${
+                                    viewMode === 'card'
+                                        ? 'bg-green-700 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-100'
+                                }`}
+                            >
+                                <LayoutGrid className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`flex items-center justify-center rounded-md px-2 py-1.5 text-xs font-medium transition-all ${
+                                    viewMode === 'list'
+                                        ? 'bg-green-700 text-white shadow-sm'
+                                        : 'text-slate-600 hover:bg-slate-100'
+                                }`}
+                            >
+                                <List className="h-3.5 w-3.5" />
+                            </button>
+                        </div>
+
+                       
+
                         <button
                             type="button"
-                            onClick={() => setIsBulkUploadModalOpen(true)}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900"
-                        >
-                            <Upload className="h-3.5 w-3.5" />
-                            Bulk Upload
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setIsAddUserModalOpen(true)}
                             className="inline-flex items-center justify-center rounded-lg bg-green-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-green-800 active:scale-95"
                         >
-                            Add Student
+                            <Plus className="h-3.5 w-3.5" />
+                            Add Program/Set
                         </button>
                     </div>
                 </div>
 
-                {/* Striped Table */}
-                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <table className="w-full text-left text-xs">
-                        <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
-                            <tr>
-                                <th className="px-6 py-4">Fullname</th>
-                                <th className="px-6 py-4">Email</th>
-                                <th className="px-6 py-4">Program</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Created</th>
-                                <th className="px-6 py-4 text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {paginatedUsers.map((user, index) => (
-                                <tr
-                                    key={user.id}
-                                    className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
-                                >
-                                    <td className="px-6 py-3.5 font-semibold text-slate-800">{user.fullName}</td>
-                                    <td className="px-6 py-3.5 text-slate-500">{user.email ?? '—'}</td>
-                                    <td className="px-6 py-3.5">
-                                        <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600">
-                                            {user.program ?? 'Unassigned'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-3.5">
-                                        <span
-                                            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${
-                                                user.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
-                                            }`}
-                                        >
-                                        
-                                            {user.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-3.5 text-slate-500">{user.createdAt}</td>
-                                    <td className="px-6 py-3.5 text-right">
-                                        <button
-                                            type="button"
-                                            onClick={() => openManageStudentModal(user)}
-                                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700"
-                                        >
-                                            <Settings className="h-3 w-3" />
-                                            Manage
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                {/* Student Sets Display */}
+                {viewMode === 'card' ? (
+                    /* Card View */
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
+                    >
+                        {paginatedSets.map((set, idx) => (
+                            <motion.div
+                                key={set.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 * idx }}
+                                className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+                            >
+                                <div className="p-5">
+                                    {/* Header */}
+                                    <div className="mb-3">
+                                        <div className="flex-1">
+                                            <h3 className="text-sm font-semibold text-slate-800 group-hover:text-green-600 transition-colors">
+                                                {set.setNumber}
+                                            </h3>
+                                            <p className="text-xs text-slate-600 mt-1">{set.description}</p>
+                                        </div>
+                                    </div>
 
-                    {filteredUsers.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-12">
-                            <p className="text-sm font-medium text-slate-400">No students found for the current filters.</p>
-                        </div>
-                    )}
-                </div>
+                                    {/* Program Info */}
+                                    <div className="space-y-2 mb-3">
+                                        <div className="flex items-center gap-2 text-xs text-slate-600">
+                                            <GraduationCap className="h-3.5 w-3.5" />
+                                            <span className="font-medium">{set.program}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-slate-600">
+                                            <Calendar className="h-3.5 w-3.5" />
+                                            <span>{set.schoolYear}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-slate-600">
+                                            <BookOpen className="h-3.5 w-3.5" />
+                                            <span>{set.setNumber}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Stats */}
+                                    <div className="grid grid-cols-2 gap-3 mb-4 p-2 bg-slate-50 rounded-lg">
+                                        <div className="text-center">
+                                            <div className="text-lg font-bold text-slate-800">{set.totalStudents}</div>
+                                            <div className="text-[10px] text-slate-600">Students</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-lg font-bold text-slate-800">{set.groups}</div>
+                                            <div className="text-[10px] text-slate-600">Groups</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex gap-2">
+                                        <button className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700">
+                                            <Eye className="h-3 w-3" />
+                                            View
+                                        </button>
+                                        <button className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-green-700 px-2.5 py-1.5 text-[11px] font-bold text-white transition-all hover:bg-green-800 active:scale-95">
+                                            <Edit3 className="h-3 w-3" />
+                                            Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                ) : (
+                    /* List View */
+                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                        <table className="w-full text-left text-xs">
+                            <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                <tr>
+                                    <th className="px-6 py-4">Set</th>
+                                    <th className="px-6 py-4">School Year</th>
+                                    <th className="px-6 py-4">Students</th>
+                                    <th className="px-6 py-4">Groups</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {paginatedSets.map((set, index) => (
+                                    <tr
+                                        key={set.id}
+                                        className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
+                                    >
+                                        <td className="px-6 py-3.5">
+                                            <div>
+                                                <div className="font-semibold text-slate-800">{set.setNumber}</div>
+                                                <div className="text-[10px] text-slate-500">{set.description}</div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-3.5 text-slate-600">{set.schoolYear}</td>
+                                        <td className="px-6 py-3.5 font-semibold text-slate-800">{set.totalStudents}</td>
+                                        <td className="px-6 py-3.5 font-semibold text-slate-800">{set.groups}</td>
+                                        <td className="px-6 py-3.5 text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <button className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700">
+                                                    <Eye className="h-3 w-3" />
+                                                    View
+                                                </button>
+                                                <button className="inline-flex items-center gap-1 rounded-md bg-green-700 px-2 py-1 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-green-800 active:scale-95">
+                                                    <Edit3 className="h-3 w-3" />
+                                                    Edit
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        {filteredSets.length === 0 && (
+                            <div className="flex flex-col items-center justify-center py-12">
+                                <p className="text-sm font-medium text-slate-400">No student sets found for the current filters.</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Empty State for Card View */}
+                {viewMode === 'card' && paginatedSets.length === 0 && filteredSets.length === 0 && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-12 text-center shadow-sm"
+                    >
+                        <Users className="h-8 w-8 text-slate-400 mb-3" />
+                        <h3 className="text-sm font-semibold text-slate-800 mb-2">No student sets found</h3>
+                        <p className="text-slate-600 mb-4 text-xs">Try adjusting your filters or create a new program set.</p>
+                        <button className="flex items-center gap-2 rounded-lg bg-green-700 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-green-800 active:scale-95">
+                            <Plus className="h-3.5 w-3.5" />
+                            Add Program/Set
+                        </button>
+                    </motion.div>
+                )}
+
+                {/* Results Summary */}
+                {filteredSets.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-center text-xs font-medium text-slate-500"
+                    >
+                        Showing {paginatedSets.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                        {Math.min(currentPage * itemsPerPage, filteredSets.length)} of{' '}
+                        {filteredSets.length} student sets
+                    </motion.div>
+                )}
 
                 {/* Pagination */}
-                {filteredUsers.length > 0 && (
+                {filteredSets.length > 0 && (
                     <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
                         <p className="text-xs font-medium text-slate-500">
-                            Showing <span className="text-slate-900">{(currentPage - 1) * usersPerPage + 1}</span> to{' '}
-                            <span className="text-slate-900">{Math.min(currentPage * usersPerPage, filteredUsers.length)}</span> of{' '}
-                            <span className="text-slate-900">{filteredUsers.length}</span> students
+                            Page <span className="text-slate-900">{currentPage}</span> of{' '}
+                            <span className="text-slate-900">{totalPages}</span>
                         </p>
                         <div className="flex items-center gap-1.5">
                             <button
@@ -311,24 +450,6 @@ const InstructorStudents = ({ students = [], filters }: AdminStudentsProps) => {
                     </div>
                 )}
             </motion.section>
-            <AddUserModal open={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} userType="student" />
-            <BulkUploadModal
-                open={isBulkUploadModalOpen}
-                onClose={() => setIsBulkUploadModalOpen(false)}
-                existingUsers={managedStudents}
-                userType="student"
-            />
-            <ManageUserActionModal
-                open={isManageUserModalOpen}
-                user={selectedStudent}
-                mode="student"
-                submitUrl={selectedStudent ? `/admin/users/${selectedStudent.id}?from=student` : ''}
-                onClose={() => {
-                    setIsManageUserModalOpen(false);
-                    setSelectedStudent(null);
-                }}
-                onSave={(updatedUser) => saveManagedStudent(updatedUser as StudentRow)}
-            />
         </InstructorLayout>
     );
 };
