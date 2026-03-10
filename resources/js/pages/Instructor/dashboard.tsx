@@ -85,17 +85,38 @@ const Dashboard = () => {
     const groups = [
         {
             name: 'Alpha',
-            members: ['JD', 'MS', 'AR', '+2'],
+            members: ['Doe, John', 'Smith, Jane', 'Reyes, Ana', '+2'],
             adviser: 'Prof. Cruz',
             status: 'Approved',
             progress: 75,
         },
         {
             name: 'Beta',
-            members: ['RC', 'MT', 'LJ'],
+            members: ['Cruz, Ryan', 'Tan, Maria', 'Lopez, Jose'],
             adviser: 'Unassigned',
             status: 'Pending',
             progress: 30,
+        },
+        {
+            name: 'Gamma',
+            members: ['Garcia, Luis', 'Hernandez, Sofia', 'Martinez, Carlos'],
+            adviser: 'Prof. Santos',
+            status: 'Pending',
+            progress: 20,
+        },
+        {
+            name: 'Delta',
+            members: ['Lee, David', 'Kim, Emily', 'Park, Alex'],
+            adviser: 'Prof. Lim',
+            status: 'Approved',
+            progress: 90,
+        },
+        {
+            name: 'Epsilon',
+            members: ['Wilson, Michael', 'Brown, Olivia', 'Davis, Ethan'],
+            adviser: 'Prof. Reyes',
+            status: 'Pending',
+            progress: 50,
         },
     ];
 
@@ -234,54 +255,7 @@ const Dashboard = () => {
 
                             {/* GROUP MANAGEMENT OVERVIEW */}
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                                <div className="mb-4 flex items-center justify-between">
-                                    <h2 className="text-lg font-semibold text-slate-800">Active Groups</h2>
-                                </div>
-
                                 <div className="grid gap-6 lg:grid-cols-2">
-                                    <div className="overflow-x-auto rounded-xl border border-slate-100">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-slate-50">
-                                                <tr className="text-slate-500">
-                                                    <th className="px-6 py-4 text-left">Project Manager</th>
-                                                    <th className="px-6 py-4 text-left">Members</th>
-                                                    <th className="px-6 py-4 text-left">Adviser</th>
-                                                    <th className="px-6 py-4 text-left">Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {groups.map((group, idx) => (
-                                                    <tr key={idx} className="transition hover:bg-slate-50">
-                                                        <td className="px-6 py-4 font-medium">
-                                                            {group.name}
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex -space-x-2">
-                                                                {group.members.map((member, i) => (
-                                                                    <div
-                                                                        key={i}
-                                                                        className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs text-white ${
-                                                                            member === '+2' ? 'bg-slate-300 text-slate-600' : 'bg-blue-500'
-                                                                        }`}
-                                                                    >
-                                                                        {member}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4">{group.adviser}</td>
-                                                        <td className="px-6 py-4">
-                                                            {/* Icon removed, text preserved */}
-                                                            <span className={`status-badge ${group.status === 'Approved' ? 'approved' : 'pending'}`}>
-                                                                {group.status}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-
                                     {/* Project Preferences */}
                                     <div className="flex min-h-[400px] flex-col rounded-xl border border-slate-100 bg-slate-50 p-5 transition-all">
                                         <div className="mb-3 flex items-center justify-between">
@@ -317,6 +291,64 @@ const Dashboard = () => {
                                                 }}
                                                 margin={{ top: 0, bottom: 60, left: 0, right: 0 }}
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex min-h-[400px] flex-col rounded-xl border border-slate-100 p-5 transition-all">
+                                        <div className="mb-3 flex items-center justify-between">
+                                            <h3 className="flex items-center gap-2 font-semibold text-slate-800">
+                                                <Users className="h-5 w-5 text-blue-500" /> Active Groups
+                                            </h3>
+                                            <button className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-600 transition-all hover:bg-blue-100 hover:shadow-sm active:scale-95">
+                                                View
+                                            </button>
+                                        </div>
+
+                                        <div className="flex-1 overflow-x-auto">
+                                            <table className="w-full border border-slate-100 text-sm">
+                                                <thead>
+                                                    <tr className="bg-slate-100 text-slate-600">
+                                                        <th className="px-4 py-3 text-left font-medium">Project Manager</th>
+                                                        <th className="px-4 py-3 text-left font-medium">Members</th>
+                                                        <th className="px-4 py-3 text-left font-medium">Adviser</th>
+                                                        <th className="px-4 py-3 text-left font-medium">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {groups.map((group, idx) => (
+                                                        <tr
+                                                            key={idx}
+                                                            className={`rounded-lg transition hover:bg-blue-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}
+                                                        >
+                                                            <td className="px-4 py-3 font-medium text-slate-800">{group.members[0]}</td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex -space-x-2">
+                                                                    {group.members.map((member, i) => (
+                                                                        <div
+                                                                            key={i}
+                                                                            className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-xs font-medium text-white ${
+                                                                                member === '+2' ? 'bg-slate-300 text-slate-600' : 'bg-blue-500'
+                                                                            }`}
+                                                                        >
+                                                                            {member === '+2'
+                                                                                ? '+2'
+                                                                                : `${member.split(', ')[1][0]}${member.split(', ')[0][0]}`}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-slate-600">{group.adviser}</td>
+                                                            <td className="px-4 py-3">
+                                                                <span
+                                                                    className={`status-badge ${group.status === 'Approved' ? 'approved' : 'pending'}`}
+                                                                >
+                                                                    {group.status}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
@@ -361,10 +393,6 @@ const Dashboard = () => {
                                         </div>
                                     </div>
                                 ))}
-
-                                <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 py-3 text-slate-500 transition hover:bg-slate-50">
-                                    <Plus className="h-4 w-4" /> Add New Deadline
-                                </button>
                             </div>
                         </div>
 
@@ -409,10 +437,6 @@ const Dashboard = () => {
                                         <p className="text-xs text-slate-500">Due March 8, 2026</p>
                                     </div>
                                 </div>
-
-                                <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 py-3 text-slate-500 transition hover:bg-slate-50">
-                                    <Download className="h-4 w-4" /> Download Report
-                                </button>
                             </div>
                         </div>
                     </motion.div>

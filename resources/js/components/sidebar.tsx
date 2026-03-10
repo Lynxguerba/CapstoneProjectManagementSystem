@@ -162,6 +162,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                 ];
             case 'instructor':
                 return [
+                    { label: "Main", isSection: true },
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/instructor/dashboard' },
                     { icon: Users, label: 'Groups Management', href: '/instructor/groups' },
                     { icon: BookOpen, label: 'Title Repository', href: '/instructor/titles' },
