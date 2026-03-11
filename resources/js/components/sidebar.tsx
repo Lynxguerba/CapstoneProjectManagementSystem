@@ -116,6 +116,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { label: 'Archive', isSection: true },
                     { icon: FolderArchive, label: 'Project Repository ', href: '/admin/project-repository' },
                     { icon: History, label: 'Backup & Restore ', href: '/admin/backup-restore' },
+                    { label: 'Administration', isSection: true },
                     { icon: Settings, label: 'System Settings', href: '/admin/system-settings' },
                     { icon: Archive, label: 'Audit Logs', href: '/admin/audit-logs' },
                 ];

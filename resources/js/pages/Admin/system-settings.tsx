@@ -3,6 +3,7 @@ import type { Variants } from 'framer-motion';
 import { motion } from 'framer-motion';
 import { Bell, GraduationCap, ShieldCheck, Users } from 'lucide-react';
 import React from 'react';
+import SaveAcademicYearModal from '@/components/Admin/SaveAcademicYearModal';
 import ProfileCard from '@/components/Settings/ProfileCard';
 import AdminLayout from './_layout';
 
@@ -128,14 +129,25 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
         return admins.find((admin) => admin.id === selectedAdminId) ?? admins[0];
     }, [admins, selectedAdminId]);
 
+    const [showSaveAcademicYearModal, setShowSaveAcademicYearModal] = React.useState(false);
+
     const submitAcademicYear = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        academicYearForm.put('/admin/system-settings', { preserveScroll: true });
+        setShowSaveAcademicYearModal(true);
     };
 
     const submitSiteWideNotification = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         notificationForm.put('/admin/system-settings', { preserveScroll: true });
+    };
+
+    const confirmSaveAcademicYear = () => {
+        academicYearForm.put('/admin/system-settings', {
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowSaveAcademicYearModal(false);
+            },
+        });
     };
 
     return (
@@ -154,10 +166,13 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
                                 description="Set the current academic year and active capstone phase."
                             />
                             <div className="mb-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
-                                <FormField label="Academic year" hint="Format: YYYY–YYYY" error={academicYearForm.errors.academicYear} span2>
+                                <FormField label="Academic year" hint="Format: YYYY–YYYY" span2>
                                     <input
                                         value={academicYearForm.data.academicYear}
-                                        onChange={(e) => academicYearForm.setData('academicYear', e.target.value)}
+                                        onChange={(e) => {
+                                            academicYearForm.clearErrors('academicYear');
+                                            academicYearForm.setData('academicYear', e.target.value);
+                                        }}
                                         placeholder="2025–2026"
                                         className={inputClass}
                                     />
@@ -169,7 +184,7 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
                                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-green-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-green-700 hover:to-green-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <ShieldCheck className="h-4 w-4" />
-                                {academicYearForm.processing ? 'Saving...' : 'Save academic year'}
+                                {academicYearForm.processing ? 'Saving...' : 'Save Academic Year'}
                             </button>
                         </form>
 
@@ -275,6 +290,18 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
                     </motion.section>
                 </div>
             </motion.div>
+
+            <SaveAcademicYearModal
+                open={showSaveAcademicYearModal}
+                onClose={() => {
+                    setShowSaveAcademicYearModal(false);
+                    academicYearForm.clearErrors('academicYear');
+                }}
+                academicYear={academicYearForm.data.academicYear}
+                error={academicYearForm.errors.academicYear}
+                onConfirm={confirmSaveAcademicYear}
+                isSubmitting={academicYearForm.processing}
+            />
         </AdminLayout>
     );
 };
