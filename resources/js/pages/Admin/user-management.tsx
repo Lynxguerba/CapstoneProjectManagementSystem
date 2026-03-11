@@ -292,11 +292,7 @@ const AdminUserManagement = ({ users = [], filters }: AdminUserManagementProps) 
                 </div>
             </motion.section>
             <AddUserModal open={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} />
-            <BulkUploadModal
-                open={isBulkUploadModalOpen}
-                onClose={() => setIsBulkUploadModalOpen(false)}
-                existingUsers={managedUsers}
-            />
+            <BulkUploadModal open={isBulkUploadModalOpen} onClose={() => setIsBulkUploadModalOpen(false)} existingUsers={managedUsers} />
             <ManageUserActionModal
                 open={isManageUserModalOpen}
                 user={selectedUser}

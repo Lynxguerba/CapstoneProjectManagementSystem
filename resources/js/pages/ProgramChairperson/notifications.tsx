@@ -65,10 +65,7 @@ const NotificationIcon = ({ tone }: { tone: NotificationTone }) => {
 
 const ProgramChairpersonNotificationsPage = () => {
     return (
-        <ProgramChairpersonLayout
-            title="Notifications"
-            subtitle="Alerts for pending approvals and newly submitted deployment records (UI only)"
-        >
+        <ProgramChairpersonLayout title="Notifications" subtitle="Alerts for pending approvals and newly submitted deployment records (UI only)">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

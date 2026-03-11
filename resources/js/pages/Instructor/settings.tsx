@@ -56,14 +56,18 @@ const InstructorSettings = () => {
                         </div>
                     </div>
 
-                    <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-                        <ProfileCard name={name} email={email} assignedRoles={assignedRoles} />
-                        <PasswordManager />
-                        <ESignature
-                            initialSignature={eSignature?.signatureData ?? ''}
-                            upsertUrl="/instructor/settings/e-signature"
-                            deleteUrl="/instructor/settings/e-signature"
-                        />
+                    <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+                        <div className="space-y-6">
+                            <ProfileCard name={name} email={email} assignedRoles={assignedRoles} />
+                            <PasswordManager />
+                        </div>
+                        <div className="space-y-6">
+                            <ESignature
+                                initialSignature={eSignature?.signatureData ?? ''}
+                                upsertUrl="/instructor/settings/e-signature"
+                                deleteUrl="/instructor/settings/e-signature"
+                            />
+                        </div>
                     </div>
                 </motion.section>
             </div>

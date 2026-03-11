@@ -60,7 +60,6 @@ const AdviserSettings = () => {
                         <ProfileCard name={name} email={email} assignedRoles={assignedRoles} />
                         <PasswordManager />
                         <ESignature initialSignature={eSignature?.signatureData ?? ''} />
-                                    
                     </div>
                 </motion.section>
             </div>

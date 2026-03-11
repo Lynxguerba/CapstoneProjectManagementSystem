@@ -91,10 +91,7 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
     }, [user, clearErrors, setData]);
 
     const toggleRole = (role: UserRole) => {
-        setData(
-            'roles',
-            data.roles.includes(role) ? data.roles.filter((assignedRole) => assignedRole !== role) : [...data.roles, role],
-        );
+        setData('roles', data.roles.includes(role) ? data.roles.filter((assignedRole) => assignedRole !== role) : [...data.roles, role]);
     };
 
     const formErrors = errors as Record<string, string | undefined>;

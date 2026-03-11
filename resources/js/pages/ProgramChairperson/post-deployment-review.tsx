@@ -69,10 +69,7 @@ const PostDeploymentReviewPage = () => {
     const selectedReport = useMemo(() => filteredReports.find((row) => row.id === selectedId) ?? null, [filteredReports, selectedId]);
 
     return (
-        <ProgramChairpersonLayout
-            title="Post-Deployment Review"
-            subtitle="Evaluate deployment reports and approve final completion (UI only)"
-        >
+        <ProgramChairpersonLayout title="Post-Deployment Review" subtitle="Evaluate deployment reports and approve final completion (UI only)">
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}
@@ -106,7 +103,9 @@ const PostDeploymentReviewPage = () => {
                                 <p className="mt-1 text-xs text-slate-600">{row.reportTitle}</p>
                                 <div className="mt-2 flex items-center justify-between">
                                     <span className="text-xs text-slate-500">{row.submittedAt}</span>
-                                    <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[row.status]}`}>{row.status}</span>
+                                    <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[row.status]}`}>
+                                        {row.status}
+                                    </span>
                                 </div>
                             </button>
                         ))}

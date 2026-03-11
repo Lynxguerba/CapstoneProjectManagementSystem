@@ -1,14 +1,5 @@
 import { motion } from 'framer-motion';
-import { 
-    Database, 
-    Download, 
-    Upload, 
-    History, 
-    ShieldCheck, 
-    RefreshCcw, 
-    AlertCircle,
-    HardDrive
-} from 'lucide-react';
+import { Database, Download, Upload, History, ShieldCheck, RefreshCcw, AlertCircle, HardDrive } from 'lucide-react';
 import React from 'react';
 import AdminLayout from './_layout';
 
@@ -22,50 +13,43 @@ const backupHistory = [
 export default function BackupRestore() {
     return (
         <AdminLayout title="Backup & Restore" subtitle="Ensure system safety and data integrity">
-            <motion.section 
-                initial={{ opacity: 0, y: 10 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ duration: 0.4 }} 
-                className="space-y-6"
-            >
+            <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
                 {/* System Status Cards - Specific to Safety Objectives */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center text-green-700">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-700">
                             <ShieldCheck size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">System Security</p>
+                            <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">System Security</p>
                             <p className="text-sm font-bold text-slate-800">Encrypted Storage</p>
                         </div>
                     </div>
-                    <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-700">
+                    <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
                             <HardDrive size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Storage Used</p>
+                            <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Storage Used</p>
                             <p className="text-sm font-bold text-slate-800">1.2 GB / 5 GB</p>
                         </div>
                     </div>
-                    <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-sm flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700">
+                    <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
                             <History size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last Backup</p>
+                            <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Last Backup</p>
                             <p className="text-sm font-bold text-slate-800">8 hours ago</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Primary Action Section */}
-                <div className="flex flex-col md:flex-row gap-3 justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div className="flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:flex-row">
                     <div className="flex items-center gap-3">
                         <AlertCircle className="text-amber-500" size={18} />
-                        <p className="text-xs text-slate-600 font-medium">
-                            Regular backups ensure institutional transparency and record tracking.
-                        </p>
+                        <p className="text-xs font-medium text-slate-600">Regular backups ensure institutional transparency and record tracking.</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <button className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50">
@@ -81,7 +65,7 @@ export default function BackupRestore() {
 
                 {/* Backup History Table - Consistent with Faculty Table Scale */}
                 <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <h3 className="flex items-center gap-2 text-xs font-bold tracking-widest text-slate-500 uppercase">
                         <Database size={14} /> Backup History Log
                     </h3>
                     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -98,8 +82,11 @@ export default function BackupRestore() {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {backupHistory.map((log, index) => (
-                                    <tr key={log.id} className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}>
-                                        <td className="px-6 py-3.5 font-semibold text-slate-800 tracking-tight">{log.name}</td>
+                                    <tr
+                                        key={log.id}
+                                        className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
+                                    >
+                                        <td className="px-6 py-3.5 font-semibold tracking-tight text-slate-800">{log.name}</td>
                                         <td className="px-6 py-3.5 text-slate-500">{log.size}</td>
                                         <td className="px-6 py-3.5 text-slate-500">{log.type}</td>
                                         <td className="px-6 py-3.5">

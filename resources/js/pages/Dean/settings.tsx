@@ -64,7 +64,6 @@ const DeanSettings = () => {
                             upsertUrl="/dean/settings/e-signature"
                             deleteUrl="/dean/settings/e-signature"
                         />
-                                    
                     </div>
                 </motion.section>
             </div>

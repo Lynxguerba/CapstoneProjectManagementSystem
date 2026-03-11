@@ -127,7 +127,8 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
     };
 
     const toggleRole = (role: string) => {
-        addUserForm.setData('roles',
+        addUserForm.setData(
+            'roles',
             addUserForm.data.roles.includes(role)
                 ? addUserForm.data.roles.filter((assignedRole) => assignedRole !== role)
                 : [...addUserForm.data.roles, role],
@@ -135,11 +136,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
     };
 
     const formErrors = addUserForm.errors as Record<string, string | undefined>;
-    const roleError =
-        addUserForm.errors.roles ??
-        formErrors['roles.0'] ??
-        formErrors['roles.1'] ??
-        formErrors['roles.2'];
+    const roleError = addUserForm.errors.roles ?? formErrors['roles.0'] ?? formErrors['roles.1'] ?? formErrors['roles.2'];
 
     if (!open || typeof document === 'undefined') {
         return null;

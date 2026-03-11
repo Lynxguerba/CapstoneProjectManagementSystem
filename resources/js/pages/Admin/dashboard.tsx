@@ -153,7 +153,7 @@ const AdminDashboard = ({
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                             <PieChart
                                 height={260}
-                                margin={{left: 90}}
+                                margin={{ left: 90 }}
                                 series={[
                                     {
                                         data: pieData,

@@ -137,7 +137,10 @@ const DeploymentApprovalPage = () => {
 
                                 <div className="mt-3 space-y-2">
                                     {selectedRequest.requirements.map((requirement) => (
-                                        <div key={requirement.label} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                                        <div
+                                            key={requirement.label}
+                                            className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                        >
                                             <span className="text-slate-700">{requirement.label}</span>
                                             <span
                                                 className={`rounded-full px-2.5 py-1 text-xs font-semibold ${requirement.done ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}

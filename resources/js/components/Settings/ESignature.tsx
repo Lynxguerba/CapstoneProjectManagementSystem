@@ -10,7 +10,11 @@ type ESignatureProps = {
     deleteUrl?: string;
 };
 
-const ESignature = ({ initialSignature = '', upsertUrl = '/adviser/settings/e-signature', deleteUrl = '/adviser/settings/e-signature' }: ESignatureProps) => {
+const ESignature = ({
+    initialSignature = '',
+    upsertUrl = '/adviser/settings/e-signature',
+    deleteUrl = '/adviser/settings/e-signature',
+}: ESignatureProps) => {
     const [showESignatureModal, setShowESignatureModal] = useState(false);
     const [isESignatureModalAppearing, setIsESignatureModalAppearing] = useState(false);
     const [registeredSignature, setRegisteredSignature] = useState(initialSignature);
@@ -171,11 +175,7 @@ const ESignature = ({ initialSignature = '', upsertUrl = '/adviser/settings/e-si
                     <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Registered Signature Preview</div>
                     <div className="mt-2 flex min-h-28 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2">
                         {registeredSignature !== '' ? (
-                            <img
-                                src={registeredSignature}
-                                alt="Registered adviser e-signature"
-                                className="max-h-24 w-auto object-contain"
-                            />
+                            <img src={registeredSignature} alt="Registered adviser e-signature" className="max-h-24 w-auto object-contain" />
                         ) : (
                             <span className="text-sm text-slate-500">No e-signature registered yet.</span>
                         )}

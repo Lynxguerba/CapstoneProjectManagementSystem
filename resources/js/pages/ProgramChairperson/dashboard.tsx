@@ -2,17 +2,7 @@ import { Link } from '@inertiajs/react';
 import { Box } from '@mui/material';
 import { BarChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
-import {
-    Bell,
-    CheckCircle2,
-    ClipboardCheck,
-    FileCheck2,
-    FileText,
-    FolderOpen,
-    History,
-    MonitorCog,
-    Send,
-} from 'lucide-react';
+import { Bell, CheckCircle2, ClipboardCheck, FileCheck2, FileText, FolderOpen, History, MonitorCog, Send } from 'lucide-react';
 import React from 'react';
 
 import ProgramChairpersonLayout from './_layout';
@@ -37,8 +27,18 @@ const ProgramChairpersonDashboard = () => {
 
     const recentAlerts = [
         { id: 'a1', title: '3 new pre-deployment letters submitted', date: '2026-03-04', tone: 'border-amber-200 bg-amber-50 text-amber-800' },
-        { id: 'a2', title: 'Group Delta deployment request now complete for validation', date: '2026-03-03', tone: 'border-sky-200 bg-sky-50 text-sky-800' },
-        { id: 'a3', title: '2 post-deployment reports awaiting completion approval', date: '2026-03-02', tone: 'border-violet-200 bg-violet-50 text-violet-800' },
+        {
+            id: 'a2',
+            title: 'Group Delta deployment request now complete for validation',
+            date: '2026-03-03',
+            tone: 'border-sky-200 bg-sky-50 text-sky-800',
+        },
+        {
+            id: 'a3',
+            title: '2 post-deployment reports awaiting completion approval',
+            date: '2026-03-02',
+            tone: 'border-violet-200 bg-violet-50 text-violet-800',
+        },
     ] as const;
 
     const approvalsByCategory = [

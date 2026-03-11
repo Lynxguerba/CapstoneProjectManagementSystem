@@ -122,7 +122,9 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                             </div>
                             <div>
                                 <p className="text-sm font-bold text-emerald-900">Ready to create a new program set?</p>
-                                <p className="text-xs text-emerald-800">Fill in the details below to add a new capstone project set for your students.</p>
+                                <p className="text-xs text-emerald-800">
+                                    Fill in the details below to add a new capstone project set for your students.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -150,7 +152,9 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                                     <option value="BSIT">BSIT</option>
                                     <option value="BSIS">BSIS</option>
                                 </select>
-                                {addProgramSetForm.errors.program ? <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.program}</p> : null}
+                                {addProgramSetForm.errors.program ? (
+                                    <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.program}</p>
+                                ) : null}
                             </div>
 
                             <div>
@@ -164,7 +168,9 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                                     <option value="2026-2027">2026-2027</option>
                                     <option value="2027-2028">2027-2028</option>
                                 </select>
-                                {addProgramSetForm.errors.school_year ? <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.school_year}</p> : null}
+                                {addProgramSetForm.errors.school_year ? (
+                                    <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.school_year}</p>
+                                ) : null}
                             </div>
                         </div>
 
@@ -179,7 +185,9 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                                 <option value="Set B">Set B</option>
                                 <option value="Set C">Set C</option>
                             </select>
-                            {addProgramSetForm.errors.set_number ? <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.set_number}</p> : null}
+                            {addProgramSetForm.errors.set_number ? (
+                                <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.set_number}</p>
+                            ) : null}
                         </div>
 
                         <div>
@@ -191,7 +199,9 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                                 rows={3}
                                 className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                             />
-                            {addProgramSetForm.errors.description ? <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.description}</p> : null}
+                            {addProgramSetForm.errors.description ? (
+                                <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.description}</p>
+                            ) : null}
                         </div>
                     </form>
                 </div>

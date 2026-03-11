@@ -30,7 +30,8 @@ const preDeploymentLetters: LetterRequest[] = [
         title: 'Request for Pre-Deployment Endorsement',
         submittedAt: '2026-03-03',
         status: 'Pending',
-        content: 'We request approval to proceed with pilot deployment at Barangay Learning Center with supervised user onboarding and system orientation.',
+        content:
+            'We request approval to proceed with pilot deployment at Barangay Learning Center with supervised user onboarding and system orientation.',
         attachments: ['endorsement-letter-alpha.pdf', 'implementation-plan-alpha.pdf'],
     },
     {
@@ -169,7 +170,10 @@ const PreDeploymentLettersPage = () => {
 
                                 <div className="mt-3 space-y-2">
                                     {selectedLetter.attachments.map((attachment) => (
-                                        <div key={attachment} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2">
+                                        <div
+                                            key={attachment}
+                                            className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2"
+                                        >
                                             <span className="text-sm text-slate-700">{attachment}</span>
                                             <div className="flex items-center gap-2">
                                                 <button

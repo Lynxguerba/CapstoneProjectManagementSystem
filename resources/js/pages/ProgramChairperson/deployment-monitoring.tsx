@@ -108,7 +108,9 @@ const DeploymentMonitoringPage = () => {
                                         <td className="py-3 text-slate-700">{row.systemName}</td>
                                         <td className="py-3 text-slate-700">{row.partner}</td>
                                         <td className="py-3">
-                                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusPill[row.status]}`}>{row.status}</span>
+                                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusPill[row.status]}`}>
+                                                {row.status}
+                                            </span>
                                         </td>
                                         <td className="py-3">
                                             <div className="w-44">
@@ -135,9 +137,13 @@ const DeploymentMonitoringPage = () => {
                             <h3 className="text-lg font-semibold text-slate-900">Partner Coordination Notes</h3>
                         </div>
                         <div className="mt-4 space-y-2 text-sm text-slate-700">
-                            <p className="rounded-xl border border-slate-200 px-3 py-2">City Health Office: User retraining scheduled on 2026-03-08.</p>
+                            <p className="rounded-xl border border-slate-200 px-3 py-2">
+                                City Health Office: User retraining scheduled on 2026-03-08.
+                            </p>
                             <p className="rounded-xl border border-slate-200 px-3 py-2">Registrar Office: Final sign-off document in review.</p>
-                            <p className="rounded-xl border border-slate-200 px-3 py-2">Barangay Learning Center: Pilot users increased from 20 to 35.</p>
+                            <p className="rounded-xl border border-slate-200 px-3 py-2">
+                                Barangay Learning Center: Pilot users increased from 20 to 35.
+                            </p>
                         </div>
                     </div>
 

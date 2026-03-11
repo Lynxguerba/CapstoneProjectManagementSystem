@@ -126,9 +126,7 @@ const PasswordManager = () => {
                             {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                     </div>
-                    {passwordForm.errors.password && (
-                        <div className="mt-1 text-xs font-medium text-rose-600">{passwordForm.errors.password}</div>
-                    )}
+                    {passwordForm.errors.password && <div className="mt-1 text-xs font-medium text-rose-600">{passwordForm.errors.password}</div>}
                 </div>
 
                 {/* Confirm Password */}

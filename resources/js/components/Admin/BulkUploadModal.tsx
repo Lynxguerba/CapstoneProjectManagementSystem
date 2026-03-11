@@ -41,7 +41,10 @@ const availableStatuses: UserStatus[] = ['active', 'inactive'];
 const studentPrograms: StudentProgram[] = ['BSIT', 'BSIS'];
 
 const normalizeHeader = (header: string): string => {
-    return header.trim().toLowerCase().replace(/[\s-]+/g, '_');
+    return header
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, '_');
 };
 
 const parseCsvLine = (line: string): string[] => {
@@ -78,11 +81,7 @@ const parseCsvLine = (line: string): string[] => {
 };
 
 const normalizeRoleToken = (rawRole: string): string | null => {
-    const normalized = rawRole
-        .trim()
-        .toLowerCase()
-        .replace(/-/g, '_')
-        .replace(/\s+/g, '_');
+    const normalized = rawRole.trim().toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_');
 
     if (normalized === 'advisor') {
         return 'adviser';
@@ -281,11 +280,12 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
             return;
         }
 
-        const requiredHeaders = userType === 'student'
-            ? (['last_name', 'first_name', 'email', 'program', 'password'] as const)
-            : userType === 'faculty'
-                ? (['last_name', 'first_name', 'email', 'role', 'password'] as const)
-                : (['last_name', 'first_name', 'email', 'role', 'password'] as const);
+        const requiredHeaders =
+            userType === 'student'
+                ? (['last_name', 'first_name', 'email', 'program', 'password'] as const)
+                : userType === 'faculty'
+                  ? (['last_name', 'first_name', 'email', 'role', 'password'] as const)
+                  : (['last_name', 'first_name', 'email', 'role', 'password'] as const);
 
         const headers = parseCsvLine(lines[0]).map((header) => normalizeHeader(header));
         const headerIndex = headers.reduce<Record<string, number>>((accumulator, header, index) => {
@@ -476,11 +476,12 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
     }
 
     const uploadLabel = userType === 'student' ? 'Bulk Upload Students' : userType === 'faculty' ? 'Bulk Upload Faculty' : 'Bulk Upload Users';
-    const csvGuide = userType === 'student'
-        ? 'Last Name, First Name, Email, Program, Password, and optionally Status'
-        : userType === 'faculty'
-            ? 'Last Name, First Name, Email, Role, Password, and optionally Status'
-            : 'Last Name, First Name, Email, Role, Password, and optionally Status';
+    const csvGuide =
+        userType === 'student'
+            ? 'Last Name, First Name, Email, Program, Password, and optionally Status'
+            : userType === 'faculty'
+              ? 'Last Name, First Name, Email, Role, Password, and optionally Status'
+              : 'Last Name, First Name, Email, Role, Password, and optionally Status';
 
     return createPortal(
         <>
@@ -591,10 +592,18 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
 
                         <div className="space-y-4 p-4">
                             <div className="flex flex-wrap items-center gap-3 text-sm">
-                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">Valid: {validRowsCount}</span>
-                                <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700">With issues: {invalidRowsCount}</span>
-                                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">Selected: {selectedRowsCount}</span>
-                                <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-slate-700">Total rows: {previewRows.length}</span>
+                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
+                                    Valid: {validRowsCount}
+                                </span>
+                                <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700">
+                                    With issues: {invalidRowsCount}
+                                </span>
+                                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">
+                                    Selected: {selectedRowsCount}
+                                </span>
+                                <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-slate-700">
+                                    Total rows: {previewRows.length}
+                                </span>
                             </div>
 
                             <div className="max-h-[55vh] overflow-auto rounded-xl border border-slate-200">
@@ -613,13 +622,18 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {previewRows.map((row) => (
-                                            <tr key={`${row.line}-${row.first_name}-${row.last_name}`} className={row.issues.length > 0 ? 'bg-rose-50' : ''}>
+                                            <tr
+                                                key={`${row.line}-${row.first_name}-${row.last_name}`}
+                                                className={row.issues.length > 0 ? 'bg-rose-50' : ''}
+                                            >
                                                 <td className="px-3 py-2">{row.last_name}</td>
                                                 <td className="px-3 py-2">{row.first_name}</td>
                                                 {userType === 'student' ? <td className="px-3 py-2">{row.email ?? '-'}</td> : null}
                                                 {userType === 'student' ? <td className="px-3 py-2">{row.program ?? '-'}</td> : null}
                                                 {userType !== 'student' ? <td className="px-3 py-2">{row.email}</td> : null}
-                                                {userType !== 'student' ? <td className="px-3 py-2 capitalize">{(row.roles ?? []).join(', ').replaceAll('_', ' ')}</td> : null}
+                                                {userType !== 'student' ? (
+                                                    <td className="px-3 py-2 capitalize">{(row.roles ?? []).join(', ').replaceAll('_', ' ')}</td>
+                                                ) : null}
                                                 <td className="px-3 py-2">
                                                     {row.issues.length > 0 ? (
                                                         <ul className="list-disc pl-4 text-xs text-rose-700">

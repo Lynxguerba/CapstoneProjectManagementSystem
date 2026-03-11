@@ -1,13 +1,5 @@
 import { motion } from 'framer-motion';
-import { 
-    Search, 
-    Filter, 
-    FolderArchive, 
-    ExternalLink, 
-    FileText, 
-    Users, 
-    Calendar 
-} from 'lucide-react';
+import { Search, Filter, FolderArchive, ExternalLink, FileText, Users, Calendar } from 'lucide-react';
 import React from 'react';
 import AdminLayout from './_layout';
 
@@ -27,32 +19,27 @@ const AdminProjectRepository = () => {
     const projects: ProjectRepositoryRow[] = [
         {
             id: 1,
-            title: "Capstone Project Management System",
-            authors: ["Baquero, K.", "Egnio, A.", "Guerba, D."],
-            adviser: "Dr. Juan Dela Cruz",
-            academicYear: "2025-2026",
-            status: "Archived",
-            dateAdded: "Feb 2026"
+            title: 'Capstone Project Management System',
+            authors: ['Baquero, K.', 'Egnio, A.', 'Guerba, D.'],
+            adviser: 'Dr. Juan Dela Cruz',
+            academicYear: '2025-2026',
+            status: 'Archived',
+            dateAdded: 'Feb 2026',
         },
         {
             id: 2,
-            title: "Records Tracking Management System with QR Code",
-            authors: ["Rellon, J.", "Abidin, A."],
-            adviser: "Prof. Maria Santos",
-            academicYear: "2023-2024",
-            status: "Archived",
-            dateAdded: "Aug 2024"
-        }
+            title: 'Records Tracking Management System with QR Code',
+            authors: ['Rellon, J.', 'Abidin, A.'],
+            adviser: 'Prof. Maria Santos',
+            academicYear: '2023-2024',
+            status: 'Archived',
+            dateAdded: 'Aug 2024',
+        },
     ];
 
     return (
         <AdminLayout title="Project Repository" subtitle="Centralized archive of finalized capstone project records">
-            <motion.section 
-                initial={{ opacity: 0, y: 10 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ duration: 0.4 }} 
-                className="space-y-5"
-            >
+            <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
                 {/* Action Bar - Matching Faculty.tsx design scale */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex flex-wrap items-center gap-2">
@@ -101,14 +88,12 @@ const AdminProjectRepository = () => {
                                     key={project.id}
                                     className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
                                 >
-                                    <td className="px-6 py-4 max-w-xs">
+                                    <td className="max-w-xs px-6 py-4">
                                         <div className="flex items-start gap-3">
                                             <div className="mt-1 rounded bg-green-100 p-1.5 text-green-700">
                                                 <FileText size={14} />
                                             </div>
-                                            <span className="font-semibold text-slate-800 leading-relaxed">
-                                                {project.title}
-                                            </span>
+                                            <span className="leading-relaxed font-semibold text-slate-800">{project.title}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-slate-500">
@@ -121,9 +106,7 @@ const AdminProjectRepository = () => {
                                             ))}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-slate-600 italic">
-                                        {project.adviser}
-                                    </td>
+                                    <td className="px-6 py-4 text-slate-600 italic">{project.adviser}</td>
                                     <td className="px-6 py-4">
                                         <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
                                             <Calendar size={10} />

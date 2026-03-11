@@ -197,7 +197,9 @@ const DeploymentHistoryPage = () => {
                                         <td className="py-3 text-slate-700">{row.academicYear}</td>
                                         <td className="py-3 text-slate-700">{row.partner}</td>
                                         <td className="py-3">
-                                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${resultBadge[row.result]}`}>{row.result}</span>
+                                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${resultBadge[row.result]}`}>
+                                                {row.result}
+                                            </span>
                                         </td>
                                     </tr>
                                 ))}

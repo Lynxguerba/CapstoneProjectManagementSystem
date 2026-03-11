@@ -14,7 +14,7 @@ import {
     GraduationCap,
     Grid3X3,
     List,
-    LayoutGrid
+    LayoutGrid,
 } from 'lucide-react';
 import React, { useState } from 'react';
 import AddProgramSetModal from '../../components/Instructor/ProgramSetModal';
@@ -32,7 +32,7 @@ const InstructorStudents = () => {
             totalStudents: 45,
             groups: 9,
             status: 'Active',
-            description: 'Information Technology Capstone Projects'
+            description: 'Information Technology Capstone Projects',
         },
         {
             id: 2,
@@ -43,7 +43,7 @@ const InstructorStudents = () => {
             totalStudents: 38,
             groups: 8,
             status: 'Active',
-            description: 'Information Systems Capstone Projects'
+            description: 'Information Systems Capstone Projects',
         },
         {
             id: 3,
@@ -54,7 +54,7 @@ const InstructorStudents = () => {
             totalStudents: 42,
             groups: 8,
             status: 'Completed',
-            description: 'Information Technology Capstone Projects'
+            description: 'Information Technology Capstone Projects',
         },
         {
             id: 4,
@@ -65,7 +65,7 @@ const InstructorStudents = () => {
             totalStudents: 35,
             groups: 7,
             status: 'Completed',
-            description: 'Information Systems Capstone Projects'
+            description: 'Information Systems Capstone Projects',
         },
         {
             id: 5,
@@ -76,7 +76,7 @@ const InstructorStudents = () => {
             totalStudents: 48,
             groups: 10,
             status: 'Completed',
-            description: 'Information Technology Capstone Projects'
+            description: 'Information Technology Capstone Projects',
         },
         {
             id: 6,
@@ -87,8 +87,8 @@ const InstructorStudents = () => {
             totalStudents: 41,
             groups: 8,
             status: 'Completed',
-            description: 'Information Systems Capstone Projects'
-        }
+            description: 'Information Systems Capstone Projects',
+        },
     ];
 
     // Filter states
@@ -104,19 +104,15 @@ const InstructorStudents = () => {
     // Filter options
     const schoolYears = ['All', '2025-2026', '2024-2025', '2023-2024'];
     const sets = ['All', 'Set A', 'Set B', 'Set C'];
-    const programs = [
-        'All',
-        'Bachelor of Science in Information Technology',
-        'Bachelor of Science in Information Systems'
-    ];
+    const programs = ['All', 'Bachelor of Science in Information Technology', 'Bachelor of Science in Information Systems'];
 
     // Filter the student sets
-    const filteredSets = studentSets.filter(set => {
+    const filteredSets = studentSets.filter((set) => {
         const matchesYear = selectedSchoolYear === 'All' || set.schoolYear === selectedSchoolYear;
         const matchesSet = selectedSet === 'All' || set.setNumber === selectedSet;
         const matchesProgram = selectedProgram === 'All' || set.program === selectedProgram;
-        const matchesSearch = set.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            set.program.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch =
+            set.name.toLowerCase().includes(searchTerm.toLowerCase()) || set.program.toLowerCase().includes(searchTerm.toLowerCase());
 
         return matchesYear && matchesSet && matchesProgram && matchesSearch;
     });
@@ -152,15 +148,14 @@ const InstructorStudents = () => {
                 {/* Action Bar */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex flex-wrap items-center gap-2">
-
                         <div className="relative">
                             <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                             <select
                                 value={selectedSchoolYear}
                                 onChange={(e) => setSelectedSchoolYear(e.target.value)}
-                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                             >
-                                {schoolYears.map(year => (
+                                {schoolYears.map((year) => (
                                     <option key={year} value={year}>
                                         {year === 'All' ? 'All Years' : year}
                                     </option>
@@ -175,9 +170,9 @@ const InstructorStudents = () => {
                             <select
                                 value={selectedSet}
                                 onChange={(e) => setSelectedSet(e.target.value)}
-                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-4 text-xs capitalize shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-4 text-xs capitalize shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                             >
-                                {sets.map(set => (
+                                {sets.map((set) => (
                                     <option key={set} value={set}>
                                         {set === 'All' ? 'All Sets' : set}
                                     </option>
@@ -192,9 +187,9 @@ const InstructorStudents = () => {
                             <select
                                 value={selectedProgram}
                                 onChange={(e) => setSelectedProgram(e.target.value)}
-                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-4 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-4 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                             >
-                                {programs.map(program => {
+                                {programs.map((program) => {
                                     let displayText;
                                     if (program === 'All') {
                                         displayText = 'All Programs';
@@ -213,7 +208,7 @@ const InstructorStudents = () => {
                                 })}
                             </select>
                         </div>
-                         <button
+                        <button
                             type="button"
                             onClick={() => {
                                 setSelectedSchoolYear('All');
@@ -233,9 +228,7 @@ const InstructorStudents = () => {
                             <button
                                 onClick={() => setViewMode('card')}
                                 className={`flex items-center justify-center rounded-md px-2 py-1.5 text-xs font-medium transition-all ${
-                                    viewMode === 'card'
-                                        ? 'bg-green-700 text-white shadow-sm'
-                                        : 'text-slate-600 hover:bg-slate-100'
+                                    viewMode === 'card' ? 'bg-green-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
                                 }`}
                             >
                                 <LayoutGrid className="h-3.5 w-3.5" />
@@ -243,16 +236,12 @@ const InstructorStudents = () => {
                             <button
                                 onClick={() => setViewMode('list')}
                                 className={`flex items-center justify-center rounded-md px-2 py-1.5 text-xs font-medium transition-all ${
-                                    viewMode === 'list'
-                                        ? 'bg-green-700 text-white shadow-sm'
-                                        : 'text-slate-600 hover:bg-slate-100'
+                                    viewMode === 'list' ? 'bg-green-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
                                 }`}
                             >
                                 <List className="h-3.5 w-3.5" />
                             </button>
                         </div>
-
-                       
 
                         <button
                             type="button"
@@ -286,15 +275,15 @@ const InstructorStudents = () => {
                                     {/* Header */}
                                     <div className="mb-3">
                                         <div className="flex-1">
-                                            <h3 className="text-sm font-semibold text-slate-800 group-hover:text-green-600 transition-colors">
+                                            <h3 className="text-sm font-semibold text-slate-800 transition-colors group-hover:text-green-600">
                                                 {set.setNumber}
                                             </h3>
-                                            <p className="text-xs text-slate-600 mt-1">{set.description}</p>
+                                            <p className="mt-1 text-xs text-slate-600">{set.description}</p>
                                         </div>
                                     </div>
 
                                     {/* Program Info */}
-                                    <div className="space-y-2 mb-3">
+                                    <div className="mb-3 space-y-2">
                                         <div className="flex items-center gap-2 text-xs text-slate-600">
                                             <GraduationCap className="h-3.5 w-3.5" />
                                             <span className="font-medium">{set.program}</span>
@@ -306,7 +295,7 @@ const InstructorStudents = () => {
                                     </div>
 
                                     {/* Stats */}
-                                    <div className="grid grid-cols-2 gap-3 mb-4 p-2 bg-slate-50 rounded-lg">
+                                    <div className="mb-4 grid grid-cols-2 gap-3 rounded-lg bg-slate-50 p-2">
                                         <div className="text-center">
                                             <div className="text-lg font-bold text-slate-800">{set.totalStudents}</div>
                                             <div className="text-[10px] text-slate-600">Students</div>
@@ -319,11 +308,11 @@ const InstructorStudents = () => {
 
                                     {/* Actions */}
                                     <div className="flex gap-2">
-                                        <button className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700">
+                                        <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700">
                                             <Eye className="h-3 w-3" />
                                             View
                                         </button>
-                                        <button className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-green-700 px-2.5 py-1.5 text-[11px] font-bold text-white transition-all hover:bg-green-800 active:scale-95">
+                                        <button className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-700 px-2.5 py-1.5 text-[11px] font-bold text-white transition-all hover:bg-green-800 active:scale-95">
                                             <Edit3 className="h-3 w-3" />
                                             Edit
                                         </button>
@@ -392,9 +381,9 @@ const InstructorStudents = () => {
                         animate={{ opacity: 1 }}
                         className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white py-12 text-center shadow-sm"
                     >
-                        <Users className="h-8 w-8 text-slate-400 mb-3" />
-                        <h3 className="text-sm font-semibold text-slate-800 mb-2">No student sets found</h3>
-                        <p className="text-slate-600 mb-4 text-xs">Try adjusting your filters or create a new program set.</p>
+                        <Users className="mb-3 h-8 w-8 text-slate-400" />
+                        <h3 className="mb-2 text-sm font-semibold text-slate-800">No student sets found</h3>
+                        <p className="mb-4 text-xs text-slate-600">Try adjusting your filters or create a new program set.</p>
                         <button className="flex items-center gap-2 rounded-lg bg-green-700 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-green-800 active:scale-95">
                             <Plus className="h-3.5 w-3.5" />
                             Add Program/Set
@@ -404,14 +393,9 @@ const InstructorStudents = () => {
 
                 {/* Results Summary */}
                 {filteredSets.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-center text-xs font-medium text-slate-500"
-                    >
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-xs font-medium text-slate-500">
                         Showing {paginatedSets.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
-                        {Math.min(currentPage * itemsPerPage, filteredSets.length)} of{' '}
-                        {filteredSets.length} student sets
+                        {Math.min(currentPage * itemsPerPage, filteredSets.length)} of {filteredSets.length} student sets
                     </motion.div>
                 )}
 
@@ -419,8 +403,7 @@ const InstructorStudents = () => {
                 {filteredSets.length > 0 && (
                     <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
                         <p className="text-xs font-medium text-slate-500">
-                            Page <span className="text-slate-900">{currentPage}</span> of{' '}
-                            <span className="text-slate-900">{totalPages}</span>
+                            Page <span className="text-slate-900">{currentPage}</span> of <span className="text-slate-900">{totalPages}</span>
                         </p>
                         <div className="flex items-center gap-1.5">
                             <button
@@ -461,10 +444,7 @@ const InstructorStudents = () => {
                     </div>
                 )}
             </motion.section>
-            <AddProgramSetModal
-                open={isAddProgramSetModalOpen}
-                onClose={() => setIsAddProgramSetModalOpen(false)}
-            />
+            <AddProgramSetModal open={isAddProgramSetModalOpen} onClose={() => setIsAddProgramSetModalOpen(false)} />
         </InstructorLayout>
     );
 };

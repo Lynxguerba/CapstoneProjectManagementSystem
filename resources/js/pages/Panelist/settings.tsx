@@ -64,7 +64,6 @@ const PanelSettings = () => {
                             upsertUrl="/panelist/settings/e-signature"
                             deleteUrl="/panelist/settings/e-signature"
                         />
-                                    
                     </div>
                 </motion.section>
             </div>

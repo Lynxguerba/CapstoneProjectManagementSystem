@@ -11,9 +11,7 @@ const DeanDashboard = () => {
                 className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
             >
                 <h3 className="text-lg font-semibold text-slate-900">Dean Overview</h3>
-                <p className="mt-2 text-sm text-slate-600">
-                    Use the sidebar to review projects, monitor students, and access reports.
-                </p>
+                <p className="mt-2 text-sm text-slate-600">Use the sidebar to review projects, monitor students, and access reports.</p>
             </motion.section>
         </DeanLayout>
     );

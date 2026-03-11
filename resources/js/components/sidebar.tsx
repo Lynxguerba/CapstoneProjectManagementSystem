@@ -23,7 +23,7 @@ import {
     FolderArchive,
     History,
     LayoutList,
-    UserRoundCog
+    UserRoundCog,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -164,14 +164,14 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                 ];
             case 'instructor':
                 return [
-                    { label: "Main", isSection: true },
+                    { label: 'Main', isSection: true },
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/instructor/dashboard' },
-                    { label: "Management", isSection: true },
+                    { label: 'Management', isSection: true },
                     { icon: Users, label: 'Students', href: '/instructor/students' },
                     { icon: LayoutList, label: 'Groups Management', href: '/instructor/groups' },
                     { icon: UserRoundCog, label: 'Adviser Assignment', href: '/instructor/adviser-assignment' },
                     { icon: Calendar, label: 'Defense Scheduling', href: '/instructor/scheduling' },
-                    { label: "Academic Control", isSection: true },
+                    { label: 'Academic Control', isSection: true },
                     { icon: BookOpen, label: 'Title Repository', href: '/instructor/titles' },
                     { icon: FileText, label: 'Concept Review', href: '/instructor/concepts' },
                     { icon: ClipboardCheck, label: 'Evaluation Monitoring', href: '/instructor/evaluation' },
@@ -179,7 +179,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { icon: Printer, label: 'Minutes & Approval Sheet', href: '/instructor/minutes' },
                     { icon: Clock, label: 'Deadline Management', href: '/instructor/deadlines' },
                     { icon: Archive, label: 'Deployment & Archiving', href: '/instructor/deployment' },
-                    { label: "Settings", isSection: true },
+                    { label: 'Settings', isSection: true },
                     { icon: Bell, label: 'Notifications', href: '/instructor/notifications' },
                     { icon: Settings, label: 'Profile & Settings', href: '/instructor/settings' },
                 ];
@@ -240,8 +240,9 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
             <aside
                 className={`fixed inset-y-0 left-0 z-[56] flex w-56 transform flex-col border-r border-slate-800 bg-green-900 text-slate-300 shadow-xl transition-transform duration-300 ease-out will-change-transform md:translate-x-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
             >
-                <style dangerouslySetInnerHTML={{
-                    __html: `
+                <style
+                    dangerouslySetInnerHTML={{
+                        __html: `
                         .cpms-scroll::-webkit-scrollbar {
                             width: 6px;
                         }
@@ -258,8 +259,9 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                         .cpms-scroll::-webkit-scrollbar-button {
                             display: none;
                         }
-                    `
-                }} />
+                    `,
+                    }}
+                />
                 {/* Brand Section - Tightened */}
                 <div className="flex flex-col items-center p-5">
                     <div className="relative mb-2">

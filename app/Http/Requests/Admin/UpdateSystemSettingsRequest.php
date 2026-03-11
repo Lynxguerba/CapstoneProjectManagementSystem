@@ -20,10 +20,14 @@ class UpdateSystemSettingsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'academicYear' => ['required', 'string', 'max:20'],
-            'semester' => ['required', 'string', Rule::in(['1st', '2nd', 'summer'])],
-            'titleProposalDeadline' => ['required', 'date'],
-            'finalDefenseDeadline' => ['required', 'date', 'after_or_equal:titleProposalDeadline'],
+            'academicYear' => ['filled', 'string', 'max:20'],
+            'semester' => ['filled', 'string', Rule::in(['1st', '2nd', 'summer'])],
+            'titleProposalDeadline' => ['filled', 'date'],
+            'finalDefenseDeadline' => [
+                'filled',
+                'date',
+                Rule::when($this->filled('titleProposalDeadline'), 'after_or_equal:titleProposalDeadline'),
+            ],
             'siteWideNotification' => ['nullable', 'string', 'max:1000'],
         ];
     }
