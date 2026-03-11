@@ -1,0 +1,235 @@
+import { useForm } from '@inertiajs/react';
+import { AlertTriangle, FolderPlus, X } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
+
+type ProgramType = 'BSIT' | 'BSIS';
+type SetNumber = 'Set A' | 'Set B' | 'Set C';
+
+type AddProgramSetForm = {
+    name: string;
+    program: ProgramType;
+    school_year: string;
+    set_number: SetNumber;
+    description: string;
+};
+
+type AddProgramSetModalProps = {
+    open: boolean;
+    onClose: () => void;
+};
+
+const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
+    const [isAppearing, setIsAppearing] = React.useState(false);
+
+    const addProgramSetForm = useForm<AddProgramSetForm>({
+        name: '',
+        program: 'BSIT',
+        school_year: '2025-2026',
+        set_number: 'Set A',
+        description: '',
+    });
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && !addProgramSetForm.processing) {
+                onClose();
+            }
+        };
+
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        window.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            document.body.style.overflow = originalOverflow;
+            window.removeEventListener('keydown', onKeyDown);
+        };
+    }, [open, onClose, addProgramSetForm.processing]);
+
+    useEffect(() => {
+        if (!open) {
+            setIsAppearing(false);
+            return;
+        }
+
+        setIsAppearing(false);
+        const animationFrame = window.requestAnimationFrame(() => {
+            setIsAppearing(true);
+        });
+
+        return () => {
+            window.cancelAnimationFrame(animationFrame);
+        };
+    }, [open]);
+
+    const submitForm = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        // For now, just close the modal and reset form
+        // In a real implementation, this would submit to a backend endpoint
+        addProgramSetForm.reset();
+        onClose();
+    };
+
+    if (!open || typeof document === 'undefined') {
+        return null;
+    }
+
+    return createPortal(
+        <div
+            className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity duration-200 ${
+                isAppearing ? 'opacity-100' : 'opacity-0'
+            }`}
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget && !addProgramSetForm.processing) {
+                    onClose();
+                }
+            }}
+        >
+            <div
+                className={`max-h-[90vh] w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl transition-all duration-200 ${
+                    isAppearing ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-95 opacity-0'
+                }`}
+                onMouseDown={(event) => event.stopPropagation()}
+            >
+                <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3">
+                    <div className="flex items-center gap-2">
+                        <FolderPlus className="h-5 w-5 text-gray-800" />
+                        <h2 className="text-lg font-bold text-gray-800">Add Program Set</h2>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={addProgramSetForm.processing}
+                        className="rounded-lg p-1.5 text-gray-600 transition-all duration-200 hover:rotate-90 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
+                </div>
+
+                <div className="p-4">
+                    <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                        <div className="flex items-center gap-2">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm">
+                                <AlertTriangle className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-emerald-900">Ready to create a new program set?</p>
+                                <p className="text-xs text-emerald-800">Fill in the details below to add a new capstone project set for your students.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form onSubmit={submitForm} className="space-y-4">
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700">Set Name</label>
+                            <input
+                                value={addProgramSetForm.data.name}
+                                onChange={(event) => addProgramSetForm.setData('name', event.target.value)}
+                                placeholder="e.g., BSIT Capstone 2025-2026"
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            />
+                            {addProgramSetForm.errors.name ? <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.name}</p> : null}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700">Program</label>
+                                <select
+                                    value={addProgramSetForm.data.program}
+                                    onChange={(event) => addProgramSetForm.setData('program', event.target.value as ProgramType)}
+                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                >
+                                    <option value="BSIT">BSIT</option>
+                                    <option value="BSIS">BSIS</option>
+                                </select>
+                                {addProgramSetForm.errors.program ? <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.program}</p> : null}
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700">School Year</label>
+                                <select
+                                    value={addProgramSetForm.data.school_year}
+                                    onChange={(event) => addProgramSetForm.setData('school_year', event.target.value)}
+                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                >
+                                    <option value="2025-2026">2025-2026</option>
+                                    <option value="2026-2027">2026-2027</option>
+                                    <option value="2027-2028">2027-2028</option>
+                                </select>
+                                {addProgramSetForm.errors.school_year ? <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.school_year}</p> : null}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700">Set Number</label>
+                            <select
+                                value={addProgramSetForm.data.set_number}
+                                onChange={(event) => addProgramSetForm.setData('set_number', event.target.value as SetNumber)}
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            >
+                                <option value="Set A">Set A</option>
+                                <option value="Set B">Set B</option>
+                                <option value="Set C">Set C</option>
+                            </select>
+                            {addProgramSetForm.errors.set_number ? <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.set_number}</p> : null}
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700">Description</label>
+                            <textarea
+                                value={addProgramSetForm.data.description}
+                                onChange={(event) => addProgramSetForm.setData('description', event.target.value)}
+                                placeholder="Brief description of the program set..."
+                                rows={3}
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            />
+                            {addProgramSetForm.errors.description ? <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.description}</p> : null}
+                        </div>
+                    </form>
+                </div>
+
+                <div className="border-t border-gray-200 bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3">
+                    <div className="flex justify-end gap-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={addProgramSetForm.processing}
+                            className="rounded-lg border-2 border-slate-300 px-5 py-2 font-medium text-slate-700 transition-all duration-200 hover:bg-slate-100 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={addProgramSetForm.processing}
+                            className="group relative z-10 flex transform items-center gap-2 overflow-hidden rounded-lg bg-emerald-600 px-5 py-2 font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <span className="pointer-events-none absolute inset-0 z-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 group-hover:translate-x-[100%]" />
+                            {addProgramSetForm.processing ? (
+                                <>
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                    Creating...
+                                </>
+                            ) : (
+                                <>
+                                    <FolderPlus className="h-4 w-4" />
+                                    Create Program Set
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>,
+        document.body,
+    );
+};
+
+export default AddProgramSetModal;

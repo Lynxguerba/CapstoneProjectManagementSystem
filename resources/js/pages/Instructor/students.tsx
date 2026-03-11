@@ -17,6 +17,7 @@ import {
     LayoutGrid
 } from 'lucide-react';
 import React, { useState } from 'react';
+import AddProgramSetModal from '../../components/Instructor/ProgramSetModal';
 import InstructorLayout from './_layout';
 
 const InstructorStudents = () => {
@@ -97,6 +98,7 @@ const InstructorStudents = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
     const [currentPage, setCurrentPage] = useState(1);
+    const [isAddProgramSetModalOpen, setIsAddProgramSetModalOpen] = useState(false);
     const itemsPerPage = 6;
 
     // Filter options
@@ -254,6 +256,7 @@ const InstructorStudents = () => {
 
                         <button
                             type="button"
+                            onClick={() => setIsAddProgramSetModalOpen(true)}
                             className="inline-flex items-center justify-center rounded-lg bg-green-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-green-800 active:scale-95"
                         >
                             <Plus className="h-3.5 w-3.5" />
@@ -458,6 +461,10 @@ const InstructorStudents = () => {
                     </div>
                 )}
             </motion.section>
+            <AddProgramSetModal
+                open={isAddProgramSetModalOpen}
+                onClose={() => setIsAddProgramSetModalOpen(false)}
+            />
         </InstructorLayout>
     );
 };
