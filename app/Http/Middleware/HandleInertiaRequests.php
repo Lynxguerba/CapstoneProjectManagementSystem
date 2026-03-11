@@ -2,8 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AcademicYear;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
+use Throwable;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -41,6 +44,27 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'academicYears' => static function (): array {
+                try {
+                    if (! Schema::hasTable('academic_years')) {
+                        return [];
+                    }
+
+                    return AcademicYear::query()
+                        ->orderByDesc('start_year')
+                        ->orderByDesc('end_year')
+                        ->limit(2)
+                        ->get(['id', 'label', 'is_current'])
+                        ->map(static fn (AcademicYear $academicYear): array => [
+                            'id' => $academicYear->id,
+                            'label' => $academicYear->label,
+                            'is_current' => $academicYear->is_current,
+                        ])
+                        ->all();
+                } catch (Throwable) {
+                    return [];
+                }
+            },
             'auth' => [
                 'user' => $authUser !== null
                     ? [
