@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateSystemSettingsRequest;
 use App\Models\AcademicYear;
+use App\Models\SiteWideNotification;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +25,6 @@ class AdminSystemSettingsController extends Controller
         'semester',
         'titleProposalDeadline',
         'finalDefenseDeadline',
-        'siteWideNotification',
     ];
 
     public function edit(): Response
@@ -39,6 +39,18 @@ class AdminSystemSettingsController extends Controller
             $currentAcademicYear = AcademicYear::query()
                 ->where('is_current', true)
                 ->value('label');
+        }
+
+        $siteWideNotification = null;
+
+        if (Schema::hasTable('site_wide_notifications')) {
+            $siteWideNotification = SiteWideNotification::query()
+                ->latest('id')
+                ->value('message');
+        } else {
+            $siteWideNotification = SystemSetting::query()
+                ->where('key', 'siteWideNotification')
+                ->value('value');
         }
 
         $adminUsers = User::query()
@@ -85,7 +97,7 @@ class AdminSystemSettingsController extends Controller
                 'semester' => (string) ($settings['semester'] ?? '1st'),
                 'titleProposalDeadline' => (string) ($settings['titleProposalDeadline'] ?? ''),
                 'finalDefenseDeadline' => (string) ($settings['finalDefenseDeadline'] ?? ''),
-                'siteWideNotification' => (string) ($settings['siteWideNotification'] ?? ''),
+                'siteWideNotification' => (string) ($siteWideNotification ?? ''),
             ],
             'adminUsers' => $adminUsers,
         ]);
@@ -94,6 +106,28 @@ class AdminSystemSettingsController extends Controller
     public function update(UpdateSystemSettingsRequest $request): RedirectResponse
     {
         $validated = $request->validated();
+
+        if (array_key_exists('siteWideNotification', $validated)) {
+            $message = trim((string) ($validated['siteWideNotification'] ?? ''));
+            $message = $message !== '' ? $message : null;
+
+            if (Schema::hasTable('site_wide_notifications')) {
+                $notification = SiteWideNotification::query()
+                    ->latest('id')
+                    ->first();
+
+                if ($notification !== null) {
+                    $notification->update(['message' => $message]);
+                } else {
+                    SiteWideNotification::query()->create(['message' => $message]);
+                }
+            } else {
+                SystemSetting::query()->updateOrCreate(
+                    ['key' => 'siteWideNotification'],
+                    ['value' => $message]
+                );
+            }
+        }
 
         $academicYearLabel = null;
 

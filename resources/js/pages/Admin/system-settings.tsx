@@ -4,7 +4,9 @@ import { motion } from 'framer-motion';
 import { Bell, GraduationCap, ShieldCheck, Users } from 'lucide-react';
 import React from 'react';
 import SaveAcademicYearModal from '@/components/Admin/SaveAcademicYearModal';
+import SaveNotificationModal from '@/components/Admin/SaveNotificationModal';
 import ProfileCard from '@/components/Settings/ProfileCard';
+import systemSettings from '@/routes/admin/system-settings';
 import AdminLayout from './_layout';
 
 type SystemSettingsData = {
@@ -96,10 +98,10 @@ const cardVariants: Variants = {
 
 const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps) => {
     const academicYearForm = useForm<Pick<SystemSettingsData, 'academicYear'>>({
-        academicYear: settings?.academicYear ?? '',
+        academicYear: '',
     });
     const notificationForm = useForm<Pick<SystemSettingsData, 'siteWideNotification'>>({
-        siteWideNotification: settings?.siteWideNotification ?? '',
+        siteWideNotification: '',
     });
 
     const admins = React.useMemo(() => {
@@ -130,6 +132,7 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
     }, [admins, selectedAdminId]);
 
     const [showSaveAcademicYearModal, setShowSaveAcademicYearModal] = React.useState(false);
+    const [showSaveNotificationModal, setShowSaveNotificationModal] = React.useState(false);
 
     const submitAcademicYear = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -138,14 +141,24 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
 
     const submitSiteWideNotification = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        notificationForm.put('/admin/system-settings', { preserveScroll: true });
+        setShowSaveNotificationModal(true);
     };
 
     const confirmSaveAcademicYear = () => {
-        academicYearForm.put('/admin/system-settings', {
+        academicYearForm.put(systemSettings.update.url(), {
             preserveScroll: true,
             onSuccess: () => {
                 setShowSaveAcademicYearModal(false);
+            },
+        });
+    };
+
+    const confirmSaveNotification = () => {
+        notificationForm.put(systemSettings.update.url(), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowSaveNotificationModal(false);
+                notificationForm.setData('siteWideNotification', '');
             },
         });
     };
@@ -173,7 +186,7 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
                                             academicYearForm.clearErrors('academicYear');
                                             academicYearForm.setData('academicYear', e.target.value);
                                         }}
-                                        placeholder="2025–2026"
+                                        placeholder="[e.g 2025-2026]"
                                         className={inputClass}
                                     />
                                 </FormField>
@@ -301,6 +314,18 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
                 error={academicYearForm.errors.academicYear}
                 onConfirm={confirmSaveAcademicYear}
                 isSubmitting={academicYearForm.processing}
+            />
+
+            <SaveNotificationModal
+                open={showSaveNotificationModal}
+                onClose={() => {
+                    setShowSaveNotificationModal(false);
+                    notificationForm.clearErrors('siteWideNotification');
+                }}
+                message={notificationForm.data.siteWideNotification}
+                error={notificationForm.errors.siteWideNotification}
+                onConfirm={confirmSaveNotification}
+                isSubmitting={notificationForm.processing}
             />
         </AdminLayout>
     );

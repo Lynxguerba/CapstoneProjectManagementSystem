@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AcademicYear;
+use App\Models\SiteWideNotification;
 use App\Models\SystemSetting;
 use App\Models\User;
 
@@ -75,4 +76,42 @@ test('admin cannot save an academic year that already exists', function () {
         ->assertSessionHasErrors(['academicYear']);
 
     expect(AcademicYear::query()->where('label', '2025-2026')->count())->toBe(1);
+});
+
+test('admin can save a site-wide notification message', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+    ]);
+
+    $this
+        ->actingAs($admin)
+        ->put(route('admin.system-settings.update'), [
+            'siteWideNotification' => 'Final defense schedules are now posted.',
+        ])
+        ->assertRedirect(route('admin.system-settings'));
+
+    expect(SiteWideNotification::query()
+        ->latest('id')
+        ->value('message'))->toBe('Final defense schedules are now posted.');
+});
+
+test('admin can clear the site-wide notification message', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+    ]);
+
+    SiteWideNotification::query()->create([
+        'message' => 'Old message',
+    ]);
+
+    $this
+        ->actingAs($admin)
+        ->put(route('admin.system-settings.update'), [
+            'siteWideNotification' => '',
+        ])
+        ->assertRedirect(route('admin.system-settings'));
+
+    expect(SiteWideNotification::query()
+        ->latest('id')
+        ->value('message'))->toBeNull();
 });
