@@ -100,10 +100,15 @@ const SaveNotificationModal = ({ open, onClose, message, error, onConfirm, isSub
                                 <AlertTriangle className="h-5 w-5" />
                             </div>
                             <div>
-                                <p className="text-sm font-bold text-blue-950">Confirm Notification Update</p>
+                                <p className="text-sm font-bold text-blue-950">Confirm Notification Save</p>
                                 <p className="text-xs text-blue-900">This banner message will be shown to all users. Leaving it blank will hide the banner.</p>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                        <div className="font-semibold text-slate-800">Message preview</div>
+                        <div className="mt-1 whitespace-pre-wrap break-words">{messageLabel !== '' ? messageLabel : <span className="italic text-slate-500">No message</span>}</div>
                     </div>
 
                     {errorLabel !== '' ? (

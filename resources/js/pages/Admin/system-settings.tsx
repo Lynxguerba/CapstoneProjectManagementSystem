@@ -103,6 +103,8 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
     const notificationForm = useForm<Pick<SystemSettingsData, 'siteWideNotification'>>({
         siteWideNotification: '',
     });
+    const currentSiteWideNotification =
+        typeof settings?.siteWideNotification === 'string' ? settings.siteWideNotification.trim() : '';
 
     const admins = React.useMemo(() => {
         return Array.isArray(adminUsers) ? adminUsers : [];
@@ -158,7 +160,7 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
             preserveScroll: true,
             onSuccess: () => {
                 setShowSaveNotificationModal(false);
-                notificationForm.setData('siteWideNotification', '');
+                notificationForm.reset();
             },
         });
     };
@@ -186,7 +188,7 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
                                             academicYearForm.clearErrors('academicYear');
                                             academicYearForm.setData('academicYear', e.target.value);
                                         }}
-                                        placeholder="[e.g 2025-2026]"
+                                        placeholder="[e.g. 2025–2026]"
                                         className={inputClass}
                                     />
                                 </FormField>
@@ -206,7 +208,7 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
                                 <SectionHeader
                                     icon={Bell}
                                     title="Site-wide Notification"
-                                    description="This message will be displayed as a banner to all users across all roles."
+                                    description="This message will be displayed on the Notification to all users across all roles."
                                     withDivider={false}
                                 />
                                 <FormField
@@ -214,13 +216,15 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
                                     hint="Leave blank to hide the notification banner."
                                     error={notificationForm.errors.siteWideNotification}
                                 >
-                                    <textarea
-                                        value={notificationForm.data.siteWideNotification}
-                                        onChange={(e) => notificationForm.setData('siteWideNotification', e.target.value)}
-                                        rows={3}
-                                        placeholder="e.g. Final defense schedules are now posted. Check your assigned panel."
-                                        className={inputClass}
-                                    />
+                                    <div className="space-y-3">
+                                        <textarea
+                                            value={notificationForm.data.siteWideNotification}
+                                            onChange={(e) => notificationForm.setData('siteWideNotification', e.target.value)}
+                                            rows={3}
+                                            placeholder="e.g. Final defense schedules are now posted. Check your assigned panel."
+                                            className={inputClass}
+                                        />
+                                    </div>
                                 </FormField>
                                 <button
                                     type="submit"

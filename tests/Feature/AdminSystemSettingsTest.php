@@ -83,12 +83,21 @@ test('admin can save a site-wide notification message', function () {
         'role' => 'admin',
     ]);
 
+    $existingNotification = SiteWideNotification::query()->create([
+        'message' => 'Old message',
+    ]);
+
+    $notificationCount = SiteWideNotification::query()->count();
+
     $this
         ->actingAs($admin)
         ->put(route('admin.system-settings.update'), [
             'siteWideNotification' => 'Final defense schedules are now posted.',
         ])
         ->assertRedirect(route('admin.system-settings'));
+
+    expect(SiteWideNotification::query()->count())->toBe($notificationCount + 1);
+    expect($existingNotification->fresh()?->message)->toBe('Old message');
 
     expect(SiteWideNotification::query()
         ->latest('id')
@@ -104,12 +113,16 @@ test('admin can clear the site-wide notification message', function () {
         'message' => 'Old message',
     ]);
 
+    $notificationCount = SiteWideNotification::query()->count();
+
     $this
         ->actingAs($admin)
         ->put(route('admin.system-settings.update'), [
             'siteWideNotification' => '',
         ])
         ->assertRedirect(route('admin.system-settings'));
+
+    expect(SiteWideNotification::query()->count())->toBe($notificationCount + 1);
 
     expect(SiteWideNotification::query()
         ->latest('id')

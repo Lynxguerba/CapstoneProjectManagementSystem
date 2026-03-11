@@ -27,6 +27,19 @@ class AdminSystemSettingsController extends Controller
         'finalDefenseDeadline',
     ];
 
+    private function resolveSiteWideNotificationTable(): ?string
+    {
+        if (Schema::hasTable(SiteWideNotification::TABLE)) {
+            return SiteWideNotification::TABLE;
+        }
+
+        if (Schema::hasTable('site_wide_notifications')) {
+            return 'site_wide_notifications';
+        }
+
+        return null;
+    }
+
     public function edit(): Response
     {
         $settings = SystemSetting::query()
@@ -43,8 +56,14 @@ class AdminSystemSettingsController extends Controller
 
         $siteWideNotification = null;
 
-        if (Schema::hasTable('site_wide_notifications')) {
-            $siteWideNotification = SiteWideNotification::query()
+        $siteWideNotificationTable = $this->resolveSiteWideNotificationTable();
+
+        if ($siteWideNotificationTable !== null) {
+            $siteWideNotificationModel = new SiteWideNotification;
+            $siteWideNotificationModel->setTable($siteWideNotificationTable);
+
+            $siteWideNotification = $siteWideNotificationModel
+                ->newQuery()
                 ->latest('id')
                 ->value('message');
         } else {
@@ -108,7 +127,9 @@ class AdminSystemSettingsController extends Controller
         $validated = $request->validated();
 
         if (array_key_exists('siteWideNotification', $validated)) {
-            if (! Schema::hasTable('site_wide_notifications')) {
+            $siteWideNotificationTable = $this->resolveSiteWideNotificationTable();
+
+            if ($siteWideNotificationTable === null) {
                 return back()
                     ->withErrors(['siteWideNotification' => 'Site-wide notifications table is missing. Run migrations first.'])
                     ->withInput();
@@ -117,15 +138,10 @@ class AdminSystemSettingsController extends Controller
             $message = trim((string) ($validated['siteWideNotification'] ?? ''));
             $message = $message !== '' ? $message : null;
 
-            $notification = SiteWideNotification::query()
-                ->latest('id')
-                ->first();
+            $siteWideNotificationModel = new SiteWideNotification;
+            $siteWideNotificationModel->setTable($siteWideNotificationTable);
 
-            if ($notification !== null) {
-                $notification->update(['message' => $message]);
-            } else {
-                SiteWideNotification::query()->create(['message' => $message]);
-            }
+            $siteWideNotificationModel->newQuery()->create(['message' => $message]);
         }
 
         $academicYearLabel = null;
