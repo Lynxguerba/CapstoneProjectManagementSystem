@@ -108,24 +108,23 @@ class AdminSystemSettingsController extends Controller
         $validated = $request->validated();
 
         if (array_key_exists('siteWideNotification', $validated)) {
+            if (! Schema::hasTable('site_wide_notifications')) {
+                return back()
+                    ->withErrors(['siteWideNotification' => 'Site-wide notifications table is missing. Run migrations first.'])
+                    ->withInput();
+            }
+
             $message = trim((string) ($validated['siteWideNotification'] ?? ''));
             $message = $message !== '' ? $message : null;
 
-            if (Schema::hasTable('site_wide_notifications')) {
-                $notification = SiteWideNotification::query()
-                    ->latest('id')
-                    ->first();
+            $notification = SiteWideNotification::query()
+                ->latest('id')
+                ->first();
 
-                if ($notification !== null) {
-                    $notification->update(['message' => $message]);
-                } else {
-                    SiteWideNotification::query()->create(['message' => $message]);
-                }
+            if ($notification !== null) {
+                $notification->update(['message' => $message]);
             } else {
-                SystemSetting::query()->updateOrCreate(
-                    ['key' => 'siteWideNotification'],
-                    ['value' => $message]
-                );
+                SiteWideNotification::query()->create(['message' => $message]);
             }
         }
 
