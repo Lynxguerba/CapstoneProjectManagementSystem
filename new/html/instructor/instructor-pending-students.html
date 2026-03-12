@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending Students - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        .notification-dot {
+            position: relative;
+        }
+
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        /* ── Phase nav items ── */
+        .phase-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 1rem;
+            margin: 0.2rem 0.5rem;
+            border-radius: 0.75rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+            position: relative;
+            border: 1px solid transparent;
+        }
+
+        .phase-nav-item:hover {
+            background: rgba(255, 255, 255, .06);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, .2);
+        }
+
+        .phase-nav-item .phase-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .phase-nav-item .phase-meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .phase-nav-item .phase-name {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .phase-nav-item .phase-sub {
+            display: block;
+            font-size: 0.68rem;
+            color: #64748b;
+            margin-top: 1px;
+        }
+
+        /* ── Table ── */
+        .data-table {
+            width: 100%;
+            font-size: 0.83rem;
+        }
+
+        .data-table thead tr {
+            background: #f8fafc;
+        }
+
+        .data-table th {
+            padding: 0.85rem 1.25rem;
+            text-align: left;
+            font-weight: 600;
+            color: #64748b;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            white-space: nowrap;
+        }
+
+        .data-table td {
+            padding: 1rem 1.25rem;
+            color: #334155;
+        }
+
+        .data-table tbody tr {
+            border-top: 1px solid #f1f5f9;
+            transition: background .15s;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 99px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .badge-amber {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .badge-blue {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-slate {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .badge-green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .7rem;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 300;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 1.25rem;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, .25);
+            width: 100%;
+            max-width: 520px;
+            overflow: hidden;
+            animation: fadeIn .2s ease;
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            max-height: 65vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            background: #fafafa;
+        }
+
+        .form-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #374151;
+            display: block;
+            margin-bottom: 0.35rem;
+        }
+
+        .form-input {
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.6rem;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.83rem;
+            color: #1e293b;
+            outline: none;
+            transition: border .2s;
+        }
+
+        .form-input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, .12);
+        }
+
+        .section-divider {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin: 1.2rem 0 0.75rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: white;
+            padding: 0.5rem 1.1rem;
+            border-radius: 0.65rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: opacity .2s;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, .3);
+        }
+
+        .btn-primary:hover {
+            opacity: .9;
+        }
+
+        .btn-outline {
+            background: white;
+            color: #475569;
+            padding: 0.5rem 1.1rem;
+            border-radius: 0.65rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all .2s;
+        }
+
+        .btn-outline:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+    <aside
+        class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-chalkboard-teacher text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Instructor Portal</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Section</p>
+                    <p class="text-sm font-semibold text-white">BSIT-3A</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 overflow-y-auto space-y-1">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="instructor-dashboard.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">12</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-5 mb-2">Management</p>
+            <!-- Group Management is active (parent of this page) -->
+            <a href="instructor-group-management.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg shadow-emerald-600/20">
+                <i class="fas fa-users w-5"></i>
+                <span class="flex-1">Group Management</span>
+                <i class="fas fa-chevron-right text-xs"></i>
+            </a>
+            <a href="instructor-manage-user.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-user-plus w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Manage User</span>
+                <span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded-full">New</span>
+            </a>
+            <a href="instructor-adviser-assignment.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-user-tie w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Adviser Assignment</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">3 slots</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-5 mb-2">Capstone Phases</p>
+            <a href="instructor-phase1.html" class="phase-nav-item">
+                <div class="phase-icon bg-emerald-500/20"><i class="fas fa-lightbulb text-emerald-400"></i></div>
+                <div class="phase-meta"><span class="phase-name">Phase 1</span><span class="phase-sub">Concept</span>
+                </div>
+                <i class="fas fa-chevron-right text-xs text-slate-600"></i>
+            </a>
+            <a href="instructor-phase2.html" class="phase-nav-item">
+                <div class="phase-icon bg-blue-500/20"><i class="fas fa-list-alt text-blue-400"></i></div>
+                <div class="phase-meta"><span class="phase-name">Phase 2</span><span class="phase-sub">Outline</span>
+                </div>
+                <i class="fas fa-chevron-right text-xs text-slate-600"></i>
+            </a>
+            <a href="instructor-phase3.html" class="phase-nav-item">
+                <div class="phase-icon bg-amber-500/20"><i class="fas fa-flask text-amber-400"></i></div>
+                <div class="phase-meta"><span class="phase-name">Phase 3</span><span
+                        class="phase-sub">Pre-Deployment</span></div>
+                <i class="fas fa-chevron-right text-xs text-slate-600"></i>
+            </a>
+            <a href="instructor-phase4.html" class="phase-nav-item">
+                <div class="phase-icon bg-purple-500/20"><i class="fas fa-rocket text-purple-400"></i></div>
+                <div class="phase-meta"><span class="phase-name">Phase 4</span><span class="phase-sub">Deployment</span>
+                </div>
+                <i class="fas fa-chevron-right text-xs text-slate-600"></i>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                    PD</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Dela Cruz</p>
+                    <p class="text-xs text-slate-400">Capstone Coordinator</p>
+                </div>
+                <a href="panel-dashboard.html"
+                    class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"><i
+                        class="fas fa-exchange-alt text-slate-400"></i></a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ═══════════════════ MAIN ═══════════════════ -->
+    <main class="flex-1 ml-72">
+
+        <!-- TOP BAR -->
+        <div
+            class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center sticky top-0 z-40 shadow-sm">
+            <div class="flex items-center gap-3">
+                <a href="instructor-group-management.html"
+                    class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition text-slate-500">
+                    <i class="fas fa-arrow-left text-sm"></i>
+                </a>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xl font-bold text-slate-800">Pending / Ungrouped Students</h2>
+                        <span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-1 rounded-full font-semibold">
+                            <i class="fas fa-user-clock text-[9px] mr-1"></i>8 Students
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5">AY 2024-2025 · 1st Semester · BSIT-3A</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button
+                    class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition notification-dot">
+                    <i class="fas fa-bell text-slate-500 text-sm"></i>
+                </button>
+                <button
+                    class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-500 text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="p-8 pb-16 space-y-6">
+
+            <!-- Summary cards -->
+            <div class="grid grid-cols-3 gap-5">
+                <div class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-user-clock text-amber-600 text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400">Ungrouped Students</p>
+                            <p class="text-2xl font-bold text-amber-600">8</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-user-graduate text-blue-600 text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400">Total Enrolled</p>
+                            <p class="text-2xl font-bold text-slate-800">45</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-users text-emerald-600 text-lg"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400">Already Grouped</p>
+                            <p class="text-2xl font-bold text-emerald-600">37</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="flex items-center justify-between">
+                <div class="flex gap-3">
+                    <!-- Search -->
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+                        <input type="text" id="searchInput" onkeyup="filterTable()"
+                            placeholder="Search student name or ID..."
+                            class="pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 w-72">
+                    </div>
+                    <!-- Year level filter -->
+                    <div class="relative">
+                        <select onchange="filterTable()" id="yearFilter"
+                            class="appearance-none border border-slate-200 rounded-xl px-4 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <option value="">All Year Levels</option>
+                            <option value="3rd Year">3rd Year</option>
+                            <option value="4th Year">4th Year</option>
+                        </select>
+                        <i
+                            class="fas fa-chevron-down absolute right-3 top-3 text-slate-400 text-xs pointer-events-none"></i>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button class="btn-outline text-sm"><i class="fas fa-download text-slate-400"></i> Export</button>
+                    <button onclick="openModal('modal-notify')" class="btn-outline text-sm"><i
+                            class="fas fa-bell text-amber-500"></i> Notify All</button>
+                    <button onclick="openModal('modal-assign')" class="btn-primary text-sm"><i
+                            class="fas fa-object-group"></i> Assign to Group</button>
+                </div>
+            </div>
+
+            <!-- Table card -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-semibold text-slate-800">Students Without a Group</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">These students are enrolled but have not joined or been
+                            assigned to any capstone group yet.</p>
+                    </div>
+                    <span class="text-xs text-slate-400"><span id="rowCount">8</span> students listed</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="data-table" id="studentTable">
+                        <thead>
+                            <tr>
+                                <th class="w-10">
+                                    <input type="checkbox" id="selectAll" onchange="toggleAll(this)"
+                                        class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-400">
+                                </th>
+                                <th>Student</th>
+                                <th>Student ID</th>
+                                <th>Year Level</th>
+                                <th>Email</th>
+                                <th>Date Enrolled</th>
+                                <th>Preferred Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+
+                            <tr>
+                                <td><input type="checkbox"
+                                        class="row-check rounded border-slate-300 text-emerald-600 focus:ring-emerald-400">
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="avatar bg-sky-500">PQ</div>
+                                        <div>
+                                            <p class="font-medium text-sm">Paolo Quimbo</p>
+                                            <p class="text-xs text-slate-400">BSIT-3A</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="font-mono text-xs text-slate-500">2021-00341</td>
+                                <td data-year="3rd Year"><span class="badge badge-blue">3rd Year</span></td>
+                                <td class="text-xs text-slate-500">p.quimbo@school.edu</td>
+                                <td class="text-xs text-slate-500">Jun 12, 2025</td>
+                                <td><span class="badge badge-slate">Programmer</span></td>
+                                <td><span class="badge badge-amber"><i class="fas fa-clock"></i> Ungrouped</span></td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button onclick="openAssignModal('Paolo Quimbo')"
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">Assign</button>
+                                        <button onclick="openModal('modal-notify-single')"
+                                            class="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 text-xs font-semibold hover:bg-slate-100 transition">Notify</button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><input type="checkbox"
+                                        class="row-check rounded border-slate-300 text-emerald-600 focus:ring-emerald-400">
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="avatar bg-rose-500">RV</div>
+                                        <div>
+                                            <p class="font-medium text-sm">Rhea Valdez</p>
+                                            <p class="text-xs text-slate-400">BSIT-3A</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="font-mono text-xs text-slate-500">2021-00356</td>
+                                <td data-year="3rd Year"><span class="badge badge-blue">3rd Year</span></td>
+                                <td class="text-xs text-slate-500">r.valdez@school.edu</td>
+                                <td class="text-xs text-slate-500">Jun 12, 2025</td>
+                                <td><span class="badge badge-slate">Documentarian</span></td>
+                                <td><span class="badge badge-amber"><i class="fas fa-clock"></i> Ungrouped</span></td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button onclick="openAssignModal('Rhea Valdez')"
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">Assign</button>
+                                        <button onclick="openModal('modal-notify-single')"
+                                            class="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 text-xs font-semibold hover:bg-slate-100 transition">Notify</button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><input type="checkbox"
+                                        class="row-check rounded border-slate-300 text-emerald-600 focus:ring-emerald-400">
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="avatar bg-violet-500">CM</div>
+                                        <div>
+                                            <p class="font-medium text-sm">Carlo Mendoza</p>
+                                            <p class="text-xs text-slate-400">BSIT-3A</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="font-mono text-xs text-slate-500">2021-00378</td>
+                                <td data-year="3rd Year"><span class="badge badge-blue">3rd Year</span></td>
+                                <td class="text-xs text-slate-500">c.mendoza@school.edu</td>
+                                <td class="text-xs text-slate-500">Jun 12, 2025</td>
+                                <td><span class="badge badge-slate">System Analyst</span></td>
+                                <td><span class="badge badge-amber"><i class="fas fa-clock"></i> Ungrouped</span></td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button onclick="openAssignModal('Carlo Mendoza')"
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">Assign</button>
+                                        <button onclick="openModal('modal-notify-single')"
+                                            class="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 text-xs font-semibold hover:bg-slate-100 transition">Notify</button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><input type="checkbox"
+                                        class="row-check rounded border-slate-300 text-emerald-600 focus:ring-emerald-400">
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="avatar bg-teal-500">SL</div>
+                                        <div>
+                                            <p class="font-medium text-sm">Sofia Lim</p>
+                                            <p class="text-xs text-slate-400">BSIT-3A</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="font-mono text-xs text-slate-500">2021-00392</td>
+                                <td data-year="3rd Year"><span class="badge badge-blue">3rd Year</span></td>
+                                <td class="text-xs text-slate-500">s.lim@school.edu</td>
+                                <td class="text-xs text-slate-500">Jun 13, 2025</td>
+                                <td><span class="badge badge-slate">Programmer</span></td>
+                                <td><span class="badge badge-amber"><i class="fas fa-clock"></i> Ungrouped</span></td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button onclick="openAssignModal('Sofia Lim')"
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">Assign</button>
+                                        <button onclick="openModal('modal-notify-single')"
+                                            class="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 text-xs font-semibold hover:bg-slate-100 transition">Notify</button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><input type="checkbox"
+                                        class="row-check rounded border-slate-300 text-emerald-600 focus:ring-emerald-400">
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="avatar bg-orange-500">BN</div>
+                                        <div>
+                                            <p class="font-medium text-sm">Benito Navarro</p>
+                                            <p class="text-xs text-slate-400">BSIT-3A</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="font-mono text-xs text-slate-500">2021-00405</td>
+                                <td data-year="4th Year"><span class="badge badge-green">4th Year</span></td>
+                                <td class="text-xs text-slate-500">b.navarro@school.edu</td>
+                                <td class="text-xs text-slate-500">Jun 10, 2025</td>
+                                <td><span class="badge badge-slate">Project Manager</span></td>
+                                <td><span class="badge badge-red"><i class="fas fa-exclamation-circle"></i>
+                                        Overdue</span></td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button onclick="openAssignModal('Benito Navarro')"
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">Assign</button>
+                                        <button onclick="openModal('modal-notify-single')"
+                                            class="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 text-xs font-semibold hover:bg-slate-100 transition">Notify</button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><input type="checkbox"
+                                        class="row-check rounded border-slate-300 text-emerald-600 focus:ring-emerald-400">
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="avatar bg-pink-500">IG</div>
+                                        <div>
+                                            <p class="font-medium text-sm">Iris Garcia</p>
+                                            <p class="text-xs text-slate-400">BSIT-3A</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="font-mono text-xs text-slate-500">2021-00417</td>
+                                <td data-year="3rd Year"><span class="badge badge-blue">3rd Year</span></td>
+                                <td class="text-xs text-slate-500">i.garcia@school.edu</td>
+                                <td class="text-xs text-slate-500">Jun 14, 2025</td>
+                                <td><span class="badge badge-slate">System Analyst</span></td>
+                                <td><span class="badge badge-amber"><i class="fas fa-clock"></i> Ungrouped</span></td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button onclick="openAssignModal('Iris Garcia')"
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">Assign</button>
+                                        <button onclick="openModal('modal-notify-single')"
+                                            class="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 text-xs font-semibold hover:bg-slate-100 transition">Notify</button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><input type="checkbox"
+                                        class="row-check rounded border-slate-300 text-emerald-600 focus:ring-emerald-400">
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="avatar bg-cyan-600">DO</div>
+                                        <div>
+                                            <p class="font-medium text-sm">Danilo Ocampo</p>
+                                            <p class="text-xs text-slate-400">BSIT-3A</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="font-mono text-xs text-slate-500">2021-00433</td>
+                                <td data-year="4th Year"><span class="badge badge-green">4th Year</span></td>
+                                <td class="text-xs text-slate-500">d.ocampo@school.edu</td>
+                                <td class="text-xs text-slate-500">Jun 10, 2025</td>
+                                <td><span class="badge badge-slate">Programmer</span></td>
+                                <td><span class="badge badge-red"><i class="fas fa-exclamation-circle"></i>
+                                        Overdue</span></td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button onclick="openAssignModal('Danilo Ocampo')"
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">Assign</button>
+                                        <button onclick="openModal('modal-notify-single')"
+                                            class="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 text-xs font-semibold hover:bg-slate-100 transition">Notify</button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><input type="checkbox"
+                                        class="row-check rounded border-slate-300 text-emerald-600 focus:ring-emerald-400">
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="avatar bg-indigo-500">LB</div>
+                                        <div>
+                                            <p class="font-medium text-sm">Liza Buenaventura</p>
+                                            <p class="text-xs text-slate-400">BSIT-3A</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="font-mono text-xs text-slate-500">2021-00449</td>
+                                <td data-year="3rd Year"><span class="badge badge-blue">3rd Year</span></td>
+                                <td class="text-xs text-slate-500">l.buenaventura@school.edu</td>
+                                <td class="text-xs text-slate-500">Jun 15, 2025</td>
+                                <td><span class="badge badge-slate">Documentarian</span></td>
+                                <td><span class="badge badge-amber"><i class="fas fa-clock"></i> Ungrouped</span></td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button onclick="openAssignModal('Liza Buenaventura')"
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">Assign</button>
+                                        <button onclick="openModal('modal-notify-single')"
+                                            class="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 text-xs font-semibold hover:bg-slate-100 transition">Notify</button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty state (hidden by default) -->
+                <div id="emptyState" class="hidden py-16 text-center">
+                    <i class="fas fa-search text-3xl text-slate-300 mb-3"></i>
+                    <p class="text-slate-400 font-medium">No students match your search.</p>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-slate-500">Showing <span class="font-medium">1–8</span> of <span
+                        class="font-medium">8</span> students</p>
+                <div class="flex gap-2">
+                    <button
+                        class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 disabled:opacity-40"
+                        disabled><i class="fas fa-chevron-left text-xs"></i></button>
+                    <button class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-sm">1</button>
+                    <button class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm hover:bg-slate-50"><i
+                            class="fas fa-chevron-right text-xs"></i></button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ══════════════ MODAL: ASSIGN TO GROUP ══════════════ -->
+    <div id="modal-assign" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-assign')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-object-group text-emerald-600"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800" id="assign-modal-title">Assign Student to Group</p>
+                        <p class="text-xs text-slate-400">Choose an existing group or create a new one</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-assign')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-4">
+                <p class="section-divider">Student</p>
+                <div>
+                    <label class="form-label">Student Name</label>
+                    <input id="assign-student-name" type="text" class="form-input" readonly>
+                </div>
+
+                <p class="section-divider">Assign To</p>
+                <div>
+                    <label class="form-label">Select Group <span class="text-red-400">*</span></label>
+                    <select class="form-input">
+                        <option value="">Choose group…</option>
+                        <option>Group Alpha (3 members · needs 1 more)</option>
+                        <option>Group Beta (2 members · needs 2 more)</option>
+                        <option>Group Delta (2 members · needs 2 more)</option>
+                        <option>➕ Create New Group</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Assign Role</label>
+                    <select class="form-input">
+                        <option value="">Select role…</option>
+                        <option>Project Manager</option>
+                        <option>System Analyst</option>
+                        <option>Programmer</option>
+                        <option>Documentarian</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Notes (optional)</label>
+                    <textarea class="form-input" rows="2" placeholder="e.g. Student requested this group…"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('modal-assign')" class="btn-outline">Cancel</button>
+                <button onclick="closeModal('modal-assign')" class="btn-primary"><i class="fas fa-check"></i> Confirm
+                    Assignment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════ MODAL: NOTIFY ALL ══════════════ -->
+    <div id="modal-notify" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-notify')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-bell text-amber-600"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800">Notify Ungrouped Students</p>
+                        <p class="text-xs text-slate-400">Send a reminder to all 8 students without a group</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-notify')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-4">
+                <p class="section-divider">Message</p>
+                <div>
+                    <label class="form-label">Subject</label>
+                    <input type="text" class="form-input" value="Action Required: Join a Capstone Group">
+                </div>
+                <div>
+                    <label class="form-label">Message</label>
+                    <textarea class="form-input" rows="4">Dear Student,
+
+You have not yet been assigned to a capstone group. Please coordinate with your classmates or approach your instructor for group assignment before the deadline.
+
+Thank you.</textarea>
+                </div>
+                <div>
+                    <label class="form-label">Send via</label>
+                    <select class="form-input">
+                        <option>System Notification</option>
+                        <option>Email</option>
+                        <option>Both</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('modal-notify')" class="btn-outline">Cancel</button>
+                <button onclick="closeModal('modal-notify')" class="btn-primary"><i class="fas fa-paper-plane"></i> Send
+                    to All 8 Students</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════ MODAL: NOTIFY SINGLE ══════════════ -->
+    <div id="modal-notify-single" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-notify-single')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-paper-plane text-amber-600"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800">Send Notification</p>
+                        <p class="text-xs text-slate-400">Remind this student to join a group</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-notify-single')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-4">
+                <p class="section-divider">Message</p>
+                <div>
+                    <label class="form-label">Subject</label>
+                    <input type="text" class="form-input" value="Reminder: Join a Capstone Group">
+                </div>
+                <div>
+                    <label class="form-label">Message</label>
+                    <textarea class="form-input"
+                        rows="3">Hi, you have not joined a capstone group yet. Please do so before the deadline to avoid being marked as incomplete.</textarea>
+                </div>
+                <div>
+                    <label class="form-label">Send via</label>
+                    <select class="form-input">
+                        <option>System Notification</option>
+                        <option>Email</option>
+                        <option>Both</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('modal-notify-single')" class="btn-outline">Cancel</button>
+                <button onclick="closeModal('modal-notify-single')" class="btn-primary"><i
+                        class="fas fa-paper-plane"></i> Send Notification</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) {
+            document.getElementById(id).classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        function closeOnBackdrop(e, id) {
+            if (e.target === document.getElementById(id)) closeModal(id);
+        }
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop.open').forEach(m => { m.classList.remove('open'); document.body.style.overflow = ''; });
+        });
+
+        function openAssignModal(name) {
+            document.getElementById('assign-student-name').value = name;
+            document.getElementById('assign-modal-title').textContent = 'Assign ' + name + ' to Group';
+            openModal('modal-assign');
+        }
+
+        function toggleAll(cb) {
+            document.querySelectorAll('.row-check').forEach(c => c.checked = cb.checked);
+        }
+
+        function filterTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const year = document.getElementById('yearFilter').value;
+            const rows = document.querySelectorAll('#tableBody tr');
+            let visible = 0;
+
+            rows.forEach(row => {
+                const name = row.querySelector('td:nth-child(2)')?.innerText.toLowerCase() || '';
+                const id = row.querySelector('td:nth-child(3)')?.innerText.toLowerCase() || '';
+                const rowYear = row.querySelector('td[data-year]')?.getAttribute('data-year') || '';
+                const matchSearch = name.includes(search) || id.includes(search);
+                const matchYear = !year || rowYear === year;
+                const show = matchSearch && matchYear;
+                row.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            document.getElementById('rowCount').textContent = visible;
+            document.getElementById('emptyState').classList.toggle('hidden', visible > 0);
+        }
+    </script>
+</body>
+
+</html>

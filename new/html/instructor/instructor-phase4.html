@@ -1,0 +1,1965 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 4: Deployment - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* ── Sidebar ── */
+        .phase-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 1rem;
+            margin: 0.2rem 0.5rem;
+            border-radius: 0.75rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+            position: relative;
+            border: 1px solid transparent;
+        }
+
+        .phase-nav-item:hover {
+            background: rgba(255, 255, 255, .06);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, .2);
+        }
+
+        .phase-nav-item.active {
+            background: rgba(16, 185, 129, .12);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, .3);
+        }
+
+        .phase-nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 55%;
+            background: #10b981;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .phase-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .phase-meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .phase-name {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .phase-sub {
+            display: block;
+            font-size: 0.68rem;
+            color: #64748b;
+            margin-top: 1px;
+        }
+
+        .phase-nav-item.active .phase-sub {
+            color: #6ee7b7;
+        }
+
+        /* ── Tabs ── */
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.65rem 1.1rem;
+            border-radius: 0.65rem;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            white-space: nowrap;
+            background: transparent;
+        }
+
+        .tab-btn:hover {
+            background: #f8fafc;
+            color: #334155;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #047857;
+            font-weight: 600;
+            border-color: #d1fae5;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, .08);
+        }
+
+        .tab-count {
+            font-size: 0.65rem;
+            padding: 0.1rem 0.45rem;
+            border-radius: 99px;
+            font-weight: 700;
+        }
+
+        .section-panel {
+            display: none;
+        }
+
+        .section-panel.active {
+            display: block;
+        }
+
+        /* ── Badges ── */
+        .badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 99px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .badge-green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-yellow {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .badge-red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-blue {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-purple {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+
+        .badge-slate {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        /* ── Progress ── */
+        .prog-track {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .prog-fill {
+            height: 100%;
+            border-radius: 99px;
+            transition: width .4s ease;
+        }
+
+        /* ── Table ── */
+        .data-table {
+            width: 100%;
+            font-size: 0.83rem;
+        }
+
+        .data-table thead tr {
+            background: #f8fafc;
+        }
+
+        .data-table th {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #64748b;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .data-table td {
+            padding: 0.85rem 1rem;
+            color: #334155;
+        }
+
+        .data-table tbody tr {
+            border-top: 1px solid #f1f5f9;
+            transition: background .15s;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        /* ── Card ── */
+        .card {
+            background: white;
+            border: 1px solid #f1f5f9;
+            border-radius: 1.25rem;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .05);
+        }
+
+        /* ── Buttons ── */
+        .btn-primary {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: white;
+            padding: 0.5rem 1.1rem;
+            border-radius: 0.65rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: opacity .2s;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, .3);
+        }
+
+        .btn-primary:hover {
+            opacity: .9;
+        }
+
+        .btn-outline {
+            background: white;
+            color: #475569;
+            padding: 0.5rem 1.1rem;
+            border-radius: 0.65rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all .2s;
+        }
+
+        .btn-outline:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        /* ── Calendar ── */
+        .cal-day {
+            border: 1px solid #e2e8f0;
+            padding: 0.5rem;
+            min-height: 90px;
+            background: white;
+            position: relative;
+        }
+
+        .cal-day.today {
+            background: #f0fdf4;
+            border-color: #10b981;
+        }
+
+        .cal-day.other {
+            background: #f8fafc;
+        }
+
+        .cal-day.other .day-num {
+            color: #94a3b8;
+        }
+
+        .day-num {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .cal-event {
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.3rem;
+            font-size: 0.65rem;
+            font-weight: 500;
+            margin-top: 0.2rem;
+            cursor: pointer;
+            border-left: 3px solid;
+            line-height: 1.3;
+        }
+
+        .cal-event.scheduled {
+            background: #dbeafe;
+            color: #1e40af;
+            border-color: #3b82f6;
+        }
+
+        .cal-event.completed {
+            background: #dcfce7;
+            color: #166534;
+            border-color: #10b981;
+        }
+
+        .cal-event.redefense {
+            background: #fee2e2;
+            color: #991b1b;
+            border-color: #ef4444;
+        }
+
+        .cal-event:hover {
+            filter: brightness(.95);
+        }
+
+        /* ── Room card ── */
+        .room-card {
+            transition: all .2s;
+        }
+
+        .room-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, .08);
+        }
+
+        /* ── Upload zone ── */
+        .upload-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .upload-zone:hover {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        /* ── Doc required card ── */
+        .doc-required {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+
+        .doc-required-header {
+            padding: 0.75rem 1rem;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .notif-dot {
+            position: relative;
+        }
+
+        .notif-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.25s ease both;
+        }
+
+        .avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .65rem;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        /* ── Modals ── */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 300;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 1.25rem;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, .25);
+            width: 100%;
+            overflow: hidden;
+            animation: fadeIn .2s ease;
+        }
+
+        .modal-sm {
+            max-width: 480px;
+        }
+
+        .modal-md {
+            max-width: 620px;
+        }
+
+        .modal-lg {
+            max-width: 760px;
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            max-height: 72vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            background: #fafafa;
+        }
+
+        .form-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #374151;
+            display: block;
+            margin-bottom: 0.35rem;
+        }
+
+        .form-input {
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.6rem;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.83rem;
+            color: #1e293b;
+            outline: none;
+            transition: border .2s, box-shadow .2s;
+        }
+
+        .form-input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, .12);
+        }
+
+        .section-divider {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin: 1.2rem 0 0.75rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex text-slate-700">
+
+    <!-- ══════════════════ SIDEBAR ══════════════════ -->
+    <aside
+        class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl z-50">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-chalkboard-teacher text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Instructor Portal</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Section</p>
+                    <p class="text-sm font-semibold text-white">BSIT-3A</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 p-4 overflow-y-auto space-y-1">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="instructor-dashboard.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-emerald-400"></i><span
+                    class="flex-1">Dashboard</span>
+            </a>
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-5 mb-2">Management</p>
+            <a href="instructor-group-management.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-emerald-400"></i><span class="flex-1">Group
+                    Management</span><i class="fas fa-chevron-right text-xs text-slate-600"></i>
+            </a>
+            <a href="instructor-manage-user.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-user-plus w-5 text-slate-400 group-hover:text-emerald-400"></i><span
+                    class="flex-1">Manage User</span><span
+                    class="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded-full">New</span>
+            </a>
+            <a href="instructor-adviser-assignment.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-user-tie w-5 text-slate-400 group-hover:text-emerald-400"></i><span
+                    class="flex-1">Adviser Assignment</span><span
+                    class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">3 slots</span>
+            </a>
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-5 mb-2">Capstone Phases</p>
+            <a href="instructor-phase1.html" class="phase-nav-item">
+                <div class="phase-icon bg-emerald-500/20"><i class="fas fa-lightbulb text-emerald-400"></i></div>
+                <div class="phase-meta"><span class="phase-name">Phase 1</span><span class="phase-sub">Concept</span>
+                </div>
+                <i class="fas fa-chevron-right text-xs text-slate-600"></i>
+            </a>
+            <a href="instructor-phase2.html" class="phase-nav-item">
+                <div class="phase-icon bg-blue-500/20"><i class="fas fa-list-alt text-blue-400"></i></div>
+                <div class="phase-meta"><span class="phase-name">Phase 2</span><span class="phase-sub">Outline</span>
+                </div>
+                <i class="fas fa-chevron-right text-xs text-slate-600"></i>
+            </a>
+            <a href="instructor-phase3.html" class="phase-nav-item">
+                <div class="phase-icon bg-amber-500/20"><i class="fas fa-flask text-amber-400"></i></div>
+                <div class="phase-meta"><span class="phase-name">Phase 3</span><span
+                        class="phase-sub">Pre-Deployment</span></div>
+                <i class="fas fa-chevron-right text-xs text-slate-600"></i>
+            </a>
+            <a href="instructor-phase4.html" class="phase-nav-item active">
+                <div class="phase-icon bg-purple-500/20"><i class="fas fa-rocket text-purple-400"></i></div>
+                <div class="phase-meta"><span class="phase-name">Phase 4</span><span class="phase-sub">Deployment</span>
+                </div>
+                <i class="fas fa-chevron-right text-xs text-purple-500"></i>
+            </a>
+        </nav>
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                    PD</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Dela Cruz</p>
+                    <p class="text-xs text-slate-400">Capstone Coordinator</p>
+                </div>
+                <a href="panel-dashboard.html"
+                    class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"><i
+                        class="fas fa-exchange-alt text-slate-400"></i></a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ══════════════════ MAIN ══════════════════ -->
+    <main class="flex-1 ml-72">
+
+        <!-- TOP BAR -->
+        <div
+            class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center sticky top-0 z-40 shadow-sm">
+            <div class="flex items-center gap-3">
+                <a href="instructor-dashboard.html"
+                    class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition text-slate-500">
+                    <i class="fas fa-arrow-left text-sm"></i>
+                </a>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xl font-bold text-slate-800">Phase 4: Deployment</h2>
+                        <span class="bg-purple-100 text-purple-700 text-xs px-2.5 py-1 rounded-full font-semibold"><i
+                                class="fas fa-rocket text-[9px] mr-1"></i>Phase 4</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5">AY 2024-2025 · 1st Semester · BSIT-3A</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button
+                    class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition notif-dot"><i
+                        class="fas fa-bell text-slate-500 text-sm"></i></button>
+                <button
+                    class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition"><i
+                        class="fas fa-cog text-slate-500 text-sm"></i></button>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="p-8 pb-16 space-y-6">
+
+            <!-- Summary stats -->
+            <div class="grid grid-cols-4 gap-4">
+                <div class="card p-4 flex items-center gap-3">
+                    <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0"><i
+                            class="fas fa-users text-emerald-600"></i></div>
+                    <div>
+                        <p class="text-xs text-slate-400">Total Groups</p>
+                        <p class="text-2xl font-bold text-slate-800">15</p>
+                    </div>
+                </div>
+                <div class="card p-4 flex items-center gap-3">
+                    <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0"><i
+                            class="fas fa-check-circle text-green-600"></i></div>
+                    <div>
+                        <p class="text-xs text-slate-400">Approved</p>
+                        <p class="text-2xl font-bold text-green-600">12</p>
+                    </div>
+                </div>
+                <div class="card p-4 flex items-center gap-3">
+                    <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0"><i
+                            class="fas fa-clock text-amber-600"></i></div>
+                    <div>
+                        <p class="text-xs text-slate-400">Pending</p>
+                        <p class="text-2xl font-bold text-amber-600">3</p>
+                    </div>
+                </div>
+                <div class="card p-4 flex items-center gap-3">
+                    <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0"><i
+                            class="fas fa-redo text-red-500"></i></div>
+                    <div>
+                        <p class="text-xs text-slate-400">Re-defense</p>
+                        <p class="text-2xl font-bold text-red-600">2</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab bar -->
+            <div class="card p-1.5 flex gap-1 overflow-x-auto">
+                <button class="tab-btn active" onclick="switchTab('deadlines',this)">
+                    <i class="fas fa-calendar-alt text-amber-500"></i> Deadline Manager <span
+                        class="tab-count bg-amber-100 text-amber-700">3</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('payments',this)">
+                    <i class="fas fa-credit-card text-green-500"></i> Payment Verification <span
+                        class="tab-count bg-amber-100 text-amber-700">4</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('defense',this)">
+                    <i class="fas fa-video text-blue-500"></i> Defense Schedule <span
+                        class="tab-count bg-blue-100 text-blue-700">3</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('documents',this)">
+                    <i class="fas fa-file-alt text-purple-500"></i> Documents <span
+                        class="tab-count bg-slate-100 text-slate-600">9</span>
+                </button>
+            </div>
+
+            <!-- ════════════════════════════════════
+             TAB: DEADLINE MANAGER
+        ════════════════════════════════════ -->
+            <div id="tab-deadlines" class="section-panel active fade-in">
+                <div class="card overflow-hidden">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                        <div>
+                            <h3 class="font-semibold text-slate-800">Deadline Manager</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Manage submission deadlines for Phase 4</p>
+                        </div>
+                        <button class="btn-primary" onclick="openModal('modal-deadline')"><i class="fas fa-plus"></i>
+                            Add Deadline</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>Type</th>
+                                <th>Due Date</th>
+                                <th>Groups Submitted</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-medium">Final System Deployment</td>
+                                <td><span class="badge badge-blue">Documentation</span></td>
+                                <td class="font-medium text-amber-600">Jun 5, 2026</td>
+                                <td>
+                                    <div class="flex items-center gap-2">
+                                        <div class="prog-track w-24">
+                                            <div class="prog-fill bg-emerald-500" style="width:60%"></div>
+                                        </div><span class="text-xs text-slate-500">9/15</span>
+                                    </div>
+                                </td>
+                                <td><span class="badge badge-yellow"><i class="fas fa-clock"></i> Due Soon</span></td>
+                                <td>
+                                    <div class="flex gap-1"><button
+                                            class="w-7 h-7 rounded-lg hover:bg-blue-50 text-blue-500 text-xs transition"><i
+                                                class="fas fa-edit"></i></button><button
+                                            class="w-7 h-7 rounded-lg hover:bg-red-50 text-red-400 text-xs transition"><i
+                                                class="fas fa-trash"></i></button></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">Final Documentation</td>
+                                <td><span class="badge badge-blue">Documentation</span></td>
+                                <td class="">Jun 10, 2026</td>
+                                <td>
+                                    <div class="flex items-center gap-2">
+                                        <div class="prog-track w-24">
+                                            <div class="prog-fill bg-emerald-500" style="width:35%"></div>
+                                        </div><span class="text-xs text-slate-500">5/15</span>
+                                    </div>
+                                </td>
+                                <td><span class="badge badge-green"><i class="fas fa-check"></i> On Track</span></td>
+                                <td>
+                                    <div class="flex gap-1"><button
+                                            class="w-7 h-7 rounded-lg hover:bg-blue-50 text-blue-500 text-xs transition"><i
+                                                class="fas fa-edit"></i></button><button
+                                            class="w-7 h-7 rounded-lg hover:bg-red-50 text-red-400 text-xs transition"><i
+                                                class="fas fa-trash"></i></button></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="font-medium">Project Turnover Form</td>
+                                <td><span class="badge badge-slate">Form</span></td>
+                                <td class="">Jun 15, 2026</td>
+                                <td>
+                                    <div class="flex items-center gap-2">
+                                        <div class="prog-track w-24">
+                                            <div class="prog-fill bg-emerald-500" style="width:10%"></div>
+                                        </div><span class="text-xs text-slate-500">1/15</span>
+                                    </div>
+                                </td>
+                                <td><span class="badge badge-green"><i class="fas fa-check"></i> On Track</span></td>
+                                <td>
+                                    <div class="flex gap-1"><button
+                                            class="w-7 h-7 rounded-lg hover:bg-blue-50 text-blue-500 text-xs transition"><i
+                                                class="fas fa-edit"></i></button><button
+                                            class="w-7 h-7 rounded-lg hover:bg-red-50 text-red-400 text-xs transition"><i
+                                                class="fas fa-trash"></i></button></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════
+             TAB: PAYMENT VERIFICATION
+        ════════════════════════════════════ -->
+            <div id="tab-payments" class="section-panel">
+                <div class="card overflow-hidden">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                        <div>
+                            <h3 class="font-semibold text-slate-800">Payment Verification</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Review and approve group payment submissions</p>
+                        </div>
+                        <button class="btn-outline"><i class="fas fa-download"></i> Export</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Group</th>
+                                <th>Members</th>
+                                <th>Amount</th>
+                                <th>Reference No.</th>
+                                <th>Submitted</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-semibold">Alpha</td>
+                                <td>
+                                    <div class="flex -space-x-1.5">
+                                        <div class="avatar bg-blue-500">JD</div>
+                                        <div class="avatar bg-green-500">MS</div>
+                                        <div class="avatar bg-purple-500">AR</div>
+                                    </div>
+                                </td>
+                                <td class="font-semibold">₱500.00</td>
+                                <td class="font-mono text-xs text-slate-500">GCH-20240310-001</td>
+                                <td class="text-xs text-slate-500">Mar 8, 2026</td>
+                                <td><span class="badge badge-green"><i class="fas fa-check-circle"></i> Verified</span>
+                                </td>
+                                <td><button
+                                        class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 text-xs transition"><i
+                                            class="fas fa-eye"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Beta</td>
+                                <td>
+                                    <div class="flex -space-x-1.5">
+                                        <div class="avatar bg-amber-500">RC</div>
+                                        <div class="avatar bg-indigo-500">MT</div>
+                                        <div class="avatar bg-pink-500">LJ</div>
+                                    </div>
+                                </td>
+                                <td class="font-semibold">₱500.00</td>
+                                <td class="font-mono text-xs text-slate-500">GCH-20240309-002</td>
+                                <td class="text-xs text-slate-500">Mar 9, 2026</td>
+                                <td><span class="badge badge-yellow"><i class="fas fa-clock"></i> Pending</span></td>
+                                <td>
+                                    <div class="flex gap-1"><button
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">Approve</button><button
+                                            class="px-2.5 py-1 rounded-lg bg-red-50 text-red-500 text-xs font-semibold hover:bg-red-100 transition">Reject</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Gamma</td>
+                                <td>
+                                    <div class="flex -space-x-1.5">
+                                        <div class="avatar bg-rose-500">KL</div>
+                                        <div class="avatar bg-teal-500">NB</div>
+                                    </div>
+                                </td>
+                                <td class="font-semibold">₱500.00</td>
+                                <td class="font-mono text-xs text-slate-500">GCH-20240308-003</td>
+                                <td class="text-xs text-slate-500">Mar 8, 2026</td>
+                                <td><span class="badge badge-yellow"><i class="fas fa-clock"></i> Pending</span></td>
+                                <td>
+                                    <div class="flex gap-1"><button
+                                            class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">Approve</button><button
+                                            class="px-2.5 py-1 rounded-lg bg-red-50 text-red-500 text-xs font-semibold hover:bg-red-100 transition">Reject</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Delta</td>
+                                <td>
+                                    <div class="flex -space-x-1.5">
+                                        <div class="avatar bg-cyan-500">PQ</div>
+                                        <div class="avatar bg-orange-500">RV</div>
+                                    </div>
+                                </td>
+                                <td class="font-semibold">₱500.00</td>
+                                <td class="font-mono text-xs text-red-300">—</td>
+                                <td class="text-xs text-slate-400">—</td>
+                                <td><span class="badge badge-red"><i class="fas fa-times-circle"></i> Not Paid</span>
+                                </td>
+                                <td><button
+                                        class="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 text-xs font-semibold hover:bg-slate-100 transition">Remind</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════
+             TAB: DEFENSE SCHEDULE
+        ════════════════════════════════════ -->
+            <div id="tab-defense" class="section-panel space-y-5">
+
+                <!-- Stats row -->
+                <div class="grid grid-cols-4 gap-4">
+                    <div class="card p-4">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-xs text-slate-500 mb-1">Total Defenses</p>
+                                <p class="text-2xl font-bold text-slate-800">24</p>
+                                <p class="text-xs text-slate-400 mt-1">This semester</p>
+                            </div>
+                            <div class="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center"><i
+                                    class="fas fa-calendar text-emerald-600 text-sm"></i></div>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-xs text-slate-500 mb-1">Scheduled</p>
+                                <p class="text-2xl font-bold text-blue-600">8</p>
+                                <p class="text-xs text-blue-500 mt-1">Next 7 days</p>
+                            </div>
+                            <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center"><i
+                                    class="fas fa-check-circle text-blue-600 text-sm"></i></div>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-xs text-slate-500 mb-1">Pending</p>
+                                <p class="text-2xl font-bold text-amber-600">6</p>
+                                <p class="text-xs text-amber-500 mt-1">Need scheduling</p>
+                            </div>
+                            <div class="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center"><i
+                                    class="fas fa-clock text-amber-600 text-sm"></i></div>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-xs text-slate-500 mb-1">Completed</p>
+                                <p class="text-2xl font-bold text-purple-600">10</p>
+                                <p class="text-xs text-purple-500 mt-1">This semester</p>
+                            </div>
+                            <div class="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center"><i
+                                    class="fas fa-check-double text-purple-600 text-sm"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions row -->
+                <div class="flex items-center justify-between">
+                    <div class="flex gap-2">
+                        <button class="btn-primary" onclick="openModal('modal-schedule')"><i class="fas fa-plus"></i>
+                            Schedule Defense</button>
+                        <button class="btn-outline" onclick="openModal('modal-rooms')"><i
+                                class="fas fa-door-open text-slate-400"></i> Manage Rooms</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button
+                            class="w-8 h-8 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center transition"><i
+                                class="fas fa-chevron-left text-xs text-slate-500"></i></button>
+                        <span class="text-sm font-semibold text-slate-700 px-2">June 2026</span>
+                        <button
+                            class="w-8 h-8 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center transition"><i
+                                class="fas fa-chevron-right text-xs text-slate-500"></i></button>
+                        <button class="btn-outline text-xs px-3 py-1.5">Today</button>
+                    </div>
+                </div>
+
+                <!-- Calendar + Rooms grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+                    <!-- Calendar (spans 2 cols) -->
+                    <div class="lg:col-span-2 card overflow-hidden">
+                        <!-- Legend -->
+                        <div class="px-5 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-6">
+                            <span class="text-sm font-semibold text-slate-700">June 2026</span>
+                            <div class="flex gap-4 text-xs ml-auto">
+                                <span class="flex items-center gap-1.5"><span
+                                        class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>Scheduled</span>
+                                <span class="flex items-center gap-1.5"><span
+                                        class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>Completed</span>
+                                <span class="flex items-center gap-1.5"><span
+                                        class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>Re-defense</span>
+                            </div>
+                        </div>
+                        <!-- Day headers -->
+                        <div class="grid grid-cols-7 bg-slate-50 border-b border-slate-100">
+                            <div class="py-2 text-center text-xs font-semibold text-slate-500">Sun</div>
+                            <div class="py-2 text-center text-xs font-semibold text-slate-500">Mon</div>
+                            <div class="py-2 text-center text-xs font-semibold text-slate-500">Tue</div>
+                            <div class="py-2 text-center text-xs font-semibold text-slate-500">Wed</div>
+                            <div class="py-2 text-center text-xs font-semibold text-slate-500">Thu</div>
+                            <div class="py-2 text-center text-xs font-semibold text-slate-500">Fri</div>
+                            <div class="py-2 text-center text-xs font-semibold text-slate-500">Sat</div>
+                        </div>
+                        <!-- Calendar grid -->
+                        <div class="grid grid-cols-7">
+                            <div class="cal-day other"><span class="day-num">27</span></div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">1</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">2</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">3</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">4</span>
+                                <div class="cal-event scheduled mt-1">10:00 AM · Alpha</div>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">5</span>
+                                <div class="cal-event scheduled mt-1">2:00 PM · Beta</div>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">6</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">7</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">8</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">9</span>
+                            </div>
+                            <div class="cal-day today"><span class="day-num flex items-center gap-1">10 <span
+                                        class="text-[9px] bg-emerald-500 text-white rounded-full px-1.5 py-0.5 font-bold">Today</span></span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">11</span>
+                                <div class="cal-event scheduled mt-1">1:00 PM · Gamma</div>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">12</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">13</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">14</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">15</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">16</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">17</span>
+                                <div class="cal-event redefense mt-1">9:00 AM · Delta</div>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">18</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">19</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">20</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">21</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">22</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">23</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">24</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">25</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">26</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">27</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">28</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">29</span>
+                            </div>
+                            <div class="cal-day"><span class="day-num flex items-center gap-1">30</span>
+                            </div>
+                            <div class="cal-day other"><span class="day-num">1</span></div>
+                            <div class="cal-day other"><span class="day-num">2</span></div>
+                            <div class="cal-day other"><span class="day-num">3</span></div>
+                            <div class="cal-day other"><span class="day-num">4</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Rooms panel -->
+                    <div class="card p-5">
+                        <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2"><i
+                                class="fas fa-door-open text-emerald-500"></i> Defense Rooms</h3>
+                        <div class="space-y-3">
+                            <div class="room-card p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-semibold text-sm">Room 201</h4>
+                                    <span class="badge badge-blue">Cap: 30</span>
+                                </div>
+                                <div class="text-xs space-y-1 text-slate-600">
+                                    <p class="flex justify-between"><span>Today:</span><span class="font-medium">2
+                                            defenses</span></p>
+                                    <p class="flex justify-between"><span>Next:</span><span
+                                            class="text-emerald-600 font-medium">Alpha · 10:00 AM</span></p>
+                                </div>
+                            </div>
+                            <div class="room-card p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-semibold text-sm">Room 202</h4>
+                                    <span class="badge badge-blue">Cap: 25</span>
+                                </div>
+                                <div class="text-xs space-y-1 text-slate-600">
+                                    <p class="flex justify-between"><span>Today:</span><span class="font-medium">1
+                                            defense</span></p>
+                                    <p class="flex justify-between"><span>Next:</span><span
+                                            class="text-emerald-600 font-medium">Beta · 2:00 PM</span></p>
+                                </div>
+                            </div>
+                            <div class="room-card p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-semibold text-sm">Room 203</h4>
+                                    <span class="badge badge-green">Available</span>
+                                </div>
+                                <div class="text-xs space-y-1 text-slate-600">
+                                    <p class="flex justify-between"><span>Today:</span><span class="font-medium">No
+                                            defenses</span></p>
+                                    <p class="flex justify-between"><span>Next:</span><span
+                                            class="text-slate-400">—</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            class="w-full mt-3 border border-dashed border-slate-300 rounded-xl py-2 text-xs text-slate-400 hover:bg-slate-50 transition flex items-center justify-center gap-1.5">
+                            <i class="fas fa-plus"></i> Add New Room
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upcoming defenses list -->
+                <div class="card overflow-hidden">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                        <div>
+                            <h3 class="font-semibold text-slate-800">Upcoming Defenses</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Next scheduled Phase 4 defense sessions</p>
+                        </div>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Group</th>
+                                <th>Project Title</th>
+                                <th>Date & Time</th>
+                                <th>Room</th>
+                                <th>Panel Members</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-semibold">Alpha</td>
+                                <td class="text-slate-500 text-xs">E-Learning Platform</td>
+                                <td>
+                                    <p class="font-medium text-sm">Jun 4, 2026</p>
+                                    <p class="text-xs text-slate-400">10:00 AM – 11:30 AM</p>
+                                </td>
+                                <td><span class="badge badge-blue">Room 201</span></td>
+                                <td>
+                                    <div class="flex -space-x-1.5">
+                                        <div class="avatar bg-slate-600">PR</div>
+                                        <div class="avatar bg-slate-500">PS</div>
+                                    </div>
+                                </td>
+                                <td><span class="badge badge-blue"><i class="fas fa-calendar"></i> Scheduled</span></td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Beta</td>
+                                <td class="text-slate-500 text-xs">Inventory System</td>
+                                <td>
+                                    <p class="font-medium text-sm">Jun 5, 2026</p>
+                                    <p class="text-xs text-slate-400">2:00 PM – 3:30 PM</p>
+                                </td>
+                                <td><span class="badge badge-blue">Room 202</span></td>
+                                <td>
+                                    <div class="flex -space-x-1.5">
+                                        <div class="avatar bg-slate-600">PL</div>
+                                        <div class="avatar bg-slate-500">PC</div>
+                                    </div>
+                                </td>
+                                <td><span class="badge badge-blue"><i class="fas fa-calendar"></i> Scheduled</span></td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Gamma</td>
+                                <td class="text-slate-500 text-xs">Mobile App</td>
+                                <td>
+                                    <p class="font-medium text-sm">Jun 11, 2026</p>
+                                    <p class="text-xs text-slate-400">1:00 PM – 2:30 PM</p>
+                                </td>
+                                <td><span class="badge badge-blue">Room 201</span></td>
+                                <td>
+                                    <div class="flex -space-x-1.5">
+                                        <div class="avatar bg-slate-600">PR</div>
+                                        <div class="avatar bg-slate-500">PV</div>
+                                    </div>
+                                </td>
+                                <td><span class="badge badge-red"><i class="fas fa-redo"></i> Re-defense</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Conflict checker -->
+                <div class="card p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2"><i
+                                class="fas fa-shield-alt text-emerald-500"></i> Schedule Conflict Checker</h3>
+                        <span class="badge badge-green"><i class="fas fa-check-circle"></i> No Conflicts Detected</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="p-3 bg-green-50 rounded-xl border border-green-100 text-sm text-green-700"><i
+                                class="fas fa-check-circle mr-1.5"></i>Room 201 – Available</div>
+                        <div class="p-3 bg-green-50 rounded-xl border border-green-100 text-sm text-green-700"><i
+                                class="fas fa-check-circle mr-1.5"></i>Room 202 – Available</div>
+                        <div class="p-3 bg-green-50 rounded-xl border border-green-100 text-sm text-green-700"><i
+                                class="fas fa-check-circle mr-1.5"></i>Room 203 – Available</div>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-3"><i class="fas fa-info-circle mr-1"></i>System automatically
+                        validates room and time slot availability before scheduling.</p>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════
+             TAB: DOCUMENTS
+        ════════════════════════════════════ -->
+            <div id="tab-documents" class="section-panel space-y-5">
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+                    <!-- Left: Required docs + upload -->
+                    <div class="space-y-4">
+
+                        <!-- Upload zone -->
+                        <div class="card p-5">
+                            <h3 class="font-semibold text-slate-800 mb-3 flex items-center gap-2"><i
+                                    class="fas fa-cloud-upload-alt text-emerald-500"></i> Upload Document</h3>
+                            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-file-upload text-2xl text-slate-300 mb-2"></i>
+                                <p class="text-sm font-medium text-slate-500">Click to upload or drag & drop</p>
+                                <p class="text-xs text-slate-400 mt-1">PDF, DOCX, DOC — max 10MB</p>
+                                <input id="fileInput" type="file" class="hidden" accept=".pdf,.doc,.docx"
+                                    onchange="handleUpload(this)">
+                            </div>
+                            <div class="mt-3 space-y-2">
+                                <div>
+                                    <label class="text-xs font-medium text-slate-600 block mb-1">Document Type</label>
+                                    <select
+                                        class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                                        <option>Select type…</option>
+                                        <option>Deployment Report</option>
+                                        <option>Final Documentation</option>
+                                        <option>Project Turnover Form</option>
+                                        <option>Client Acceptance Letter</option>
+                                        <option>Maintenance Manual</option>
+                                        <option>Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-medium text-slate-600 block mb-1">Assign to Group</label>
+                                    <select
+                                        class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                                        <option>All Groups</option>
+                                        <option>Alpha</option>
+                                        <option>Beta</option>
+                                        <option>Gamma</option>
+                                        <option>Delta</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="btn-primary w-full mt-3 justify-center"><i class="fas fa-upload"></i> Upload
+                                Document</button>
+                        </div>
+
+                        <!-- Required documents checklist -->
+                        <div class="card p-5">
+                            <h3 class="font-semibold text-slate-800 mb-3 flex items-center gap-2"><i
+                                    class="fas fa-tasks text-purple-500"></i> Required Documents</h3>
+                            <p class="text-xs text-slate-400 mb-3">Phase 4 mandatory submissions</p>
+                            <div class="space-y-2">
+                                <div
+                                    class="flex items-center justify-between p-2.5 rounded-lg bg-green-50 border-green-100 border">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-check-circle text-green-500 text-sm"></i>
+                                        <span class="text-sm font-medium text-slate-700">Deployment Report</span>
+                                    </div>
+                                    <span class="text-xs text-green-600 font-semibold">13/15</span>
+                                </div>
+                                <div
+                                    class="flex items-center justify-between p-2.5 rounded-lg bg-amber-50 border-amber-100 border">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-clock text-amber-500 text-sm"></i>
+                                        <span class="text-sm font-medium text-slate-700">Final Documentation</span>
+                                    </div>
+                                    <span class="text-xs text-amber-600 font-semibold">8/15</span>
+                                </div>
+                                <div
+                                    class="flex items-center justify-between p-2.5 rounded-lg bg-amber-50 border-amber-100 border">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-clock text-amber-500 text-sm"></i>
+                                        <span class="text-sm font-medium text-slate-700">Project Turnover Form</span>
+                                    </div>
+                                    <span class="text-xs text-amber-600 font-semibold">6/15</span>
+                                </div>
+                                <div
+                                    class="flex items-center justify-between p-2.5 rounded-lg bg-red-50 border-red-100 border">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-times-circle text-red-400 text-sm"></i>
+                                        <span class="text-sm font-medium text-slate-700">Client Acceptance Letter</span>
+                                    </div>
+                                    <span class="text-xs text-red-500 font-semibold">3/15</span>
+                                </div>
+                                <div
+                                    class="flex items-center justify-between p-2.5 rounded-lg bg-red-50 border-red-100 border">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-times-circle text-red-400 text-sm"></i>
+                                        <span class="text-sm font-medium text-slate-700">Maintenance Manual</span>
+                                    </div>
+                                    <span class="text-xs text-red-500 font-semibold">2/15</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Submitted documents table -->
+                    <div class="lg:col-span-2 card overflow-hidden">
+                        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                            <div>
+                                <h3 class="font-semibold text-slate-800">Submitted Documents</h3>
+                                <p class="text-xs text-slate-400 mt-0.5">All uploaded files for Phase 4</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <div class="relative">
+                                    <select
+                                        class="appearance-none border border-slate-200 rounded-lg px-3 py-1.5 text-xs pr-7 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                                        <option>All Types</option>
+                                        <option>Deployment Report</option>
+                                        <option>Final Documentation</option>
+                                        <option>Project Turnover Form</option>
+                                        <option>Client Acceptance Letter</option>
+                                        <option>Maintenance Manual</option>
+                                    </select>
+                                    <i
+                                        class="fas fa-chevron-down absolute right-2 top-2.5 text-slate-400 text-[10px]"></i>
+                                </div>
+                                <button class="btn-outline text-xs px-3 py-1.5"><i class="fas fa-download"></i> Download
+                                    All</button>
+                            </div>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Document</th>
+                                    <th>Group</th>
+                                    <th>Type</th>
+                                    <th>Submitted</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                <i class="fas fa-file-pdf text-red-500 text-xs"></i></div><span
+                                                class="font-medium text-sm">Recommendation Letter</span>
+                                        </div>
+                                    </td>
+                                    <td class="font-semibold">Alpha</td>
+                                    <td><span class="badge badge-purple">Rec. Letter</span></td>
+                                    <td class="text-xs text-slate-500">Mar 5, 2026</td>
+                                    <td><span class="badge badge-green"><i class="fas fa-check-circle"></i>
+                                            Approved</span></td>
+                                    <td>
+                                        <div class="flex gap-1"><button
+                                                class="w-7 h-7 rounded-lg hover:bg-blue-50 text-blue-500 text-xs transition"><i
+                                                    class="fas fa-eye"></i></button><button
+                                                class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 text-xs transition"><i
+                                                    class="fas fa-download"></i></button></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                <i class="fas fa-file-pdf text-red-500 text-xs"></i></div><span
+                                                class="font-medium text-sm">Acknowledgement Receipt</span>
+                                        </div>
+                                    </td>
+                                    <td class="font-semibold">Alpha</td>
+                                    <td><span class="badge badge-slate">Ack. Receipt</span></td>
+                                    <td class="text-xs text-slate-500">Mar 6, 2026</td>
+                                    <td><span class="badge badge-green"><i class="fas fa-check-circle"></i>
+                                            Approved</span></td>
+                                    <td>
+                                        <div class="flex gap-1"><button
+                                                class="w-7 h-7 rounded-lg hover:bg-blue-50 text-blue-500 text-xs transition"><i
+                                                    class="fas fa-eye"></i></button><button
+                                                class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 text-xs transition"><i
+                                                    class="fas fa-download"></i></button></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                <i class="fas fa-file-pdf text-red-500 text-xs"></i></div><span
+                                                class="font-medium text-sm">Minutes of Meeting</span>
+                                        </div>
+                                    </td>
+                                    <td class="font-semibold">Beta</td>
+                                    <td><span class="badge badge-blue">Minutes</span></td>
+                                    <td class="text-xs text-slate-500">Mar 8, 2026</td>
+                                    <td><span class="badge badge-yellow"><i class="fas fa-clock"></i> For Review</span>
+                                    </td>
+                                    <td>
+                                        <div class="flex gap-1"><button
+                                                class="w-7 h-7 rounded-lg hover:bg-blue-50 text-blue-500 text-xs transition"><i
+                                                    class="fas fa-eye"></i></button><button
+                                                class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 text-xs transition"><i
+                                                    class="fas fa-download"></i></button><button
+                                                class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">Approve</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                <i class="fas fa-file-word text-blue-500 text-xs"></i></div><span
+                                                class="font-medium text-sm">Concept Paper</span>
+                                        </div>
+                                    </td>
+                                    <td class="font-semibold">Beta</td>
+                                    <td><span class="badge badge-blue">Concept Paper</span></td>
+                                    <td class="text-xs text-slate-500">Mar 9, 2026</td>
+                                    <td><span class="badge badge-red"><i class="fas fa-times-circle"></i> Revise</span>
+                                    </td>
+                                    <td>
+                                        <div class="flex gap-1"><button
+                                                class="w-7 h-7 rounded-lg hover:bg-blue-50 text-blue-500 text-xs transition"><i
+                                                    class="fas fa-eye"></i></button><button
+                                                class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 text-xs transition"><i
+                                                    class="fas fa-download"></i></button></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                <i class="fas fa-file-pdf text-red-500 text-xs"></i></div><span
+                                                class="font-medium text-sm">Recommendation Letter</span>
+                                        </div>
+                                    </td>
+                                    <td class="font-semibold">Gamma</td>
+                                    <td><span class="badge badge-purple">Rec. Letter</span></td>
+                                    <td class="text-xs text-slate-500">Mar 7, 2026</td>
+                                    <td><span class="badge badge-yellow"><i class="fas fa-clock"></i> For Review</span>
+                                    </td>
+                                    <td>
+                                        <div class="flex gap-1"><button
+                                                class="w-7 h-7 rounded-lg hover:bg-blue-50 text-blue-500 text-xs transition"><i
+                                                    class="fas fa-eye"></i></button><button
+                                                class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-500 text-xs transition"><i
+                                                    class="fas fa-download"></i></button><button
+                                                class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition">Approve</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                <i class="fas fa-file text-slate-400 text-xs"></i></div><span
+                                                class="font-medium text-sm text-slate-400 italic">No submission
+                                                yet</span>
+                                        </div>
+                                    </td>
+                                    <td class="font-semibold">Delta</td>
+                                    <td><span class="badge badge-slate">Minutes</span></td>
+                                    <td class="text-xs text-slate-400">—</td>
+                                    <td><span class="badge badge-red"><i class="fas fa-exclamation-circle"></i>
+                                            Missing</span></td>
+                                    <td><button
+                                            class="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 text-xs font-semibold hover:bg-slate-100 transition">Remind</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ══════════════════════════════════════════
+     MODAL: ADD DEADLINE
+══════════════════════════════════════════ -->
+    <div id="modal-deadline" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-deadline')">
+        <div class="modal modal-md">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-calendar-alt text-amber-600"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800">Add Deadline</p>
+                        <p class="text-xs text-slate-400">Phase 4 · Deadline Manager</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-deadline')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400 transition"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-4">
+
+                <p class="section-divider">Task Details</p>
+                <div>
+                    <label class="form-label">Task Name <span class="text-red-400">*</span></label>
+                    <input type="text" class="form-input" placeholder="e.g. Proposal Submission, Concept Paper…">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Type <span class="text-red-400">*</span></label>
+                        <select class="form-input">
+                            <option value="">Select type…</option>
+                            <option>Documentation</option>
+                            <option>Form</option>
+                            <option>Presentation</option>
+                            <option>Defense</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Applies To <span class="text-red-400">*</span></label>
+                        <select class="form-input">
+                            <option>All Groups</option>
+                            <option>Alpha</option>
+                            <option>Beta</option>
+                            <option>Gamma</option>
+                            <option>Delta</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p class="section-divider">Schedule</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Due Date <span class="text-red-400">*</span></label>
+                        <input type="date" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Due Time</label>
+                        <input type="time" class="form-input" value="23:59">
+                    </div>
+                </div>
+
+                <p class="section-divider">Notification & Reminders</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Remind Groups</label>
+                        <select class="form-input">
+                            <option>1 day before</option>
+                            <option>2 days before</option>
+                            <option>3 days before</option>
+                            <option>1 week before</option>
+                            <option>No reminder</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Notify via</label>
+                        <select class="form-input">
+                            <option>System notification</option>
+                            <option>Email</option>
+                            <option>Both</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Description / Instructions</label>
+                    <textarea class="form-input" rows="3"
+                        placeholder="e.g. Submit signed copies, include all required attachments…"></textarea>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('modal-deadline')" class="btn-outline">Cancel</button>
+                <button onclick="closeModal('modal-deadline')" class="btn-primary"><i class="fas fa-plus"></i> Add
+                    Deadline</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     MODAL: SCHEDULE DEFENSE
+══════════════════════════════════════════ -->
+    <div id="modal-schedule" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-schedule')">
+        <div class="modal modal-md">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-calendar-plus text-emerald-600"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800">Schedule a Defense</p>
+                        <p class="text-xs text-slate-400">Phase 4 · Final Defense</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-schedule')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400 transition"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-4">
+
+                <p class="section-divider">Group & Project</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Group <span class="text-red-400">*</span></label>
+                        <select class="form-input">
+                            <option value="">Select group…</option>
+                            <option>Alpha – E-Learning Platform</option>
+                            <option>Beta – Inventory System</option>
+                            <option>Gamma – Mobile App</option>
+                            <option>Delta – Web Portal</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Defense Type <span class="text-red-400">*</span></label>
+                        <select class="form-input">
+                            <option>Initial Defense</option>
+                            <option>Re-defense</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p class="section-divider">Schedule</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Date <span class="text-red-400">*</span></label>
+                        <input type="date" class="form-input" value="2026-03-11">
+                    </div>
+                    <div>
+                        <label class="form-label">Room <span class="text-red-400">*</span></label>
+                        <select class="form-input">
+                            <option value="">Select room…</option>
+                            <option>Room 201 (Cap: 30)</option>
+                            <option>Room 202 (Cap: 25)</option>
+                            <option>Room 203 (Cap: 20)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Start Time <span class="text-red-400">*</span></label>
+                        <input type="time" class="form-input" value="10:00">
+                    </div>
+                    <div>
+                        <label class="form-label">End Time <span class="text-red-400">*</span></label>
+                        <input type="time" class="form-input" value="11:30">
+                    </div>
+                </div>
+
+                <p class="section-divider">Panel Members</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Panel Member 1 <span class="text-red-400">*</span></label>
+                        <select class="form-input">
+                            <option value="">Select panelist…</option>
+                            <option>Prof. Reyes</option>
+                            <option>Prof. Santos</option>
+                            <option>Prof. Lim</option>
+                            <option>Prof. Cruz</option>
+                            <option>Prof. Villanueva</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Panel Member 2</label>
+                        <select class="form-input">
+                            <option value="">Select panelist…</option>
+                            <option>Prof. Reyes</option>
+                            <option>Prof. Santos</option>
+                            <option>Prof. Lim</option>
+                            <option>Prof. Cruz</option>
+                            <option>Prof. Villanueva</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="form-label">Panel Chair (optional)</label>
+                        <select class="form-input">
+                            <option value="">None</option>
+                            <option>Prof. Dela Cruz</option>
+                            <option>Prof. Reyes</option>
+                            <option>Prof. Santos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p class="section-divider">Additional Notes</p>
+                <div>
+                    <label class="form-label">Remarks / Instructions</label>
+                    <textarea class="form-input" rows="3"
+                        placeholder="e.g. Bring printed copies of concept paper…"></textarea>
+                </div>
+
+                <!-- Conflict check notice -->
+                <div
+                    class="flex items-center gap-2 p-3 bg-green-50 border border-green-100 rounded-xl text-sm text-green-700">
+                    <i class="fas fa-check-circle"></i>
+                    <span>No scheduling conflicts detected for the selected date and room.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('modal-schedule')" class="btn-outline">Cancel</button>
+                <button onclick="closeModal('modal-schedule')" class="btn-primary"><i class="fas fa-calendar-check"></i>
+                    Confirm Schedule</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+     MODAL: MANAGE ROOMS
+══════════════════════════════════════════ -->
+    <div id="modal-rooms" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-rooms')">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-door-open text-blue-600"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800">Manage Defense Rooms</p>
+                        <p class="text-xs text-slate-400">Add, edit, or remove defense venues</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-rooms')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400 transition"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-5">
+
+                <!-- Existing rooms table -->
+                <p class="section-divider">Existing Rooms</p>
+                <div class="rounded-xl border border-slate-100 overflow-hidden">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Room Name</th>
+                                <th>Capacity</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Scheduled Today</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-semibold">Room 201</td>
+                                <td>30 pax</td>
+                                <td><span class="badge badge-blue">Physical</span></td>
+                                <td><span class="badge badge-green"><i class="fas fa-circle text-[8px]"></i>
+                                        Active</span></td>
+                                <td class="font-medium">2 defenses</td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button onclick="openEditRoom('Room 201','30','Physical')"
+                                            class="w-7 h-7 rounded-lg hover:bg-blue-50 text-blue-500 text-xs transition"
+                                            title="Edit"><i class="fas fa-edit"></i></button>
+                                        <button
+                                            class="w-7 h-7 rounded-lg hover:bg-red-50 text-red-400 text-xs transition"
+                                            title="Delete"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Room 202</td>
+                                <td>25 pax</td>
+                                <td><span class="badge badge-blue">Physical</span></td>
+                                <td><span class="badge badge-green"><i class="fas fa-circle text-[8px]"></i>
+                                        Active</span></td>
+                                <td class="font-medium">1 defense</td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button onclick="openEditRoom('Room 202','25','Physical')"
+                                            class="w-7 h-7 rounded-lg hover:bg-blue-50 text-blue-500 text-xs transition"
+                                            title="Edit"><i class="fas fa-edit"></i></button>
+                                        <button
+                                            class="w-7 h-7 rounded-lg hover:bg-red-50 text-red-400 text-xs transition"
+                                            title="Delete"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Room 203</td>
+                                <td>20 pax</td>
+                                <td><span class="badge badge-blue">Physical</span></td>
+                                <td><span class="badge badge-green"><i class="fas fa-circle text-[8px]"></i>
+                                        Active</span></td>
+                                <td class="text-slate-400">None</td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button onclick="openEditRoom('Room 203','20','Physical')"
+                                            class="w-7 h-7 rounded-lg hover:bg-blue-50 text-blue-500 text-xs transition"
+                                            title="Edit"><i class="fas fa-edit"></i></button>
+                                        <button
+                                            class="w-7 h-7 rounded-lg hover:bg-red-50 text-red-400 text-xs transition"
+                                            title="Delete"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="font-semibold">Google Meet</td>
+                                <td>Unlimited</td>
+                                <td><span class="badge badge-purple">Virtual</span></td>
+                                <td><span class="badge badge-green"><i class="fas fa-circle text-[8px]"></i>
+                                        Active</span></td>
+                                <td class="text-slate-400">None</td>
+                                <td>
+                                    <div class="flex gap-1">
+                                        <button onclick="openEditRoom('Google Meet','Unlimited','Virtual')"
+                                            class="w-7 h-7 rounded-lg hover:bg-blue-50 text-blue-500 text-xs transition"
+                                            title="Edit"><i class="fas fa-edit"></i></button>
+                                        <button
+                                            class="w-7 h-7 rounded-lg hover:bg-red-50 text-red-400 text-xs transition"
+                                            title="Delete"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add new room form -->
+                <p class="section-divider">Add New Room</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Room Name <span class="text-red-400">*</span></label>
+                        <input type="text" class="form-input" placeholder="e.g. Room 204, Google Meet…">
+                    </div>
+                    <div>
+                        <label class="form-label">Type <span class="text-red-400">*</span></label>
+                        <select class="form-input">
+                            <option>Physical</option>
+                            <option>Virtual</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Capacity</label>
+                        <input type="number" class="form-input" placeholder="e.g. 30">
+                    </div>
+                    <div>
+                        <label class="form-label">Location / Link</label>
+                        <input type="text" class="form-input" placeholder="Building, floor, or meeting URL">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="form-label">Notes</label>
+                        <input type="text" class="form-input" placeholder="e.g. Projector available, AC unit, etc.">
+                    </div>
+                </div>
+
+                <!-- Inline edit panel (hidden by default) -->
+                <div id="edit-room-panel" class="hidden p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-3">
+                    <p class="text-xs font-bold text-blue-700 uppercase tracking-wider">Editing Room</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="form-label">Room Name</label><input id="edit-room-name" type="text"
+                                class="form-input"></div>
+                        <div><label class="form-label">Capacity</label><input id="edit-room-cap" type="text"
+                                class="form-input"></div>
+                        <div><label class="form-label">Type</label><select id="edit-room-type" class="form-input">
+                                <option>Physical</option>
+                                <option>Virtual</option>
+                            </select></div>
+                        <div class="flex items-end"><button
+                                onclick="document.getElementById('edit-room-panel').classList.add('hidden')"
+                                class="btn-outline w-full justify-center">Cancel Edit</button></div>
+                    </div>
+                    <button class="btn-primary text-xs px-3 py-1.5"><i class="fas fa-save"></i> Save Changes</button>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('modal-rooms')" class="btn-outline">Close</button>
+                <button class="btn-primary"><i class="fas fa-plus"></i> Add Room</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab, el) {
+            document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const panel = document.getElementById('tab-' + tab);
+            panel.classList.add('active');
+            panel.classList.remove('fade-in');
+            void panel.offsetWidth;
+            panel.classList.add('fade-in');
+            el.classList.add('active');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        function closeOnBackdrop(e, id) {
+            if (e.target === document.getElementById(id)) closeModal(id);
+        }
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-backdrop.open').forEach(m => {
+                    m.classList.remove('open');
+                    document.body.style.overflow = '';
+                });
+            }
+        });
+
+        function openEditRoom(name, cap, type) {
+            const panel = document.getElementById('edit-room-panel');
+            document.getElementById('edit-room-name').value = name;
+            document.getElementById('edit-room-cap').value = cap;
+            document.getElementById('edit-room-type').value = type;
+            panel.classList.remove('hidden');
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function handleUpload(input) {
+            if (input.files.length > 0) {
+                const name = input.files[0].name;
+                const msg = document.createElement('p');
+                msg.className = 'text-xs text-emerald-600 font-medium mt-1 text-center';
+                msg.textContent = '✓ ' + name + ' ready to upload';
+                input.parentElement.querySelector('.upload-zone').appendChild(msg);
+            }
+        }
+    </script>
+</body>
+
+</html>

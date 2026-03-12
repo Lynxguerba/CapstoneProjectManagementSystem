@@ -109,22 +109,6 @@
             font-weight: 500;
         }
 
-        .tab-link {
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .tab-link:hover {
-            color: #10b981;
-            border-bottom: 2px solid #a7f3d0;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 180px;
-            width: 100%;
-        }
-
         .fixed-height-card {
             height: 280px;
             display: flex;
@@ -175,23 +159,98 @@
             animation: slideUp 0.3s ease-out;
         }
 
-        .summary-card {
+        /* ── Phase nav items ── */
+        .phase-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.7rem 1rem;
+            margin: 0.2rem 0.5rem;
+            border-radius: 0.75rem;
+            color: #cbd5e1;
+            text-decoration: none;
             transition: all 0.2s ease;
-            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            position: relative;
+            border: 1px solid transparent;
         }
 
-        .summary-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        .phase-nav-item:hover {
+            background: rgba(255, 255, 255, .06);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, .2);
+        }
+
+        .phase-nav-item.active {
+            background: rgba(16, 185, 129, .12);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, .3);
+        }
+
+        .phase-nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 55%;
+            background: #10b981;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .phase-nav-item .phase-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .phase-nav-item .phase-meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .phase-nav-item .phase-name {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .phase-nav-item .phase-sub {
+            display: block;
+            font-size: 0.68rem;
+            color: #64748b;
+            margin-top: 1px;
+        }
+
+        .phase-nav-item.active .phase-sub {
+            color: #6ee7b7;
+        }
+
+        .phase-nav-item .phase-badge {
+            font-size: 0.62rem;
+            padding: 0.1rem 0.45rem;
+            border-radius: 99px;
+            font-weight: 600;
+            flex-shrink: 0;
         }
     </style>
 </head>
 
 <body class="bg-slate-50 flex font-sans text-slate-700">
 
-    <!-- SIDEBAR - GREEN THEME -->
+    <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
     <aside
         class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+
+        <!-- Brand -->
         <div class="p-6 border-b border-slate-700/50">
             <div class="flex items-center gap-3 mb-4">
                 <div
@@ -205,7 +264,6 @@
                     <p class="text-xs text-slate-400">v2.0 · Instructor Portal</p>
                 </div>
             </div>
-
             <div class="grid grid-cols-2 gap-2 mt-4">
                 <div class="bg-slate-700/50 rounded-lg p-2 text-center">
                     <p class="text-xs text-slate-400">AY 2024-2025</p>
@@ -218,7 +276,10 @@
             </div>
         </div>
 
-        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        <!-- Nav -->
+        <nav class="flex-1 p-4 overflow-y-auto space-y-1">
+
+            <!-- Main -->
             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
             <a href="instructor-dashboard.html"
                 class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg shadow-emerald-600/20">
@@ -227,7 +288,8 @@
                 <span class="bg-white/20 text-xs px-2 py-1 rounded-full">12</span>
             </a>
 
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Management</p>
+            <!-- Management -->
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-5 mb-2">Management</p>
             <a href="instructor-group-management.html"
                 class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
                 <i class="fas fa-users w-5 text-slate-400 group-hover:text-emerald-400"></i>
@@ -246,38 +308,61 @@
                 <span class="flex-1">Adviser Assignment</span>
                 <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">3 slots</span>
             </a>
-            <a href="instructor-defense-scheduling.html"
-                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
-                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
-                <span class="flex-1">Defense Scheduling</span>
-                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">2</span>
+
+            <!-- Capstone Phases -->
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-5 mb-2">Capstone Phases</p>
+
+            <!-- Phase 1 — active -->
+            <a href="instructor-phase1.html" class="phase-nav-item">
+                <div class="phase-icon bg-emerald-500/20">
+                    <i class="fas fa-lightbulb text-emerald-400"></i>
+                </div>
+                <div class="phase-meta">
+                    <span class="phase-name">Phase 1</span>
+                    <span class="phase-sub">Concept</span>
+                </div>
+                <i class="fas fa-chevron-right text-xs text-slate-600"></i>
             </a>
 
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Academic Control</p>
-            <a href="instructor-deadline-manager.html"
-                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
-                <i class="fas fa-clock w-5 text-slate-400 group-hover:text-emerald-400"></i>
-                <span class="flex-1">Deadline Manager</span>
-            </a>
-            <a href="instructor-payment-verification.html"
-                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
-                <i class="fas fa-credit-card w-5 text-slate-400 group-hover:text-emerald-400"></i>
-                <span class="flex-1">Payment Verification</span>
-            </a>
-            <a href="instructor-deployment-tracker.html"
-                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
-                <i class="fas fa-rocket w-5 text-slate-400 group-hover:text-emerald-400"></i>
-                <span class="flex-1">Deployment Tracker</span>
+            <!-- Phase 2 -->
+            <a href="instructor-phase2.html" class="phase-nav-item">
+                <div class="phase-icon bg-blue-500/20">
+                    <i class="fas fa-list-alt text-blue-400"></i>
+                </div>
+                <div class="phase-meta">
+                    <span class="phase-name">Phase 2</span>
+                    <span class="phase-sub">Outline</span>
+                </div>
+                <i class="fas fa-chevron-right text-xs text-slate-600"></i>
             </a>
 
-           
-            <a href="instructor-documents.html"
-                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
-                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
-                <span class="flex-1">Documents</span>
+            <!-- Phase 3 -->
+            <a href="instructor-phase3.html" class="phase-nav-item">
+                <div class="phase-icon bg-amber-500/20">
+                    <i class="fas fa-flask text-amber-400"></i>
+                </div>
+                <div class="phase-meta">
+                    <span class="phase-name">Phase 3</span>
+                    <span class="phase-sub">Pre-Deployment</span>
+                </div>
+                <i class="fas fa-chevron-right text-xs text-slate-600"></i>
             </a>
+
+            <!-- Phase 4 -->
+            <a href="instructor-phase4.html" class="phase-nav-item">
+                <div class="phase-icon bg-purple-500/20">
+                    <i class="fas fa-rocket text-purple-400"></i>
+                </div>
+                <div class="phase-meta">
+                    <span class="phase-name">Phase 4</span>
+                    <span class="phase-sub">Deployment</span>
+                </div>
+                <i class="fas fa-chevron-right text-xs text-slate-600"></i>
+            </a>
+
         </nav>
 
+        <!-- Profile -->
         <div class="p-4 border-t border-slate-700/50">
             <div class="flex items-center gap-3">
                 <div
@@ -296,7 +381,7 @@
         </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
+    <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
     <main class="flex-1 flex flex-col overflow-y-auto ml-72 smooth-scroll">
 
         <!-- TOP BAR -->
@@ -308,7 +393,6 @@
                     <i class="fas fa-circle text-[8px] text-emerald-500"></i> Active Session
                 </span>
             </div>
-
             <div class="flex items-center gap-4">
                 <button
                     class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
@@ -318,42 +402,12 @@
                     class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
                     <i class="fas fa-cog text-slate-600"></i>
                 </button>
-
-                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
-                    <div class="relative">
-                        <select
-                            class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                            <option>BS Information Technology</option>
-                            <option>BS Information Systems</option>
-                        </select>
-                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
-                    </div>
-                    <div class="relative">
-                        <select
-                            class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                            <option>Phase 1: Concept</option>
-                            <option>Phase 2: Outline</option>
-                            <option>Phase 3: Pre-Deployment</option>
-                            <option>Phase 4: Deployment</option>
-                        </select>
-                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
-                    </div>
-                    <div class="relative">
-                        <select
-                            class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                            <option value="instructor" selected>Instructor</option>
-                            <option value="panel">Panel Member</option>
-                            <option value="panelChair">Panel Chair</option>
-                            <option value="adviser">Adviser</option>
-                        </select>
-                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
-                    </div>
-                </div>
             </div>
         </div>
 
         <!-- DASHBOARD CONTENT -->
         <div class="p-8 space-y-8 mt-20 pb-12">
+
             <!-- QUICK STATS -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div
@@ -369,7 +423,7 @@
                         </div>
                     </div>
                     <div class="progress-bar mt-4">
-                        <div class="progress-fill bg-emerald-600" style="width: 75%"></div>
+                        <div class="progress-fill bg-emerald-600" style="width:75%"></div>
                     </div>
                 </div>
 
@@ -387,7 +441,7 @@
                         </div>
                     </div>
                     <div class="progress-bar mt-4">
-                        <div class="progress-fill bg-green-600" style="width: 80%"></div>
+                        <div class="progress-fill bg-green-600" style="width:80%"></div>
                     </div>
                 </div>
 
@@ -404,7 +458,7 @@
                         </div>
                     </div>
                     <div class="progress-bar mt-4">
-                        <div class="progress-fill bg-amber-600" style="width: 30%"></div>
+                        <div class="progress-fill bg-amber-600" style="width:30%"></div>
                     </div>
                 </div>
 
@@ -422,31 +476,22 @@
                         </div>
                     </div>
                     <div class="progress-bar mt-4">
-                        <div class="progress-fill bg-red-600" style="width: 15%"></div>
+                        <div class="progress-fill bg-red-600" style="width:15%"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- TABS for different views -->
+            <!-- TABS -->
             <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                 <div class="border-b border-slate-100 px-6">
                     <div class="flex gap-8">
                         <button class="tab-active py-4 px-2 text-sm font-medium transition">Overview</button>
-                        <a href="instructor-group-management.html"
-                            class="py-4 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition">Groups</a>
-                        <a href="instructor-defense-scheduling.html"
-                            class="py-4 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition">Schedules</a>
-                        <a href="instructor-payment-verification.html"
-                            class="py-4 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition">Payments</a>
-                        <a href="instructor-analytics.html"
-                            class="py-4 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition">Analytics</a>
                     </div>
                 </div>
 
                 <div class="p-6">
                     <!-- VISUALIZATIONS -->
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                        <!-- Adviser Load Chart -->
                         <div class="fixed-height-card bg-slate-50 rounded-xl p-5">
                             <div class="flex items-center justify-between mb-3">
                                 <h3 class="font-semibold text-slate-800 flex items-center gap-2">
@@ -454,12 +499,9 @@
                                 </h3>
                                 <span class="text-xs text-slate-500">Current AY</span>
                             </div>
-                            <div class="chart-wrapper">
-                                <canvas id="adviserLoadChart"></canvas>
-                            </div>
+                            <div class="chart-wrapper"><canvas id="adviserLoadChart"></canvas></div>
                         </div>
 
-                        <!-- Group Status Chart -->
                         <div class="fixed-height-card bg-slate-50 rounded-xl p-5">
                             <div class="flex items-center justify-between mb-3">
                                 <h3 class="font-semibold text-slate-800 flex items-center gap-2">
@@ -467,12 +509,9 @@
                                 </h3>
                                 <span class="text-xs text-slate-500">Distribution</span>
                             </div>
-                            <div class="chart-wrapper">
-                                <canvas id="groupStatusChart"></canvas>
-                            </div>
+                            <div class="chart-wrapper"><canvas id="groupStatusChart"></canvas></div>
                         </div>
 
-                        <!-- Project Preferences -->
                         <div class="fixed-height-card bg-slate-50 rounded-xl p-5">
                             <div class="flex items-center justify-between mb-3">
                                 <h3 class="font-semibold text-slate-800 flex items-center gap-2">
@@ -480,13 +519,11 @@
                                 </h3>
                                 <span class="text-xs text-slate-500">Student choice</span>
                             </div>
-                            <div class="chart-wrapper">
-                                <canvas id="studentPrefChart"></canvas>
-                            </div>
+                            <div class="chart-wrapper"><canvas id="studentPrefChart"></canvas></div>
                         </div>
                     </div>
 
-                    <!-- GROUP MANAGEMENT OVERVIEW -->
+                    <!-- ACTIVE GROUPS TABLE -->
                     <div class="mt-8">
                         <div class="flex items-center justify-between mb-4">
                             <h2 class="text-lg font-semibold text-slate-800">Active Groups</h2>
@@ -511,7 +548,6 @@
                                         <th class="text-left py-4 px-6">Adviser</th>
                                         <th class="text-left py-4 px-6">Status</th>
                                         <th class="text-left py-4 px-6">Progress</th>
-                                        <th class="text-left py-4 px-6">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
@@ -539,22 +575,9 @@
                                         <td class="py-4 px-6">
                                             <div class="flex items-center gap-2">
                                                 <div class="progress-bar w-20">
-                                                    <div class="progress-fill bg-green-600" style="width: 75%"></div>
+                                                    <div class="progress-fill bg-green-600" style="width:75%"></div>
                                                 </div>
                                                 <span class="text-xs text-slate-600">75%</span>
-                                            </div>
-                                        </td>
-                                        <td class="py-4 px-6">
-                                            <div class="flex gap-2">
-                                                <button
-                                                    class="w-8 h-8 rounded-lg hover:bg-blue-100 text-blue-600 transition"><i
-                                                        class="fas fa-edit"></i></button>
-                                                <button
-                                                    class="w-8 h-8 rounded-lg hover:bg-red-100 text-red-600 transition"><i
-                                                        class="fas fa-trash"></i></button>
-                                                <a href="instructor-group-management.html"
-                                                    class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 transition inline-flex items-center justify-center"><i
-                                                        class="fas fa-ellipsis-v"></i></a>
                                             </div>
                                         </td>
                                     </tr>
@@ -579,22 +602,9 @@
                                         <td class="py-4 px-6">
                                             <div class="flex items-center gap-2">
                                                 <div class="progress-bar w-20">
-                                                    <div class="progress-fill bg-amber-600" style="width: 30%"></div>
+                                                    <div class="progress-fill bg-amber-600" style="width:30%"></div>
                                                 </div>
                                                 <span class="text-xs text-slate-600">30%</span>
-                                            </div>
-                                        </td>
-                                        <td class="py-4 px-6">
-                                            <div class="flex gap-2">
-                                                <button
-                                                    class="w-8 h-8 rounded-lg hover:bg-blue-100 text-blue-600 transition"><i
-                                                        class="fas fa-edit"></i></button>
-                                                <button
-                                                    class="w-8 h-8 rounded-lg hover:bg-red-100 text-red-600 transition"><i
-                                                        class="fas fa-trash"></i></button>
-                                                <a href="instructor-group-management.html"
-                                                    class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 transition inline-flex items-center justify-center"><i
-                                                        class="fas fa-ellipsis-v"></i></a>
                                             </div>
                                         </td>
                                     </tr>
@@ -605,217 +615,104 @@
                 </div>
             </div>
 
-            <!-- CAPSTONE DEADLINES & PAYMENT VERIFICATION -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Deadlines Card -->
-                <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                            <i class="fas fa-calendar-check text-green-500"></i> Upcoming Deadlines
-                        </h2>
-                        <a href="instructor-deadline-manager.html"
-                            class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">Manage</a>
+            <!-- DEADLINES -->
+            <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-calendar-check text-green-500"></i> Upcoming Deadlines
+                    </h2>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-amber-50 rounded-xl border border-amber-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-file-alt text-amber-600"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium">Proposal Submission</p>
+                                <p class="text-xs text-slate-500">Phase 1 Documentation</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-amber-600">March 10, 2026</p>
+                            <p class="text-xs text-slate-500">in 3 days</p>
+                        </div>
                     </div>
-
-                    <div class="space-y-4">
-                        <div
-                            class="flex items-center justify-between p-4 bg-amber-50 rounded-xl border border-amber-100">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                                    <i class="fas fa-file-alt text-amber-600"></i>
-                                </div>
-                                <div>
-                                    <p class="font-medium">Proposal Submission</p>
-                                    <p class="text-xs text-slate-500">Phase 1 Documentation</p>
-                                </div>
+                    <div class="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-book text-blue-600"></i>
                             </div>
-                            <div class="text-right">
-                                <p class="font-semibold text-amber-600">March 10, 2026</p>
-                                <p class="text-xs text-slate-500">in 3 days</p>
+                            <div>
+                                <p class="font-medium">Final Documentation</p>
+                                <p class="text-xs text-slate-500">Capstone 2 Completion</p>
                             </div>
                         </div>
-
-                        <div class="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                                    <i class="fas fa-book text-blue-600"></i>
-                                </div>
-                                <div>
-                                    <p class="font-medium">Final Documentation</p>
-                                    <p class="text-xs text-slate-500">Capstone 2 Completion</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <p class="font-semibold text-blue-600">April 15, 2026</p>
-                                <p class="text-xs text-slate-500">in 2 months</p>
-                            </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-blue-600">April 15, 2026</p>
+                            <p class="text-xs text-slate-500">in 2 months</p>
                         </div>
-
-                        <a href="instructor-deadline-manager.html"
-                            class="w-full py-3 border border-dashed border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 transition flex items-center justify-center gap-2">
-                            <i class="fas fa-plus"></i> Add New Deadline
-                        </a>
                     </div>
                 </div>
-
-               
             </div>
 
-            
         </div>
     </main>
 
     <script>
-        // Chart Configurations
-        const adviserData = {
-            labels: ["Prof. Cruz", "Prof. Reyes", "Prof. Santos", "Prof. Villanueva", "Prof. Lim"],
-            datasets: [{
-                label: "Groups Assigned",
-                data: [3, 4, 5, 2, 3],
-                backgroundColor: ["#10b981", "#f59e0b", "#ef4444", "#3b82f6", "#8b5cf6"],
-                borderRadius: 6,
-                barPercentage: 0.6,
-            }]
-        };
-
-        const statusData = {
-            labels: ["Assigned", "Not Assigned", "Locked", "Completed"],
-            datasets: [{
-                data: [5, 3, 2, 5],
-                backgroundColor: ["#10b981", "#f59e0b", "#a855f7", "#3b82f6"],
-                borderWidth: 0,
-                hoverOffset: 4
-            }]
-        };
-
-        const preferenceData = {
-            labels: ["AI/ML", "Web Development", "Mobile Apps", "Data Science", "IoT"],
-            datasets: [{
-                data: [30, 25, 20, 15, 10],
-                backgroundColor: ["#3b82f6", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6"],
-                borderWidth: 0,
-                hoverOffset: 4
-            }]
-        };
-
-        // Initialize Charts
         const adviserChart = new Chart(document.getElementById("adviserLoadChart"), {
             type: "bar",
-            data: adviserData,
+            data: {
+                labels: ["Prof. Cruz", "Prof. Reyes", "Prof. Santos", "Prof. Villanueva", "Prof. Lim"],
+                datasets: [{
+                    label: "Groups Assigned", data: [3, 4, 5, 2, 3],
+                    backgroundColor: ["#10b981", "#f59e0b", "#ef4444", "#3b82f6", "#8b5cf6"],
+                    borderRadius: 6, barPercentage: 0.6
+                }]
+            },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1e293b',
-                        titleColor: '#f1f5f9',
-                        bodyColor: '#cbd5e1'
-                    }
-                },
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e293b', titleColor: '#f1f5f9', bodyColor: '#cbd5e1' } },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { display: false, drawBorder: false },
-                        border: { display: false },
-                        ticks: {
-                            stepSize: 1,
-                            color: '#64748b'
-                        }
-                    },
-                    x: {
-                        grid: { display: false },
-                        border: { display: false },
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 45,
-                            color: '#64748b'
-                        }
-                    }
+                    y: { beginAtZero: true, grid: { display: false }, border: { display: false }, ticks: { stepSize: 1, color: '#64748b' } },
+                    x: { grid: { display: false }, border: { display: false }, ticks: { maxRotation: 45, minRotation: 45, color: '#64748b' } }
                 }
             }
         });
 
         const statusChart = new Chart(document.getElementById("groupStatusChart"), {
             type: "doughnut",
-            data: statusData,
+            data: {
+                labels: ["Assigned", "Not Assigned", "Locked", "Completed"],
+                datasets: [{ data: [5, 3, 2, 5], backgroundColor: ["#10b981", "#f59e0b", "#a855f7", "#3b82f6"], borderWidth: 0, hoverOffset: 4 }]
+            },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '65%',
-                plugins: {
-                    legend: {
-                        position: "bottom",
-                        labels: {
-                            boxWidth: 12,
-                            padding: 15,
-                            color: '#334155'
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: '#1e293b',
-                        titleColor: '#f1f5f9',
-                        bodyColor: '#cbd5e1'
-                    }
-                }
+                responsive: true, maintainAspectRatio: false, cutout: '65%',
+                plugins: { legend: { position: "bottom", labels: { boxWidth: 12, padding: 15, color: '#334155' } }, tooltip: { backgroundColor: '#1e293b', titleColor: '#f1f5f9', bodyColor: '#cbd5e1' } }
             }
         });
 
         const prefChart = new Chart(document.getElementById("studentPrefChart"), {
             type: "pie",
-            data: preferenceData,
+            data: {
+                labels: ["AI/ML", "Web Development", "Mobile Apps", "Data Science", "IoT"],
+                datasets: [{ data: [30, 25, 20, 15, 10], backgroundColor: ["#3b82f6", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6"], borderWidth: 0, hoverOffset: 4 }]
+            },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: "bottom",
-                        labels: {
-                            boxWidth: 12,
-                            padding: 15,
-                            color: '#334155'
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: '#1e293b',
-                        titleColor: '#f1f5f9',
-                        bodyColor: '#cbd5e1'
-                    }
-                }
-            }
-        });
-
-        // Role switch handler
-        document.querySelectorAll('select')[2].addEventListener('change', function () {
-            const role = this.value;
-            switch (role) {
-                case 'panel':
-                    window.location.href = 'panel-dashboard.html';
-                    break;
-                case 'panelChair':
-                    window.location.href = 'panel-chair-dashboard.html';
-                    break;
-                case 'adviser':
-                    window.location.href = 'adviser.html';
-                    break;
-                default:
-                    showNotification('Staying in Instructor view');
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: "bottom", labels: { boxWidth: 12, padding: 15, color: '#334155' } }, tooltip: { backgroundColor: '#1e293b', titleColor: '#f1f5f9', bodyColor: '#cbd5e1' } }
             }
         });
 
         function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
-            notification.innerHTML = message;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 3000);
+            const n = document.createElement('div');
+            n.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
+            n.innerHTML = message;
+            document.body.appendChild(n);
+            setTimeout(() => n.remove(), 3000);
         }
 
-        window.addEventListener('resize', function () {
-            adviserChart.update();
-            statusChart.update();
-            prefChart.update();
-        });
+        window.addEventListener('resize', () => { adviserChart.update(); statusChart.update(); prefChart.update(); });
     </script>
 </body>
 
