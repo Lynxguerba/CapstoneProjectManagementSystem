@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import { AlertTriangle, FolderPlus, X } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -25,10 +25,21 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
     const addProgramSetForm = useForm<AddProgramSetForm>({
         name: '',
         program: 'BSIT',
-        school_year: '2025-2026',
+        school_year: '',
         set_number: 'Set A',
         description: '',
     });
+
+    const { props } = usePage<any>();
+    const academicYears = (props.academicYears ?? []) as { id: number; label: string; is_current: boolean }[];
+
+    useEffect(() => {
+        if (academicYears.length && !addProgramSetForm.data.school_year) {
+            // prefer current year if available
+            const current = academicYears.find((ay) => ay.is_current);
+            addProgramSetForm.setData('school_year', (current ?? academicYears[0]).label);
+        }
+    }, [academicYears]);
 
     useEffect(() => {
         if (!open) {
@@ -135,10 +146,24 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                             <input
                                 value={addProgramSetForm.data.name}
                                 onChange={(event) => addProgramSetForm.setData('name', event.target.value)}
-                                placeholder="e.g., BSIT Capstone 2025-2026"
+                                placeholder="e.g., BSIT 3A"
                                 className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                             />
                             {addProgramSetForm.errors.name ? <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.name}</p> : null}
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700">Description</label>
+                            <textarea
+                                value={addProgramSetForm.data.description}
+                                onChange={(event) => addProgramSetForm.setData('description', event.target.value)}
+                                placeholder="e.g., Information Technology Capstone Projects"
+                                rows={3}
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            />
+                            {addProgramSetForm.errors.description ? (
+                                <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.description}</p>
+                            ) : null}
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -164,9 +189,19 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                                     onChange={(event) => addProgramSetForm.setData('school_year', event.target.value)}
                                     className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                                 >
-                                    <option value="2025-2026">2025-2026</option>
-                                    <option value="2026-2027">2026-2027</option>
-                                    <option value="2027-2028">2027-2028</option>
+                                    {academicYears.length ? (
+                                        academicYears.map((ay) => (
+                                            <option key={ay.id} value={ay.label}>
+                                                {ay.label}{ay.is_current ? ' (current)' : ''}
+                                            </option>
+                                        ))
+                                    ) : (
+                                        <>
+                                            <option value="2025-2026">2025-2026</option>
+                                            <option value="2026-2027">2026-2027</option>
+                                            <option value="2027-2028">2027-2028</option>
+                                        </>
+                                    )}
                                 </select>
                                 {addProgramSetForm.errors.school_year ? (
                                     <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.school_year}</p>
@@ -174,19 +209,7 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                             </div>
                         </div>
 
-                        <div>
-                            <label className="text-sm font-semibold text-slate-700">Description</label>
-                            <textarea
-                                value={addProgramSetForm.data.description}
-                                onChange={(event) => addProgramSetForm.setData('description', event.target.value)}
-                                placeholder="Brief description of the program set..."
-                                rows={3}
-                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                            />
-                            {addProgramSetForm.errors.description ? (
-                                <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.description}</p>
-                            ) : null}
-                        </div>
+                        
                     </form>
                 </div>
 
