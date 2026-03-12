@@ -16,12 +16,29 @@ type AcademicYearOption = {
     is_current: boolean;
 };
 
+type PanelistAuthUser = {
+    role?: string;
+    roles?: string[];
+};
+
 type PanelLayoutProps = {
     academicYears?: AcademicYearOption[];
+    auth?: {
+        user: PanelistAuthUser;
+    };
+};
+
+const formatRoleLabel = (role: string): string => {
+    return role
+        .split('_')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 };
 
 const PanelLayout = ({ title, subtitle, children }: Props) => {
-    const { academicYears = [] } = usePage<PanelLayoutProps>().props;
+    const { academicYears = [], auth } = usePage<PanelLayoutProps>().props;
+    const user = auth?.user;
+    const activeRole = user?.role ?? user?.roles?.[0] ?? '';
     const [isAcademicYearOpen, setIsAcademicYearOpen] = React.useState(false);
     const [selectedAcademicYearId, setSelectedAcademicYearId] = React.useState<number | null>(null);
     const dropdownRef = React.useRef<HTMLDivElement | null>(null);
@@ -71,7 +88,7 @@ const PanelLayout = ({ title, subtitle, children }: Props) => {
             document.removeEventListener('touchstart', onPointerDown);
         };
     }, [isAcademicYearOpen]);
-    
+
     return (
         <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-sm">
             <Sidebar />
@@ -100,14 +117,30 @@ const PanelLayout = ({ title, subtitle, children }: Props) => {
                                     <GraduationCap className="h-5 w-5" aria-hidden="true" />
                                 </span>
 
-                                <span className="hidden text-left leading-tight sm:block">
-                                    <span className="block text-[10px] font-semibold tracking-wide text-emerald-700/80 uppercase">
-                                        Current Year Level
+                                <span className="text-sm font-semibold sm:hidden">{selectedAcademicYear?.label ?? 'Academic Year'}</span>
+
+                                <span className="hidden items-center gap-3 text-left leading-tight sm:flex">
+                                    <span>
+                                        <span className="block text-[10px] font-semibold tracking-wide text-emerald-700/80 uppercase">
+                                            Current Year Level
+                                        </span>
+                                        <span className="block text-sm font-semibold">{selectedAcademicYear?.label ?? 'No Academic Year'}</span>
                                     </span>
-                                    <span className="block text-sm font-semibold">{selectedAcademicYear?.label ?? 'No Academic Year'}</span>
+
+                                    {activeRole ? <span className="h-8 w-px bg-emerald-200/80" aria-hidden="true" /> : null}
+
+                                    {activeRole ? (
+                                        <span>
+                                            <span className="block text-[10px] font-semibold tracking-wide text-emerald-700/80 uppercase">Role</span>
+                                            <span className="block text-sm font-semibold">{formatRoleLabel(activeRole)}</span>
+                                        </span>
+                                    ) : null}
                                 </span>
 
-                                <span className="text-sm font-semibold sm:hidden">{selectedAcademicYear?.label ?? 'Academic Year'}</span>
+                                <span className="text-sm font-semibold sm:hidden">
+                                    {selectedAcademicYear?.label ?? 'Academic Year'}
+                                    {activeRole ? ` • ${formatRoleLabel(activeRole)}` : ''}
+                                </span>
 
                                 <ChevronDown className={`h-4 w-4 transition ${isAcademicYearOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                             </button>

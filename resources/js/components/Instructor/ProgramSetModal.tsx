@@ -175,22 +175,6 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                         </div>
 
                         <div>
-                            <label className="text-sm font-semibold text-slate-700">Set Number</label>
-                            <select
-                                value={addProgramSetForm.data.set_number}
-                                onChange={(event) => addProgramSetForm.setData('set_number', event.target.value as SetNumber)}
-                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                            >
-                                <option value="Set A">Set A</option>
-                                <option value="Set B">Set B</option>
-                                <option value="Set C">Set C</option>
-                            </select>
-                            {addProgramSetForm.errors.set_number ? (
-                                <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.set_number}</p>
-                            ) : null}
-                        </div>
-
-                        <div>
                             <label className="text-sm font-semibold text-slate-700">Description</label>
                             <textarea
                                 value={addProgramSetForm.data.description}
