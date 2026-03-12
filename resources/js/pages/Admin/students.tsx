@@ -60,6 +60,18 @@ const resolveStudentProgram = (student: RawStudentRow): StudentProgram | undefin
     return undefined;
 };
 
+const resolveProgramDescription = (program?: StudentProgram): string => {
+    if (program === 'BSIT') {
+        return 'Information Technology Capstone Projects';
+    }
+
+    if (program === 'BSIS') {
+        return 'Information System Capstone Projects';
+    }
+
+    return '';
+};
+
 const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
     const initialStudents = React.useMemo(() => {
         if (!Array.isArray(students)) {
@@ -227,9 +239,14 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                     <td className="px-6 py-3.5 font-semibold text-slate-800">{user.fullName}</td>
                                     <td className="px-6 py-3.5 text-slate-500">{user.email ?? '—'}</td>
                                     <td className="px-6 py-3.5">
-                                        <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600">
-                                            {user.program ?? 'Unassigned'}
-                                        </span>
+                                        <div className="space-y-1">
+                                            <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600">
+                                                {user.program ?? 'Unassigned'}
+                                            </span>
+                                            {resolveProgramDescription(user.program) ? (
+                                                <div className="text-[10px] text-slate-500">{resolveProgramDescription(user.program)}</div>
+                                            ) : null}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-3.5">
                                         <span

@@ -4,14 +4,11 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 type ProgramType = 'BSIT' | 'BSIS';
-type SetNumber = 'Set A' | 'Set B' | 'Set C';
 
 type AddProgramSetForm = {
     name: string;
     program: ProgramType;
-    school_year: string;
-    set_number: SetNumber;
-    description: string;
+    academic_year_id: number | null;
 };
 
 type AddProgramSetModalProps = {
@@ -25,21 +22,19 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
     const addProgramSetForm = useForm<AddProgramSetForm>({
         name: '',
         program: 'BSIT',
-        school_year: '',
-        set_number: 'Set A',
-        description: '',
+        academic_year_id: null,
     });
 
     const { props } = usePage<any>();
     const academicYears = (props.academicYears ?? []) as { id: number; label: string; is_current: boolean }[];
 
     useEffect(() => {
-        if (academicYears.length && !addProgramSetForm.data.school_year) {
+        if (academicYears.length && addProgramSetForm.data.academic_year_id === null) {
             // prefer current year if available
             const current = academicYears.find((ay) => ay.is_current);
-            addProgramSetForm.setData('school_year', (current ?? academicYears[0]).label);
+            addProgramSetForm.setData('academic_year_id', (current ?? academicYears[0]).id);
         }
-    }, [academicYears]);
+    }, [academicYears, addProgramSetForm.data.academic_year_id]);
 
     useEffect(() => {
         if (!open) {
@@ -78,13 +73,15 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
         };
     }, [open]);
 
-    const submitForm = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-
-        // For now, just close the modal and reset form
-        // In a real implementation, this would submit to a backend endpoint
-        addProgramSetForm.reset();
-        onClose();
+    const submitForm = () => {
+        // post to backend endpoint
+        addProgramSetForm.post('/instructor/program-sets', {
+            preserveScroll: true,
+            onSuccess: () => {
+                addProgramSetForm.reset();
+                onClose();
+            },
+        });
     };
 
     if (!open || typeof document === 'undefined') {
@@ -140,30 +137,16 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                         </div>
                     </div>
 
-                    <form onSubmit={submitForm} className="space-y-4">
+                    <form className="space-y-4">
                         <div>
                             <label className="text-sm font-semibold text-slate-700">Set Name</label>
                             <input
                                 value={addProgramSetForm.data.name}
                                 onChange={(event) => addProgramSetForm.setData('name', event.target.value)}
-                                placeholder="e.g., BSIT 3A"
+                                placeholder="e.g., BSIT-A-20250-2026"
                                 className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                             />
                             {addProgramSetForm.errors.name ? <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.name}</p> : null}
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-semibold text-slate-700">Description</label>
-                            <textarea
-                                value={addProgramSetForm.data.description}
-                                onChange={(event) => addProgramSetForm.setData('description', event.target.value)}
-                                placeholder="e.g., Information Technology Capstone Projects"
-                                rows={3}
-                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                            />
-                            {addProgramSetForm.errors.description ? (
-                                <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.description}</p>
-                            ) : null}
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -185,26 +168,29 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                             <div>
                                 <label className="text-sm font-semibold text-slate-700">School Year</label>
                                 <select
-                                    value={addProgramSetForm.data.school_year}
-                                    onChange={(event) => addProgramSetForm.setData('school_year', event.target.value)}
+                                    value={addProgramSetForm.data.academic_year_id ?? ''}
+                                    onChange={(event) =>
+                                        addProgramSetForm.setData(
+                                            'academic_year_id',
+                                            event.target.value ? Number(event.target.value) : null,
+                                        )
+                                    }
                                     className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                                 >
                                     {academicYears.length ? (
                                         academicYears.map((ay) => (
-                                            <option key={ay.id} value={ay.label}>
+                                            <option key={ay.id} value={ay.id}>
                                                 {ay.label}{ay.is_current ? ' (current)' : ''}
                                             </option>
                                         ))
                                     ) : (
                                         <>
-                                            <option value="2025-2026">2025-2026</option>
-                                            <option value="2026-2027">2026-2027</option>
-                                            <option value="2027-2028">2027-2028</option>
+                                            <option value="">No academic years available</option>
                                         </>
                                     )}
                                 </select>
-                                {addProgramSetForm.errors.school_year ? (
-                                    <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.school_year}</p>
+                                {addProgramSetForm.errors.academic_year_id ? (
+                                    <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.academic_year_id}</p>
                                 ) : null}
                             </div>
                         </div>
@@ -224,7 +210,8 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                             Cancel
                         </button>
                         <button
-                            type="submit"
+                            type="button"
+                            onClick={submitForm}
                             disabled={addProgramSetForm.processing}
                             className="group relative z-10 flex transform items-center gap-2 overflow-hidden rounded-lg bg-emerald-600 px-5 py-2 font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                         >

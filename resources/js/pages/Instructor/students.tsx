@@ -10,90 +10,44 @@ import {
     Edit3,
     Users,
     Calendar,
-    BookOpen,
     GraduationCap,
-    Grid3X3,
     List,
     LayoutGrid,
 } from 'lucide-react';
 import React, { useState } from 'react';
+import { usePage } from '@inertiajs/react';
 import AddProgramSetModal from '../../components/Instructor/ProgramSetModal';
 import InstructorLayout from './_layout';
 
 const InstructorStudents = () => {
-    // Sample data for student sets/programs
-    const studentSets = [
-        {
-            id: 1,
-            name: 'BSIT Capstone 2025-2026',
-            program: 'Bachelor of Science in Information Technology',
-            schoolYear: '2025-2026',
-            setNumber: 'Set A',
-            totalStudents: 45,
-            groups: 9,
-            status: 'Active',
-            description: 'Information Technology Capstone Projects',
-        },
-        {
-            id: 2,
-            name: 'BSIS Capstone 2025-2026',
-            program: 'Bachelor of Science in Information Systems',
-            schoolYear: '2025-2026',
-            setNumber: 'Set B',
-            totalStudents: 38,
-            groups: 8,
-            status: 'Active',
-            description: 'Information Systems Capstone Projects',
-        },
-        {
-            id: 3,
-            name: 'BSIT Capstone 2024-2025',
-            program: 'Bachelor of Science in Information Technology',
-            schoolYear: '2024-2025',
-            setNumber: 'Set A',
-            totalStudents: 42,
-            groups: 8,
-            status: 'Completed',
-            description: 'Information Technology Capstone Projects',
-        },
-        {
-            id: 4,
-            name: 'BSIS Capstone 2024-2025',
-            program: 'Bachelor of Science in Information Systems',
-            schoolYear: '2024-2025',
-            setNumber: 'Set B',
-            totalStudents: 35,
-            groups: 7,
-            status: 'Completed',
-            description: 'Information Systems Capstone Projects',
-        },
-        {
-            id: 5,
-            name: 'BSIT Capstone 2023-2024',
-            program: 'Bachelor of Science in Information Technology',
-            schoolYear: '2023-2024',
-            setNumber: 'Set A',
-            totalStudents: 48,
-            groups: 10,
-            status: 'Completed',
-            description: 'Information Technology Capstone Projects',
-        },
-        {
-            id: 6,
-            name: 'BSIS Capstone 2023-2024',
-            program: 'Bachelor of Science in Information Systems',
-            schoolYear: '2023-2024',
-            setNumber: 'Set B',
-            totalStudents: 41,
-            groups: 8,
-            status: 'Completed',
-            description: 'Information Systems Capstone Projects',
-        },
-    ];
+    const { props } = usePage<any>();
+    const programSets = (props.programSets ?? []) as {
+        id: number;
+        name: string;
+        program: string;
+        school_year: string;
+        instructor_name?: string;
+    }[];
+
+    // Map program sets from server into the client shape used below
+    const studentSets = programSets.map((ps) => ({
+        id: ps.id,
+        name: ps.name ?? `${ps.program} ${ps.school_year}`,
+        program: ps.program,
+        schoolYear: ps.school_year,
+        totalStudents: 0,
+        groups: 0,
+        status: 'Active',
+        description:
+            ps.program === 'BSIT'
+                ? 'Information Technology Capstone Projects'
+                : ps.program === 'BSIS'
+                ? 'Information System Capstone Projects'
+                : '',
+    }));
 
     // Filter states
     const [selectedSchoolYear, setSelectedSchoolYear] = useState('All');
-    const [selectedSet, setSelectedSet] = useState('All');
     const [selectedProgram, setSelectedProgram] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
@@ -103,18 +57,16 @@ const InstructorStudents = () => {
 
     // Filter options
     const schoolYears = ['All', '2025-2026', '2024-2025', '2023-2024'];
-    const sets = ['All', 'Set A', 'Set B', 'Set C'];
-    const programs = ['All', 'Bachelor of Science in Information Technology', 'Bachelor of Science in Information Systems'];
+    const programs = ['All', 'BSIT', 'BSIS'];
 
     // Filter the student sets
     const filteredSets = studentSets.filter((set) => {
         const matchesYear = selectedSchoolYear === 'All' || set.schoolYear === selectedSchoolYear;
-        const matchesSet = selectedSet === 'All' || set.setNumber === selectedSet;
         const matchesProgram = selectedProgram === 'All' || set.program === selectedProgram;
         const matchesSearch =
             set.name.toLowerCase().includes(searchTerm.toLowerCase()) || set.program.toLowerCase().includes(searchTerm.toLowerCase());
 
-        return matchesYear && matchesSet && matchesProgram && matchesSearch;
+        return matchesYear && matchesProgram && matchesSearch;
     });
 
     // Pagination logic
@@ -140,7 +92,7 @@ const InstructorStudents = () => {
     // Reset to page 1 when filters change
     React.useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, selectedSchoolYear, selectedSet, selectedProgram]);
+    }, [searchTerm, selectedSchoolYear, selectedProgram]);
 
     return (
         <InstructorLayout title="Students Management" subtitle="Manage student records by program">
@@ -168,23 +120,6 @@ const InstructorStudents = () => {
                                 <ChevronRight size={12} className="rotate-90" />
                             </div>
                             <select
-                                value={selectedSet}
-                                onChange={(e) => setSelectedSet(e.target.value)}
-                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-4 text-xs capitalize shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                            >
-                                {sets.map((set) => (
-                                    <option key={set} value={set}>
-                                        {set === 'All' ? 'All Sets' : set}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="relative">
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
-                                <ChevronRight size={12} className="rotate-90" />
-                            </div>
-                            <select
                                 value={selectedProgram}
                                 onChange={(e) => setSelectedProgram(e.target.value)}
                                 className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-4 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
@@ -193,12 +128,8 @@ const InstructorStudents = () => {
                                     let displayText;
                                     if (program === 'All') {
                                         displayText = 'All Programs';
-                                    } else if (program === 'Bachelor of Science in Information Technology') {
-                                        displayText = 'BSIT';
-                                    } else if (program === 'Bachelor of Science in Information Systems') {
-                                        displayText = 'BSIS';
                                     } else {
-                                        displayText = program.split(' ').slice(0, 3).join(' ');
+                                        displayText = program;
                                     }
                                     return (
                                         <option key={program} value={program}>
@@ -212,7 +143,6 @@ const InstructorStudents = () => {
                             type="button"
                             onClick={() => {
                                 setSelectedSchoolYear('All');
-                                setSelectedSet('All');
                                 setSelectedProgram('All');
                                 setSearchTerm('');
                             }}
@@ -276,7 +206,7 @@ const InstructorStudents = () => {
                                     <div className="mb-3">
                                         <div className="flex-1">
                                             <h3 className="text-sm font-semibold text-slate-800 transition-colors group-hover:text-green-600">
-                                                {set.setNumber}
+                                                {set.name}
                                             </h3>
                                             <p className="mt-1 text-xs text-slate-600">{set.description}</p>
                                         </div>
@@ -327,7 +257,7 @@ const InstructorStudents = () => {
                         <table className="w-full text-left text-xs">
                             <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                                 <tr>
-                                    <th className="px-6 py-4">Set</th>
+                                    <th className="px-6 py-4">Set Name</th>
                                     <th className="px-6 py-4">School Year</th>
                                     <th className="px-6 py-4">Students</th>
                                     <th className="px-6 py-4">Groups</th>
@@ -342,7 +272,7 @@ const InstructorStudents = () => {
                                     >
                                         <td className="px-6 py-3.5">
                                             <div>
-                                                <div className="font-semibold text-slate-800">{set.setNumber}</div>
+                                                    <div className="font-semibold text-slate-800">{set.name}</div>
                                                 <div className="text-[10px] text-slate-500">{set.description}</div>
                                             </div>
                                         </td>
@@ -384,7 +314,11 @@ const InstructorStudents = () => {
                         <Users className="mb-3 h-8 w-8 text-slate-400" />
                         <h3 className="mb-2 text-sm font-semibold text-slate-800">No student sets found</h3>
                         <p className="mb-4 text-xs text-slate-600">Try adjusting your filters or create a new program set.</p>
-                        <button className="flex items-center gap-2 rounded-lg bg-green-700 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-green-800 active:scale-95">
+                        <button
+                            type="button"
+                            onClick={() => setIsAddProgramSetModalOpen(true)}
+                            className="inline-flex items-center justify-center rounded-lg bg-green-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-green-800 active:scale-95"
+                        >
                             <Plus className="h-3.5 w-3.5" />
                             Add Program/Set
                         </button>

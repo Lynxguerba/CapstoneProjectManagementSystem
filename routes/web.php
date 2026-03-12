@@ -53,10 +53,10 @@ Route::prefix('admin')->middleware([EnsureWebAuthenticated::class, EnsureRole::c
     })->name('admin.audit-logs');
 
     Route::get('/project-repository', function () {
-        return Inertia::render('Admin/project-repository'); 
+        return Inertia::render('Admin/project-repository');
     })->name('admin.repository');
     Route::get('/backup-restore', function () {
-        return Inertia::render('Admin/backup-restore'); 
+        return Inertia::render('Admin/backup-restore');
     })->name('admin.backup-restore');
 });
 
@@ -69,12 +69,34 @@ Route::prefix('instructor')->middleware([AuthenticateMiddleware::class, EnsureRo
         return Inertia::render('Instructor/groups');
     })->name('instructor.groups');
     Route::get('/students', function () {
-        return Inertia::render('Instructor/students');
+        $programSets = [];
+        try {
+            if (class_exists(\App\Models\ProgramSet::class) && \Illuminate\Support\Facades\Schema::hasTable('program_sets')) {
+                $programSets = \App\Models\ProgramSet::query()
+                    ->with(['academicYear', 'instructor'])
+                    ->orderByDesc('created_at')
+                    ->get(['id', 'name', 'program', 'academic_year_id', 'instructor_id'])
+                    ->map(fn ($ps) => [
+                        'id' => $ps->id,
+                        'name' => $ps->name,
+                        'program' => $ps->program,
+                        'school_year' => $ps->academicYear?->label,
+                        'instructor_name' => $ps->instructor?->name,
+                    ])->all();
+            }
+        } catch (\Throwable $e) {
+            $programSets = [];
+        }
+
+        return Inertia::render('Instructor/students', ['programSets' => $programSets]);
     })->name('instructor.students');
+
+    // Store program set
+    Route::post('/program-sets', [\App\Http\Controllers\StoreProgramSetController::class, '__invoke'])->name('instructor.program-sets.store');
     Route::get('/adviser-assignment', function () {
         return Inertia::render('Instructor/adviser-assignment');
     })->name('instructor.adviser-assignment');
-     Route::get('/scheduling', function () {
+    Route::get('/scheduling', function () {
         return Inertia::render('Instructor/scheduling');
     })->name('instructor.scheduling');
     Route::get('/titles', function () {
@@ -83,7 +105,7 @@ Route::prefix('instructor')->middleware([AuthenticateMiddleware::class, EnsureRo
     Route::get('/concepts', function () {
         return Inertia::render('Instructor/concepts');
     })->name('instructor.concepts');
-   
+
     Route::get('/evaluation', function () {
         return Inertia::render('Instructor/evaluation');
     })->name('instructor.evaluation');
