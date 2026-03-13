@@ -3,13 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class SwitchRoleController extends Controller
 {
-    /**
-     * Role-to-redirect mapping. Must match the named routes in web.php.
-     */
     protected array $roleDashboards = [
         'admin' => 'admin.dashboard',
         'instructor' => 'instructor.dashboard',
@@ -20,7 +18,7 @@ class SwitchRoleController extends Controller
         'student' => 'student.dashboard',
     ];
 
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): RedirectResponse
     {
         $user = $request->user();
         $requestedRole = $request->input('role');
@@ -29,34 +27,28 @@ class SwitchRoleController extends Controller
             return back()->withErrors(['role' => 'No role specified.']);
         }
 
-        // Get all roles assigned to this user from the roles relationship
-        $userRoles = $user->roles->pluck('slug')->toArray();
+        $userRoles = $user?->roles->pluck('slug')->toArray() ?? [];
 
-        // Reject if user does not actually own this role
-        if (! in_array($requestedRole, $userRoles)) {
+        if (! in_array($requestedRole, $userRoles, true)) {
             abort(403, 'You are not assigned to this role.');
         }
 
-        if ($user->role !== $requestedRole) {
-            $user->forceFill([
-                'role' => $requestedRole,
-            ])->save();
-        }
-
-        // Do not switch if already on this role
         if (session('active_role') === $requestedRole) {
             $dashboard = $this->roleDashboards[$requestedRole] ?? 'login';
 
             return redirect()->route($dashboard);
         }
 
-        // Update active role in session
+        if ($user !== null && $user->role !== $requestedRole) {
+            $user->forceFill([
+                'role' => $requestedRole,
+            ])->save();
+        }
+
         $request->session()->put('active_role', $requestedRole);
 
-        // Regenerate session ID to prevent session fixation attacks
         $request->session()->regenerate();
 
-        // Redirect to the new role's dashboard
         $dashboard = $this->roleDashboards[$requestedRole] ?? 'login';
 
         return redirect()->route($dashboard);

@@ -85,7 +85,7 @@ class LoginController extends Controller
     {
         Auth::logout();
 
-        // Destroy all session data
+        // Destroy ALL session data including active_role
         $request->session()->invalidate();
 
         // Regenerate CSRF token so old tokens cannot be reused
