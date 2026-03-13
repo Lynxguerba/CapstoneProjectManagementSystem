@@ -76,15 +76,19 @@ class LoginController extends Controller
 
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
+        $request->session()->put('active_role', $requestedRole);
 
         return redirect()->route(self::ROLE_DASHBOARD_ROUTES[$requestedRole]);
     }
 
     public function logout(Request $request): RedirectResponse
     {
-        Auth::guard('web')->logout();
+        Auth::logout();
 
+        // Destroy all session data
         $request->session()->invalidate();
+
+        // Regenerate CSRF token so old tokens cannot be reused
         $request->session()->regenerateToken();
 
         return redirect()->route('login');

@@ -7,10 +7,6 @@ use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\UpdateAdviserPasswordController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Middleware\EnsureRole;
-use App\Http\Middleware\EnsureWebAuthenticated;
-use App\Http\Middleware\PreventBackHistory;
-use Illuminate\Auth\Middleware\Authenticate as AuthenticateMiddleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -38,12 +34,12 @@ Route::get('/login', function () {
 
 Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-Route::post('/switch-role', [LoginController::class, 'switchRole'])
-    ->middleware(EnsureWebAuthenticated::class)
-    ->name('role.switch');
+Route::post('/switch-role', \App\Http\Controllers\Auth\SwitchRoleController::class)
+    ->name('switch-role')
+    ->middleware('auth');
 
 // ADMIN ROUTES (protected)
-Route::prefix('admin')->middleware([EnsureWebAuthenticated::class, EnsureRole::class.':admin', PreventBackHistory::class])->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', AdminDashboardController::class)->name('admin.dashboard');
     Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
     Route::get('/users/students', [AdminUserController::class, 'students'])->name('admin.users.students');
@@ -66,7 +62,7 @@ Route::prefix('admin')->middleware([EnsureWebAuthenticated::class, EnsureRole::c
 });
 
 // INSTRUCTOR ROUTES (protected)
-Route::prefix('instructor')->middleware([AuthenticateMiddleware::class, EnsureRole::class.':instructor', PreventBackHistory::class])->group(function () {
+Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Instructor/dashboard');
     })->name('instructor.dashboard');
@@ -147,7 +143,7 @@ Route::prefix('instructor')->middleware([AuthenticateMiddleware::class, EnsureRo
 });
 
 // STUDENT ROUTES (protected)
-Route::prefix('student')->middleware([AuthenticateMiddleware::class, EnsureRole::class.':student', PreventBackHistory::class])->group(function () {
+Route::middleware(['auth', 'role:student'])->prefix('student')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Student/dashboard');
     })->name('student.dashboard');
@@ -184,7 +180,7 @@ Route::prefix('student')->middleware([AuthenticateMiddleware::class, EnsureRole:
 });
 
 // ADVISER ROUTES (protected)
-Route::prefix('adviser')->middleware([AuthenticateMiddleware::class, EnsureRole::class.':adviser', PreventBackHistory::class])->group(function () {
+Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Adviser/dashboard');
     })->name('adviser.dashboard');
@@ -240,7 +236,7 @@ Route::prefix('adviser')->middleware([AuthenticateMiddleware::class, EnsureRole:
 });
 
 // PANELIST ROUTES (protected)
-Route::prefix('panelist')->middleware([AuthenticateMiddleware::class, EnsureRole::class.':panelist', PreventBackHistory::class])->group(function () {
+Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Panelist/dashboard');
     })->name('panelist.dashboard');
@@ -292,7 +288,7 @@ Route::prefix('panelist')->middleware([AuthenticateMiddleware::class, EnsureRole
 });
 
 // DEAN ROUTES (protected)
-Route::prefix('dean')->middleware([AuthenticateMiddleware::class, EnsureRole::class.':dean', PreventBackHistory::class])->group(function () {
+Route::middleware(['auth', 'role:dean'])->prefix('dean')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Dean/dashboard');
     })->name('dean.dashboard');
@@ -326,7 +322,7 @@ Route::prefix('dean')->middleware([AuthenticateMiddleware::class, EnsureRole::cl
 });
 
 // PROGRAM CHAIRPERSON ROUTES (protected)
-Route::prefix('program_chairperson')->middleware([AuthenticateMiddleware::class, EnsureRole::class.':program_chairperson', PreventBackHistory::class])->group(function () {
+Route::middleware(['auth', 'role:program_chairperson'])->prefix('program_chairperson')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('ProgramChairperson/dashboard');
     })->name('program_chairperson.dashboard');

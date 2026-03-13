@@ -2,57 +2,48 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Role;
 use Closure;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
+use Symfony\Component\HttpFoundation\Response;
 
 class EnsureRole
 {
     /**
-     * Handle an incoming request.
-     * Accepts one or more roles as parameters.
+     * Role-to-route mapping. Add all roles here.
+     * Key = session active_role value, Value = named route for that role's dashboard.
      */
-    public function handle(Request $request, Closure $next, ?string $role = null): mixed
+    protected array $roleDashboards = [
+        'admin' => 'admin.dashboard',
+        'instructor' => 'instructor.dashboard',
+        'adviser' => 'adviser.dashboard',
+        'panelist' => 'panelist.dashboard',
+        'program_chairperson' => 'program_chairperson.dashboard',
+        'dean' => 'dean.dashboard',
+        'student' => 'student.dashboard',
+    ];
+
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if (! Auth::guard('web')->check()) {
+        // Not authenticated at all
+        if (! $request->user()) {
             return redirect()->route('login');
         }
 
-        $user = Auth::guard('web')->user();
+        $activeRole = session('active_role');
 
-        if ($user === null) {
+        // No active role in session means logged out or invalid session
+        if (! $activeRole) {
             return redirect()->route('login');
         }
 
-        if ($role !== null) {
-            $allowedRoles = array_map('trim', explode('|', $role));
-            $hasAllowedRole = collect($allowedRoles)->contains(fn (string $allowedRole): bool => $user->hasRole($allowedRole));
+        // Active role does not match any of the allowed roles for this route group
+        if (! in_array($activeRole, $roles)) {
+            // Redirect to the correct dashboard for their actual active role
+            $fallbackRoute = $this->roleDashboards[$activeRole] ?? 'login';
 
-            if (! $hasAllowedRole) {
-                return $this->redirectToActiveDashboard((string) $user->role);
-            }
-
-            $normalizedActiveRole = Role::normalizeRole((string) $user->role);
-
-            if ($normalizedActiveRole === null || ! in_array($normalizedActiveRole, $allowedRoles, true)) {
-                return $this->redirectToActiveDashboard((string) $user->role);
-            }
+            return redirect()->route($fallbackRoute);
         }
 
         return $next($request);
-    }
-
-    private function redirectToActiveDashboard(string $activeRole): RedirectResponse
-    {
-        $routeName = $activeRole.'.dashboard';
-
-        if (Route::has($routeName)) {
-            return redirect()->route($routeName);
-        }
-
-        return redirect()->route('login');
     }
 }
