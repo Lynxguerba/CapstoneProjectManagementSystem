@@ -1,6 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { UserPlus, X } from 'lucide-react';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { store } from '../../routes/admin/users';
 
@@ -39,6 +39,7 @@ const formatRoleLabel = (role: string): string => {
 
 const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType = 'user' }: AddUserModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const hasInitializedRolesRef = React.useRef(false);
     const roleOptions = userType === 'faculty' ? facultyRoles : availableRoles;
     const initialRole = roleOptions[0] ?? 'student';
@@ -182,16 +183,6 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
                 <form onSubmit={submitForm} className="space-y-4 p-4">
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="text-sm font-semibold text-slate-700">Last Name</label>
-                            <input
-                                value={addUserForm.data.last_name}
-                                onChange={(event) => addUserForm.setData('last_name', event.target.value)}
-                                placeholder="Dela Cruz"
-                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                            />
-                            {addUserForm.errors.last_name ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.last_name}</p> : null}
-                        </div>
-                        <div>
                             <label className="text-sm font-semibold text-slate-700">First Name</label>
                             <input
                                 value={addUserForm.data.first_name}
@@ -200,6 +191,16 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
                                 className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                             />
                             {addUserForm.errors.first_name ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.first_name}</p> : null}
+                        </div>
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700">Last Name</label>
+                            <input
+                                value={addUserForm.data.last_name}
+                                onChange={(event) => addUserForm.setData('last_name', event.target.value)}
+                                placeholder="Dela Cruz"
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            />
+                            {addUserForm.errors.last_name ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.last_name}</p> : null}
                         </div>
                     </div>
 
@@ -232,13 +233,39 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
 
                             <div>
                                 <label className="text-sm font-semibold text-slate-700">Password</label>
-                                <input
-                                    type="password"
-                                    value={addUserForm.data.password}
-                                    onChange={(event) => addUserForm.setData('password', event.target.value)}
-                                    placeholder="At least 8 characters"
-                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={addUserForm.data.password}
+                                        onChange={(event) => addUserForm.setData('password', event.target.value)}
+                                        placeholder="At least 8 characters"
+                                        className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 pr-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-emerald-600 focus:outline-none"
+                                    >
+                                        {showPassword ? (
+                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9.27-3.11-11-7 1.02-2.29 2.86-4.22 5.13-5.44M9.88 9.88A3 3 0 1114.12 14.12M6.1 6.1L17.9 17.9"
+                                                />
+                                            </svg>
+                                        ) : (
+                                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                                />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
                                 {addUserForm.errors.password ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.password}</p> : null}
                             </div>
 

@@ -1,6 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { Settings, UserCheck, X } from 'lucide-react';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
@@ -53,6 +53,7 @@ const formatRoleLabel = (role: string): string => {
 
 const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, onSave }: ManageUserActionModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const { data, setData, errors, processing, clearErrors, put } = useForm<ManageUserForm>({
         first_name: '',
         last_name: '',
@@ -158,6 +159,7 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
     }
 
     const modalTitle = mode === 'student' ? 'Manage Student' : mode === 'faculty' ? 'Manage Faculty' : 'Manage User';
+   
 
     return createPortal(
         <div
@@ -322,13 +324,42 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
 
                     <div>
                         <label className="text-sm font-semibold text-slate-700">New Password (optional)</label>
-                        <input
-                            type="password"
-                            value={data.password}
-                            onChange={(event) => setData('password', event.target.value)}
-                            placeholder="Leave blank to keep current password"
-                            className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                        />
+
+                        <div className="relative">
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                value={data.password}
+                                onChange={(event) => setData('password', event.target.value)}
+                                placeholder="Leave blank to keep current password"
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 pr-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            />
+                            {/* Toggle Button */}
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-green-600 focus:outline-none"
+                            >
+                                {showPassword ? (
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9.27-3.11-11-7 1.02-2.29 2.86-4.22 5.13-5.44M9.88 9.88A3 3 0 1114.12 14.12M6.1 6.1L17.9 17.9"
+                                        />
+                                    </svg>
+                                ) : (
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                        />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
+
                         {errors.password ? <p className="mt-1 text-xs text-rose-600">{errors.password}</p> : null}
                     </div>
                 </div>

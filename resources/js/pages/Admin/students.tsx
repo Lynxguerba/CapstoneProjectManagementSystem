@@ -243,9 +243,6 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                             <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600">
                                                 {user.program ?? 'Unassigned'}
                                             </span>
-                                            {resolveProgramDescription(user.program) ? (
-                                                <div className="text-[10px] text-slate-500">{resolveProgramDescription(user.program)}</div>
-                                            ) : null}
                                         </div>
                                     </td>
                                     <td className="px-6 py-3.5">
