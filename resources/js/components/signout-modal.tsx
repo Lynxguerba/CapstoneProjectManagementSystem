@@ -75,10 +75,12 @@ const SignOutModal = ({ open, onClose, activeRole, assignedRoles }: SignOutModal
         setIsSigningOut(true);
 
         router.post('/logout', undefined, {
-            preserveScroll: true,
-            onFinish: () => {
-                setIsSigningOut(false);
+            preserveScroll: false,
+            replace: true,
+            onSuccess: () => {
+                window.location.replace('/');
             },
+            onFinish: () => setIsSigningOut(false),
         });
     };
 
@@ -94,7 +96,11 @@ const SignOutModal = ({ open, onClose, activeRole, assignedRoles }: SignOutModal
             '/switch-role',
             { role },
             {
-                preserveScroll: true,
+                preserveScroll: false,
+                replace: true,
+                onSuccess: () => {
+                    window.location.replace('/');
+                },
                 onFinish: () => {
                     setIsSwitchingRole(false);
                     setShowRoleTooltip(false);

@@ -38,12 +38,7 @@ class EnsureRole
             $normalizedActiveRole = Role::normalizeRole((string) $user->role);
 
             if ($normalizedActiveRole === null || ! in_array($normalizedActiveRole, $allowedRoles, true)) {
-                $fallbackRole = collect($allowedRoles)
-                    ->first(fn (string $allowedRole): bool => $user->hasRole($allowedRole));
-
-                if (is_string($fallbackRole) && $fallbackRole !== '') {
-                    $user->forceFill(['role' => $fallbackRole])->save();
-                }
+                return $this->redirectToActiveDashboard((string) $user->role);
             }
         }
 
