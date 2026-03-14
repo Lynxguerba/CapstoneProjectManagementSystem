@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ChevronRight, Search, Upload, UserPlus } from 'lucide-react';
 import React from 'react';
+import EnrollStudentModal from '../../../components/Instructor/students/entoll-studentModal';
 import InstructorLayout from '../_layout';
 
 type StudentStatus = 'active' | 'inactive';
@@ -17,8 +18,24 @@ type ProgramSetSummary = {
 
 type InstructorStudentsManageProps = {
     programSet?: ProgramSetSummary;
+    availableStudents?: {
+        id: number;
+        firstName?: string;
+        lastName?: string;
+        name: string;
+        email: string;
+        program?: string | null;
+    }[];
+    enrolledStudents?: {
+        id: number;
+        fullName: string;
+        email?: string;
+        program?: string | null;
+        status: StudentStatus;
+        createdAt: string;
+    }[];
 };
-const InstructorStudentsManage = ({ programSet }: InstructorStudentsManageProps) => {
+const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolledStudents = [] }: InstructorStudentsManageProps) => {
     const sectionName = typeof programSet?.name === 'string' && programSet.name.trim() !== '' ? programSet.name : 'Selected Section';
     const sectionProgram = typeof programSet?.program === 'string' ? programSet.program : '';
     const sectionYear = typeof programSet?.school_year === 'string' ? programSet.school_year : '';
@@ -27,18 +44,24 @@ const InstructorStudentsManage = ({ programSet }: InstructorStudentsManageProps)
     const [search, setSearch] = React.useState('');
     const [status, setStatus] = React.useState<StudentFilterStatus>('all');
     const [currentPage, setCurrentPage] = React.useState(1);
+    const [isEnrollModalOpen, setIsEnrollModalOpen] = React.useState(false);
     const usersPerPage = 10;
 
     const filteredUsers = React.useMemo(() => {
-        return [] as {
-            id: number;
-            fullName: string;
-            email?: string;
-            program?: string | null;
-            status: StudentStatus;
-            createdAt: string;
-        }[];
-    }, [search, sectionProgram, status]);
+        const query = search.trim().toLowerCase();
+
+        return enrolledStudents.filter((user) => {
+            const programCode = (user.program ?? '').toLowerCase();
+            const matchesQuery =
+                !query ||
+                user.fullName.toLowerCase().includes(query) ||
+                programCode.includes(query) ||
+                (user.email ?? '').toLowerCase().includes(query);
+            const matchesStatus = status === 'all' || user.status === status;
+
+            return matchesQuery && matchesStatus;
+        });
+    }, [enrolledStudents, search, status]);
 
     React.useEffect(() => {
         setCurrentPage(1);
@@ -124,6 +147,10 @@ const InstructorStudentsManage = ({ programSet }: InstructorStudentsManageProps)
                         </button>
                         <button
                             type="button"
+                            onClick={() => {
+                                console.log('Enroll Student button clicked');
+                                setIsEnrollModalOpen(true);
+                            }}
                             className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-green-800 active:scale-95"
                         >
                             <UserPlus className="h-3.5 w-3.5" />
@@ -236,6 +263,14 @@ const InstructorStudentsManage = ({ programSet }: InstructorStudentsManageProps)
                     </div>
                 )}
 
+                <EnrollStudentModal
+                    open={isEnrollModalOpen}
+                    onClose={() => setIsEnrollModalOpen(false)}
+                    programSetId={programSet?.id ?? 0}
+                    programSetName={sectionName}
+                    programSetProgram={sectionProgram}
+                    availableStudents={availableStudents}
+                />
             </motion.section>
         </InstructorLayout>
     );

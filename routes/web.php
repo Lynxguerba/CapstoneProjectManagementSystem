@@ -7,7 +7,10 @@ use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\UpdateAdviserPasswordController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\EnrollStudentController;
 use App\Models\ProgramSet;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -96,6 +99,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
     Route::get('/students/{programSet}/manage', function (string $programSet) {
         $programSetData = null;
+        $availableStudents = [];
+        $enrolledStudents = [];
 
         try {
             if (class_exists(ProgramSet::class) && Schema::hasTable('program_sets')) {
@@ -123,10 +128,92 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             return redirect()->route('instructor.students');
         }
 
+        try {
+            $hasStudentProgramTable = Schema::hasTable('student_program');
+
+            $enrolledStudents = $programSetModel
+                ->students()
+                ->with($hasStudentProgramTable ? ['studentProgram:id,student_id,program'] : [])
+                ->orderBy('last_name')
+                ->get(['users.id', 'users.name', 'users.first_name', 'users.last_name', 'users.email', 'users.status', 'users.created_at'])
+                ->map(function (User $student) use ($hasStudentProgramTable): array {
+                    $firstName = is_string($student->first_name) ? trim($student->first_name) : '';
+                    $lastName = is_string($student->last_name) ? trim($student->last_name) : '';
+                    $fullName = $firstName !== '' || $lastName !== ''
+                        ? trim($firstName.' '.$lastName)
+                        : (is_string($student->name) ? $student->name : '');
+                    $status = is_string($student->status) && $student->status !== '' ? $student->status : 'active';
+                    $program = $hasStudentProgramTable ? $student->studentProgram?->program : null;
+
+                    return [
+                        'id' => $student->id,
+                        'firstName' => $firstName,
+                        'lastName' => $lastName,
+                        'fullName' => $fullName,
+                        'email' => $student->email ?? '',
+                        'program' => $program,
+                        'status' => $status,
+                        'createdAt' => $student->created_at?->format('Y-m-d') ?? '',
+                    ];
+                })
+                ->values();
+
+            $studentsQuery = User::query()
+                ->where(function (Builder $query): void {
+                    $query
+                        ->where('role', 'student')
+                        ->orWhereHas('roles', function (Builder $roleQuery): void {
+                            $roleQuery->where('slug', 'student');
+                        });
+                })
+                ->whereDoesntHave('programSets', function (Builder $query) use ($programSetModel): void {
+                    $query->where('program_sets.id', $programSetModel->id);
+                });
+
+            if ($hasStudentProgramTable) {
+                $studentsQuery->with(['studentProgram:id,student_id,program']);
+
+                if (is_string($programSetData['program']) && $programSetData['program'] !== '') {
+                    $studentsQuery->whereHas('studentProgram', function (Builder $programQuery) use ($programSetData): void {
+                        $programQuery->where('program', $programSetData['program']);
+                    });
+                }
+            }
+
+            $availableStudents = $studentsQuery
+                ->orderBy('last_name')
+                ->get(['id', 'name', 'first_name', 'last_name', 'email'])
+                ->map(function (User $student) use ($hasStudentProgramTable): array {
+                    $firstName = is_string($student->first_name) ? trim($student->first_name) : '';
+                    $lastName = is_string($student->last_name) ? trim($student->last_name) : '';
+                    $fullName = $firstName !== '' || $lastName !== ''
+                        ? trim($firstName.' '.$lastName)
+                        : (is_string($student->name) ? $student->name : '');
+                    $program = $hasStudentProgramTable ? $student->studentProgram?->program : null;
+
+                    return [
+                        'id' => $student->id,
+                        'firstName' => $firstName,
+                        'lastName' => $lastName,
+                        'name' => $fullName,
+                        'email' => $student->email ?? '',
+                        'program' => $program,
+                    ];
+                })
+                ->values();
+        } catch (\Throwable $e) {
+            $availableStudents = [];
+            $enrolledStudents = [];
+        }
+
         return Inertia::render('Instructor/students/managePage', [
             'programSet' => $programSetData,
+            'availableStudents' => $availableStudents,
+            'enrolledStudents' => $enrolledStudents,
         ]);
     })->name('instructor.students.manage');
+
+    Route::post('/students/enroll', EnrollStudentController::class)->name('instructor.students.enroll');
 
     // Store program set
     Route::post('/program-sets', [\App\Http\Controllers\StoreProgramSetController::class, '__invoke'])->name('instructor.program-sets.store');

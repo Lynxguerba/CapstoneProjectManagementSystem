@@ -67,6 +67,12 @@ class User extends Authenticatable
         return $this->hasOne(StudentProgram::class, 'student_id');
     }
 
+    public function programSets(): BelongsToMany
+    {
+        return $this->belongsToMany(ProgramSet::class, 'program_set_student', 'student_id', 'program_set_id')
+            ->withTimestamps();
+    }
+
     public function hasRole(string $role): bool
     {
         $normalizedRole = Role::normalizeRole($role);
