@@ -7,6 +7,7 @@ use App\Models\Group;
 use App\Models\GroupAdviser;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class AssignGroupAdviserController extends Controller
@@ -44,8 +45,11 @@ class AssignGroupAdviserController extends Controller
             if (is_string($groupYear) && $groupYear !== '') {
                 $loadQuery->whereHas('group.programSet', function ($query) use ($groupYear) {
                     $query->where(function ($subQuery) use ($groupYear) {
-                        $subQuery->whereHas('academicYear', fn ($academicQuery) => $academicQuery->where('label', $groupYear))
-                            ->orWhere('school_year', $groupYear);
+                        $subQuery->whereHas('academicYear', fn ($academicQuery) => $academicQuery->where('label', $groupYear));
+
+                        if (Schema::hasColumn('program_sets', 'school_year')) {
+                            $subQuery->orWhere('school_year', $groupYear);
+                        }
                     });
                 });
             }

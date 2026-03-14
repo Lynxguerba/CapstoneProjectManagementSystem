@@ -693,7 +693,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             $groups = [];
         }
 
-        return Inertia::render('Instructor/adviser-assignment-groups', [
+        return Inertia::render('Instructor/adviser-assignment/adviser-assignment-groups', [
             'adviser' => [
                 'id' => $adviser->id,
                 'name' => $resolveUserName($adviser),

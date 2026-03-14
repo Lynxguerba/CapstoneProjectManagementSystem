@@ -40,6 +40,8 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
     const [selectedAdviser, setSelectedAdviser] = React.useState<AdviserRow | null>(null);
     const [isGroupsModalOpen, setIsGroupsModalOpen] = React.useState(false);
     const [statusFilter, setStatusFilter] = React.useState<'all' | 'available' | 'partial' | 'full'>('all');
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const itemsPerPage = 6;
 
     const academicYearOptions = React.useMemo(() => {
         const years = academicYears.map((year) => year.label);
@@ -94,6 +96,29 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
             return normalizedStatus === statusFilter;
         });
     }, [advisers, searchTerm, selectedAcademicYear, statusFilter, getLoadForYear]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredAdvisers.length / itemsPerPage));
+
+    React.useEffect(() => {
+        setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
+    }, [totalPages]);
+
+    const paginatedAdvisers = React.useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredAdvisers.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredAdvisers, currentPage]);
+
+    const pages = React.useMemo(() => {
+        const maxVisiblePages = 5;
+        const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - (maxVisiblePages - 1)));
+        const endPage = Math.min(totalPages, startPage + (maxVisiblePages - 1));
+
+        return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+    }, [currentPage, totalPages]);
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, selectedAcademicYear, statusFilter]);
 
     React.useEffect(() => {
         if (selectedAcademicYear === 'All') {
@@ -187,7 +212,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
 
                 {viewMode === 'card' ? (
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        {filteredAdvisers.map((adviser) => {
+                        {paginatedAdvisers.map((adviser) => {
                             const isAllYears = selectedAcademicYear === 'All';
                             const load = getLoadForYear(adviser, selectedAcademicYear);
                             const progress = isAllYears ? 100 : Math.min(100, Math.round((load / MAX_LOAD) * 100));
@@ -276,7 +301,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredAdvisers.map((adviser) => {
+                                {paginatedAdvisers.map((adviser) => {
                                     const isAllYears = selectedAcademicYear === 'All';
                                     const load = getLoadForYear(adviser, selectedAcademicYear);
                                     const progress = isAllYears ? 100 : Math.min(100, Math.round((load / MAX_LOAD) * 100));
@@ -345,6 +370,58 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                         {filteredAdvisers.length === 0 ? (
                             <div className="py-10 text-center text-sm text-slate-500">No advisers match your search.</div>
                         ) : null}
+                    </div>
+                )}
+
+                {filteredAdvisers.length > 0 && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-xs font-medium text-slate-500">
+                        Showing {paginatedAdvisers.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                        {Math.min(currentPage * itemsPerPage, filteredAdvisers.length)} of {filteredAdvisers.length} advisers
+                    </motion.div>
+                )}
+
+                {filteredAdvisers.length > 0 && (
+                    <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
+                        <p className="text-xs font-medium text-slate-500">
+                            Page <span className="text-slate-900">{currentPage}</span> of{' '}
+                            <span className="text-slate-900">{totalPages}</span>
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                            >
+                                <ChevronRight size={16} className="rotate-180" />
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                                {pages.map((page) => (
+                                    <button
+                                        key={page}
+                                        type="button"
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`h-8 min-w-[32px] rounded-lg text-xs font-bold transition-all ${
+                                            page === currentPage
+                                                ? 'bg-green-700 text-white shadow-md shadow-green-700/20'
+                                                : 'text-slate-600 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
                     </div>
                 )}
             </motion.section>
