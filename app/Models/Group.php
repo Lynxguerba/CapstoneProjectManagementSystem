@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Group extends Model
 {
@@ -32,5 +33,10 @@ class Group extends Model
         return $this->belongsToMany(User::class, 'group_members', 'group_id', 'student_id')
             ->withPivot(['role'])
             ->withTimestamps();
+    }
+
+    public function adviserAssignment(): HasOne
+    {
+        return $this->hasOne(GroupAdviser::class);
     }
 }

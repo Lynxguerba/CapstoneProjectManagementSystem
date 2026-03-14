@@ -73,6 +73,12 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function advisedGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(Group::class, 'group_advisers', 'adviser_id', 'group_id')
+            ->withTimestamps();
+    }
+
     public function hasRole(string $role): bool
     {
         $normalizedRole = Role::normalizeRole($role);
