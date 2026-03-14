@@ -29,6 +29,12 @@ const InstructorStudents = () => {
         instructor_name?: string;
     }[];
 
+    // Academic years from backend (same as ProgramSetModal)
+    const academicYears = (props.academicYears ?? []) as { id: number; label: string; is_current: boolean }[];
+
+    // Get current academic year label (fallback to first available or empty)
+    const currentAcademicYear = academicYears.find((ay) => ay.is_current)?.label ?? academicYears[0]?.label ?? '';
+
     // Map program sets from server into the client shape used below
     const studentSets = programSets.map((ps) => ({
         id: ps.id,
@@ -46,8 +52,8 @@ const InstructorStudents = () => {
                 : '',
     }));
 
-    // Filter states
-    const [selectedSchoolYear, setSelectedSchoolYear] = useState('All');
+    // Filter states - default to current academic year instead of 'All'
+    const [selectedSchoolYear, setSelectedSchoolYear] = useState(currentAcademicYear || 'All');
     const [selectedProgram, setSelectedProgram] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
@@ -55,8 +61,8 @@ const InstructorStudents = () => {
     const [isAddProgramSetModalOpen, setIsAddProgramSetModalOpen] = useState(false);
     const itemsPerPage = 6;
 
-    // Filter options
-    const schoolYears = ['All', '2025-2026', '2024-2025', '2023-2024'];
+    // Filter options - build from academic years data
+    const schoolYears = ['All', ...academicYears.map((ay) => ay.label)];
     const programs = ['All', 'BSIT', 'BSIS'];
 
     // Filter the student sets
@@ -107,11 +113,14 @@ const InstructorStudents = () => {
                                 onChange={(e) => setSelectedSchoolYear(e.target.value)}
                                 className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                             >
-                                {schoolYears.map((year) => (
-                                    <option key={year} value={year}>
-                                        {year === 'All' ? 'All Years' : year}
-                                    </option>
-                                ))}
+                                {schoolYears.map((year) => {
+                                    const isCurrent = academicYears.find((ay) => ay.label === year)?.is_current;
+                                    return (
+                                        <option key={year} value={year}>
+                                            {year === 'All' ? 'All Years' : `${year}${isCurrent ? ' (current)' : ''}`}
+                                        </option>
+                                    );
+                                })}
                             </select>
                         </div>
 
