@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BulkEnrollStudentsController;
 use App\Http\Controllers\EnrollStudentController;
 use App\Http\Controllers\UnenrollStudentController;
+use App\Http\Controllers\UpdateGroupMembersController;
 use App\Http\Controllers\UpdateProgramSetNameController;
 use App\Models\ProgramSet;
 use App\Models\User;
@@ -75,8 +76,197 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         return Inertia::render('Instructor/dashboard');
     })->name('instructor.dashboard');
     Route::get('/groups', function () {
-        return Inertia::render('Instructor/groups');
+        $programSets = [];
+
+        try {
+            $userId = Auth::guard('web')->id();
+            if (class_exists(\App\Models\ProgramSet::class) && Schema::hasTable('program_sets')) {
+                $hasProgramSetStudentTable = Schema::hasTable('program_set_student');
+                $hasGroupsTable = Schema::hasTable('groups');
+
+                $programSetsQuery = \App\Models\ProgramSet::query()
+                    ->with(['academicYear', 'instructor'])
+                    ->when($userId !== null, fn ($query) => $query->where('instructor_id', $userId))
+                    ->when($hasProgramSetStudentTable, fn ($query) => $query->withCount('students'))
+                    ->when($hasGroupsTable, fn ($query) => $query->withCount('groups'))
+                    ->orderByDesc('created_at')
+                    ->get(['id', 'name', 'program', 'academic_year_id', 'instructor_id']);
+
+                $programSets = $programSetsQuery
+                    ->map(fn ($ps) => [
+                        'id' => $ps->id,
+                        'name' => $ps->name,
+                        'program' => $ps->program,
+                        'school_year' => $ps->academicYear?->label,
+                        'instructor_name' => $ps->instructor?->name,
+                        'students_count' => $hasProgramSetStudentTable ? ($ps->students_count ?? 0) : 0,
+                        'groups_count' => $hasGroupsTable ? ($ps->groups_count ?? 0) : 0,
+                    ])->all();
+            }
+        } catch (\Throwable $e) {
+            $programSets = [];
+        }
+
+        return Inertia::render('Instructor/groups', [
+            'programSets' => $programSets,
+        ]);
     })->name('instructor.groups');
+    Route::get('/groups/{programSet}/manage', function (ProgramSet $programSet) {
+        $userId = Auth::guard('web')->id();
+        if ($userId !== null && $programSet->instructor_id !== $userId) {
+            abort(403);
+        }
+
+        $programSet->load('academicYear');
+        $groups = [];
+
+        try {
+            if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups')) {
+                $groups = \App\Models\Group::query()
+                    ->with(['leader'])
+                    ->where('program_set_id', $programSet->id)
+                    ->withCount('members')
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->map(function (\App\Models\Group $group): array {
+                        $leader = $group->leader;
+                        $leaderName = $leader
+                            ? trim(collect([$leader->first_name ?? '', $leader->last_name ?? ''])->filter()->join(' '))
+                            : '';
+
+                        if ($leaderName === '' && $leader) {
+                            $leaderName = (string) $leader->name;
+                        }
+
+                        return [
+                            'id' => $group->id,
+                            'name' => $group->name,
+                            'program_set_id' => $group->program_set_id,
+                            'leader_name' => $leaderName,
+                            'members_count' => $group->members_count ?? 0,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $groups = [];
+        }
+
+        return Inertia::render('Instructor/groups/managePage', [
+            'programSet' => [
+                'id' => $programSet->id,
+                'name' => $programSet->name,
+                'program' => $programSet->program,
+                'school_year' => $programSet->academicYear?->label,
+            ],
+            'groups' => $groups,
+        ]);
+    })->name('instructor.groups.manage');
+    Route::get('/groups/{group}/details', function (\App\Models\Group $group) {
+        $userId = Auth::guard('web')->id();
+        $group->load(['programSet.academicYear', 'leader']);
+
+        if ($userId !== null && $group->programSet?->instructor_id !== $userId) {
+            abort(403);
+        }
+
+        $hasStudentProgramTable = Schema::hasTable('student_program');
+        $group->load([
+            'members' => function ($query) use ($hasStudentProgramTable) {
+                if ($hasStudentProgramTable) {
+                    $query->with(['studentProgram:id,student_id,program']);
+                }
+            },
+        ]);
+
+        $leader = $group->leader;
+        $leaderName = $leader
+            ? trim(collect([$leader->first_name ?? '', $leader->last_name ?? ''])->filter()->join(' '))
+            : '';
+        if ($leaderName === '' && $leader) {
+            $leaderName = (string) $leader->name;
+        }
+
+        $students = $group->members
+            ->map(function (User $student) use ($hasStudentProgramTable): array {
+                $firstName = is_string($student->first_name) ? trim($student->first_name) : '';
+                $lastName = is_string($student->last_name) ? trim($student->last_name) : '';
+                $fullName = $firstName !== '' || $lastName !== ''
+                    ? trim($firstName.' '.$lastName)
+                    : (is_string($student->name) ? $student->name : '');
+                $program = $hasStudentProgramTable ? $student->studentProgram?->program : null;
+
+                return [
+                    'id' => $student->id,
+                    'fullName' => $fullName,
+                    'email' => $student->email ?? '',
+                    'program' => $program,
+                    'role' => $student->pivot?->role ?? '',
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'group' => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'program' => $group->programSet?->program,
+                'school_year' => $group->programSet?->academicYear?->label,
+                'leader_name' => $leaderName,
+            ],
+            'members' => $students,
+        ]);
+    })->name('instructor.groups.details');
+    Route::get('/program-sets/{programSet}/enrolled-students', function (ProgramSet $programSet) {
+        $userId = Auth::guard('web')->id();
+        if ($userId !== null && $programSet->instructor_id !== $userId) {
+            abort(403);
+        }
+
+        $hasStudentProgramTable = Schema::hasTable('student_program');
+        $alreadyGroupedIds = [];
+
+        if (Schema::hasTable('group_members') && Schema::hasTable('groups')) {
+            $alreadyGroupedIds = \App\Models\GroupMember::query()
+                ->whereHas('group', fn ($query) => $query->where('program_set_id', $programSet->id))
+                ->pluck('student_id')
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        $students = $programSet
+            ->students()
+            ->with($hasStudentProgramTable ? ['studentProgram:id,student_id,program'] : [])
+            ->orderBy('last_name')
+            ->get(['users.id', 'users.name', 'users.first_name', 'users.last_name', 'users.email'])
+            ->map(function (User $student) use ($hasStudentProgramTable, $alreadyGroupedIds): array {
+                $firstName = is_string($student->first_name) ? trim($student->first_name) : '';
+                $lastName = is_string($student->last_name) ? trim($student->last_name) : '';
+                $fullName = $firstName !== '' || $lastName !== ''
+                    ? trim($firstName.' '.$lastName)
+                    : (is_string($student->name) ? $student->name : '');
+                $program = $hasStudentProgramTable ? $student->studentProgram?->program : null;
+
+                return [
+                    'id' => $student->id,
+                    'firstName' => $firstName,
+                    'lastName' => $lastName,
+                    'name' => $fullName,
+                    'email' => $student->email ?? '',
+                    'program' => $program,
+                    'isGrouped' => in_array($student->id, $alreadyGroupedIds, true),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'students' => $students,
+        ]);
+    })->name('instructor.program-sets.enrolled-students');
+    Route::post('/groups', \App\Http\Controllers\StoreGroupController::class)->name('instructor.groups.store');
+    Route::put('/groups/{group}/members', UpdateGroupMembersController::class)->name('instructor.groups.members.update');
     Route::get('/students', function () {
         $programSets = [];
         try {
