@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BulkEnrollStudentsController;
 use App\Http\Controllers\EnrollStudentController;
 use App\Http\Controllers\UnenrollStudentController;
+use App\Http\Controllers\UpdateProgramSetNameController;
 use App\Models\ProgramSet;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -79,17 +80,20 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
     Route::get('/students', function () {
         $programSets = [];
         try {
+            $userId = Auth::guard('web')->id();
             if (class_exists(\App\Models\ProgramSet::class) && \Illuminate\Support\Facades\Schema::hasTable('program_sets')) {
                 $hasProgramSetStudentTable = \Illuminate\Support\Facades\Schema::hasTable('program_set_student');
 
                 $programSetsQuery = \App\Models\ProgramSet::query()
                     ->with(['academicYear', 'instructor'])
+                    ->when($userId !== null, fn ($query) => $query->where('instructor_id', $userId))
                     ->orderByDesc('created_at')
                     ->get(['id', 'name', 'program', 'academic_year_id', 'instructor_id']);
 
                 if ($hasProgramSetStudentTable) {
                     $programSetsQuery = \App\Models\ProgramSet::query()
                         ->with(['academicYear', 'instructor'])
+                        ->when($userId !== null, fn ($query) => $query->where('instructor_id', $userId))
                         ->withCount('students')
                         ->orderByDesc('created_at')
                         ->get(['id', 'name', 'program', 'academic_year_id', 'instructor_id']);
@@ -116,12 +120,16 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         $programSetData = null;
         $availableStudents = [];
         $enrolledStudents = [];
+        $programSetModel = null;
 
         try {
             if (class_exists(ProgramSet::class) && Schema::hasTable('program_sets')) {
+                $userId = Auth::guard('web')->id();
                 $programSetModel = ProgramSet::query()
                     ->with(['academicYear', 'instructor'])
-                    ->find($programSet);
+                    ->when($userId !== null, fn ($query) => $query->where('instructor_id', $userId))
+                    ->whereKey($programSet)
+                    ->first();
 
                 if ($programSetModel !== null) {
                     $fallbackName = trim(($programSetModel->program ?? '').' '.($programSetModel->academicYear?->label ?? ''));
@@ -229,12 +237,84 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         ]);
     })->name('instructor.students.manage');
 
+    Route::get('/students/{programSet}/details', function (string $programSet) {
+        $programSetData = null;
+        $enrolledStudents = [];
+        $programSetModel = null;
+
+        try {
+            if (class_exists(ProgramSet::class) && Schema::hasTable('program_sets')) {
+                $userId = Auth::guard('web')->id();
+                $programSetModel = ProgramSet::query()
+                    ->with(['academicYear', 'instructor'])
+                    ->when($userId !== null, fn ($query) => $query->where('instructor_id', $userId))
+                    ->whereKey($programSet)
+                    ->first();
+
+                if ($programSetModel !== null) {
+                    $fallbackName = trim(($programSetModel->program ?? '').' '.($programSetModel->academicYear?->label ?? ''));
+
+                    $programSetData = [
+                        'id' => $programSetModel->id,
+                        'name' => $programSetModel->name !== null && $programSetModel->name !== '' ? $programSetModel->name : $fallbackName,
+                        'program' => $programSetModel->program,
+                        'school_year' => $programSetModel->academicYear?->label,
+                        'instructor_name' => $programSetModel->instructor?->name,
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            $programSetData = null;
+        }
+
+        if ($programSetData === null) {
+            return response()->json(['message' => 'Program set not found.'], 404);
+        }
+
+        try {
+            $hasStudentProgramTable = Schema::hasTable('student_program');
+
+            $enrolledStudents = $programSetModel
+                ->students()
+                ->with($hasStudentProgramTable ? ['studentProgram:id,student_id,program'] : [])
+                ->orderBy('last_name')
+                ->get(['users.id', 'users.name', 'users.first_name', 'users.last_name', 'users.email', 'users.status', 'users.created_at'])
+                ->map(function (User $student) use ($hasStudentProgramTable): array {
+                    $firstName = is_string($student->first_name) ? trim($student->first_name) : '';
+                    $lastName = is_string($student->last_name) ? trim($student->last_name) : '';
+                    $fullName = $firstName !== '' || $lastName !== ''
+                        ? trim($firstName.' '.$lastName)
+                        : (is_string($student->name) ? $student->name : '');
+                    $status = is_string($student->status) && $student->status !== '' ? $student->status : 'active';
+                    $program = $hasStudentProgramTable ? $student->studentProgram?->program : null;
+
+                    return [
+                        'id' => $student->id,
+                        'fullName' => $fullName,
+                        'email' => $student->email ?? '',
+                        'program' => $program,
+                        'status' => $status,
+                        'createdAt' => $student->created_at?->format('Y-m-d') ?? '',
+                    ];
+                })
+                ->values();
+        } catch (\Throwable $e) {
+            $enrolledStudents = [];
+        }
+
+        return response()->json([
+            'programSet' => $programSetData,
+            'enrolledStudents' => $enrolledStudents,
+        ]);
+    })->name('instructor.students.details');
+
     Route::post('/students/enroll', EnrollStudentController::class)->name('instructor.students.enroll');
     Route::post('/students/bulk-enroll', BulkEnrollStudentsController::class)->name('instructor.students.bulk-enroll');
     Route::post('/students/unenroll', UnenrollStudentController::class)->name('instructor.students.unenroll');
 
     // Store program set
     Route::post('/program-sets', [\App\Http\Controllers\StoreProgramSetController::class, '__invoke'])->name('instructor.program-sets.store');
+    Route::put('/program-sets/{programSet}', UpdateProgramSetNameController::class)->name('instructor.program-sets.update');
     Route::get('/adviser-assignment', function () {
         return Inertia::render('Instructor/adviser-assignment');
     })->name('instructor.adviser-assignment');

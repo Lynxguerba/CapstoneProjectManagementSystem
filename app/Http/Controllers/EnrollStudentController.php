@@ -17,9 +17,13 @@ class EnrollStudentController extends Controller
     public function __invoke(EnrollStudentRequest $request): RedirectResponse
     {
         $programSetId = $request->integer('program_set_id');
+        $userId = $request->user()?->id;
         $studentId = $request->integer('student_id');
 
         $programSet = ProgramSet::query()->findOrFail($programSetId);
+        if ($userId !== null && $programSet->instructor_id !== $userId) {
+            abort(403);
+        }
         $student = User::query()->with('studentProgram')->findOrFail($studentId);
 
         if (! $student->hasRole('student')) {

@@ -16,6 +16,7 @@ import {
 import React, { useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import AddProgramSetModal from '../../components/Instructor/ProgramSetModal';
+import ProgramSetDetailsModal from '../../components/Instructor/students/ProgramSetDetailsModal';
 import InstructorLayout from './_layout';
 
 const InstructorStudents = () => {
@@ -59,6 +60,8 @@ const InstructorStudents = () => {
     const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
     const [currentPage, setCurrentPage] = useState(1);
     const [isAddProgramSetModalOpen, setIsAddProgramSetModalOpen] = useState(false);
+    const [isProgramSetModalOpen, setIsProgramSetModalOpen] = useState(false);
+    const [selectedProgramSetId, setSelectedProgramSetId] = useState<number | null>(null);
     const itemsPerPage = 6;
 
     // Filter options - build from academic years data
@@ -257,7 +260,14 @@ const InstructorStudents = () => {
 
                                     {/* Actions */}
                                     <div className="flex gap-2">
-                                        <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedProgramSetId(set.id);
+                                                setIsProgramSetModalOpen(true);
+                                            }}
+                                            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700"
+                                        >
                                             <Eye className="h-3 w-3" />
                                             View
                                         </button>
@@ -303,7 +313,14 @@ const InstructorStudents = () => {
                                         <td className="px-6 py-3.5 font-semibold text-slate-800">{set.groups}</td>
                                         <td className="px-6 py-3.5 text-right">
                                             <div className="flex items-center justify-end gap-1">
-                                                <button className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedProgramSetId(set.id);
+                                                        setIsProgramSetModalOpen(true);
+                                                    }}
+                                                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700"
+                                                >
                                                     <Eye className="h-3 w-3" />
                                                     View
                                                 </button>
@@ -404,6 +421,14 @@ const InstructorStudents = () => {
                 )}
             </motion.section>
             <AddProgramSetModal open={isAddProgramSetModalOpen} onClose={() => setIsAddProgramSetModalOpen(false)} />
+            <ProgramSetDetailsModal
+                open={isProgramSetModalOpen}
+                programSetId={selectedProgramSetId}
+                onClose={() => {
+                    setIsProgramSetModalOpen(false);
+                    setSelectedProgramSetId(null);
+                }}
+            />
         </InstructorLayout>
     );
 };

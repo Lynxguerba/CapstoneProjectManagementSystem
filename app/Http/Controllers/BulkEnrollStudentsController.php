@@ -18,7 +18,11 @@ class BulkEnrollStudentsController extends Controller
     public function __invoke(BulkEnrollStudentsRequest $request): RedirectResponse
     {
         $programSetId = $request->integer('program_set_id');
+        $userId = $request->user()?->id;
         $programSet = ProgramSet::query()->findOrFail($programSetId);
+        if ($userId !== null && $programSet->instructor_id !== $userId) {
+            abort(403);
+        }
 
         $studentIds = collect($request->input('rows', []))
             ->pluck('student_id')
