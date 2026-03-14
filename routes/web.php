@@ -185,6 +185,12 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     $query->where('program_sets.id', $programSetModel->id);
                 });
 
+            $studentsQuery->withCount([
+                'programSets as other_program_sets_count' => function (Builder $query) use ($programSetModel): void {
+                    $query->where('program_sets.id', '!=', $programSetModel->id);
+                },
+            ]);
+
             if ($hasStudentProgramTable) {
                 $studentsQuery->with(['studentProgram:id,student_id,program']);
             }
@@ -207,6 +213,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         'name' => $fullName,
                         'email' => $student->email ?? '',
                         'program' => $program,
+                        'isEnrolledInOtherSet' => (int) ($student->other_program_sets_count ?? 0) > 0,
                     ];
                 })
                 ->values();

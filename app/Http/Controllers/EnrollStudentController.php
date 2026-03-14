@@ -46,6 +46,13 @@ class EnrollStudentController extends Controller
             ]);
         }
 
+        $enrolledElsewhere = $student->programSets()->whereKeyNot($programSet->id)->exists();
+        if ($enrolledElsewhere) {
+            throw ValidationException::withMessages([
+                'student_id' => 'This student is already enrolled in another program set.',
+            ]);
+        }
+
         $programSet->students()->attach($student->id);
 
         return back()->with('success', 'Student enrolled successfully.');

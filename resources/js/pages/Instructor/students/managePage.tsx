@@ -27,6 +27,7 @@ type InstructorStudentsManageProps = {
         name: string;
         email: string;
         program?: string | null;
+        isEnrolledInOtherSet?: boolean;
     }[];
     enrolledStudents?: {
         id: number;

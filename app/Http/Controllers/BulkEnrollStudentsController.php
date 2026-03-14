@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\BulkEnrollStudentsRequest;
 use App\Models\ProgramSet;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -49,6 +50,19 @@ class BulkEnrollStudentsController extends Controller
         if ($nonStudents->isNotEmpty()) {
             throw ValidationException::withMessages([
                 'rows' => 'One or more selected users are not students.',
+            ]);
+        }
+
+        $alreadyEnrolledElsewhere = User::query()
+            ->whereIn('id', $studentIds->all())
+            ->whereHas('programSets', function (Builder $query) use ($programSet): void {
+                $query->where('program_sets.id', '!=', $programSet->id);
+            })
+            ->exists();
+
+        if ($alreadyEnrolledElsewhere) {
+            throw ValidationException::withMessages([
+                'rows' => 'One or more selected students are already enrolled in another program set.',
             ]);
         }
 

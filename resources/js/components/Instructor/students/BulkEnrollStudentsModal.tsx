@@ -10,6 +10,7 @@ type StudentOption = {
     name: string;
     email?: string;
     program?: string | null;
+    isEnrolledInOtherSet?: boolean;
 };
 
 type EnrolledStudent = {
@@ -316,6 +317,10 @@ const BulkEnrollStudentsModal = ({
 
             if (matchedStudent && enrolledEmailSet.has(email.toLowerCase())) {
                 issues.push('Student already enrolled in this set.');
+            }
+
+            if (matchedStudent?.isEnrolledInOtherSet) {
+                issues.push('Student already enrolled in another program set.');
             }
 
             const studentProgram = normalizeProgram(matchedStudent?.program);

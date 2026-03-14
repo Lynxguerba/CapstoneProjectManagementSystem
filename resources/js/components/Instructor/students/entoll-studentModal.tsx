@@ -10,6 +10,7 @@ type StudentOption = {
     name: string;
     email: string;
     program?: string | null;
+    isEnrolledInOtherSet?: boolean;
 };
 
 type EnrollStudentModalProps = {
@@ -127,11 +128,12 @@ const EnrollStudentModal = ({
     const hasStudentProgram = normalizedStudentProgram !== '';
     const programMatches = hasSectionProgram && hasStudentProgram && normalizedStudentProgram === normalizedSectionProgram;
     const programMismatch = selectedStudent !== null && hasSectionProgram && (!hasStudentProgram || !programMatches);
+    const enrolledElsewhere = selectedStudent?.isEnrolledInOtherSet === true;
 
     const submitForm = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        if (!enrollForm.data.student_id || programMismatch) {
+        if (!enrollForm.data.student_id || programMismatch || enrolledElsewhere) {
             return;
         }
 
@@ -238,11 +240,16 @@ const EnrollStudentModal = ({
                                             key={student.id}
                                             type="button"
                                             onClick={() => handleSelectStudent(student)}
-                                            disabled={enrollForm.processing}
-                                            className="flex w-full flex-col border-b border-slate-100 px-4 py-2.5 text-left transition-colors hover:bg-emerald-50 last:border-b-0"
+                                            disabled={enrollForm.processing || student.isEnrolledInOtherSet === true}
+                                            className={`flex w-full flex-col border-b border-slate-100 px-4 py-2.5 text-left transition-colors last:border-b-0 ${
+                                                student.isEnrolledInOtherSet === true ? 'cursor-not-allowed bg-rose-50/60' : 'hover:bg-emerald-50'
+                                            }`}
                                         >
                                             <span className="text-sm font-medium text-slate-800">{resolveStudentName(student)}</span>
                                             <span className="text-xs text-slate-500">{student.email}</span>
+                                            {student.isEnrolledInOtherSet ? (
+                                                <span className="text-xs font-semibold text-rose-600">Already enrolled in another set</span>
+                                            ) : null}
                                         </button>
                                     ))
                                 )}
@@ -285,6 +292,9 @@ const EnrollStudentModal = ({
                                 {selectedStudent && programMismatch ? (
                                     <p className="text-rose-600">Student program does not match the selected section.</p>
                                 ) : null}
+                                {selectedStudent && enrolledElsewhere ? (
+                                    <p className="text-rose-600">Student is already enrolled in another program set.</p>
+                                ) : null}
                             </div>
                         </div>
                     </div>
@@ -300,7 +310,7 @@ const EnrollStudentModal = ({
                         </button>
                         <button
                             type="submit"
-                            disabled={enrollForm.processing || !selectedStudent || programMismatch}
+                            disabled={enrollForm.processing || !selectedStudent || programMismatch || enrolledElsewhere}
                             className="rounded-lg bg-emerald-600 px-5 py-2 font-medium text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {enrollForm.processing ? 'Enrolling...' : 'Enroll Student'}

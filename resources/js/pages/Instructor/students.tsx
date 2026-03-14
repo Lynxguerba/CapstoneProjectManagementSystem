@@ -26,6 +26,7 @@ const InstructorStudents = () => {
         program: string;
         school_year: string;
         instructor_name?: string;
+        students_count?: number;
     }[];
 
     // Academic years from backend (same as ProgramSetModal)
@@ -40,7 +41,7 @@ const InstructorStudents = () => {
         name: ps.name ?? `${ps.program} ${ps.school_year}`,
         program: ps.program,
         schoolYear: ps.school_year,
-        totalStudents: 0,
+        totalStudents: ps.students_count ?? 0,
         groups: 0,
         status: 'Active',
         description:
