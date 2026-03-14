@@ -7,6 +7,7 @@ use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\UpdateAdviserPasswordController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\BulkEnrollStudentsController;
 use App\Http\Controllers\EnrollStudentController;
 use App\Http\Controllers\UnenrollStudentController;
 use App\Models\ProgramSet;
@@ -79,16 +80,29 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         $programSets = [];
         try {
             if (class_exists(\App\Models\ProgramSet::class) && \Illuminate\Support\Facades\Schema::hasTable('program_sets')) {
-                $programSets = \App\Models\ProgramSet::query()
+                $hasProgramSetStudentTable = \Illuminate\Support\Facades\Schema::hasTable('program_set_student');
+
+                $programSetsQuery = \App\Models\ProgramSet::query()
                     ->with(['academicYear', 'instructor'])
                     ->orderByDesc('created_at')
-                    ->get(['id', 'name', 'program', 'academic_year_id', 'instructor_id'])
+                    ->get(['id', 'name', 'program', 'academic_year_id', 'instructor_id']);
+
+                if ($hasProgramSetStudentTable) {
+                    $programSetsQuery = \App\Models\ProgramSet::query()
+                        ->with(['academicYear', 'instructor'])
+                        ->withCount('students')
+                        ->orderByDesc('created_at')
+                        ->get(['id', 'name', 'program', 'academic_year_id', 'instructor_id']);
+                }
+
+                $programSets = $programSetsQuery
                     ->map(fn ($ps) => [
                         'id' => $ps->id,
                         'name' => $ps->name,
                         'program' => $ps->program,
                         'school_year' => $ps->academicYear?->label,
                         'instructor_name' => $ps->instructor?->name,
+                        'students_count' => $hasProgramSetStudentTable ? ($ps->students_count ?? 0) : 0,
                     ])->all();
             }
         } catch (\Throwable $e) {
@@ -173,12 +187,6 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
             if ($hasStudentProgramTable) {
                 $studentsQuery->with(['studentProgram:id,student_id,program']);
-
-                if (is_string($programSetData['program']) && $programSetData['program'] !== '') {
-                    $studentsQuery->whereHas('studentProgram', function (Builder $programQuery) use ($programSetData): void {
-                        $programQuery->where('program', $programSetData['program']);
-                    });
-                }
             }
 
             $availableStudents = $studentsQuery
@@ -215,6 +223,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
     })->name('instructor.students.manage');
 
     Route::post('/students/enroll', EnrollStudentController::class)->name('instructor.students.enroll');
+    Route::post('/students/bulk-enroll', BulkEnrollStudentsController::class)->name('instructor.students.bulk-enroll');
     Route::post('/students/unenroll', UnenrollStudentController::class)->name('instructor.students.unenroll');
 
     // Store program set

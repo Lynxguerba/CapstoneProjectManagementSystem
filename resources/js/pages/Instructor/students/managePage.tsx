@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ChevronRight, Search, Upload, UserMinus, UserPlus } from 'lucide-react';
 import React from 'react';
 import EnrollStudentModal from '../../../components/Instructor/students/entoll-studentModal';
+import BulkEnrollStudentsModal from '../../../components/Instructor/students/BulkEnrollStudentsModal';
 import UnenrollStudentModal from '../../../components/Instructor/students/UnenrollStudentModal';
 import InstructorLayout from '../_layout';
 
@@ -46,6 +47,7 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
     const [status, setStatus] = React.useState<StudentFilterStatus>('all');
     const [currentPage, setCurrentPage] = React.useState(1);
     const [isEnrollModalOpen, setIsEnrollModalOpen] = React.useState(false);
+    const [isBulkEnrollModalOpen, setIsBulkEnrollModalOpen] = React.useState(false);
     const [isUnenrollModalOpen, setIsUnenrollModalOpen] = React.useState(false);
     const [selectedStudent, setSelectedStudent] = React.useState<{ id: number; name: string } | null>(null);
     const [processingStudentId, setProcessingStudentId] = React.useState<number | null>(null);
@@ -173,6 +175,7 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
+                            onClick={() => setIsBulkEnrollModalOpen(true)}
                             className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900"
                         >
                             <Upload className="h-3.5 w-3.5" />
@@ -305,6 +308,15 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
                     programSetName={sectionName}
                     programSetProgram={sectionProgram}
                     availableStudents={availableStudents}
+                />
+                <BulkEnrollStudentsModal
+                    open={isBulkEnrollModalOpen}
+                    onClose={() => setIsBulkEnrollModalOpen(false)}
+                    programSetId={programSet?.id ?? 0}
+                    programSetName={sectionName}
+                    programSetProgram={sectionProgram}
+                    availableStudents={availableStudents}
+                    enrolledStudents={enrolledStudents}
                 />
                 <UnenrollStudentModal
                     open={isUnenrollModalOpen}
