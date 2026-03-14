@@ -7,7 +7,6 @@ import {
     Upload,
     Plus,
     Eye,
-    Edit3,
     Users,
     Calendar,
     GraduationCap,
@@ -15,7 +14,7 @@ import {
     LayoutGrid,
 } from 'lucide-react';
 import React, { useState } from 'react';
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import AddProgramSetModal from '../../components/Instructor/ProgramSetModal';
 import InstructorLayout from './_layout';
 
@@ -103,6 +102,16 @@ const InstructorStudents = () => {
     return (
         <InstructorLayout title="Students Management" subtitle="Manage student records by program">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
+                <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+                    <Link href="/instructor/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <span className="font-semibold text-slate-800" aria-current="page">
+                        Students
+                    </span>
+                </nav>
+
                 {/* Action Bar */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex flex-wrap items-center gap-2">
@@ -251,10 +260,13 @@ const InstructorStudents = () => {
                                             <Eye className="h-3 w-3" />
                                             View
                                         </button>
-                                        <button className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-700 px-2.5 py-1.5 text-[11px] font-bold text-white transition-all hover:bg-green-800 active:scale-95">
-                                            <Edit3 className="h-3 w-3" />
-                                            Edit
-                                        </button>
+                                        <Link
+                                            href={`/instructor/students/${set.id}/manage`}
+                                            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-700 px-2.5 py-1.5 text-[11px] font-bold text-white transition-all hover:bg-green-800 active:scale-95"
+                                        >
+                                            <Settings className="h-3 w-3" />
+                                            Manage
+                                        </Link>
                                     </div>
                                 </div>
                             </motion.div>
@@ -294,10 +306,13 @@ const InstructorStudents = () => {
                                                     <Eye className="h-3 w-3" />
                                                     View
                                                 </button>
-                                                <button className="inline-flex items-center gap-1 rounded-md bg-green-700 px-2 py-1 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-green-800 active:scale-95">
-                                                    <Edit3 className="h-3 w-3" />
-                                                    Edit
-                                                </button>
+                                                <Link
+                                                    href={`/instructor/students/${set.id}/manage`}
+                                                    className="inline-flex items-center gap-1 rounded-md bg-green-700 px-2 py-1 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-green-800 active:scale-95"
+                                                >
+                                                    <Settings className="h-3 w-3" />
+                                                    Manage
+                                                </Link>
                                             </div>
                                         </td>
                                     </tr>

@@ -7,8 +7,10 @@ use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\UpdateAdviserPasswordController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Models\ProgramSet;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 
 //
@@ -91,6 +93,40 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
         return Inertia::render('Instructor/students', ['programSets' => $programSets]);
     })->name('instructor.students');
+
+    Route::get('/students/{programSet}/manage', function (string $programSet) {
+        $programSetData = null;
+
+        try {
+            if (class_exists(ProgramSet::class) && Schema::hasTable('program_sets')) {
+                $programSetModel = ProgramSet::query()
+                    ->with(['academicYear', 'instructor'])
+                    ->find($programSet);
+
+                if ($programSetModel !== null) {
+                    $fallbackName = trim(($programSetModel->program ?? '').' '.($programSetModel->academicYear?->label ?? ''));
+
+                    $programSetData = [
+                        'id' => $programSetModel->id,
+                        'name' => $programSetModel->name !== null && $programSetModel->name !== '' ? $programSetModel->name : $fallbackName,
+                        'program' => $programSetModel->program,
+                        'school_year' => $programSetModel->academicYear?->label,
+                        'instructor_name' => $programSetModel->instructor?->name,
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            $programSetData = null;
+        }
+
+        if ($programSetData === null) {
+            return redirect()->route('instructor.students');
+        }
+
+        return Inertia::render('Instructor/students/managePage', [
+            'programSet' => $programSetData,
+        ]);
+    })->name('instructor.students.manage');
 
     // Store program set
     Route::post('/program-sets', [\App\Http\Controllers\StoreProgramSetController::class, '__invoke'])->name('instructor.program-sets.store');
