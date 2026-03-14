@@ -1,8 +1,9 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Search, Upload, UserPlus } from 'lucide-react';
+import { ChevronRight, Search, Upload, UserMinus, UserPlus } from 'lucide-react';
 import React from 'react';
 import EnrollStudentModal from '../../../components/Instructor/students/entoll-studentModal';
+import UnenrollStudentModal from '../../../components/Instructor/students/UnenrollStudentModal';
 import InstructorLayout from '../_layout';
 
 type StudentStatus = 'active' | 'inactive';
@@ -45,6 +46,9 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
     const [status, setStatus] = React.useState<StudentFilterStatus>('all');
     const [currentPage, setCurrentPage] = React.useState(1);
     const [isEnrollModalOpen, setIsEnrollModalOpen] = React.useState(false);
+    const [isUnenrollModalOpen, setIsUnenrollModalOpen] = React.useState(false);
+    const [selectedStudent, setSelectedStudent] = React.useState<{ id: number; name: string } | null>(null);
+    const [processingStudentId, setProcessingStudentId] = React.useState<number | null>(null);
     const usersPerPage = 10;
 
     const filteredUsers = React.useMemo(() => {
@@ -90,6 +94,35 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
     const subtitle = sectionMeta
         ? `Manage enrollments for ${sectionName} (${sectionMeta})`
         : `Manage enrollments for ${sectionName}`;
+
+    const handleUnenrollRequest = (studentId: number, studentName: string) => {
+        setSelectedStudent({ id: studentId, name: studentName });
+        setIsUnenrollModalOpen(true);
+    };
+
+    const handleConfirmUnenroll = () => {
+        if (!programSet?.id || !selectedStudent) {
+            return;
+        }
+
+        setProcessingStudentId(selectedStudent.id);
+
+        router.post(
+            '/instructor/students/unenroll',
+            {
+                student_id: selectedStudent.id,
+                program_set_id: programSet.id,
+            },
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setProcessingStudentId(null);
+                    setIsUnenrollModalOpen(false);
+                    setSelectedStudent(null);
+                },
+            },
+        );
+    };
 
     return (
         <InstructorLayout title="Students Management" subtitle={subtitle}>
@@ -199,10 +232,12 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
                                     <td className="px-6 py-3.5 text-right">
                                         <button
                                             type="button"
-                                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700"
+                                            onClick={() => handleUnenrollRequest(user.id, user.fullName)}
+                                            disabled={processingStudentId === user.id}
+                                            className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-rose-600 shadow-sm transition-all hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
-                                            <UserPlus className="h-3 w-3" />
-                                            Enroll
+                                            <UserMinus className="h-3 w-3" />
+                                            {processingStudentId === user.id ? 'Unenrolling...' : 'Unenroll'}
                                         </button>
                                     </td>
                                 </tr>
@@ -270,6 +305,21 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
                     programSetName={sectionName}
                     programSetProgram={sectionProgram}
                     availableStudents={availableStudents}
+                />
+                <UnenrollStudentModal
+                    open={isUnenrollModalOpen}
+                    onClose={() => {
+                        if (processingStudentId !== null) {
+                            return;
+                        }
+
+                        setIsUnenrollModalOpen(false);
+                        setSelectedStudent(null);
+                    }}
+                    onConfirm={handleConfirmUnenroll}
+                    processing={processingStudentId !== null}
+                    studentName={selectedStudent?.name ?? 'this student'}
+                    sectionName={sectionName}
                 />
             </motion.section>
         </InstructorLayout>

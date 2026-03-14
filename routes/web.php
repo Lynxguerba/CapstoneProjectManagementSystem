@@ -8,6 +8,7 @@ use App\Http\Controllers\Adviser\UpdateAdviserPasswordController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\EnrollStudentController;
+use App\Http\Controllers\UnenrollStudentController;
 use App\Models\ProgramSet;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -214,6 +215,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
     })->name('instructor.students.manage');
 
     Route::post('/students/enroll', EnrollStudentController::class)->name('instructor.students.enroll');
+    Route::post('/students/unenroll', UnenrollStudentController::class)->name('instructor.students.unenroll');
 
     // Store program set
     Route::post('/program-sets', [\App\Http\Controllers\StoreProgramSetController::class, '__invoke'])->name('instructor.program-sets.store');
