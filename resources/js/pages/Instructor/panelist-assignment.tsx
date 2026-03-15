@@ -38,7 +38,7 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
     const [selectedPanelist, setSelectedPanelist] = React.useState<PanelistRow | null>(null);
     const [isGroupsModalOpen, setIsGroupsModalOpen] = React.useState(false);
     const [currentPage, setCurrentPage] = React.useState(1);
-    const itemsPerPage = 6;
+    const itemsPerPage = 10;
 
     const academicYearOptions = React.useMemo(() => {
         const years = academicYears.map((year) => year.label);

@@ -41,6 +41,11 @@ class Group extends Model
         return $this->hasOne(GroupAdviser::class);
     }
 
+    public function defenseSchedules(): HasMany
+    {
+        return $this->hasMany(DefenseSchedule::class);
+    }
+
     public function panelAssignments(): HasMany
     {
         return $this->hasMany(GroupPanelist::class);

@@ -11,9 +11,12 @@ use App\Http\Controllers\AssignGroupPanelistController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BulkEnrollStudentsController;
 use App\Http\Controllers\EnrollStudentController;
+use App\Http\Controllers\StoreDefenseRoomController;
 use App\Http\Controllers\UnenrollStudentController;
+use App\Http\Controllers\UpdateDefenseScheduleStatusController;
 use App\Http\Controllers\UpdateGroupMembersController;
 use App\Http\Controllers\UpdateProgramSetNameController;
+use App\Http\Controllers\UpsertDefenseScheduleController;
 use App\Models\AcademicYear;
 use App\Models\ProgramSet;
 use App\Models\User;
@@ -1085,8 +1088,161 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
     })->name('instructor.panelist-assignment.groups');
     Route::post('/panelist-assignment/assign', AssignGroupPanelistController::class)->name('instructor.panelist-assignment.assign');
     Route::get('/scheduling', function () {
-        return Inertia::render('Instructor/scheduling');
+        $userId = Auth::guard('web')->id();
+        $groups = [];
+        $rooms = [];
+        $schedules = [];
+
+        $resolveUserName = static function (?User $user): string {
+            if (! $user) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $fullName = $firstName !== '' || $lastName !== ''
+                ? trim($firstName.' '.$lastName)
+                : (is_string($user->name) ? $user->name : '');
+
+            return $fullName;
+        };
+
+        try {
+            if (class_exists(\App\Models\DefenseRoom::class) && Schema::hasTable('defense_rooms')) {
+                $rooms = \App\Models\DefenseRoom::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'capacity', 'is_active'])
+                    ->map(fn (\App\Models\DefenseRoom $room): array => [
+                        'id' => $room->id,
+                        'name' => $room->name,
+                        'capacity' => $room->capacity,
+                        'is_active' => $room->is_active,
+                    ])
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $rooms = [];
+        }
+
+        try {
+            if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups')) {
+                $groups = \App\Models\Group::query()
+                    ->with(['programSet.academicYear', 'leader', 'panelAssignments.panelist'])
+                    ->when($userId !== null, function ($query) use ($userId) {
+                        $query->whereHas('programSet', fn ($subQuery) => $subQuery->where('instructor_id', $userId));
+                    })
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->map(function (\App\Models\Group $group) use ($resolveUserName): array {
+                        $programSet = $group->programSet;
+                        $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
+                        $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+                        $leaderName = $resolveUserName($group->leader);
+                        $panelists = $group->panelAssignments
+                            ->sortBy('panel_slot')
+                            ->map(function (\App\Models\GroupPanelist $assignment) use ($resolveUserName): array {
+                                $panelist = $assignment->panelist;
+                                $panelistName = $resolveUserName($panelist);
+
+                                return [
+                                    'id' => $panelist?->id,
+                                    'name' => $panelistName !== '' ? $panelistName : null,
+                                    'slot' => $assignment->panel_slot,
+                                ];
+                            })
+                            ->values()
+                            ->all();
+
+                        return [
+                            'id' => $group->id,
+                            'name' => $group->name,
+                            'program_set_name' => $programSet?->name ?: $fallbackName,
+                            'program' => $programSet?->program,
+                            'school_year' => $schoolYear,
+                            'leader_name' => $leaderName !== '' ? $leaderName : null,
+                            'panelists' => $panelists,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $groups = [];
+        }
+
+        try {
+            if (class_exists(\App\Models\DefenseSchedule::class) && Schema::hasTable('defense_schedules')) {
+                $schedules = \App\Models\DefenseSchedule::query()
+                    ->with(['group.programSet.academicYear', 'group.panelAssignments.panelist', 'room'])
+                    ->when($userId !== null, function ($query) use ($userId) {
+                        $query->whereHas('group.programSet', fn ($subQuery) => $subQuery->where('instructor_id', $userId));
+                    })
+                    ->orderBy('scheduled_date')
+                    ->orderBy('start_time')
+                    ->get()
+                    ->map(function (\App\Models\DefenseSchedule $schedule) use ($resolveUserName): array {
+                        $group = $schedule->group;
+                        $programSet = $group?->programSet;
+                        $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
+                        $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+                        $panelists = $group?->panelAssignments
+                            ? $group->panelAssignments
+                                ->sortBy('panel_slot')
+                                ->map(function (\App\Models\GroupPanelist $assignment) use ($resolveUserName): array {
+                                    $panelist = $assignment->panelist;
+                                    $panelistName = $resolveUserName($panelist);
+
+                                    return [
+                                        'id' => $panelist?->id,
+                                        'name' => $panelistName !== '' ? $panelistName : null,
+                                        'slot' => $assignment->panel_slot,
+                                    ];
+                                })
+                                ->values()
+                                ->all()
+                            : [];
+
+                        return [
+                            'id' => $schedule->id,
+                            'group_id' => $group?->id,
+                            'group_name' => $group?->name,
+                            'program_set_name' => $programSet?->name ?: $fallbackName,
+                            'program' => $programSet?->program,
+                            'school_year' => $schoolYear,
+                            'stage' => $schedule->stage,
+                            'status' => $schedule->status,
+                            'scheduled_date' => $schedule->scheduled_date?->format('Y-m-d'),
+                            'start_time' => $schedule->start_time,
+                            'end_time' => $schedule->end_time,
+                            'notes' => $schedule->notes,
+                            'room' => $schedule->room
+                                ? [
+                                    'id' => $schedule->room->id,
+                                    'name' => $schedule->room->name,
+                                    'capacity' => $schedule->room->capacity,
+                                    'is_active' => $schedule->room->is_active,
+                                ]
+                                : null,
+                            'panelists' => $panelists,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $schedules = [];
+        }
+
+        return Inertia::render('Instructor/scheduling', [
+            'groups' => $groups,
+            'rooms' => $rooms,
+            'schedules' => $schedules,
+        ]);
     })->name('instructor.scheduling');
+    Route::post('/defense-rooms', StoreDefenseRoomController::class)->name('instructor.defense-rooms.store');
+    Route::post('/defense-schedules', UpsertDefenseScheduleController::class)->name('instructor.defense-schedules.upsert');
+    Route::patch('/defense-schedules/{schedule}/status', UpdateDefenseScheduleStatusController::class)
+        ->name('instructor.defense-schedules.status');
     Route::get('/titles', function () {
         return Inertia::render('Instructor/titles');
     })->name('instructor.titles');

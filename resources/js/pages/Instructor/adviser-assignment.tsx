@@ -41,7 +41,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
     const [isGroupsModalOpen, setIsGroupsModalOpen] = React.useState(false);
     const [statusFilter, setStatusFilter] = React.useState<'all' | 'available' | 'partial' | 'full'>('all');
     const [currentPage, setCurrentPage] = React.useState(1);
-    const itemsPerPage = 6;
+    const itemsPerPage = 9;
 
     const academicYearOptions = React.useMemo(() => {
         const years = academicYears.map((year) => year.label);
