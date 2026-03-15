@@ -14,8 +14,6 @@ import {
     XCircle,
 } from 'lucide-react';
 import React from 'react';
-import AddDefenseRoomModal from '../../components/Instructor/scheduling/AddDefenseRoomModal';
-import ScheduleDefenseModal from '../../components/Instructor/scheduling/ScheduleDefenseModal';
 import defenseSchedules from '../../routes/instructor/defense-schedules';
 import instructorRoutes from '../../routes/instructor';
 import InstructorLayout from './_layout';
@@ -47,6 +45,7 @@ type RoomRow = {
     name: string;
     capacity: number;
     is_active: boolean;
+    notes?: string | null;
 };
 
 type ScheduleRow = {
@@ -63,6 +62,11 @@ type ScheduleRow = {
     end_time?: string | null;
     notes?: string | null;
     room?: RoomRow | null;
+    manager?: {
+        id?: number | null;
+        name?: string | null;
+    } | null;
+    can_manage?: boolean;
     panelists?: PanelistSummary[];
 };
 
@@ -203,14 +207,6 @@ const SchedulingPage = () => {
         return new Date(now.getFullYear(), now.getMonth(), 1);
     });
     const [selectedDate, setSelectedDate] = React.useState(() => new Date());
-
-    const [isScheduleModalOpen, setIsScheduleModalOpen] = React.useState(false);
-    const [selectedSchedule, setSelectedSchedule] = React.useState<ScheduleRow | null>(null);
-    const [defaultScheduleDate, setDefaultScheduleDate] = React.useState<string | undefined>(undefined);
-    const [defaultRoomId, setDefaultRoomId] = React.useState<number | null>(null);
-    const [defaultStage, setDefaultStage] = React.useState<string | undefined>(undefined);
-
-    const [isRoomModalOpen, setIsRoomModalOpen] = React.useState(false);
 
     const programOptions = React.useMemo(() => {
         const set = new Set<string>();
@@ -407,26 +403,6 @@ const SchedulingPage = () => {
             .map((item) => item.schedule);
     }, [filteredSchedules]);
 
-    const roomSummaries = React.useMemo(() => {
-        const now = new Date();
-        const todayKey = toDateKey(now);
-
-        return rooms.map((room) => {
-            const roomSchedules = baseFilteredSchedules.filter((schedule) => schedule.room?.id === room.id);
-            const todaySchedules = roomSchedules.filter((schedule) => schedule.scheduled_date === todayKey);
-            const nextSchedule = roomSchedules
-                .map((schedule) => ({ schedule, dateTime: scheduleDateTime(schedule) }))
-                .filter((item) => item.dateTime !== null && item.dateTime >= now)
-                .sort((a, b) => (a.dateTime?.getTime() ?? 0) - (b.dateTime?.getTime() ?? 0))[0]?.schedule;
-
-            return {
-                room,
-                todayCount: todaySchedules.length,
-                nextSchedule,
-            };
-        });
-    }, [rooms, baseFilteredSchedules]);
-
     const roomConflicts = React.useMemo(() => {
         const conflicts = new Map<number, boolean>();
 
@@ -461,20 +437,35 @@ const SchedulingPage = () => {
 
     const hasConflicts = Array.from(roomConflicts.values()).some(Boolean);
 
-    const openNewSchedule = (options?: { date?: string; roomId?: number | null }) => {
-        setSelectedSchedule(null);
-        setDefaultScheduleDate(options?.date ?? selectedDateKey);
-        setDefaultRoomId(options?.roomId ?? selectedRoomId);
-        setDefaultStage(selectedStage !== 'All' ? selectedStage : undefined);
-        setIsScheduleModalOpen(true);
+    const scheduleManagerBaseUrl = '/instructor/scheduling/manage';
+    const roomsManagerUrl = '/instructor/scheduling/rooms';
+
+    const buildScheduleManagerUrl = (options?: { scheduleId?: number; date?: string; roomId?: number | null; stage?: string }) => {
+        const params = new URLSearchParams();
+
+        if (options?.scheduleId) {
+            params.set('schedule', String(options.scheduleId));
+        }
+
+        if (options?.date) {
+            params.set('date', options.date);
+        }
+
+        if (options?.roomId) {
+            params.set('room', String(options.roomId));
+        }
+
+        if (options?.stage) {
+            params.set('stage', options.stage);
+        }
+
+        const query = params.toString();
+
+        return query ? `${scheduleManagerBaseUrl}?${query}` : scheduleManagerBaseUrl;
     };
 
-    const openEditSchedule = (schedule: ScheduleRow) => {
-        setSelectedSchedule(schedule);
-        setDefaultScheduleDate(undefined);
-        setDefaultRoomId(null);
-        setDefaultStage(undefined);
-        setIsScheduleModalOpen(true);
+    const visitScheduleManager = (options?: { scheduleId?: number; date?: string; roomId?: number | null; stage?: string }) => {
+        router.visit(buildScheduleManagerUrl(options));
     };
 
     const updateScheduleStatus = (schedule: ScheduleRow, status: string) => {
@@ -556,6 +547,22 @@ const SchedulingPage = () => {
                                 ))}
                             </select>
                         </div>
+                        <div className="relative">
+                            <select
+                                value={selectedRoomId ? String(selectedRoomId) : ''}
+                                onChange={(event) =>
+                                    setSelectedRoomId(event.target.value ? Number(event.target.value) : null)
+                                }
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-4 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                            >
+                                <option value="">All Rooms</option>
+                                {rooms.map((room) => (
+                                    <option key={room.id} value={room.id}>
+                                        {room.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                         {activeRoom ? (
                             <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
                                 Room filter: {activeRoom.name}
@@ -573,20 +580,24 @@ const SchedulingPage = () => {
                     <div className="flex flex-wrap items-center gap-2">
                         <button
                             type="button"
-                            onClick={() => openNewSchedule()}
+                            onClick={() =>
+                                visitScheduleManager({
+                                    roomId: selectedRoomId,
+                                    stage: selectedStage !== 'All' ? selectedStage : undefined,
+                                })
+                            }
                             className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                         >
                             <Plus className="h-3.5 w-3.5" />
                             Schedule Defense
                         </button>
-                        <button
-                            type="button"
-                            onClick={() => setIsRoomModalOpen(true)}
+                        <Link
+                            href={roomsManagerUrl}
                             className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
                         >
                             <DoorOpen className="h-3.5 w-3.5" />
                             Manage Rooms
-                        </button>
+                        </Link>
                         <button
                             type="button"
                             disabled
@@ -743,7 +754,7 @@ const SchedulingPage = () => {
                                                     key={schedule.id}
                                                     onClick={(event) => {
                                                         event.stopPropagation();
-                                                        openEditSchedule(schedule);
+                                                        visitScheduleManager({ scheduleId: schedule.id });
                                                     }}
                                                     className={`cursor-pointer rounded-md border-l-4 px-2 py-1 text-[10px] ${style.event}`}
                                                 >
@@ -768,11 +779,17 @@ const SchedulingPage = () => {
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div>
                                     <h3 className="text-base font-semibold text-slate-800">Schedules on {formatDateLabel(selectedDateKey)}</h3>
-                                    <p className="text-xs text-slate-500">Tap a schedule to edit or update status.</p>
+                                    <p className="text-xs text-slate-500">View schedules and update those you manage.</p>
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => openNewSchedule({ date: selectedDateKey })}
+                                    onClick={() =>
+                                        visitScheduleManager({
+                                            date: selectedDateKey,
+                                            roomId: selectedRoomId,
+                                            stage: selectedStage !== 'All' ? selectedStage : undefined,
+                                        })
+                                    }
                                     className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
                                 >
                                     <Plus className="h-3.5 w-3.5" />
@@ -780,58 +797,88 @@ const SchedulingPage = () => {
                                 </button>
                             </div>
 
-                            <div className="mt-4 space-y-3">
-                                {daySchedules.length === 0 ? (
-                                    <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500">
-                                        No defenses scheduled for this day.
-                                    </div>
-                                ) : (
-                                    daySchedules.map((schedule) => {
-                                        const status = schedule.status ?? 'Scheduled';
-                                        const style = statusStyles[status] ?? statusStyles.Scheduled;
+                            {daySchedules.length === 0 ? (
+                                <div className="mt-4 rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500">
+                                    No defenses scheduled for this day.
+                                </div>
+                            ) : (
+                                <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
+                                    <table className="w-full text-left text-xs">
+                                        <thead className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                                            <tr>
+                                                <th className="px-4 py-3">Group</th>
+                                                <th className="px-4 py-3">Stage</th>
+                                                <th className="px-4 py-3">Room &amp; Time</th>
+                                                <th className="px-4 py-3">Status</th>
+                                                <th className="px-4 py-3">Managed By</th>
+                                                <th className="px-4 py-3 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {daySchedules.map((schedule, index) => {
+                                                const status = schedule.status ?? 'Scheduled';
+                                                const style = statusStyles[status] ?? statusStyles.Scheduled;
+                                                const canManage = schedule.can_manage ?? false;
+                                                const managerName = schedule.manager?.name ?? 'Unassigned';
 
-                                        return (
-                                            <div
-                                                key={schedule.id}
-                                                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 transition hover:bg-slate-50"
-                                            >
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-sm font-semibold text-slate-800">{schedule.group_name ?? 'Unnamed group'}</span>
-                                                    <span className="text-[11px] text-slate-500">
-                                                        {schedule.program_set_name ?? 'Program set'} • {schedule.stage ?? 'Stage'}
-                                                    </span>
-                                                    <span className="text-[11px] text-slate-500">
-                                                        {schedule.room?.name ?? 'No room'} • {formatTimeRange(schedule.start_time, schedule.end_time)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${style.badge}`}>
-                                                        {status}
-                                                    </span>
-                                                    <select
-                                                        value={status}
-                                                        onChange={(event) => updateScheduleStatus(schedule, event.target.value)}
-                                                        className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600"
+                                                return (
+                                                    <tr
+                                                        key={schedule.id}
+                                                        className={`transition-colors hover:bg-emerald-50/30 ${
+                                                            index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'
+                                                        }`}
                                                     >
-                                                        {['Scheduled', 'Pending', 'Completed', 'Cancelled'].map((option) => (
-                                                            <option key={option} value={option}>
-                                                                {option}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openEditSchedule(schedule)}
-                                                        className="rounded-lg border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </div>
+                                                        <td className="px-4 py-3">
+                                                            <div className="font-semibold text-slate-800">
+                                                                {schedule.group_name ?? 'Unnamed group'}
+                                                            </div>
+                                                            <div className="text-[10px] text-slate-500">
+                                                                {schedule.program_set_name ?? 'Program set'}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-slate-600">{schedule.stage ?? 'Stage'}</td>
+                                                        <td className="px-4 py-3 text-slate-600">
+                                                            <div className="font-semibold text-slate-800">{schedule.room?.name ?? 'No room'}</div>
+                                                            <div className="text-[10px] text-slate-500">
+                                                                {formatTimeRange(schedule.start_time, schedule.end_time)}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <span
+                                                                className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${style.badge}`}
+                                                            >
+                                                                {status}
+                                                            </span>
+                                                            <select
+                                                                value={status}
+                                                                onChange={(event) => updateScheduleStatus(schedule, event.target.value)}
+                                                                disabled={!canManage}
+                                                                className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                                            >
+                                                                {['Scheduled', 'Pending', 'Completed', 'Cancelled'].map((option) => (
+                                                                    <option key={option} value={option}>
+                                                                        {option}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-slate-600">{managerName}</td>
+                                                        <td className="px-4 py-3 text-right">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => visitScheduleManager({ scheduleId: schedule.id })}
+                                                                className="rounded-lg border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100"
+                                                            >
+                                                                {canManage ? 'Edit' : 'View'}
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
 
                         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -842,7 +889,12 @@ const SchedulingPage = () => {
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => openNewSchedule()}
+                                    onClick={() =>
+                                        visitScheduleManager({
+                                            roomId: selectedRoomId,
+                                            stage: selectedStage !== 'All' ? selectedStage : undefined,
+                                        })
+                                    }
                                     className="text-xs font-semibold text-emerald-600 hover:text-emerald-700"
                                 >
                                     Schedule another →
@@ -858,6 +910,8 @@ const SchedulingPage = () => {
                                     upcomingSchedules.map((schedule) => {
                                         const status = schedule.status ?? 'Scheduled';
                                         const style = statusStyles[status] ?? statusStyles.Scheduled;
+                                        const canManage = schedule.can_manage ?? false;
+                                        const managerName = schedule.manager?.name ?? 'Unassigned';
 
                                         return (
                                             <div
@@ -871,6 +925,7 @@ const SchedulingPage = () => {
                                                         <p className="text-[11px] text-slate-500">
                                                             {schedule.program_set_name ?? 'Program set'} • {schedule.room?.name ?? 'No room'}
                                                         </p>
+                                                        <p className="text-[11px] text-slate-500">Managed by {managerName}</p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
@@ -884,18 +939,20 @@ const SchedulingPage = () => {
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         type="button"
-                                                        onClick={() => openEditSchedule(schedule)}
+                                                        onClick={() => visitScheduleManager({ scheduleId: schedule.id })}
                                                         className="text-xs font-semibold text-emerald-600 transition hover:text-emerald-800"
                                                     >
-                                                        Edit
+                                                        {canManage ? 'Edit' : 'View'}
                                                     </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => updateScheduleStatus(schedule, 'Cancelled')}
-                                                        className="text-xs font-semibold text-rose-600 transition hover:text-rose-700"
-                                                    >
-                                                        Cancel
-                                                    </button>
+                                                    {canManage ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => updateScheduleStatus(schedule, 'Cancelled')}
+                                                            className="text-xs font-semibold text-rose-600 transition hover:text-rose-700"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    ) : null}
                                                 </div>
                                             </div>
                                         );
@@ -905,72 +962,8 @@ const SchedulingPage = () => {
                         </div>
                     </div>
 
-                    <div className="space-y-6">
-                        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-base font-semibold text-slate-800">Defense Rooms</h3>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsRoomModalOpen(true)}
-                                    className="text-xs font-semibold text-emerald-600 hover:text-emerald-700"
-                                >
-                                    Add room →
-                                </button>
-                            </div>
-
-                            <div className="mt-4 space-y-3">
-                                {roomSummaries.map(({ room, todayCount, nextSchedule }) => {
-                                    const nextTime = nextSchedule ? formatTime(nextSchedule.start_time) : 'Available';
-
-                                    return (
-                                        <div key={room.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="text-sm font-semibold text-slate-800">{room.name}</h4>
-                                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                                                    Cap {room.capacity}
-                                                </span>
-                                            </div>
-                                            <div className="mt-2 space-y-1 text-[11px] text-slate-600">
-                                                <p className="flex items-center justify-between">
-                                                    <span>Today's Schedule:</span>
-                                                    <span className="font-semibold">{todayCount} defenses</span>
-                                                </p>
-                                                <p className="flex items-center justify-between">
-                                                    <span>Next:</span>
-                                                    <span className="font-semibold text-emerald-600">
-                                                        {nextSchedule ? `${nextSchedule.group_name ?? 'Group'} - ${nextTime}` : 'Available'}
-                                                    </span>
-                                                </p>
-                                            </div>
-                                            <div className="mt-3 flex gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setSelectedRoomId(room.id)}
-                                                    className="flex-1 rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white transition hover:bg-emerald-700"
-                                                >
-                                                    View
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openNewSchedule({ roomId: room.id })}
-                                                    className="flex-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100"
-                                                >
-                                                    Schedule
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-
-                                {rooms.length === 0 ? (
-                                    <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500">
-                                        No rooms found. Add a room to start scheduling.
-                                    </div>
-                                ) : null}
-                            </div>
-                        </div>
-
-                        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex h-full flex-col lg:self-stretch">
+                        <div className="flex h-full min-h-[360px] flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-base font-semibold text-slate-800">Schedule Conflict Checker</h3>
                                 <span
@@ -984,7 +977,7 @@ const SchedulingPage = () => {
                                 </span>
                             </div>
 
-                            <div className="mt-4 grid gap-3">
+                            <div className="mt-4 grid flex-1 content-start gap-3">
                                 {rooms.map((room) => {
                                     const isConflict = roomConflicts.get(room.id);
 
@@ -1011,22 +1004,6 @@ const SchedulingPage = () => {
                     </div>
                 </div>
             </motion.section>
-
-            <ScheduleDefenseModal
-                open={isScheduleModalOpen}
-                groups={groups}
-                rooms={rooms}
-                initialSchedule={selectedSchedule}
-                defaultDate={defaultScheduleDate}
-                defaultRoomId={defaultRoomId}
-                defaultStage={defaultStage}
-                onClose={() => {
-                    setIsScheduleModalOpen(false);
-                    setSelectedSchedule(null);
-                }}
-            />
-
-            <AddDefenseRoomModal open={isRoomModalOpen} onClose={() => setIsRoomModalOpen(false)} />
         </InstructorLayout>
     );
 };
