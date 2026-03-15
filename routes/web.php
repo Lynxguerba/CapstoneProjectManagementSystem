@@ -173,11 +173,37 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
     })->name('instructor.groups.manage');
     Route::get('/groups/{group}/details', function (\App\Models\Group $group) {
         $userId = Auth::guard('web')->id();
-        $group->load(['programSet.academicYear', 'leader']);
+        $hasGroupAdviserTable = Schema::hasTable('group_advisers');
+        $hasGroupPanelistTable = Schema::hasTable('group_panelists');
+        $relations = ['programSet.academicYear', 'leader'];
+
+        if ($hasGroupAdviserTable) {
+            $relations[] = 'adviserAssignment.adviser';
+        }
+
+        if ($hasGroupPanelistTable) {
+            $relations[] = 'panelAssignments.panelist';
+        }
+
+        $group->load($relations);
 
         if ($userId !== null && $group->programSet?->instructor_id !== $userId) {
             abort(403);
         }
+
+        $resolveUserName = static function (?User $user): string {
+            if (! $user) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $fullName = $firstName !== '' || $lastName !== ''
+                ? trim($firstName.' '.$lastName)
+                : (is_string($user->name) ? $user->name : '');
+
+            return $fullName;
+        };
 
         $hasStudentProgramTable = Schema::hasTable('student_program');
         $group->load([
@@ -188,13 +214,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             },
         ]);
 
-        $leader = $group->leader;
-        $leaderName = $leader
-            ? trim(collect([$leader->first_name ?? '', $leader->last_name ?? ''])->filter()->join(' '))
-            : '';
-        if ($leaderName === '' && $leader) {
-            $leaderName = (string) $leader->name;
-        }
+        $leaderName = $resolveUserName($group->leader);
 
         $students = $group->members
             ->map(function (User $student) use ($hasStudentProgramTable): array {
@@ -215,6 +235,29 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             })
             ->values();
 
+        $adviser = $hasGroupAdviserTable ? $group->adviserAssignment?->adviser : null;
+        $adviserName = $resolveUserName($adviser);
+        $panelists = [];
+
+        if ($hasGroupPanelistTable) {
+            $panelists = $group->panelAssignments
+                ->sortBy('panel_slot')
+                ->map(function (\App\Models\GroupPanelist $assignment) use ($resolveUserName): array {
+                    $panelist = $assignment->panelist;
+                    $panelistName = $resolveUserName($panelist);
+
+                    return [
+                        'id' => $panelist?->id,
+                        'name' => $panelistName !== '' ? $panelistName : null,
+                        'email' => $panelist?->email ?? null,
+                        'role' => $assignment->role ?? 'member',
+                        'slot' => $assignment->panel_slot,
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
         return response()->json([
             'group' => [
                 'id' => $group->id,
@@ -223,6 +266,14 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 'school_year' => $group->programSet?->academicYear?->label,
                 'leader_name' => $leaderName,
             ],
+            'adviser' => $adviser
+                ? [
+                    'id' => $adviser->id,
+                    'name' => $adviserName !== '' ? $adviserName : null,
+                    'email' => $adviser->email ?? null,
+                ]
+                : null,
+            'panelists' => $panelists,
             'members' => $students,
         ]);
     })->name('instructor.groups.details');

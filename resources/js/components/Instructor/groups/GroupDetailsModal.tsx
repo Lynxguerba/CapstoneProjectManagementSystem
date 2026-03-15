@@ -19,6 +19,20 @@ type GroupMember = {
     role: string;
 };
 
+type AdviserDetails = {
+    id: number;
+    name?: string | null;
+    email?: string | null;
+};
+
+type PanelistDetails = {
+    id?: number | null;
+    name?: string | null;
+    email?: string | null;
+    role?: 'chairman' | 'member' | null;
+    slot?: number | null;
+};
+
 type GroupDetailsModalProps = {
     open: boolean;
     groupId?: number | null;
@@ -30,6 +44,8 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
     const [errorMessage, setErrorMessage] = React.useState('');
     const [group, setGroup] = React.useState<GroupDetails | null>(null);
     const [members, setMembers] = React.useState<GroupMember[]>([]);
+    const [adviser, setAdviser] = React.useState<AdviserDetails | null>(null);
+    const [panelists, setPanelists] = React.useState<PanelistDetails[]>([]);
 
     React.useEffect(() => {
         if (!open || !groupId) {
@@ -44,6 +60,8 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
             setErrorMessage('');
             setGroup(null);
             setMembers([]);
+            setAdviser(null);
+            setPanelists([]);
 
             try {
                 const response = await fetch(`/instructor/groups/${groupId}/details`, {
@@ -64,6 +82,8 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
 
                 setGroup(payload.group ?? null);
                 setMembers(Array.isArray(payload.members) ? payload.members : []);
+                setAdviser(payload.adviser ?? null);
+                setPanelists(Array.isArray(payload.panelists) ? payload.panelists : []);
             } catch (error) {
                 if (!isActive || controller.signal.aborted) {
                     return;
@@ -105,6 +125,18 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
             window.removeEventListener('keydown', onKeyDown);
         };
     }, [open, onClose]);
+
+    const formatPanelRole = (role?: PanelistDetails['role']): string => {
+        if (role === 'chairman') {
+            return 'Panel Chairman';
+        }
+
+        if (role === 'member') {
+            return 'Panel Member';
+        }
+
+        return 'Panelist';
+    };
 
     if (!open || typeof document === 'undefined') {
         return null;
@@ -162,6 +194,8 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
                                     .then((payload) => {
                                         setGroup(payload.group ?? null);
                                         setMembers(Array.isArray(payload.members) ? payload.members : []);
+                                        setAdviser(payload.adviser ?? null);
+                                        setPanelists(Array.isArray(payload.panelists) ? payload.panelists : []);
                                     })
                                     .catch(() => {
                                         setErrorMessage('Unable to load group details right now.');
@@ -191,7 +225,7 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
                         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{errorMessage}</div>
                     ) : null}
 
-                    <div className="grid gap-4 text-sm text-slate-600 sm:grid-cols-3">
+                    <div className="grid gap-4 text-sm text-slate-600 sm:grid-cols-4">
                         <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                             <p className="text-xs font-semibold text-slate-500 uppercase">Program</p>
                             <p className="mt-1 text-sm font-semibold text-slate-800">{group?.program ?? '—'}</p>
@@ -203,6 +237,17 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
                         <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                             <p className="text-xs font-semibold text-slate-500 uppercase">Project Manager</p>
                             <p className="mt-1 text-sm font-semibold text-slate-800">{group?.leader_name ?? '—'}</p>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                            <p className="text-xs font-semibold text-slate-500 uppercase">Adviser</p>
+                            {adviser?.name ? (
+                                <>
+                                    <p className="mt-1 text-sm font-semibold text-slate-800">{adviser.name}</p>
+                                    <p className="mt-1 text-xs text-slate-500">{adviser.email ?? '—'}</p>
+                                </>
+                            ) : (
+                                <p className="mt-1 text-sm text-slate-500">{isLoading ? 'Loading adviser...' : 'No adviser assigned yet.'}</p>
+                            )}
                         </div>
                     </div>
 
@@ -238,6 +283,44 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
                             </table>
                             {!isLoading && members.length === 0 ? (
                                 <div className="py-10 text-center text-sm text-slate-500">No members assigned yet.</div>
+                            ) : null}
+                        </div>
+                    </div>
+
+                    <div className="overflow-hidden rounded-xl border border-slate-200">
+                        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2">
+                            <p className="text-xs font-semibold text-slate-500 uppercase">Panelists</p>
+                            <p className="text-xs font-semibold text-slate-500">{panelists.length} assigned</p>
+                        </div>
+                        <div className="max-h-[30vh] overflow-y-auto">
+                            <table className="w-full text-left text-xs">
+                                <thead className="sticky top-0 bg-white text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                    <tr>
+                                        <th className="px-4 py-3">Panelist</th>
+                                        <th className="px-4 py-3">Email</th>
+                                        <th className="px-4 py-3">Role</th>
+                                        <th className="px-4 py-3">Slot</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {panelists.map((panelist) => (
+                                        <tr key={panelist.id ?? panelist.name ?? 'panelist'} className="hover:bg-emerald-50/40">
+                                            <td className="px-4 py-3 font-semibold text-slate-800">{panelist.name ?? '—'}</td>
+                                            <td className="px-4 py-3 text-slate-500">{panelist.email ?? '—'}</td>
+                                            <td className="px-4 py-3">
+                                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                                                    {formatPanelRole(panelist.role)}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-500">
+                                                {panelist.slot ? `Panel ${panelist.slot}` : '—'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {!isLoading && panelists.length === 0 ? (
+                                <div className="py-6 text-center text-sm text-slate-500">No panelists assigned yet.</div>
                             ) : null}
                         </div>
                     </div>
