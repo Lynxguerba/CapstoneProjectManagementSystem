@@ -309,146 +309,22 @@ const ScheduleDefenseForm = ({
             ) : null}
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div className="space-y-3">
-                    <div>
-                        <label className="text-sm font-semibold text-slate-700">Program Set</label>
-                        <select
-                            value={programSetFilter}
-                            onChange={(event) => setProgramSetFilter(event.target.value)}
-                            disabled={programSetOptions.length === 0 || isDisabled}
-                            className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                        >
-                            <option value="">All Program Sets</option>
-                            {programSetOptions.map((option) => (
-                                <option key={option} value={option}>
-                                    {option}
-                                </option>
-                            ))}
-                        </select>
-                        {programSetOptions.length === 0 ? (
-                            <p className="mt-1 text-xs text-slate-500">No program sets available.</p>
-                        ) : null}
-                    </div>
-
-                    <div>
-                        <label className="text-sm font-semibold text-slate-700">Group</label>
-                        <div className="relative mt-1.5">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                            <input
-                                value={groupSearch}
-                                onChange={(event) => setGroupSearch(event.target.value)}
-                                placeholder="Search by group name or program set..."
-                                disabled={groups.length === 0 || isDisabled}
-                                className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-                            />
-                        </div>
-
-                        {groups.length === 0 ? <p className="mt-1 text-xs text-slate-500">No groups available.</p> : null}
-                        {groups.length > 0 && filteredGroups.length === 0 && groupSearch.trim() === '' ? (
-                            <p className="mt-1 text-xs text-slate-500">No groups found for this program set.</p>
-                        ) : null}
-                        {groups.length > 0 && filteredGroups.length > 0 && groupSearch.trim() === '' ? (
-                            <p className="mt-1 text-xs text-slate-500">Start typing to search groups.</p>
-                        ) : null}
-
-                        {groupSearch.trim() !== '' ? (
-                            <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-                                {groupSearchResults.length === 0 ? (
-                                    <p className="px-4 py-3 text-sm text-slate-500">No groups found.</p>
-                                ) : (
-                                    groupSearchResults.map((group) => {
-                                        const panelCount = group.panelists?.length ?? 0;
-                                        const isEligible = panelCount >= 3;
-                                        const isSelected = form.data.group_id === String(group.id);
-                                        const isDisabledResult = !isEligible && !isSelected;
-                                        const meta = [group.program_set_name, group.program, group.school_year]
-                                            .filter(Boolean)
-                                            .join(' • ');
-
-                                        return (
-                                            <button
-                                                key={group.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    if (readOnly) {
-                                                        return;
-                                                    }
-
-                                                    form.setData('group_id', String(group.id));
-                                                    setGroupSearch('');
-                                                }}
-                                                disabled={isDisabled || isDisabledResult}
-                                                className={`flex w-full flex-col gap-1 border-b border-slate-100 px-4 py-2.5 text-left transition-colors last:border-b-0 ${
-                                                    isDisabledResult || isDisabled
-                                                        ? 'cursor-not-allowed bg-amber-50/60'
-                                                        : isSelected
-                                                        ? 'bg-emerald-50/80'
-                                                        : 'hover:bg-emerald-50'
-                                                }`}
-                                            >
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-sm font-medium text-slate-800">{group.name}</span>
-                                                    <span
-                                                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                                            isEligible
-                                                                ? 'bg-emerald-100 text-emerald-700'
-                                                                : 'bg-amber-100 text-amber-700'
-                                                        }`}
-                                                    >
-                                                        {panelCount}/3 panelists
-                                                    </span>
-                                                </div>
-                                                {meta ? <span className="text-xs text-slate-500">{meta}</span> : null}
-                                                {isSelected ? (
-                                                    <span className="text-[10px] font-semibold text-emerald-700">Selected</span>
-                                                ) : null}
-                                                {!isEligible ? (
-                                                    <span className="text-[10px] font-semibold text-amber-700">Needs 3 panelists</span>
-                                                ) : null}
-                                            </button>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        ) : null}
-
-                        {selectedGroup ? (
-                            <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
-                                <div className="flex items-center justify-between gap-3">
-                                    <div>
-                                        <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-700">
-                                            Selected Group
-                                        </p>
-                                        <p className="text-sm font-semibold text-slate-800">{selectedGroup.name}</p>
-                                        {selectedGroupMeta ? <p className="text-xs text-slate-600">{selectedGroupMeta}</p> : null}
-                                    </div>
-                                    {!readOnly ? (
-                                        <button
-                                            type="button"
-                                            onClick={() => form.setData('group_id', '')}
-                                            className="rounded-full border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                                        >
-                                            Clear
-                                        </button>
-                                    ) : null}
-                                </div>
-                            </div>
-                        ) : showFallbackGroup ? (
-                            <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
-                                <div className="flex items-center justify-between gap-3">
-                                    <div>
-                                        <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-700">
-                                            Selected Group
-                                        </p>
-                                        <p className="text-sm font-semibold text-slate-800">{initialSchedule?.group_name}</p>
-                                        {fallbackGroupMeta ? <p className="text-xs text-slate-600">{fallbackGroupMeta}</p> : null}
-                                    </div>
-                                </div>
-                            </div>
-                        ) : null}
-
-                        {form.errors.group_id ? <p className="mt-1 text-xs text-rose-600">{form.errors.group_id}</p> : null}
-                    </div>
+                <div>
+                    <label className="text-sm font-semibold text-slate-700">Program Set</label>
+                    <select
+                        value={programSetFilter}
+                        onChange={(event) => setProgramSetFilter(event.target.value)}
+                        disabled={programSetOptions.length === 0 || isDisabled}
+                        className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    >
+                        <option value="">All Program Sets</option>
+                        {programSetOptions.map((option) => (
+                            <option key={option} value={option}>
+                                {option}
+                            </option>
+                        ))}
+                    </select>
+                    {programSetOptions.length === 0 ? <p className="mt-1 text-xs text-slate-500">No program sets available.</p> : null}
                 </div>
 
                 <div>
@@ -468,6 +344,116 @@ const ScheduleDefenseForm = ({
                             ))}
                         </select>
                     </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                    <label className="text-sm font-semibold text-slate-700">Group</label>
+                    <div className="relative mt-1.5">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            value={groupSearch}
+                            onChange={(event) => setGroupSearch(event.target.value)}
+                            placeholder="Search by group name or program set..."
+                            disabled={groups.length === 0 || isDisabled}
+                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        />
+                    </div>
+
+                    {groups.length === 0 ? <p className="mt-1 text-xs text-slate-500">No groups available.</p> : null}
+                    {groups.length > 0 && filteredGroups.length === 0 && groupSearch.trim() === '' ? (
+                        <p className="mt-1 text-xs text-slate-500">No groups found for this program set.</p>
+                    ) : null}
+                    {groups.length > 0 && filteredGroups.length > 0 && groupSearch.trim() === '' ? (
+                        <p className="mt-1 text-xs text-slate-500">Start typing to search groups.</p>
+                    ) : null}
+
+                    {groupSearch.trim() !== '' ? (
+                        <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                            {groupSearchResults.length === 0 ? (
+                                <p className="px-4 py-3 text-sm text-slate-500">No groups found.</p>
+                            ) : (
+                                groupSearchResults.map((group) => {
+                                    const panelCount = group.panelists?.length ?? 0;
+                                    const isEligible = panelCount >= 3;
+                                    const isSelected = form.data.group_id === String(group.id);
+                                    const isDisabledResult = !isEligible && !isSelected;
+                                    const meta = [group.program_set_name, group.program, group.school_year].filter(Boolean).join(' • ');
+
+                                    return (
+                                        <button
+                                            key={group.id}
+                                            type="button"
+                                            onClick={() => {
+                                                if (readOnly) {
+                                                    return;
+                                                }
+
+                                                form.setData('group_id', String(group.id));
+                                                setGroupSearch('');
+                                            }}
+                                            disabled={isDisabled || isDisabledResult}
+                                            className={`flex w-full flex-col gap-1 border-b border-slate-100 px-4 py-2.5 text-left transition-colors last:border-b-0 ${
+                                                isDisabledResult || isDisabled
+                                                    ? 'cursor-not-allowed bg-amber-50/60'
+                                                    : isSelected
+                                                    ? 'bg-emerald-50/80'
+                                                    : 'hover:bg-emerald-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-sm font-medium text-slate-800">{group.name}</span>
+                                                <span
+                                                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                                        isEligible ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                                    }`}
+                                                >
+                                                    {panelCount}/3 panelists
+                                                </span>
+                                            </div>
+                                            {meta ? <span className="text-xs text-slate-500">{meta}</span> : null}
+                                            {isSelected ? <span className="text-[10px] font-semibold text-emerald-700">Selected</span> : null}
+                                            {!isEligible ? (
+                                                <span className="text-[10px] font-semibold text-amber-700">Needs 3 panelists</span>
+                                            ) : null}
+                                        </button>
+                                    );
+                                })
+                            )}
+                        </div>
+                    ) : null}
+
+                    {selectedGroup ? (
+                        <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-700">Selected Group</p>
+                                    <p className="text-sm font-semibold text-slate-800">{selectedGroup.name}</p>
+                                    {selectedGroupMeta ? <p className="text-xs text-slate-600">{selectedGroupMeta}</p> : null}
+                                </div>
+                                {!readOnly ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => form.setData('group_id', '')}
+                                        className="rounded-full border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                    >
+                                        Clear
+                                    </button>
+                                ) : null}
+                            </div>
+                        </div>
+                    ) : showFallbackGroup ? (
+                        <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-700">Selected Group</p>
+                                    <p className="text-sm font-semibold text-slate-800">{initialSchedule?.group_name}</p>
+                                    {fallbackGroupMeta ? <p className="text-xs text-slate-600">{fallbackGroupMeta}</p> : null}
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {form.errors.group_id ? <p className="mt-1 text-xs text-rose-600">{form.errors.group_id}</p> : null}
                 </div>
             </div>
 

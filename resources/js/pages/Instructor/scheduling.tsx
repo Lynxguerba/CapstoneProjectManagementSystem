@@ -598,14 +598,6 @@ const SchedulingPage = () => {
                             <DoorOpen className="h-3.5 w-3.5" />
                             Manage Rooms
                         </Link>
-                        <button
-                            type="button"
-                            disabled
-                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-400 shadow-sm"
-                        >
-                            <Clock className="h-3.5 w-3.5" />
-                            Time Slots
-                        </button>
                     </div>
                 </div>
 
