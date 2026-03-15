@@ -456,12 +456,6 @@ const AdviserAssignmentGroups = ({
                                                 {isAssignedToAdviser ? 'Assigned' : isReassign ? 'Reassign' : 'Assign'}
                                             </button>
                                         </div>
-                                        <div className="h-1.5 w-full bg-slate-100">
-                                            <div
-                                                className="h-full rounded-full bg-emerald-500"
-                                                style={{ width: `${Math.min(100, Math.round((loadForYear / MAX_LOAD) * 100))}%` }}
-                                            />
-                                        </div>
                                     </div>
                                 );
                             })}
