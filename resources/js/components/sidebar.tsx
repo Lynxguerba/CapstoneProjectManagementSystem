@@ -24,6 +24,7 @@ import {
     History,
     LayoutList,
     UserRoundCog,
+    UserCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -171,6 +172,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { icon: Users, label: 'Students', href: '/instructor/students' },
                     { icon: LayoutList, label: 'Groups Management', href: '/instructor/groups' },
                     { icon: UserRoundCog, label: 'Adviser Assignment', href: '/instructor/adviser-assignment' },
+                    { icon: UserCheck, label: 'Panelist Assignment', href: '/instructor/panelist-assignment' },
                     { icon: Calendar, label: 'Defense Scheduling', href: '/instructor/scheduling' },
                     { label: 'Academic Control', isSection: true },
                     { icon: BookOpen, label: 'Title Repository', href: '/instructor/titles' },

@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -76,6 +77,18 @@ class User extends Authenticatable
     public function advisedGroups(): BelongsToMany
     {
         return $this->belongsToMany(Group::class, 'group_advisers', 'adviser_id', 'group_id')
+            ->withTimestamps();
+    }
+
+    public function panelAssignments(): HasMany
+    {
+        return $this->hasMany(GroupPanelist::class, 'panelist_id');
+    }
+
+    public function panelGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(Group::class, 'group_panelists', 'panelist_id', 'group_id')
+            ->withPivot(['panel_slot', 'assigned_by'])
             ->withTimestamps();
     }
 

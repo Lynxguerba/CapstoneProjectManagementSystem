@@ -7,6 +7,7 @@ use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\UpdateAdviserPasswordController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
 use App\Http\Controllers\AssignGroupAdviserController;
+use App\Http\Controllers\AssignGroupPanelistController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BulkEnrollStudentsController;
 use App\Http\Controllers\EnrollStudentController;
@@ -785,6 +786,304 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         ]);
     })->name('instructor.adviser-assignment.groups');
     Route::post('/adviser-assignment/assign', AssignGroupAdviserController::class)->name('instructor.adviser-assignment.assign');
+    Route::get('/panelist-assignment', function () {
+        $academicYears = [];
+        try {
+            if (Schema::hasTable('academic_years')) {
+                $academicYears = AcademicYear::query()
+                    ->orderByDesc('start_year')
+                    ->orderByDesc('end_year')
+                    ->get(['id', 'label', 'is_current'])
+                    ->map(static fn (AcademicYear $academicYear): array => [
+                        'id' => $academicYear->id,
+                        'label' => $academicYear->label,
+                        'is_current' => $academicYear->is_current,
+                    ])
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $academicYears = [];
+        }
+
+        $panelists = [];
+        try {
+            if (Schema::hasTable('users')) {
+                $hasRoleTables = Schema::hasTable('roles') && Schema::hasTable('role_user');
+                $panelistsQuery = User::query()
+                    ->when($hasRoleTables, function ($query) {
+                        $query->where(function ($roleQuery) {
+                            $roleQuery->where('role', 'like', '%panelist%')
+                                ->orWhereHas('roles', fn ($subQuery) => $subQuery->where('slug', 'panelist'));
+                        });
+                    }, function ($query) {
+                        $query->where('role', 'like', '%panelist%');
+                    })
+                    ->orderBy('last_name')
+                    ->get(['id', 'name', 'first_name', 'last_name', 'email']);
+
+                if (Schema::hasTable('group_panelists') && Schema::hasTable('groups') && Schema::hasTable('program_sets')) {
+                    $panelistsQuery->load([
+                        'panelGroups' => function ($query) {
+                            $query->with('programSet.academicYear');
+                        },
+                    ]);
+                }
+
+                $panelists = $panelistsQuery
+                    ->map(function (User $panelist): array {
+                        $firstName = is_string($panelist->first_name) ? trim($panelist->first_name) : '';
+                        $lastName = is_string($panelist->last_name) ? trim($panelist->last_name) : '';
+                        $fullName = $firstName !== '' || $lastName !== ''
+                            ? trim($firstName.' '.$lastName)
+                            : (is_string($panelist->name) ? $panelist->name : '');
+
+                        $workloads = [];
+                        if ($panelist->relationLoaded('panelGroups')) {
+                            $workloads = $panelist->panelGroups
+                                ->groupBy(function (\App\Models\Group $group): string {
+                                    $programSet = $group->programSet;
+                                    $label = $programSet?->academicYear?->label ?? $programSet?->school_year ?? '';
+
+                                    return $label !== '' ? $label : 'Unspecified';
+                                })
+                                ->map(fn ($groups, $label): array => [
+                                    'academic_year' => $label,
+                                    'groups_count' => $groups->count(),
+                                ])
+                                ->values()
+                                ->all();
+                        }
+
+                        return [
+                            'id' => $panelist->id,
+                            'name' => $fullName,
+                            'email' => $panelist->email ?? '',
+                            'workloads' => $workloads,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $panelists = [];
+        }
+
+        return Inertia::render('Instructor/panelist-assignment', [
+            'panelists' => $panelists,
+            'academicYears' => $academicYears,
+        ]);
+    })->name('instructor.panelist-assignment');
+    Route::get('/panelist-assignment/{panelist}/manage', function (User $panelist) {
+        if (! $panelist->hasRole('panelist')) {
+            abort(404);
+        }
+
+        $academicYears = [];
+        try {
+            if (Schema::hasTable('academic_years')) {
+                $academicYears = AcademicYear::query()
+                    ->orderByDesc('start_year')
+                    ->orderByDesc('end_year')
+                    ->get(['id', 'label', 'is_current'])
+                    ->map(static fn (AcademicYear $academicYear): array => [
+                        'id' => $academicYear->id,
+                        'label' => $academicYear->label,
+                        'is_current' => $academicYear->is_current,
+                    ])
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $academicYears = [];
+        }
+
+        $selectedAcademicYear = request()->query('academic_year');
+        $selectedAcademicYear = is_string($selectedAcademicYear) ? $selectedAcademicYear : null;
+
+        if (Schema::hasTable('group_panelists') && Schema::hasTable('groups') && Schema::hasTable('program_sets')) {
+            $panelist->load([
+                'panelGroups' => function ($query) {
+                    $query->with('programSet.academicYear');
+                },
+            ]);
+        }
+
+        $userId = Auth::guard('web')->id();
+
+        $resolveUserName = static function (?User $user): string {
+            if (! $user) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $fullName = $firstName !== '' || $lastName !== ''
+                ? trim($firstName.' '.$lastName)
+                : (is_string($user->name) ? $user->name : '');
+
+            return $fullName;
+        };
+
+        $workloads = [];
+        if ($panelist->relationLoaded('panelGroups')) {
+            $workloads = $panelist->panelGroups
+                ->groupBy(function (\App\Models\Group $group): string {
+                    $programSet = $group->programSet;
+                    $label = $programSet?->academicYear?->label ?? $programSet?->school_year ?? '';
+
+                    return $label !== '' ? $label : 'Unspecified';
+                })
+                ->map(fn ($groups, $label): array => [
+                    'academic_year' => $label,
+                    'groups_count' => $groups->count(),
+                ])
+                ->values()
+                ->all();
+        }
+
+        $groups = [];
+        try {
+            if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups')) {
+                $groups = \App\Models\Group::query()
+                    ->with(['programSet.academicYear', 'leader', 'panelAssignments.panelist'])
+                    ->when($userId !== null, function ($query) use ($userId) {
+                        $query->whereHas('programSet', fn ($subQuery) => $subQuery->where('instructor_id', $userId));
+                    })
+                    ->withCount('members')
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->map(function (\App\Models\Group $group) use ($resolveUserName): array {
+                        $programSet = $group->programSet;
+                        $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
+                        $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+                        $leaderName = $resolveUserName($group->leader);
+                        $panelists = $group->panelAssignments
+                            ->sortBy('panel_slot')
+                            ->map(function (\App\Models\GroupPanelist $assignment) use ($resolveUserName): array {
+                                $panelist = $assignment->panelist;
+                                $panelistName = $resolveUserName($panelist);
+
+                                return [
+                                    'id' => $panelist?->id,
+                                    'name' => $panelistName !== '' ? $panelistName : null,
+                                    'email' => $panelist?->email ?? null,
+                                    'slot' => $assignment->panel_slot,
+                                ];
+                            })
+                            ->values()
+                            ->all();
+
+                        return [
+                            'id' => $group->id,
+                            'name' => $group->name,
+                            'program_set_id' => $programSet?->id,
+                            'program_set_name' => $programSet?->name ?: $fallbackName,
+                            'program' => $programSet?->program,
+                            'school_year' => $schoolYear,
+                            'leader_name' => $leaderName !== '' ? $leaderName : null,
+                            'members_count' => $group->members_count ?? 0,
+                            'panelists' => $panelists,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $groups = [];
+        }
+
+        return Inertia::render('Instructor/panelist-assignment/panelist-assignment-groups', [
+            'panelist' => [
+                'id' => $panelist->id,
+                'name' => $resolveUserName($panelist),
+                'email' => $panelist->email ?? '',
+                'workloads' => $workloads,
+            ],
+            'groups' => $groups,
+            'academicYears' => $academicYears,
+            'selectedAcademicYear' => $selectedAcademicYear,
+        ]);
+    })->name('instructor.panelist-assignment.manage');
+    Route::get('/panelist-assignment/{panelist}/groups', function (User $panelist) {
+        if (! $panelist->hasRole('panelist')) {
+            abort(404);
+        }
+
+        $groups = [];
+        $academicYearFilter = request()->query('academic_year');
+        $userId = Auth::guard('web')->id();
+
+        $resolveUserName = static function (?User $user): string {
+            if (! $user) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $fullName = $firstName !== '' || $lastName !== ''
+                ? trim($firstName.' '.$lastName)
+                : (is_string($user->name) ? $user->name : '');
+
+            return $fullName;
+        };
+
+        try {
+            if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups')) {
+                $groupsQuery = \App\Models\Group::query()
+                    ->with(['programSet.academicYear', 'leader'])
+                    ->whereHas('panelAssignments', fn ($query) => $query->where('panelist_id', $panelist->id))
+                    ->when($userId !== null, function ($query) use ($userId) {
+                        $query->whereHas('programSet', fn ($subQuery) => $subQuery->where('instructor_id', $userId));
+                    })
+                    ->withCount('members')
+                    ->orderByDesc('created_at');
+
+                if (is_string($academicYearFilter) && $academicYearFilter !== '' && $academicYearFilter !== 'All') {
+                    $groupsQuery->whereHas('programSet', function ($query) use ($academicYearFilter) {
+                        $query->where(function ($subQuery) use ($academicYearFilter) {
+                            $subQuery->whereHas('academicYear', fn ($academicQuery) => $academicQuery->where('label', $academicYearFilter));
+
+                            if (Schema::hasColumn('program_sets', 'school_year')) {
+                                $subQuery->orWhere('school_year', $academicYearFilter);
+                            }
+                        });
+                    });
+                }
+
+                $groups = $groupsQuery
+                    ->get()
+                    ->map(function (\App\Models\Group $group) use ($resolveUserName): array {
+                        $programSet = $group->programSet;
+                        $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
+                        $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+                        $leaderName = $resolveUserName($group->leader);
+
+                        return [
+                            'id' => $group->id,
+                            'name' => $group->name,
+                            'program_set_name' => $programSet?->name ?: $fallbackName,
+                            'school_year' => $schoolYear,
+                            'leader_name' => $leaderName !== '' ? $leaderName : null,
+                            'members_count' => $group->members_count ?? 0,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $groups = [];
+        }
+
+        return response()->json([
+            'groups' => $groups,
+            'summary' => [
+                'assigned_count' => count($groups),
+                'academic_year' => is_string($academicYearFilter) && $academicYearFilter !== '' ? $academicYearFilter : 'All',
+            ],
+        ]);
+    })->name('instructor.panelist-assignment.groups');
+    Route::post('/panelist-assignment/assign', AssignGroupPanelistController::class)->name('instructor.panelist-assignment.assign');
     Route::get('/scheduling', function () {
         return Inertia::render('Instructor/scheduling');
     })->name('instructor.scheduling');
