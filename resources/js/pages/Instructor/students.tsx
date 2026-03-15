@@ -23,7 +23,7 @@ const InstructorStudents = () => {
     const { props } = usePage<any>();
     const programSets = (props.programSets ?? []) as {
         id: number;
-        name: string;
+        name?: string | null;
         program: string;
         school_year: string;
         instructor_name?: string;
@@ -52,6 +52,12 @@ const InstructorStudents = () => {
                 ? 'Information System Capstone Projects'
                 : '',
     }));
+
+    const existingProgramSetNames = React.useMemo(() => {
+        return programSets
+            .map((programSet) => (typeof programSet.name === 'string' ? programSet.name.trim() : ''))
+            .filter((name) => name !== '');
+    }, [programSets]);
 
     // Filter states - default to current academic year instead of 'All'
     const [selectedSchoolYear, setSelectedSchoolYear] = useState(currentAcademicYear || 'All');
@@ -420,7 +426,11 @@ const InstructorStudents = () => {
                     </div>
                 )}
             </motion.section>
-            <AddProgramSetModal open={isAddProgramSetModalOpen} onClose={() => setIsAddProgramSetModalOpen(false)} />
+            <AddProgramSetModal
+                open={isAddProgramSetModalOpen}
+                onClose={() => setIsAddProgramSetModalOpen(false)}
+                existingProgramSetNames={existingProgramSetNames}
+            />
             <ProgramSetDetailsModal
                 open={isProgramSetModalOpen}
                 programSetId={selectedProgramSetId}

@@ -1,6 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Calendar, ChevronRight, LayoutGrid, List, Search, SlidersHorizontal, UserCheck } from 'lucide-react';
+import { Calendar, ChevronRight, GraduationCap, LayoutGrid, List, Search, SlidersHorizontal, UserCheck } from 'lucide-react';
 import React from 'react';
 import instructorRoutes from '../../../routes/instructor';
 import adviserAssignment from '../../../routes/instructor/adviser-assignment';
@@ -27,6 +27,7 @@ type AdviserSummary = {
 type GroupRow = {
     id: number;
     name: string;
+    program_set_id?: number | null;
     program_set_name?: string | null;
     program?: string | null;
     school_year?: string | null;
@@ -34,6 +35,12 @@ type GroupRow = {
     adviser_id?: number | null;
     adviser_name?: string | null;
     members_count?: number;
+};
+
+type ProgramSetOption = {
+    value: string;
+    label: string;
+    academicYear: string | null;
 };
 
 type AdviserAssignmentGroupsProps = {
@@ -57,6 +64,7 @@ const AdviserAssignmentGroups = ({
     const [assigningGroupId, setAssigningGroupId] = React.useState<number | null>(null);
     const [errorMessage, setErrorMessage] = React.useState('');
     const [statusFilter, setStatusFilter] = React.useState<'all' | 'unassigned' | 'assigned' | 'reassign'>('all');
+    const [selectedProgramSet, setSelectedProgramSet] = React.useState('All');
 
     // ── Pagination ──────────────────────────────────────────────────────────
     const [currentPage, setCurrentPage] = React.useState(1);
@@ -89,6 +97,55 @@ const AdviserAssignmentGroups = ({
         setSelectedAcademicYear(resolvedAcademicYear);
     }, [resolvedAcademicYear]);
 
+    const getProgramSetKey = React.useCallback((group: GroupRow): string => {
+        if (group.program_set_id !== null && group.program_set_id !== undefined) {
+            return `id:${group.program_set_id}`;
+        }
+
+        const name = group.program_set_name ?? '';
+        const year = group.school_year ?? '';
+
+        return `name:${name}::${year}`;
+    }, []);
+
+    const programSetOptions = React.useMemo((): ProgramSetOption[] => {
+        const options = new Map<string, ProgramSetOption>();
+
+        groups.forEach((group) => {
+            const label = (group.program_set_name ?? '').trim();
+
+            if (!label) {
+                return;
+            }
+
+            const value = getProgramSetKey(group);
+            if (!options.has(value)) {
+                options.set(value, {
+                    value,
+                    label,
+                    academicYear: group.school_year ?? null,
+                });
+            }
+        });
+
+        const allOptions = Array.from(options.values());
+        const filteredOptions =
+            selectedAcademicYear === 'All' ? allOptions : allOptions.filter((option) => option.academicYear === selectedAcademicYear);
+
+        return filteredOptions.sort((first, second) => first.label.localeCompare(second.label));
+    }, [groups, getProgramSetKey, selectedAcademicYear]);
+
+    React.useEffect(() => {
+        if (selectedProgramSet === 'All') {
+            return;
+        }
+
+        const isStillAvailable = programSetOptions.some((option) => option.value === selectedProgramSet);
+        if (!isStillAvailable) {
+            setSelectedProgramSet('All');
+        }
+    }, [programSetOptions, selectedProgramSet]);
+
     const getLoadForYear = React.useCallback(
         (academicYear: string): number => {
             const workloads = adviser.workloads ?? [];
@@ -110,6 +167,10 @@ const AdviserAssignmentGroups = ({
 
         return groups.filter((group) => {
             if (selectedAcademicYear !== 'All' && group.school_year !== selectedAcademicYear) {
+                return false;
+            }
+
+            if (selectedProgramSet !== 'All' && getProgramSetKey(group) !== selectedProgramSet) {
                 return false;
             }
 
@@ -158,7 +219,7 @@ const AdviserAssignmentGroups = ({
 
             return !group.adviser_id;
         });
-    }, [groups, searchTerm, selectedAcademicYear, statusFilter, adviser.id]);
+    }, [groups, searchTerm, selectedAcademicYear, selectedProgramSet, statusFilter, adviser.id, getProgramSetKey]);
 
     const orderedGroups = React.useMemo(() => {
         return [...filteredGroups].sort((first, second) => {
@@ -180,7 +241,7 @@ const AdviserAssignmentGroups = ({
     // Reset to page 1 whenever filters change
     React.useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, selectedAcademicYear, statusFilter]);
+    }, [searchTerm, selectedAcademicYear, selectedProgramSet, statusFilter]);
 
     const paginatedGroups = React.useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -297,7 +358,9 @@ const AdviserAssignmentGroups = ({
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-semibold text-slate-800">Handled Groups</p>
-                                <p className="text-xs text-slate-500">Filtered by academic year</p>
+                                <p className="text-xs text-slate-500">
+                                    {selectedProgramSet === 'All' ? 'Filtered by academic year' : 'Filtered by academic year and program set'}
+                                </p>
                             </div>
                             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
                                 {filteredGroups.filter((group) => group.adviser_id === adviser.id).length} assigned
@@ -347,6 +410,23 @@ const AdviserAssignmentGroups = ({
                                             </option>
                                         );
                                     })}
+                                </select>
+                            </div>
+                            <div className="relative">
+                                <GraduationCap className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                <select
+                                    value={selectedProgramSet}
+                                    onChange={(event) => setSelectedProgramSet(event.target.value)}
+                                    className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                                >
+                                    <option value="All">All Program Sets</option>
+                                    {programSetOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {selectedAcademicYear === 'All' && option.academicYear
+                                                ? `${option.label} (${option.academicYear})`
+                                                : option.label}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                             <div className="relative">

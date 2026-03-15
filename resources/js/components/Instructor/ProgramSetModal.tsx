@@ -14,9 +14,14 @@ type AddProgramSetForm = {
 type AddProgramSetModalProps = {
     open: boolean;
     onClose: () => void;
+    existingProgramSetNames?: string[];
 };
 
-const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
+const duplicateNameErrorMessage = 'Program set name already exists.';
+
+const normalizeProgramSetName = (value: string): string => value.trim().replace(/\s+/g, ' ').toLowerCase();
+
+const AddProgramSetModal = ({ open, onClose, existingProgramSetNames = [] }: AddProgramSetModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
 
     const addProgramSetForm = useForm<AddProgramSetForm>({
@@ -27,6 +32,18 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
 
     const { props } = usePage<any>();
     const academicYears = (props.academicYears ?? []) as { id: number; label: string; is_current: boolean }[];
+
+    const normalizedExistingNames = React.useMemo(() => {
+        return new Set(existingProgramSetNames.map(normalizeProgramSetName).filter((name) => name !== ''));
+    }, [existingProgramSetNames]);
+
+    const normalizedInputName = React.useMemo(() => {
+        return normalizeProgramSetName(addProgramSetForm.data.name);
+    }, [addProgramSetForm.data.name]);
+
+    const isDuplicateName = React.useMemo(() => {
+        return normalizedInputName !== '' && normalizedExistingNames.has(normalizedInputName);
+    }, [normalizedExistingNames, normalizedInputName]);
 
     useEffect(() => {
         if (academicYears.length && addProgramSetForm.data.academic_year_id === null) {
@@ -74,6 +91,10 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
     }, [open]);
 
     const submitForm = () => {
+        if (isDuplicateName) {
+            return;
+        }
+
         // post to backend endpoint
         addProgramSetForm.post('/instructor/program-sets', {
             preserveScroll: true,
@@ -87,6 +108,8 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
     if (!open || typeof document === 'undefined') {
         return null;
     }
+
+    const nameError = isDuplicateName ? duplicateNameErrorMessage : addProgramSetForm.errors.name;
 
     return createPortal(
         <div
@@ -146,7 +169,7 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                                 placeholder="e.g., BSIT-A-20250-2026"
                                 className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                             />
-                            {addProgramSetForm.errors.name ? <p className="mt-1 text-xs text-rose-600">{addProgramSetForm.errors.name}</p> : null}
+                            {nameError ? <p className="mt-1 text-xs text-rose-600">{nameError}</p> : null}
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -212,7 +235,7 @@ const AddProgramSetModal = ({ open, onClose }: AddProgramSetModalProps) => {
                         <button
                             type="button"
                             onClick={submitForm}
-                            disabled={addProgramSetForm.processing}
+                            disabled={addProgramSetForm.processing || isDuplicateName}
                             className="group relative z-10 flex transform items-center gap-2 overflow-hidden rounded-lg bg-emerald-600 px-5 py-2 font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <span className="pointer-events-none absolute inset-0 z-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 group-hover:translate-x-[100%]" />
