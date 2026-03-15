@@ -972,6 +972,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                                     'name' => $panelistName !== '' ? $panelistName : null,
                                     'email' => $panelist?->email ?? null,
                                     'slot' => $assignment->panel_slot,
+                                    'role' => $assignment->role ?? 'member',
                                 ];
                             })
                             ->values()
@@ -1034,7 +1035,11 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         try {
             if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups')) {
                 $groupsQuery = \App\Models\Group::query()
-                    ->with(['programSet.academicYear', 'leader'])
+                    ->with([
+                        'programSet.academicYear',
+                        'leader',
+                        'panelAssignments' => fn ($query) => $query->where('panelist_id', $panelist->id),
+                    ])
                     ->whereHas('panelAssignments', fn ($query) => $query->where('panelist_id', $panelist->id))
                     ->when($userId !== null, function ($query) use ($userId) {
                         $query->whereHas('programSet', fn ($subQuery) => $subQuery->where('instructor_id', $userId));
@@ -1061,6 +1066,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
                         $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
                         $leaderName = $resolveUserName($group->leader);
+                        $panelAssignment = $group->panelAssignments->first();
 
                         return [
                             'id' => $group->id,
@@ -1069,6 +1075,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             'school_year' => $schoolYear,
                             'leader_name' => $leaderName !== '' ? $leaderName : null,
                             'members_count' => $group->members_count ?? 0,
+                            'panel_role' => $panelAssignment?->role ?? 'member',
                         ];
                     })
                     ->values()

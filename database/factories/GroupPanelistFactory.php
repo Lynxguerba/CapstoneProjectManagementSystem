@@ -30,6 +30,7 @@ class GroupPanelistFactory extends Factory
             'group_id' => $group->id,
             'panelist_id' => $panelist->id,
             'panel_slot' => 1,
+            'role' => 'chairman',
             'assigned_by' => $assignedBy->id,
         ];
     }

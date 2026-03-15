@@ -11,6 +11,7 @@ type PanelistGroupRow = {
     school_year?: string | null;
     leader_name?: string | null;
     members_count?: number;
+    panel_role?: 'chairman' | 'member' | null;
 };
 
 type PanelistGroupsSummary = {
@@ -117,6 +118,7 @@ const PanelistGroupsModal = ({ open, panelistId, panelistName, academicYear, onC
 
     const displayAcademicYear = summary?.academic_year ?? (academicYear && academicYear !== '' ? academicYear : 'All');
     const assignedCount = summary?.assigned_count ?? groups.length;
+    const formatPanelRole = (role?: 'chairman' | 'member' | null): string => (role === 'chairman' ? 'Panel Chairman' : 'Panel Member');
 
     return createPortal(
         <div
@@ -190,6 +192,7 @@ const PanelistGroupsModal = ({ open, panelistId, panelistName, academicYear, onC
                                 <tr>
                                     <th className="px-6 py-4">Group</th>
                                     <th className="px-6 py-4">Leader</th>
+                                    <th className="px-6 py-4">Role</th>
                                     <th className="px-6 py-4">Members</th>
                                     <th className="px-6 py-4">A.Y</th>
                                 </tr>
@@ -204,6 +207,11 @@ const PanelistGroupsModal = ({ open, panelistId, panelistName, academicYear, onC
                                             </div>
                                         </td>
                                         <td className="px-6 py-3.5 text-slate-600">{group.leader_name ?? '—'}</td>
+                                        <td className="px-6 py-3.5">
+                                            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-700">
+                                                {formatPanelRole(group.panel_role)}
+                                            </span>
+                                        </td>
                                         <td className="px-6 py-3.5 font-semibold text-slate-800">{group.members_count ?? 0}</td>
                                         <td className="px-6 py-3.5 text-slate-600">{group.school_year ?? '—'}</td>
                                     </tr>

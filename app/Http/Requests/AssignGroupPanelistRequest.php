@@ -25,6 +25,7 @@ class AssignGroupPanelistRequest extends FormRequest
             'group_id' => ['required', 'integer', 'exists:groups,id'],
             'panelist_id' => ['required', 'integer', 'exists:users,id'],
             'replace_panelist_id' => ['nullable', 'integer', 'exists:users,id'],
+            'panel_role' => ['required', 'string', 'in:chairman,member'],
         ];
     }
 
@@ -37,6 +38,8 @@ class AssignGroupPanelistRequest extends FormRequest
             'group_id.required' => 'Select a group to assign.',
             'panelist_id.required' => 'Select a panelist to assign.',
             'replace_panelist_id.required' => 'Select a panelist to replace.',
+            'panel_role.required' => 'Select a panel role.',
+            'panel_role.in' => 'Selected panel role is invalid.',
         ];
     }
 }

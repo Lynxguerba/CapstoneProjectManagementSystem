@@ -15,6 +15,7 @@ class GroupPanelist extends Model
         'group_id',
         'panelist_id',
         'panel_slot',
+        'role',
         'assigned_by',
     ];
 

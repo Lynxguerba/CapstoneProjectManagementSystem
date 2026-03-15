@@ -29,16 +29,18 @@ type PanelistAssignment = {
     name?: string | null;
     email?: string | null;
     slot: number;
+    role?: 'chairman' | 'member' | null;
 };
 
-type PanelistSlot =
-    | PanelistAssignment
-    | {
-          id?: undefined;
-          name?: null;
-          email?: null;
-          slot: number;
-      };
+type PanelRole = 'chairman' | 'member';
+
+type PanelistSlot = {
+    id?: number;
+    name?: string | null;
+    email?: string | null;
+    slot: number;
+    role?: PanelRole | null;
+};
 
 type GroupRow = {
     id: number;
@@ -66,6 +68,23 @@ type PanelistAssignmentGroupsProps = {
 };
 
 const MAX_PANELS = 3;
+const PANEL_ROLE_OPTIONS: PanelRole[] = ['chairman', 'member'];
+
+const formatPanelRole = (role?: PanelRole | null): string => {
+    if (role === 'chairman') {
+        return 'Panel Chairman';
+    }
+
+    return 'Panel Member';
+};
+
+const panelRoleBadgeClasses = (role?: PanelRole | null): string => {
+    if (role === 'chairman') {
+        return 'bg-indigo-100 text-indigo-700';
+    }
+
+    return 'bg-slate-100 text-slate-600';
+};
 
 const PanelistAssignmentGroups = ({
     panelist,
@@ -80,6 +99,7 @@ const PanelistAssignmentGroups = ({
     const [errorMessage, setErrorMessage] = React.useState('');
     const [statusFilter, setStatusFilter] = React.useState<'all' | 'assigned' | 'available' | 'full'>('all');
     const [selectedProgramSet, setSelectedProgramSet] = React.useState('All');
+    const [roleSelections, setRoleSelections] = React.useState<Record<number, PanelRole>>({});
 
     // ── Pagination ──────────────────────────────────────────────────────────
     const [currentPage, setCurrentPage] = React.useState(1);
@@ -186,6 +206,25 @@ const PanelistAssignmentGroups = ({
         });
     }, []);
 
+    const resolveRoleSelection = React.useCallback(
+        (group: GroupRow): PanelRole => {
+            const storedRole = roleSelections[group.id];
+            if (storedRole) {
+                return storedRole;
+            }
+
+            const currentAssignment = (group.panelists ?? []).find((assignment) => assignment.id === panelist.id);
+            if (currentAssignment?.role) {
+                return currentAssignment.role;
+            }
+
+            const hasChairman = (group.panelists ?? []).some((assignment) => assignment.role === 'chairman');
+
+            return hasChairman ? 'member' : 'chairman';
+        },
+        [roleSelections, panelist.id],
+    );
+
     const filteredGroups = React.useMemo(() => {
         const query = searchTerm.trim().toLowerCase();
 
@@ -261,7 +300,7 @@ const PanelistAssignmentGroups = ({
     }, [currentPage, totalPages]);
     // ────────────────────────────────────────────────────────────────────────
 
-    const assignPanelist = (groupId: number, replacePanelistId?: number | null) => {
+    const assignPanelist = (groupId: number, panelRole: PanelRole, replacePanelistId?: number | null) => {
         if (assigningGroupId !== null) {
             return;
         }
@@ -275,12 +314,15 @@ const PanelistAssignmentGroups = ({
                 group_id: groupId,
                 panelist_id: panelist.id,
                 replace_panelist_id: replacePanelistId ?? null,
+                panel_role: panelRole,
             },
             {
                 preserveScroll: true,
                 onError: (errors) => {
                     if (errors.panelist_id) {
                         setErrorMessage(errors.panelist_id);
+                    } else if (errors.panel_role) {
+                        setErrorMessage(errors.panel_role);
                     } else if (errors.replace_panelist_id) {
                         setErrorMessage(errors.replace_panelist_id);
                     } else {
@@ -477,6 +519,7 @@ const PanelistAssignmentGroups = ({
                                 const openSlots = Math.max(0, MAX_PANELS - panelistAssignments.length);
                                 const hasOpenSlots = openSlots > 0;
                                 const isDisabled = assigningGroupId !== null;
+                                const selectedRole = resolveRoleSelection(group);
 
                                 return (
                                     <div
@@ -507,6 +550,8 @@ const PanelistAssignmentGroups = ({
                                                     panelistAssignments.map((assignment) => {
                                                         const isCurrentPanelist = assignment.id === panelist.id;
                                                         const canReplace = !isCurrentPanelist && !isAssignedToPanelist;
+                                                        const assignmentRole = assignment.role ?? 'member';
+                                                        const isRoleUnchanged = selectedRole === assignmentRole;
 
                                                         return (
                                                             <div
@@ -514,22 +559,65 @@ const PanelistAssignmentGroups = ({
                                                                 className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
                                                             >
                                                                 <div>
-                                                                    <p className="font-semibold text-slate-700">Panel {assignment.slot}</p>
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <p className="font-semibold text-slate-700">Panel {assignment.slot}</p>
+                                                                        <span
+                                                                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${panelRoleBadgeClasses(
+                                                                                assignmentRole,
+                                                                            )}`}
+                                                                        >
+                                                                            {formatPanelRole(assignmentRole)}
+                                                                        </span>
+                                                                    </div>
                                                                     <p className="text-[11px] text-slate-500">{assignment.name ?? 'Panelist'}</p>
                                                                 </div>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => assignPanelist(group.id, assignment.id)}
-                                                                    disabled={isDisabled || !canReplace}
-                                                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
-                                                                        isCurrentPanelist
-                                                                            ? 'bg-emerald-100 text-emerald-700'
-                                                                            : 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                                                    } ${isDisabled || !canReplace ? 'cursor-not-allowed opacity-60' : ''}`}
-                                                                >
-                                                                    <UserCheck className="h-3 w-3" />
-                                                                    {isCurrentPanelist ? 'Assigned' : 'Replace'}
-                                                                </button>
+                                                                {isCurrentPanelist ? (
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <select
+                                                                            value={selectedRole}
+                                                                            onChange={(event) =>
+                                                                                setRoleSelections((previous) => ({
+                                                                                    ...previous,
+                                                                                    [group.id]: event.target.value as PanelRole,
+                                                                                }))
+                                                                            }
+                                                                            className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600"
+                                                                        >
+                                                                            {PANEL_ROLE_OPTIONS.map((roleOption) => (
+                                                                                <option key={roleOption} value={roleOption}>
+                                                                                    {formatPanelRole(roleOption)}
+                                                                                </option>
+                                                                            ))}
+                                                                        </select>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => assignPanelist(group.id, selectedRole)}
+                                                                            disabled={isDisabled || isRoleUnchanged}
+                                                                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
+                                                                                isRoleUnchanged
+                                                                                    ? 'bg-emerald-100 text-emerald-700'
+                                                                                    : 'border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                                                                            } ${isDisabled || isRoleUnchanged ? 'cursor-not-allowed opacity-60' : ''}`}
+                                                                        >
+                                                                            <UserCheck className="h-3 w-3" />
+                                                                            {isRoleUnchanged ? 'Assigned' : 'Update Role'}
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => assignPanelist(group.id, assignmentRole, assignment.id)}
+                                                                        disabled={isDisabled || !canReplace}
+                                                                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
+                                                                            isCurrentPanelist
+                                                                                ? 'bg-emerald-100 text-emerald-700'
+                                                                                : 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                                                        } ${isDisabled || !canReplace ? 'cursor-not-allowed opacity-60' : ''}`}
+                                                                    >
+                                                                        <UserCheck className="h-3 w-3" />
+                                                                        Replace
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         );
                                                     })
@@ -540,17 +628,38 @@ const PanelistAssignmentGroups = ({
                                                 )}
 
                                                 {hasOpenSlots && !isAssignedToPanelist ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => assignPanelist(group.id)}
-                                                        disabled={isDisabled}
-                                                        className={`inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 ${
-                                                            isDisabled ? 'cursor-not-allowed opacity-60' : ''
-                                                        }`}
-                                                    >
-                                                        <UserCheck className="h-3.5 w-3.5" />
-                                                        Assign to Open Slot
-                                                    </button>
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[10px] font-semibold text-slate-600">
+                                                            <span>Role for this assignment</span>
+                                                            <select
+                                                                value={selectedRole}
+                                                                onChange={(event) =>
+                                                                    setRoleSelections((previous) => ({
+                                                                        ...previous,
+                                                                        [group.id]: event.target.value as PanelRole,
+                                                                    }))
+                                                                }
+                                                                className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600"
+                                                            >
+                                                                {PANEL_ROLE_OPTIONS.map((roleOption) => (
+                                                                    <option key={roleOption} value={roleOption}>
+                                                                        {formatPanelRole(roleOption)}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => assignPanelist(group.id, selectedRole)}
+                                                            disabled={isDisabled}
+                                                            className={`inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 ${
+                                                                isDisabled ? 'cursor-not-allowed opacity-60' : ''
+                                                            }`}
+                                                        >
+                                                            <UserCheck className="h-3.5 w-3.5" />
+                                                            Assign to Open Slot
+                                                        </button>
+                                                    </div>
                                                 ) : null}
 
                                                 {!hasOpenSlots && !isAssignedToPanelist ? (
@@ -586,6 +695,7 @@ const PanelistAssignmentGroups = ({
                                         const isAssignedToPanelist = panelistAssignments.some((assignment) => assignment.id === panelist.id);
                                         const isDisabled = assigningGroupId !== null;
                                         const slots = getSlotAssignments(group);
+                                        const selectedRole = resolveRoleSelection(group);
 
                                         return (
                                             <tr key={group.id} className="transition-colors hover:bg-green-50/30">
@@ -604,6 +714,8 @@ const PanelistAssignmentGroups = ({
                                                             const panelistId = slot.id;
                                                             const hasPanelist = panelistId !== undefined;
                                                             const canReplace = hasPanelist && !isCurrentPanelist && !isAssignedToPanelist;
+                                                            const slotRole = slot.role ?? 'member';
+                                                            const isRoleUnchanged = selectedRole === slotRole;
 
                                                             return (
                                                                 <div
@@ -611,35 +723,98 @@ const PanelistAssignmentGroups = ({
                                                                     className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
                                                                 >
                                                                     <div>
-                                                                        <p className="text-[11px] font-semibold text-slate-700">Panel {slot.slot}</p>
+                                                                        <div className="flex flex-wrap items-center gap-2">
+                                                                            <p className="text-[11px] font-semibold text-slate-700">Panel {slot.slot}</p>
+                                                                            {hasPanelist ? (
+                                                                                <span
+                                                                                    className={`rounded-full px-2 py-0.5 text-[9px] font-semibold ${panelRoleBadgeClasses(
+                                                                                        slotRole,
+                                                                                    )}`}
+                                                                                >
+                                                                                    {formatPanelRole(slotRole)}
+                                                                                </span>
+                                                                            ) : null}
+                                                                        </div>
                                                                         <p className="text-[10px] text-slate-500">{slot.name ?? 'Open slot'}</p>
                                                                     </div>
                                                                     {hasPanelist ? (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => assignPanelist(group.id, panelistId)}
-                                                                            disabled={isDisabled || !canReplace}
-                                                                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
-                                                                                isCurrentPanelist
-                                                                                    ? 'bg-emerald-100 text-emerald-700'
-                                                                                    : 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                                                            } ${isDisabled || !canReplace ? 'cursor-not-allowed opacity-60' : ''}`}
-                                                                        >
-                                                                            <UserCheck className="h-3 w-3" />
-                                                                            {isCurrentPanelist ? 'Assigned' : 'Replace'}
-                                                                        </button>
+                                                                        isCurrentPanelist ? (
+                                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                                <select
+                                                                                    value={selectedRole}
+                                                                                    onChange={(event) =>
+                                                                                        setRoleSelections((previous) => ({
+                                                                                            ...previous,
+                                                                                            [group.id]: event.target.value as PanelRole,
+                                                                                        }))
+                                                                                    }
+                                                                                    className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[9px] font-semibold text-slate-600"
+                                                                                >
+                                                                                    {PANEL_ROLE_OPTIONS.map((roleOption) => (
+                                                                                        <option key={roleOption} value={roleOption}>
+                                                                                            {formatPanelRole(roleOption)}
+                                                                                        </option>
+                                                                                    ))}
+                                                                                </select>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => assignPanelist(group.id, selectedRole)}
+                                                                                    disabled={isDisabled || isRoleUnchanged}
+                                                                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
+                                                                                        isRoleUnchanged
+                                                                                            ? 'bg-emerald-100 text-emerald-700'
+                                                                                            : 'border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                                                                                    } ${isDisabled || isRoleUnchanged ? 'cursor-not-allowed opacity-60' : ''}`}
+                                                                                >
+                                                                                    <UserCheck className="h-3 w-3" />
+                                                                                    {isRoleUnchanged ? 'Assigned' : 'Update Role'}
+                                                                                </button>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => assignPanelist(group.id, slotRole, panelistId)}
+                                                                                disabled={isDisabled || !canReplace}
+                                                                                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
+                                                                                    isCurrentPanelist
+                                                                                        ? 'bg-emerald-100 text-emerald-700'
+                                                                                        : 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                                                                } ${isDisabled || !canReplace ? 'cursor-not-allowed opacity-60' : ''}`}
+                                                                            >
+                                                                                <UserCheck className="h-3 w-3" />
+                                                                                Replace
+                                                                            </button>
+                                                                        )
                                                                     ) : (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => assignPanelist(group.id)}
-                                                                            disabled={isDisabled || isAssignedToPanelist}
-                                                                            className={`inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 transition hover:bg-emerald-100 ${
-                                                                                isDisabled || isAssignedToPanelist ? 'cursor-not-allowed opacity-60' : ''
-                                                                            }`}
-                                                                        >
-                                                                            <UserCheck className="h-3 w-3" />
-                                                                            Assign
-                                                                        </button>
+                                                                        <div className="flex flex-wrap items-center gap-2">
+                                                                            <select
+                                                                                value={selectedRole}
+                                                                                onChange={(event) =>
+                                                                                    setRoleSelections((previous) => ({
+                                                                                        ...previous,
+                                                                                        [group.id]: event.target.value as PanelRole,
+                                                                                    }))
+                                                                                }
+                                                                                className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[9px] font-semibold text-slate-600"
+                                                                            >
+                                                                                {PANEL_ROLE_OPTIONS.map((roleOption) => (
+                                                                                    <option key={roleOption} value={roleOption}>
+                                                                                        {formatPanelRole(roleOption)}
+                                                                                    </option>
+                                                                                ))}
+                                                                            </select>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => assignPanelist(group.id, selectedRole)}
+                                                                                disabled={isDisabled || isAssignedToPanelist}
+                                                                                className={`inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 transition hover:bg-emerald-100 ${
+                                                                                    isDisabled || isAssignedToPanelist ? 'cursor-not-allowed opacity-60' : ''
+                                                                                }`}
+                                                                            >
+                                                                                <UserCheck className="h-3 w-3" />
+                                                                                Assign
+                                                                            </button>
+                                                                        </div>
                                                                     )}
                                                                 </div>
                                                             );

@@ -36,9 +36,37 @@ class AssignGroupPanelistController extends Controller
         }
 
         $currentAssignments = $group->panelAssignments;
-        $isAlreadyAssigned = $currentAssignments->contains('panelist_id', $panelist->id);
-        if ($isAlreadyAssigned) {
-            return back()->with('success', 'Panelist already assigned to this group.');
+        $panelRole = $data['panel_role'];
+        $chairmanCount = $currentAssignments->where('role', 'chairman')->count();
+        $memberCount = $currentAssignments->where('role', 'member')->count();
+
+        $currentAssignment = $currentAssignments->firstWhere('panelist_id', $panelist->id);
+        if ($currentAssignment !== null) {
+            if ($currentAssignment->role === $panelRole) {
+                return back()->with('success', 'Panelist already assigned to this group.');
+            }
+
+            $adjustedChairmanCount = $chairmanCount - ($currentAssignment->role === 'chairman' ? 1 : 0);
+            $adjustedMemberCount = $memberCount - ($currentAssignment->role === 'member' ? 1 : 0);
+
+            if ($panelRole === 'chairman' && $adjustedChairmanCount >= 1) {
+                throw ValidationException::withMessages([
+                    'panel_role' => 'This group already has a panel chairman.',
+                ]);
+            }
+
+            if ($panelRole === 'member' && $adjustedMemberCount >= 2) {
+                throw ValidationException::withMessages([
+                    'panel_role' => 'This group already has two panel members.',
+                ]);
+            }
+
+            $currentAssignment->update([
+                'role' => $panelRole,
+                'assigned_by' => $userId,
+            ]);
+
+            return back()->with('success', 'Panelist role updated successfully.');
         }
 
         $replacePanelistId = $data['replace_panelist_id'] ?? null;
@@ -52,8 +80,24 @@ class AssignGroupPanelistController extends Controller
                 ]);
             }
 
+            $adjustedChairmanCount = $chairmanCount - ($replaceAssignment->role === 'chairman' ? 1 : 0);
+            $adjustedMemberCount = $memberCount - ($replaceAssignment->role === 'member' ? 1 : 0);
+
+            if ($panelRole === 'chairman' && $adjustedChairmanCount >= 1) {
+                throw ValidationException::withMessages([
+                    'panel_role' => 'This group already has a panel chairman.',
+                ]);
+            }
+
+            if ($panelRole === 'member' && $adjustedMemberCount >= 2) {
+                throw ValidationException::withMessages([
+                    'panel_role' => 'This group already has two panel members.',
+                ]);
+            }
+
             $replaceAssignment->update([
                 'panelist_id' => $panelist->id,
+                'role' => $panelRole,
                 'assigned_by' => $userId,
             ]);
 
@@ -63,6 +107,18 @@ class AssignGroupPanelistController extends Controller
         if ($currentAssignments->count() >= 3) {
             throw ValidationException::withMessages([
                 'panelist_id' => 'This group already has 3 panelists assigned.',
+            ]);
+        }
+
+        if ($panelRole === 'chairman' && $chairmanCount >= 1) {
+            throw ValidationException::withMessages([
+                'panel_role' => 'This group already has a panel chairman.',
+            ]);
+        }
+
+        if ($panelRole === 'member' && $memberCount >= 2) {
+            throw ValidationException::withMessages([
+                'panel_role' => 'This group already has two panel members.',
             ]);
         }
 
@@ -79,6 +135,7 @@ class AssignGroupPanelistController extends Controller
             'group_id' => $group->id,
             'panelist_id' => $panelist->id,
             'panel_slot' => $availableSlot,
+            'role' => $panelRole,
             'assigned_by' => $userId,
         ]);
 

@@ -54,7 +54,7 @@ class Group extends Model
     public function panelists(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'group_panelists', 'group_id', 'panelist_id')
-            ->withPivot(['panel_slot', 'assigned_by'])
+            ->withPivot(['panel_slot', 'role', 'assigned_by'])
             ->withTimestamps();
     }
 }

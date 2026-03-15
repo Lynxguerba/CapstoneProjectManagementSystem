@@ -88,7 +88,7 @@ class User extends Authenticatable
     public function panelGroups(): BelongsToMany
     {
         return $this->belongsToMany(Group::class, 'group_panelists', 'panelist_id', 'group_id')
-            ->withPivot(['panel_slot', 'assigned_by'])
+            ->withPivot(['panel_slot', 'role', 'assigned_by'])
             ->withTimestamps();
     }
 
