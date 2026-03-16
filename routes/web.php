@@ -998,6 +998,37 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 ->all();
         }
 
+        $panelists = [];
+        try {
+            if (Schema::hasTable('users')) {
+                $hasRoleTables = Schema::hasTable('roles') && Schema::hasTable('role_user');
+                $panelistsQuery = User::query()
+                    ->when($hasRoleTables, function ($query) {
+                        $query->where(function ($roleQuery) {
+                            $roleQuery->where('role', 'like', '%panelist%')
+                                ->orWhereHas('roles', fn ($subQuery) => $subQuery->where('slug', 'panelist'));
+                        });
+                    }, function ($query) {
+                        $query->where('role', 'like', '%panelist%');
+                    })
+                    ->orderBy('last_name')
+                    ->get(['id', 'name', 'first_name', 'last_name', 'email']);
+
+                $panelists = $panelistsQuery
+                    ->map(function (User $panelist) use ($resolveUserName): array {
+                        return [
+                            'id' => $panelist->id,
+                            'name' => $resolveUserName($panelist),
+                            'email' => $panelist->email ?? '',
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $panelists = [];
+        }
+
         $groups = [];
         try {
             if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups')) {
@@ -1057,6 +1088,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 'email' => $panelist->email ?? '',
                 'workloads' => $workloads,
             ],
+            'panelists' => $panelists,
             'groups' => $groups,
             'academicYears' => $academicYears,
             'selectedAcademicYear' => $selectedAcademicYear,

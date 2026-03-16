@@ -1,7 +1,8 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Calendar, ChevronRight, GraduationCap, LayoutGrid, List, Search, SlidersHorizontal, UserCheck } from 'lucide-react';
+import { Calendar, ChevronRight, GraduationCap, LayoutGrid, List, Search, SlidersHorizontal, UserCheck, Users } from 'lucide-react';
 import React from 'react';
+import AssignPanelistModal from '../../../components/Instructor/panelist/AssignPanelistModal';
 import instructorRoutes from '../../../routes/instructor';
 import panelistAssignment from '../../../routes/instructor/panelist-assignment';
 import InstructorLayout from '../_layout';
@@ -62,6 +63,7 @@ type ProgramSetOption = {
 
 type PanelistAssignmentGroupsProps = {
     panelist: PanelistSummary;
+    panelists?: PanelistSummary[];
     groups?: GroupRow[];
     academicYears?: AcademicYearOption[];
     selectedAcademicYear?: string | null;
@@ -88,6 +90,7 @@ const panelRoleBadgeClasses = (role?: PanelRole | null): string => {
 
 const PanelistAssignmentGroups = ({
     panelist,
+    panelists = [],
     groups = [],
     academicYears = [],
     selectedAcademicYear: requestedAcademicYear = null,
@@ -100,6 +103,8 @@ const PanelistAssignmentGroups = ({
     const [statusFilter, setStatusFilter] = React.useState<'all' | 'assigned' | 'available' | 'full'>('all');
     const [selectedProgramSet, setSelectedProgramSet] = React.useState('All');
     const [roleSelections, setRoleSelections] = React.useState<Record<number, PanelRole>>({});
+    const [isAssignPanelistModalOpen, setIsAssignPanelistModalOpen] = React.useState(false);
+    const [activeGroupForPanelist, setActiveGroupForPanelist] = React.useState<GroupRow | null>(null);
 
     // ── Pagination ──────────────────────────────────────────────────────────
     const [currentPage, setCurrentPage] = React.useState(1);
@@ -206,23 +211,43 @@ const PanelistAssignmentGroups = ({
         });
     }, []);
 
+    const getAllowedRoles = React.useCallback(
+        (group: GroupRow): PanelRole[] => {
+            const panelistAssignments = group.panelists ?? [];
+            const currentAssignment = panelistAssignments.find((assignment) => assignment.id === panelist.id);
+            const hasChairman = panelistAssignments.some((assignment) => assignment.role === 'chairman');
+            const currentIsChairman = currentAssignment?.role === 'chairman';
+            const memberCount = panelistAssignments.filter((assignment) => (assignment.role ?? 'member') === 'member').length;
+
+            if (hasChairman && !currentIsChairman) {
+                return ['member'];
+            }
+
+            if (!hasChairman && !currentAssignment && memberCount >= 2) {
+                return ['chairman'];
+            }
+
+            if (currentIsChairman && memberCount >= 2) {
+                return ['chairman'];
+            }
+
+            return PANEL_ROLE_OPTIONS;
+        },
+        [panelist.id],
+    );
+
     const resolveRoleSelection = React.useCallback(
         (group: GroupRow): PanelRole => {
+            const allowedRoles = getAllowedRoles(group);
             const storedRole = roleSelections[group.id];
-            if (storedRole) {
-                return storedRole;
-            }
-
             const currentAssignment = (group.panelists ?? []).find((assignment) => assignment.id === panelist.id);
-            if (currentAssignment?.role) {
-                return currentAssignment.role;
-            }
-
             const hasChairman = (group.panelists ?? []).some((assignment) => assignment.role === 'chairman');
+            const defaultRole = hasChairman ? 'member' : 'chairman';
+            const preferredRole = storedRole ?? currentAssignment?.role ?? defaultRole;
 
-            return hasChairman ? 'member' : 'chairman';
+            return allowedRoles.includes(preferredRole) ? preferredRole : allowedRoles[0];
         },
-        [roleSelections, panelist.id],
+        [roleSelections, panelist.id, getAllowedRoles],
     );
 
     const filteredGroups = React.useMemo(() => {
@@ -346,6 +371,11 @@ const PanelistAssignmentGroups = ({
         }
 
         return trimmed.toLowerCase().endsWith(' group') ? trimmed : `${trimmed} Group`;
+    };
+
+    const openAssignPanelistModal = (group: GroupRow) => {
+        setActiveGroupForPanelist(group);
+        setIsAssignPanelistModalOpen(true);
     };
 
     return (
@@ -520,6 +550,11 @@ const PanelistAssignmentGroups = ({
                                 const hasOpenSlots = openSlots > 0;
                                 const isDisabled = assigningGroupId !== null;
                                 const selectedRole = resolveRoleSelection(group);
+                                const allowedRoles = getAllowedRoles(group);
+                                const availablePanelistsCount = panelists.filter(
+                                    (option) =>
+                                        option.id !== panelist.id && !panelistAssignments.some((assignment) => assignment.id === option.id),
+                                ).length;
 
                                 return (
                                     <div
@@ -583,7 +618,7 @@ const PanelistAssignmentGroups = ({
                                                                             }
                                                                             className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600"
                                                                         >
-                                                                            {PANEL_ROLE_OPTIONS.map((roleOption) => (
+                                                                            {allowedRoles.map((roleOption) => (
                                                                                 <option key={roleOption} value={roleOption}>
                                                                                     {formatPanelRole(roleOption)}
                                                                                 </option>
@@ -627,42 +662,60 @@ const PanelistAssignmentGroups = ({
                                                     </div>
                                                 )}
 
-                                                {hasOpenSlots && !isAssignedToPanelist ? (
+                                                {hasOpenSlots ? (
                                                     <div className="space-y-2">
-                                                        <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[10px] font-semibold text-slate-600">
-                                                            <span>Role for this assignment</span>
-                                                            <select
-                                                                value={selectedRole}
-                                                                onChange={(event) =>
-                                                                    setRoleSelections((previous) => ({
-                                                                        ...previous,
-                                                                        [group.id]: event.target.value as PanelRole,
-                                                                    }))
-                                                                }
-                                                                className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600"
-                                                            >
-                                                                {PANEL_ROLE_OPTIONS.map((roleOption) => (
-                                                                    <option key={roleOption} value={roleOption}>
-                                                                        {formatPanelRole(roleOption)}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                        </div>
+                                                        {!isAssignedToPanelist ? (
+                                                            <>
+                                                                <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[10px] font-semibold text-slate-600">
+                                                                    <span>Role for this assignment</span>
+                                                                    <select
+                                                                        value={selectedRole}
+                                                                        onChange={(event) =>
+                                                                            setRoleSelections((previous) => ({
+                                                                                ...previous,
+                                                                                [group.id]: event.target.value as PanelRole,
+                                                                            }))
+                                                                        }
+                                                                        className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600"
+                                                                    >
+                                                                        {allowedRoles.map((roleOption) => (
+                                                                            <option key={roleOption} value={roleOption}>
+                                                                                {formatPanelRole(roleOption)}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => assignPanelist(group.id, selectedRole)}
+                                                                    disabled={isDisabled}
+                                                                    className={`inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 ${
+                                                                        isDisabled ? 'cursor-not-allowed opacity-60' : ''
+                                                                    }`}
+                                                                >
+                                                                    <UserCheck className="h-3.5 w-3.5" />
+                                                                    Assign to Open Slot
+                                                                </button>
+                                                            </>
+                                                        ) : null}
                                                         <button
                                                             type="button"
-                                                            onClick={() => assignPanelist(group.id, selectedRole)}
-                                                            disabled={isDisabled}
-                                                            className={`inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 ${
-                                                                isDisabled ? 'cursor-not-allowed opacity-60' : ''
+                                                            onClick={() => openAssignPanelistModal(group)}
+                                                            disabled={isDisabled || availablePanelistsCount === 0}
+                                                            className={`inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 ${
+                                                                isDisabled || availablePanelistsCount === 0 ? 'cursor-not-allowed opacity-60' : ''
                                                             }`}
                                                         >
-                                                            <UserCheck className="h-3.5 w-3.5" />
-                                                            Assign to Open Slot
+                                                            <Users className="h-3.5 w-3.5" />
+                                                            Assign another panelist
                                                         </button>
+                                                        {availablePanelistsCount === 0 ? (
+                                                            <p className="text-[10px] text-slate-500">No available panelists to assign.</p>
+                                                        ) : null}
                                                     </div>
                                                 ) : null}
 
-                                                {!hasOpenSlots && !isAssignedToPanelist ? (
+                                                {!hasOpenSlots ? (
                                                     <p className="text-[11px] text-slate-500">Group is full. Replace a panelist to assign.</p>
                                                 ) : null}
                                             </div>
@@ -693,9 +746,16 @@ const PanelistAssignmentGroups = ({
                                         const groupYear = group.school_year ?? 'Unassigned';
                                         const panelistAssignments = group.panelists ?? [];
                                         const isAssignedToPanelist = panelistAssignments.some((assignment) => assignment.id === panelist.id);
+                                        const openSlots = Math.max(0, MAX_PANELS - panelistAssignments.length);
+                                        const hasOpenSlots = openSlots > 0;
                                         const isDisabled = assigningGroupId !== null;
                                         const slots = getSlotAssignments(group);
                                         const selectedRole = resolveRoleSelection(group);
+                                        const allowedRoles = getAllowedRoles(group);
+                                        const availablePanelistsCount = panelists.filter(
+                                            (option) =>
+                                                option.id !== panelist.id && !panelistAssignments.some((assignment) => assignment.id === option.id),
+                                        ).length;
 
                                         return (
                                             <tr key={group.id} className="transition-colors hover:bg-green-50/30">
@@ -750,7 +810,7 @@ const PanelistAssignmentGroups = ({
                                                                                     }
                                                                                     className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[9px] font-semibold text-slate-600"
                                                                                 >
-                                                                                    {PANEL_ROLE_OPTIONS.map((roleOption) => (
+                                                                                    {allowedRoles.map((roleOption) => (
                                                                                         <option key={roleOption} value={roleOption}>
                                                                                             {formatPanelRole(roleOption)}
                                                                                         </option>
@@ -797,7 +857,7 @@ const PanelistAssignmentGroups = ({
                                                                                 }
                                                                                 className="rounded-full border border-slate-200 bg-white px-2 py-1 text-[9px] font-semibold text-slate-600"
                                                                             >
-                                                                                {PANEL_ROLE_OPTIONS.map((roleOption) => (
+                                                                                {allowedRoles.map((roleOption) => (
                                                                                     <option key={roleOption} value={roleOption}>
                                                                                         {formatPanelRole(roleOption)}
                                                                                     </option>
@@ -819,6 +879,27 @@ const PanelistAssignmentGroups = ({
                                                                 </div>
                                                             );
                                                         })}
+                                                        {hasOpenSlots ? (
+                                                            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className="text-[10px] font-semibold text-slate-600">Assign another panelist</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => openAssignPanelistModal(group)}
+                                                                        disabled={isDisabled || availablePanelistsCount === 0}
+                                                                        className={`inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 ${
+                                                                            isDisabled || availablePanelistsCount === 0 ? 'cursor-not-allowed opacity-60' : ''
+                                                                        }`}
+                                                                    >
+                                                                        <Users className="h-3 w-3" />
+                                                                        Assign
+                                                                    </button>
+                                                                </div>
+                                                                {availablePanelistsCount === 0 ? (
+                                                                    <p className="mt-1 text-[9px] text-slate-500">No available panelists to assign.</p>
+                                                                ) : null}
+                                                            </div>
+                                                        ) : null}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -884,6 +965,20 @@ const PanelistAssignmentGroups = ({
                         </div>
                     )}
                 </div>
+
+                <AssignPanelistModal
+                    open={isAssignPanelistModalOpen}
+                    groupId={activeGroupForPanelist?.id ?? null}
+                    groupName={activeGroupForPanelist ? formatGroupName(activeGroupForPanelist.name) : null}
+                    programSetName={activeGroupForPanelist?.program_set_name ?? null}
+                    assignments={activeGroupForPanelist?.panelists ?? []}
+                    currentPanelistId={panelist.id}
+                    panelists={panelists}
+                    onClose={() => {
+                        setIsAssignPanelistModalOpen(false);
+                        setActiveGroupForPanelist(null);
+                    }}
+                />
             </motion.section>
         </InstructorLayout>
     );
@@ -895,6 +990,7 @@ const PanelistAssignmentGroupsPage = () => {
     return (
         <PanelistAssignmentGroups
             panelist={props.panelist}
+            panelists={props.panelists ?? []}
             groups={props.groups ?? []}
             academicYears={props.academicYears ?? []}
             selectedAcademicYear={props.selectedAcademicYear ?? null}
