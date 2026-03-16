@@ -1,5 +1,4 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { motion } from 'framer-motion';
 import { ChevronRight, Search } from 'lucide-react';
 import React from 'react';
 import ScheduleDefenseForm from '../../../components/Instructor/scheduling/ScheduleDefenseModal';
@@ -207,7 +206,7 @@ const ScheduleManagerPage = () => {
 
     return (
         <InstructorLayout title="Defense Schedule Manager" subtitle="Create schedules and review all defense appointments">
-            <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
+            <section className="space-y-5">
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
                     <Link href="/instructor/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
                         Dashboard
@@ -282,7 +281,6 @@ const ScheduleManagerPage = () => {
                                         <th className="px-4 py-3">Room</th>
                                         <th className="px-4 py-3">Status</th>
                                         <th className="px-4 py-3">Managed By</th>
-                                        <th className="px-4 py-3 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -295,7 +293,8 @@ const ScheduleManagerPage = () => {
                                         return (
                                             <tr
                                                 key={schedule.id}
-                                                className={`transition-colors hover:bg-emerald-50/30 ${
+                                                onClick={() => visitSchedule(schedule.id)}
+                                                className={`cursor-pointer transition-colors hover:bg-emerald-50/30 ${
                                                     index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'
                                                 } ${isSelected ? 'bg-emerald-100/70' : ''}`}
                                             >
@@ -319,6 +318,7 @@ const ScheduleManagerPage = () => {
                                                     <select
                                                         value={status}
                                                         onChange={(event) => updateScheduleStatus(schedule, event.target.value)}
+                                                        onClick={(event) => event.stopPropagation()}
                                                         disabled={!canManage}
                                                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600 disabled:cursor-not-allowed disabled:bg-slate-100"
                                                     >
@@ -330,15 +330,6 @@ const ScheduleManagerPage = () => {
                                                     </select>
                                                 </td>
                                                 <td className="px-4 py-3 text-slate-600">{managerName}</td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => visitSchedule(schedule.id)}
-                                                        className="rounded-md border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100"
-                                                    >
-                                                        {canManage ? 'Edit' : 'View'}
-                                                    </button>
-                                                </td>
                                             </tr>
                                         );
                                     })}
@@ -351,7 +342,7 @@ const ScheduleManagerPage = () => {
                         </div>
                     </div>
                 </div>
-            </motion.section>
+            </section>
         </InstructorLayout>
     );
 };
