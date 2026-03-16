@@ -435,7 +435,86 @@ const SchedulingPage = () => {
         return conflicts;
     }, [rooms, baseFilteredSchedules, selectedDateKey]);
 
-    const hasConflicts = Array.from(roomConflicts.values()).some(Boolean);
+    const panelistConflicts = React.useMemo(() => {
+        const schedulesOnDate = baseFilteredSchedules.filter((schedule) => schedule.scheduled_date === selectedDateKey);
+        const panelistSchedules = new Map<
+            string,
+            {
+                panelistName: string;
+                schedule: ScheduleRow;
+                startMinutes: number;
+                endMinutes: number;
+            }[]
+        >();
+
+        schedulesOnDate.forEach((schedule) => {
+            const startMinutes = timeToMinutes(schedule.start_time);
+            const endMinutes = timeToMinutes(schedule.end_time);
+
+            if (startMinutes === null || endMinutes === null) {
+                return;
+            }
+
+            (schedule.panelists ?? []).forEach((panelist, index) => {
+                const panelistKey =
+                    panelist.id !== undefined && panelist.id !== null
+                        ? `id:${panelist.id}`
+                        : panelist.name
+                          ? `name:${panelist.name}`
+                          : panelist.slot !== undefined
+                            ? `slot:${panelist.slot}`
+                            : `unknown:${schedule.id}:${index}`;
+                const panelistName =
+                    panelist.name ??
+                    (panelist.id !== undefined && panelist.id !== null
+                        ? `Panelist #${panelist.id}`
+                        : panelist.slot !== undefined
+                          ? `Panelist ${panelist.slot}`
+                          : 'Panelist');
+
+                const entries = panelistSchedules.get(panelistKey) ?? [];
+                entries.push({ panelistName, schedule, startMinutes, endMinutes });
+                panelistSchedules.set(panelistKey, entries);
+            });
+        });
+
+        const conflicts: {
+            key: string;
+            name: string;
+            overlaps: { first: ScheduleRow; second: ScheduleRow }[];
+        }[] = [];
+
+        panelistSchedules.forEach((entries, key) => {
+            if (entries.length < 2) {
+                return;
+            }
+
+            const sorted = [...entries].sort((a, b) => a.startMinutes - b.startMinutes);
+            const overlaps: { first: ScheduleRow; second: ScheduleRow }[] = [];
+
+            for (let index = 0; index < sorted.length; index += 1) {
+                const current = sorted[index];
+
+                for (let nextIndex = index + 1; nextIndex < sorted.length; nextIndex += 1) {
+                    const next = sorted[nextIndex];
+
+                    if (next.startMinutes >= current.endMinutes) {
+                        break;
+                    }
+
+                    overlaps.push({ first: current.schedule, second: next.schedule });
+                }
+            }
+
+            if (overlaps.length > 0) {
+                conflicts.push({ key, name: sorted[0].panelistName, overlaps });
+            }
+        });
+
+        return conflicts.sort((a, b) => a.name.localeCompare(b.name));
+    }, [baseFilteredSchedules, selectedDateKey]);
+
+    const hasConflicts = Array.from(roomConflicts.values()).some(Boolean) || panelistConflicts.length > 0;
 
     const scheduleManagerBaseUrl = '/instructor/scheduling/manage';
     const roomsManagerUrl = '/instructor/scheduling/rooms';
@@ -969,28 +1048,63 @@ const SchedulingPage = () => {
                                 </span>
                             </div>
 
-                            <div className="mt-4 grid flex-1 content-start gap-3">
-                                {rooms.map((room) => {
-                                    const isConflict = roomConflicts.get(room.id);
+                            <div className="mt-4 flex-1 space-y-4">
+                                <div>
+                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Rooms</p>
+                                    <div className="mt-2 grid content-start gap-3">
+                                        {rooms.map((room) => {
+                                            const isConflict = roomConflicts.get(room.id);
 
-                                    return (
-                                        <div
-                                            key={room.id}
-                                            className={`rounded-lg border px-3 py-2 text-[11px] font-semibold ${
-                                                isConflict
-                                                    ? 'border-rose-200 bg-rose-50 text-rose-700'
-                                                    : 'border-green-200 bg-green-50 text-green-700'
-                                            }`}
-                                        >
-                                            {room.name} • {isConflict ? 'Conflict found' : 'Available'}
-                                        </div>
-                                    );
-                                })}
+                                            return (
+                                                <div
+                                                    key={room.id}
+                                                    className={`rounded-lg border px-3 py-2 text-[11px] font-semibold ${
+                                                        isConflict
+                                                            ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                                            : 'border-green-200 bg-green-50 text-green-700'
+                                                    }`}
+                                                >
+                                                    {room.name} • {isConflict ? 'Conflict found' : 'Available'}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Panelists</p>
+                                    <div className="mt-2 space-y-2">
+                                        {panelistConflicts.length === 0 ? (
+                                            <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[11px] font-semibold text-green-700">
+                                                No panelist conflicts detected
+                                            </div>
+                                        ) : (
+                                            panelistConflicts.map((conflict) => (
+                                                <div
+                                                    key={conflict.key}
+                                                    className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] text-rose-700"
+                                                >
+                                                    <div className="font-semibold">{conflict.name}</div>
+                                                    <div className="mt-1 space-y-1 text-[10px] text-rose-600">
+                                                        {conflict.overlaps.map((overlap) => (
+                                                            <div key={`${conflict.key}-${overlap.first.id}-${overlap.second.id}`}>
+                                                                {formatTimeRange(overlap.first.start_time, overlap.first.end_time)} •{' '}
+                                                                {overlap.first.group_name ?? 'Unnamed group'} vs{' '}
+                                                                {formatTimeRange(overlap.second.start_time, overlap.second.end_time)} •{' '}
+                                                                {overlap.second.group_name ?? 'Unnamed group'}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
                             <p className="mt-4 text-[11px] text-slate-500">
                                 <XCircle className="mr-1 inline h-3 w-3" />
-                                Conflicts are checked for {formatDateLabel(selectedDateKey)}. Room availability is validated automatically.
+                                Conflicts are checked for {formatDateLabel(selectedDateKey)}. Room and panelist overlaps are detected automatically.
                             </p>
                         </div>
                     </div>
