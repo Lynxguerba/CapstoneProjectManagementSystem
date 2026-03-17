@@ -159,7 +159,6 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
     }
 
     const modalTitle = mode === 'student' ? 'Manage Student' : mode === 'faculty' ? 'Manage Faculty' : 'Manage User';
-   
 
     return createPortal(
         <div
