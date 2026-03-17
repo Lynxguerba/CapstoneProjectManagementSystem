@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class LoginController extends Controller
 {
@@ -77,6 +78,7 @@ class LoginController extends Controller
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
         $request->session()->put('active_role', $requestedRole);
+        Inertia::clearHistory();
 
         return redirect()->route(self::ROLE_DASHBOARD_ROUTES[$requestedRole]);
     }
@@ -90,6 +92,8 @@ class LoginController extends Controller
 
         // Regenerate CSRF token so old tokens cannot be reused
         $request->session()->regenerateToken();
+
+        Inertia::clearHistory();
 
         return redirect()->route('login');
     }
@@ -121,6 +125,8 @@ class LoginController extends Controller
                 'role' => $requestedRole,
             ])->save();
         }
+
+        Inertia::clearHistory();
 
         return redirect()->route(self::ROLE_DASHBOARD_ROUTES[$requestedRole]);
     }

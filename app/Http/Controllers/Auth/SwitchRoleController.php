@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class SwitchRoleController extends Controller
 {
@@ -48,6 +49,8 @@ class SwitchRoleController extends Controller
         $request->session()->put('active_role', $requestedRole);
 
         $request->session()->regenerate();
+
+        Inertia::clearHistory();
 
         $dashboard = $this->roleDashboards[$requestedRole] ?? 'login';
 

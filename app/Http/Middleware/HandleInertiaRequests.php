@@ -3,9 +3,12 @@
 namespace App\Http\Middleware;
 
 use App\Models\AcademicYear;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Inertia\Inertia;
 use Inertia\Middleware;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class HandleInertiaRequests extends Middleware
@@ -77,5 +80,12 @@ class HandleInertiaRequests extends Middleware
                     : null,
             ],
         ];
+    }
+
+    public function handle(Request $request, Closure $next): Response
+    {
+        Inertia::encryptHistory();
+
+        return parent::handle($request, $next);
     }
 }
