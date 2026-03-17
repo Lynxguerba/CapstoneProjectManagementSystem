@@ -67,7 +67,9 @@ const StudentLayout = ({ title, subtitle, children }: Props) => {
 
                             <span className="hidden items-center gap-3 text-left leading-tight sm:flex">
                                 <span>
-                                    <span className="block text-[10px] font-semibold tracking-wide text-emerald-700/80 uppercase">Current Year Level</span>
+                                    <span className="block text-[10px] font-semibold tracking-wide text-emerald-700/80 uppercase">
+                                        Current Year Level
+                                    </span>
                                     <span className="block text-sm font-semibold">{currentAcademicYear?.label ?? 'No Academic Year'}</span>
                                 </span>
 
@@ -82,7 +84,8 @@ const StudentLayout = ({ title, subtitle, children }: Props) => {
                             </span>
 
                             <span className="text-sm font-semibold sm:hidden">
-                                {currentAcademicYear?.label ?? 'Academic Year'}{activeRole ? ` • ${formatRoleLabel(activeRole)}` : ''}
+                                {currentAcademicYear?.label ?? 'Academic Year'}
+                                {activeRole ? ` • ${formatRoleLabel(activeRole)}` : ''}
                             </span>
                         </div>
                     </div>
