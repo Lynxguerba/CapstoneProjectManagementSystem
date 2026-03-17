@@ -27,7 +27,7 @@ import {
     UserCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import logoCpms from '../assets/logo-cpms.png';
 import SignOutModal from './signout-modal';
@@ -53,6 +53,8 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
     const user = auth?.user;
     const role = user?.role || 'student';
     const currentUrl: string = page.url ?? '';
+    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+    const scrollKey = useMemo(() => `cpms-sidebar-scroll-${role}`, [role]);
     const [showModal, setShowModal] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -220,6 +222,49 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
 
     const menuItems = getMenuItems(role);
 
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) {
+            return;
+        }
+
+        const stored = sessionStorage.getItem(scrollKey);
+        if (stored) {
+            const value = Number(stored);
+            if (!Number.isNaN(value)) {
+                container.scrollTop = value;
+            }
+        }
+    }, [currentUrl, scrollKey]);
+
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) {
+            return;
+        }
+
+        let frame: number | null = null;
+        const handleScroll = () => {
+            if (frame !== null) {
+                return;
+            }
+
+            frame = window.requestAnimationFrame(() => {
+                sessionStorage.setItem(scrollKey, `${container.scrollTop}`);
+                frame = null;
+            });
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+
+        return () => {
+            if (frame !== null) {
+                window.cancelAnimationFrame(frame);
+            }
+            container.removeEventListener('scroll', handleScroll);
+        };
+    }, [scrollKey]);
+
     return (
         <>
             <button
@@ -280,7 +325,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                 </div>
 
                 {/* Navigation - Compressed items */}
-                <nav className="cpms-scroll mt-2 min-h-0 flex-1 overflow-y-auto px-3">
+                <nav ref={scrollContainerRef} className="cpms-scroll mt-2 min-h-0 flex-1 overflow-y-auto px-3">
                     <div className="space-y-1 pb-3">
                         {menuItems.map((item) => {
                             if (item.isSection) {
