@@ -1,52 +1,51 @@
-import { useForm } from '@inertiajs/react';
-import React from 'react';
-import { useState } from 'react';
+import { router, useForm, usePage } from '@inertiajs/react';
+import React, { useEffect, useState } from 'react';
 import backgroundImg from '../assets/background.jpg';
 import loginCoverImg from '../assets/loginright.jpg';
 import cpmsLogo from '../assets/logo-cpms.png';
-import { ROLE_OPTIONS } from '../types/auth';
+import { ROLE_OPTIONS, ROLE_REDIRECTS, normalizeRole } from '../types/auth';
 import '../../css/pages/login.css';
 
-const ROLE_REDIRECTS: Record<string, string> = {
-    admin: '/admin/dashboard',
-    student: '/student/dashboard',
-    adviser: '/adviser/dashboard',
-    panelist: '/panelist/dashboard',
-    instructor: '/instructor/dashboard',
-    dean: '/dean/dashboard',
-    program_chairperson: '/program_chairperson/dashboard',
-};
-
-const normalizeRole = (role: string): string => {
-    const normalizedRole = role.trim().toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_');
-    const aliases: Record<string, string> = {
-        advisor: 'adviser',
-        program_chair: 'program_chairperson',
-        programchair: 'program_chairperson',
-        panel_chair: 'program_chairperson',
-        panelchair: 'program_chairperson',
+type LoginPageProps = {
+    auth?: {
+        user?: {
+            role?: string;
+            roles?: string[];
+        };
     };
-
-    return aliases[normalizedRole] ?? normalizedRole;
 };
 
 export default function LoginPage() {
+    const { auth } = usePage<LoginPageProps>().props;
+    const activeRole = auth?.user?.role ?? auth?.user?.roles?.[0];
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
         role: '',
     });
 
+    useEffect(() => {
+        if (!activeRole) {
+            return;
+        }
+
+        const redirectPath = ROLE_REDIRECTS[normalizeRole(activeRole)];
+        if (redirectPath) {
+            router.visit(redirectPath, { replace: true, preserveScroll: false });
+        }
+    }, [activeRole]);
+
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const requestedRole = normalizeRole(data.role);
 
         post('/login', {
+            replace: true,
             onSuccess: () => {
                 const redirectPath = ROLE_REDIRECTS[requestedRole];
 
                 if (redirectPath) {
-                    window.location.assign(redirectPath);
+                    router.visit(redirectPath, { replace: true, preserveScroll: false });
                 }
             },
         });

@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     LayoutDashboard,
     Users,
@@ -31,6 +31,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import logoCpms from '../assets/logo-cpms.png';
 import SignOutModal from './signout-modal';
+import { ROLE_REDIRECTS, ROLE_ROUTE_PREFIXES, normalizeRole } from '../types/auth';
 
 type SidebarAuthUser = {
     role?: string;
@@ -52,6 +53,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
     const { auth } = page.props;
     const user = auth?.user;
     const role = user?.role || 'student';
+    const normalizedRole = normalizeRole(role);
     const currentUrl: string = page.url ?? '';
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
     const scrollKey = useMemo(() => `cpms-sidebar-scroll-${role}`, [role]);
@@ -221,6 +223,21 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
     };
 
     const menuItems = getMenuItems(role);
+
+    useEffect(() => {
+        const normalizedUrl = currentUrl.split('?')[0];
+        const allowedPrefixes = ROLE_ROUTE_PREFIXES[normalizedRole];
+        const redirectPath = ROLE_REDIRECTS[normalizedRole];
+
+        if (!allowedPrefixes || !redirectPath) {
+            return;
+        }
+
+        const isAllowed = allowedPrefixes.some((prefix) => normalizedUrl === prefix || normalizedUrl.startsWith(`${prefix}/`));
+        if (!isAllowed) {
+            router.visit(redirectPath, { replace: true, preserveScroll: false });
+        }
+    }, [currentUrl, normalizedRole]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
