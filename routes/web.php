@@ -701,7 +701,432 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 // INSTRUCTOR ROUTES (protected)
 Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(function () {
     Route::get('/dashboard', function () {
-        return Inertia::render('Instructor/dashboard');
+        $userId = Auth::guard('web')->id();
+        $programSetIds = [];
+        $programSetsCount = 0;
+        $groupIds = [];
+        $groupsCount = 0;
+        $studentsCount = 0;
+        $groupedStudentsCount = 0;
+        $adviserAssignedCount = 0;
+        $adviserUnassignedCount = 0;
+        $panelSlotsFilled = 0;
+        $panelSlotsTotal = 0;
+        $panelSlotsOpen = 0;
+        $panelGroupsNeeding = 0;
+        $scheduledGroups = 0;
+        $upcomingDefenses = 0;
+        $roomsTotal = 0;
+        $roomsActive = 0;
+        $statusBuckets = [
+            'Scheduled' => 0,
+            'Pending' => 0,
+            'Completed' => 0,
+            'Cancelled' => 0,
+            'Unscheduled' => 0,
+        ];
+        $stageBuckets = [
+            'Concept' => 0,
+            'Outline' => 0,
+            'Pre-Deployment' => 0,
+            'Deployment' => 0,
+        ];
+        $latestSchedulesByGroup = collect();
+        $panelCountsByGroup = collect();
+        $groups = [];
+        $upcomingSchedules = [];
+        $attentionItems = [];
+
+        $resolveUserName = static function (?User $user): string {
+            if (! $user) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $fullName = $firstName !== '' || $lastName !== ''
+                ? trim($firstName.' '.$lastName)
+                : (is_string($user->name) ? $user->name : '');
+
+            return $fullName;
+        };
+
+        $resolveInitials = static function (?User $user): string {
+            if (! $user) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $initials = '';
+
+            if ($firstName !== '') {
+                $initials .= substr($firstName, 0, 1);
+            }
+
+            if ($lastName !== '') {
+                $initials .= substr($lastName, 0, 1);
+            }
+
+            if ($initials === '') {
+                $name = is_string($user->name) ? trim($user->name) : '';
+                $parts = $name !== '' ? preg_split('/\s+/', $name) : [];
+                $parts = is_array($parts) ? $parts : [];
+
+                if (count($parts) > 0) {
+                    $initials = substr($parts[0], 0, 1);
+                }
+
+                if (count($parts) > 1) {
+                    $initials .= substr($parts[1], 0, 1);
+                }
+            }
+
+            return strtoupper($initials);
+        };
+
+        try {
+            if (class_exists(ProgramSet::class) && Schema::hasTable('program_sets')) {
+                $programSetIds = ProgramSet::query()
+                    ->when($userId !== null, fn ($query) => $query->where('instructor_id', $userId))
+                    ->pluck('id')
+                    ->all();
+                $programSetsCount = count($programSetIds);
+            }
+        } catch (\Throwable $e) {
+            $programSetIds = [];
+            $programSetsCount = 0;
+        }
+
+        try {
+            if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups') && count($programSetIds) > 0) {
+                $groupIds = \App\Models\Group::query()
+                    ->whereIn('program_set_id', $programSetIds)
+                    ->pluck('id')
+                    ->all();
+                $groupsCount = count($groupIds);
+            }
+        } catch (\Throwable $e) {
+            $groupIds = [];
+            $groupsCount = 0;
+        }
+
+        try {
+            if (Schema::hasTable('program_set_student') && count($programSetIds) > 0) {
+                $studentsCount = User::query()
+                    ->whereHas('programSets', fn ($query) => $query->whereIn('program_sets.id', $programSetIds))
+                    ->count();
+            }
+        } catch (\Throwable $e) {
+            $studentsCount = 0;
+        }
+
+        try {
+            if (Schema::hasTable('group_members') && count($groupIds) > 0) {
+                $groupedStudentsCount = \App\Models\GroupMember::query()
+                    ->whereIn('group_id', $groupIds)
+                    ->distinct('student_id')
+                    ->count('student_id');
+            }
+        } catch (\Throwable $e) {
+            $groupedStudentsCount = 0;
+        }
+
+        try {
+            if (Schema::hasTable('group_advisers') && count($groupIds) > 0) {
+                $adviserAssignedCount = \App\Models\GroupAdviser::query()
+                    ->whereIn('group_id', $groupIds)
+                    ->distinct('group_id')
+                    ->count('group_id');
+            }
+        } catch (\Throwable $e) {
+            $adviserAssignedCount = 0;
+        }
+
+        $adviserUnassignedCount = max(0, $groupsCount - $adviserAssignedCount);
+
+        try {
+            if (Schema::hasTable('group_panelists') && count($groupIds) > 0) {
+                $panelAssignments = \App\Models\GroupPanelist::query()
+                    ->whereIn('group_id', $groupIds)
+                    ->get(['group_id']);
+
+                $panelSlotsFilled = $panelAssignments->count();
+                $panelCountsByGroup = $panelAssignments->countBy('group_id');
+                $groupsWithFullPanel = $panelCountsByGroup->filter(fn (int $count): bool => $count >= 3)->count();
+                $panelGroupsNeeding = max(0, $groupsCount - $groupsWithFullPanel);
+            }
+        } catch (\Throwable $e) {
+            $panelSlotsFilled = 0;
+            $panelCountsByGroup = collect();
+            $panelGroupsNeeding = 0;
+        }
+
+        $panelSlotsTotal = $groupsCount * 3;
+        $panelSlotsOpen = max(0, $panelSlotsTotal - $panelSlotsFilled);
+
+        try {
+            if (class_exists(\App\Models\DefenseRoom::class) && Schema::hasTable('defense_rooms')) {
+                $roomsTotal = \App\Models\DefenseRoom::query()->count();
+                $roomsActive = \App\Models\DefenseRoom::query()->where('is_active', true)->count();
+            }
+        } catch (\Throwable $e) {
+            $roomsTotal = 0;
+            $roomsActive = 0;
+        }
+
+        $statusBuckets['Unscheduled'] = $groupsCount;
+
+        try {
+            if (class_exists(\App\Models\DefenseSchedule::class) && Schema::hasTable('defense_schedules') && count($groupIds) > 0) {
+                $latestSchedulesByGroup = \App\Models\DefenseSchedule::query()
+                    ->whereIn('group_id', $groupIds)
+                    ->orderByDesc('scheduled_date')
+                    ->orderByDesc('start_time')
+                    ->get(['id', 'group_id', 'status', 'stage', 'scheduled_date', 'start_time', 'end_time', 'room_id'])
+                    ->groupBy('group_id')
+                    ->map(fn ($schedules) => $schedules->first());
+
+                $scheduledGroups = $latestSchedulesByGroup->count();
+                $statusBuckets = [
+                    'Scheduled' => 0,
+                    'Pending' => 0,
+                    'Completed' => 0,
+                    'Cancelled' => 0,
+                    'Unscheduled' => 0,
+                ];
+
+                foreach ($groupIds as $groupId) {
+                    $schedule = $latestSchedulesByGroup->get($groupId);
+                    $status = is_string($schedule?->status) && $schedule?->status !== '' ? $schedule->status : 'Unscheduled';
+                    $statusBuckets[$status] = ($statusBuckets[$status] ?? 0) + 1;
+                }
+
+                foreach ($latestSchedulesByGroup as $schedule) {
+                    $stage = $schedule?->stage;
+                    if (is_string($stage) && array_key_exists($stage, $stageBuckets)) {
+                        $stageBuckets[$stage] += 1;
+                    }
+                }
+
+                $today = now()->toDateString();
+
+                $upcomingDefenses = \App\Models\DefenseSchedule::query()
+                    ->whereIn('group_id', $groupIds)
+                    ->whereIn('status', ['Scheduled', 'Pending'])
+                    ->whereDate('scheduled_date', '>=', $today)
+                    ->count();
+
+                $upcomingSchedules = \App\Models\DefenseSchedule::query()
+                    ->with(['group', 'room'])
+                    ->whereIn('group_id', $groupIds)
+                    ->whereIn('status', ['Scheduled', 'Pending'])
+                    ->whereDate('scheduled_date', '>=', $today)
+                    ->orderBy('scheduled_date')
+                    ->orderBy('start_time')
+                    ->limit(5)
+                    ->get()
+                    ->map(function (\App\Models\DefenseSchedule $schedule): array {
+                        return [
+                            'id' => $schedule->id,
+                            'group_name' => $schedule->group?->name,
+                            'stage' => $schedule->stage,
+                            'status' => $schedule->status,
+                            'scheduled_date' => $schedule->scheduled_date?->format('Y-m-d'),
+                            'start_time' => $schedule->start_time,
+                            'end_time' => $schedule->end_time,
+                            'room_name' => $schedule->room?->name,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $latestSchedulesByGroup = collect();
+            $scheduledGroups = 0;
+            $statusBuckets = [
+                'Scheduled' => 0,
+                'Pending' => 0,
+                'Completed' => 0,
+                'Cancelled' => 0,
+                'Unscheduled' => $groupsCount,
+            ];
+            $stageBuckets = [
+                'Concept' => 0,
+                'Outline' => 0,
+                'Pre-Deployment' => 0,
+                'Deployment' => 0,
+            ];
+            $upcomingDefenses = 0;
+            $upcomingSchedules = [];
+        }
+
+        try {
+            if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups') && count($programSetIds) > 0) {
+                $groups = \App\Models\Group::query()
+                    ->with([
+                        'members' => function ($query) {
+                            $query->orderBy('last_name')->orderBy('first_name')->limit(4);
+                        },
+                        'adviserAssignment.adviser',
+                    ])
+                    ->withCount('members')
+                    ->whereIn('program_set_id', $programSetIds)
+                    ->orderByDesc('created_at')
+                    ->limit(6)
+                    ->get()
+                    ->map(function (\App\Models\Group $group) use ($resolveUserName, $resolveInitials, $latestSchedulesByGroup, $panelCountsByGroup): array {
+                        $members = $group->members
+                            ->map(function (User $member) use ($resolveUserName, $resolveInitials): array {
+                                $name = $resolveUserName($member);
+                                $initials = $resolveInitials($member);
+
+                                return [
+                                    'name' => $name,
+                                    'initials' => $initials,
+                                ];
+                            })
+                            ->values()
+                            ->all();
+
+                        $schedule = $latestSchedulesByGroup->get($group->id);
+                        $status = is_string($schedule?->status) && $schedule?->status !== '' ? $schedule->status : 'Unscheduled';
+                        $stage = is_string($schedule?->stage) ? $schedule->stage : null;
+                        $progress = match ($stage) {
+                            'Concept' => 25,
+                            'Outline' => 50,
+                            'Pre-Deployment' => 75,
+                            'Deployment' => 100,
+                            default => 0,
+                        };
+                        $panelCount = (int) ($panelCountsByGroup->get($group->id) ?? 0);
+                        $panelSlotsOpen = max(0, 3 - $panelCount);
+                        $adviserName = $resolveUserName($group->adviserAssignment?->adviser);
+
+                        return [
+                            'id' => $group->id,
+                            'name' => $group->name,
+                            'members' => $members,
+                            'members_count' => $group->members_count ?? 0,
+                            'adviser_name' => $adviserName !== '' ? $adviserName : null,
+                            'status' => $status,
+                            'stage' => $stage,
+                            'progress' => $progress,
+                            'panel_slots_open' => $panelSlotsOpen,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $groups = [];
+        }
+
+        try {
+            if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups') && count($programSetIds) > 0) {
+                $attentionItems = \App\Models\Group::query()
+                    ->with(['adviserAssignment'])
+                    ->whereIn('program_set_id', $programSetIds)
+                    ->orderByDesc('created_at')
+                    ->get(['id', 'name'])
+                    ->map(function (\App\Models\Group $group) use ($latestSchedulesByGroup, $panelCountsByGroup): ?array {
+                        $issues = [];
+                        $schedule = $latestSchedulesByGroup->get($group->id);
+                        $panelCount = (int) ($panelCountsByGroup->get($group->id) ?? 0);
+                        $panelSlotsOpen = max(0, 3 - $panelCount);
+
+                        if ($group->adviserAssignment === null) {
+                            $issues[] = 'Adviser unassigned';
+                        }
+
+                        if ($panelSlotsOpen > 0) {
+                            $issues[] = $panelSlotsOpen.' panel slot'.($panelSlotsOpen > 1 ? 's' : '').' open';
+                        }
+
+                        if ($schedule === null) {
+                            $issues[] = 'No defense schedule';
+                        }
+
+                        if (count($issues) === 0) {
+                            return null;
+                        }
+
+                        $tone = 'info';
+                        if ($group->adviserAssignment === null || $schedule === null) {
+                            $tone = 'danger';
+                        } elseif ($panelSlotsOpen > 0) {
+                            $tone = 'warning';
+                        }
+
+                        return [
+                            'id' => $group->id,
+                            'group_name' => $group->name,
+                            'issue' => implode(' • ', $issues),
+                            'tone' => $tone,
+                        ];
+                    })
+                    ->filter()
+                    ->take(6)
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $attentionItems = [];
+        }
+
+        $statusColors = [
+            'Scheduled' => '#10b981',
+            'Pending' => '#f59e0b',
+            'Completed' => '#22c55e',
+            'Cancelled' => '#f43f5e',
+            'Unscheduled' => '#94a3b8',
+        ];
+
+        $statusRecords = collect($statusBuckets)
+            ->map(function (int $value, string $label) use ($statusColors): array {
+                return [
+                    'label' => $label,
+                    'value' => $value,
+                    'color' => $statusColors[$label] ?? '#94a3b8',
+                ];
+            })
+            ->values()
+            ->all();
+
+        $stageScale = collect($stageBuckets)
+            ->map(function (int $value, string $label) use ($groupsCount): array {
+                return [
+                    'label' => $label,
+                    'completed' => $value,
+                    'total' => $groupsCount,
+                ];
+            })
+            ->values()
+            ->all();
+
+        return Inertia::render('Instructor/dashboard', [
+            'stats' => [
+                'totalGroups' => $groupsCount,
+                'programSets' => $programSetsCount,
+                'students' => $studentsCount,
+                'groupedStudents' => $groupedStudentsCount,
+                'adviserAssigned' => $adviserAssignedCount,
+                'adviserUnassigned' => $adviserUnassignedCount,
+                'panelSlotsFilled' => $panelSlotsFilled,
+                'panelSlotsTotal' => $panelSlotsTotal,
+                'panelSlotsOpen' => $panelSlotsOpen,
+                'panelGroupsNeeding' => $panelGroupsNeeding,
+                'scheduledGroups' => $scheduledGroups,
+                'upcomingDefenses' => $upcomingDefenses,
+                'roomsTotal' => $roomsTotal,
+                'roomsActive' => $roomsActive,
+            ],
+            'statusRecords' => $statusRecords,
+            'stageScale' => $stageScale,
+            'groups' => $groups,
+            'upcomingSchedules' => $upcomingSchedules,
+            'attentionItems' => $attentionItems,
+        ]);
     })->name('instructor.dashboard');
     Route::get('/groups', function () {
         $programSets = [];
