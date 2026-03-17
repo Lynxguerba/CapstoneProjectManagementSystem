@@ -440,7 +440,8 @@ const BulkEnrollStudentsModal = ({
                         </div>
 
                         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                            Enrolling into <span className="font-semibold text-slate-800">{programSetName}</span> ({programSetProgram || 'Program not set'}).
+                            Enrolling into <span className="font-semibold text-slate-800">{programSetName}</span> (
+                            {programSetProgram || 'Program not set'}).
                         </div>
 
                         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
@@ -510,10 +511,18 @@ const BulkEnrollStudentsModal = ({
 
                         <div className="space-y-4 p-4">
                             <div className="flex flex-wrap items-center gap-3 text-sm">
-                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">Valid: {validRowsCount}</span>
-                                <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700">With issues: {invalidRowsCount}</span>
-                                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">Selected: {selectedRowsCount}</span>
-                                <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-slate-700">Total rows: {previewRows.length}</span>
+                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
+                                    Valid: {validRowsCount}
+                                </span>
+                                <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700">
+                                    With issues: {invalidRowsCount}
+                                </span>
+                                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">
+                                    Selected: {selectedRowsCount}
+                                </span>
+                                <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-slate-700">
+                                    Total rows: {previewRows.length}
+                                </span>
                             </div>
 
                             <div className="max-h-[55vh] overflow-auto rounded-xl border border-slate-200">

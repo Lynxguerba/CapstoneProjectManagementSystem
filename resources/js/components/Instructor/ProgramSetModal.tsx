@@ -193,17 +193,15 @@ const AddProgramSetModal = ({ open, onClose, existingProgramSetNames = [] }: Add
                                 <select
                                     value={addProgramSetForm.data.academic_year_id ?? ''}
                                     onChange={(event) =>
-                                        addProgramSetForm.setData(
-                                            'academic_year_id',
-                                            event.target.value ? Number(event.target.value) : null,
-                                        )
+                                        addProgramSetForm.setData('academic_year_id', event.target.value ? Number(event.target.value) : null)
                                     }
                                     className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                                 >
                                     {academicYears.length ? (
                                         academicYears.map((ay) => (
                                             <option key={ay.id} value={ay.id}>
-                                                {ay.label}{ay.is_current ? ' (current)' : ''}
+                                                {ay.label}
+                                                {ay.is_current ? ' (current)' : ''}
                                             </option>
                                         ))
                                     ) : (
@@ -217,8 +215,6 @@ const AddProgramSetModal = ({ open, onClose, existingProgramSetNames = [] }: Add
                                 ) : null}
                             </div>
                         </div>
-
-                        
                     </form>
                 </div>
 

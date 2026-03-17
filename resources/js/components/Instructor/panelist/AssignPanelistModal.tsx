@@ -193,7 +193,7 @@ const AssignPanelistModal = ({
                             <Users className="h-5 w-5" />
                         </span>
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Assign Panelist</p>
+                            <p className="text-xs font-semibold tracking-widest text-emerald-700 uppercase">Assign Panelist</p>
                             <h2 className="text-lg font-semibold text-emerald-900">{groupName ?? 'Selected Group'}</h2>
                             <p className="text-xs text-emerald-700">{programSetName ?? 'Program set'}</p>
                         </div>
@@ -247,12 +247,12 @@ const AssignPanelistModal = ({
                     </div>
 
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             value={searchQuery}
                             onChange={(event) => setSearchQuery(event.target.value)}
                             placeholder="Search panelist by name or email"
-                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                         />
                     </div>
 

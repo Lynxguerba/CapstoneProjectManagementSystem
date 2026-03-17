@@ -321,15 +321,13 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                 <form onSubmit={submitForm} className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
                     <div className="grid gap-4 md:grid-cols-[1.2fr,0.8fr]">
                         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Program Set</p>
+                            <p className="text-xs font-semibold tracking-widest text-slate-500 uppercase">Program Set</p>
                             <p className="mt-2 text-sm font-semibold text-slate-800">{programSetLabel}</p>
-                            {groupForm.errors.program_set_id ? (
-                                <p className="mt-2 text-xs text-rose-600">{groupForm.errors.program_set_id}</p>
-                            ) : null}
+                            {groupForm.errors.program_set_id ? <p className="mt-2 text-xs text-rose-600">{groupForm.errors.program_set_id}</p> : null}
                         </div>
 
                         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Group Name</p>
+                            <p className="text-xs font-semibold tracking-widest text-emerald-700 uppercase">Group Name</p>
                             <p className="mt-2 text-lg font-bold text-emerald-900">{groupName}</p>
                             <p className="mt-1 text-xs text-emerald-700">Based on the Project Manager's last name.</p>
                         </div>
@@ -349,13 +347,13 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                             <div className="mt-4">
                                 <label className="text-xs font-semibold text-slate-600">Search Student</label>
                                 <div className="relative mt-1.5">
-                                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                    <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                                     <input
                                         value={searchQuery}
                                         onChange={(event) => setSearchQuery(event.target.value)}
                                         placeholder="Search by name or email..."
                                         disabled={!hasSelectedProgramSet || isLoadingStudents}
-                                        className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                        className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                                     />
                                 </div>
 
@@ -389,8 +387,8 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                                             student.isGrouped
                                                                 ? 'cursor-not-allowed bg-amber-50/60'
                                                                 : isSelected
-                                                                ? 'cursor-not-allowed bg-emerald-50/80'
-                                                                : 'hover:bg-emerald-50'
+                                                                  ? 'cursor-not-allowed bg-emerald-50/80'
+                                                                  : 'hover:bg-emerald-50'
                                                         }`}
                                                     >
                                                         <span className="text-sm font-medium text-slate-800">{displayName}</span>
@@ -398,9 +396,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                                         {student.isGrouped ? (
                                                             <span className="text-xs font-semibold text-amber-700">Already grouped</span>
                                                         ) : null}
-                                                        {isSelected ? (
-                                                            <span className="text-xs font-semibold text-emerald-700">Added</span>
-                                                        ) : null}
+                                                        {isSelected ? <span className="text-xs font-semibold text-emerald-700">Added</span> : null}
                                                     </button>
                                                 );
                                             })
@@ -445,7 +441,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                             </button>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Role</label>
+                                            <label className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase">Role</label>
                                             <select
                                                 value={member.role}
                                                 onChange={(event) => handleRoleChange(member.student.id, event.target.value as GroupRole)}
@@ -470,9 +466,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                     </div>
 
                     {groupForm.errors.members ? (
-                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
-                            {groupForm.errors.members}
-                        </div>
+                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{groupForm.errors.members}</div>
                     ) : null}
 
                     {!leaderMember && selectedMembers.length > 0 ? (
@@ -492,12 +486,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                         </button>
                         <button
                             type="submit"
-                            disabled={
-                                groupForm.processing ||
-                                !selectedProgramSetId ||
-                                selectedMembers.length < 2 ||
-                                !leaderMember
-                            }
+                            disabled={groupForm.processing || !selectedProgramSetId || selectedMembers.length < 2 || !leaderMember}
                             className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <UserPlus className="h-3.5 w-3.5" />

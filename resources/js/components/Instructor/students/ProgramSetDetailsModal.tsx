@@ -139,7 +139,7 @@ const ProgramSetDetailsModal = ({ open, onClose, programSetId }: ProgramSetDetai
             >
                 <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Program Set</p>
+                        <p className="text-xs font-semibold tracking-widest text-slate-500 uppercase">Program Set</p>
                         <div className="mt-1 flex items-center gap-2">
                             <h2 className="text-lg font-semibold text-slate-900">{programSet?.name ?? 'Loading...'}</h2>
                             <button
@@ -213,7 +213,7 @@ const ProgramSetDetailsModal = ({ open, onClose, programSetId }: ProgramSetDetai
                         </div>
                         <div className="max-h-[45vh] overflow-y-auto">
                             <table className="w-full text-left text-xs">
-                                <thead className="sticky top-0 bg-white text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                <thead className="sticky top-0 bg-white text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                                     <tr>
                                         <th className="px-4 py-3">Fullname</th>
                                         <th className="px-4 py-3">Email</th>

@@ -135,12 +135,7 @@ const ScheduleDefenseForm = ({
             const program = (group.program ?? '').toLowerCase();
             const schoolYear = (group.school_year ?? '').toLowerCase();
 
-            return (
-                name.includes(query) ||
-                programSetName.includes(query) ||
-                program.includes(query) ||
-                schoolYear.includes(query)
-            );
+            return name.includes(query) || programSetName.includes(query) || program.includes(query) || schoolYear.includes(query);
         });
     }, [filteredGroups, groupSearch]);
 
@@ -276,9 +271,7 @@ const ScheduleDefenseForm = ({
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-slate-700" />
-                    <h2 className="text-base font-semibold text-slate-800">
-                        {initialSchedule ? 'Schedule Details' : 'Create Defense Schedule'}
-                    </h2>
+                    <h2 className="text-base font-semibold text-slate-800">{initialSchedule ? 'Schedule Details' : 'Create Defense Schedule'}</h2>
                 </div>
                 <div className="flex items-center gap-2">
                     {readOnly ? (
@@ -303,9 +296,7 @@ const ScheduleDefenseForm = ({
             ) : null}
 
             {errorMessage ? (
-                <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">
-                    {errorMessage}
-                </div>
+                <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">{errorMessage}</div>
             ) : null}
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -330,12 +321,12 @@ const ScheduleDefenseForm = ({
                 <div>
                     <label className="text-sm font-semibold text-slate-700">Stage</label>
                     <div className="relative mt-1.5">
-                        <FileText className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <FileText className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <select
                             value={form.data.stage}
                             onChange={(event) => form.setData('stage', event.target.value)}
                             disabled={isDisabled}
-                            className="w-full appearance-none rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            className="w-full appearance-none rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                         >
                             {stageOptions.map((stage) => (
                                 <option key={stage} value={stage}>
@@ -349,13 +340,13 @@ const ScheduleDefenseForm = ({
                 <div className="sm:col-span-2">
                     <label className="text-sm font-semibold text-slate-700">Group</label>
                     <div className="relative mt-1.5">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             value={groupSearch}
                             onChange={(event) => setGroupSearch(event.target.value)}
                             placeholder="Search by group name or program set..."
                             disabled={groups.length === 0 || isDisabled}
-                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                         />
                     </div>
 
@@ -396,8 +387,8 @@ const ScheduleDefenseForm = ({
                                                 isDisabledResult || isDisabled
                                                     ? 'cursor-not-allowed bg-amber-50/60'
                                                     : isSelected
-                                                    ? 'bg-emerald-50/80'
-                                                    : 'hover:bg-emerald-50'
+                                                      ? 'bg-emerald-50/80'
+                                                      : 'hover:bg-emerald-50'
                                             }`}
                                         >
                                             <div className="flex items-center justify-between gap-2">
@@ -412,9 +403,7 @@ const ScheduleDefenseForm = ({
                                             </div>
                                             {meta ? <span className="text-xs text-slate-500">{meta}</span> : null}
                                             {isSelected ? <span className="text-[10px] font-semibold text-emerald-700">Selected</span> : null}
-                                            {!isEligible ? (
-                                                <span className="text-[10px] font-semibold text-amber-700">Needs 3 panelists</span>
-                                            ) : null}
+                                            {!isEligible ? <span className="text-[10px] font-semibold text-amber-700">Needs 3 panelists</span> : null}
                                         </button>
                                     );
                                 })
@@ -426,7 +415,7 @@ const ScheduleDefenseForm = ({
                         <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-700">Selected Group</p>
+                                    <p className="text-[10px] font-semibold tracking-widest text-emerald-700 uppercase">Selected Group</p>
                                     <p className="text-sm font-semibold text-slate-800">{selectedGroup.name}</p>
                                     {selectedGroupMeta ? <p className="text-xs text-slate-600">{selectedGroupMeta}</p> : null}
                                 </div>
@@ -445,7 +434,7 @@ const ScheduleDefenseForm = ({
                         <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-700">Selected Group</p>
+                                    <p className="text-[10px] font-semibold tracking-widest text-amber-700 uppercase">Selected Group</p>
                                     <p className="text-sm font-semibold text-slate-800">{initialSchedule?.group_name}</p>
                                     {fallbackGroupMeta ? <p className="text-xs text-slate-600">{fallbackGroupMeta}</p> : null}
                                 </div>
@@ -461,12 +450,12 @@ const ScheduleDefenseForm = ({
                 <div>
                     <label className="text-sm font-semibold text-slate-700">Room</label>
                     <div className="relative mt-1.5">
-                        <DoorOpen className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <DoorOpen className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <select
                             value={form.data.room_id}
                             onChange={(event) => form.setData('room_id', event.target.value)}
                             disabled={isDisabled}
-                            className="w-full appearance-none rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            className="w-full appearance-none rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                         >
                             <option value="">Select room</option>
                             {rooms.map((room) => (
@@ -481,13 +470,13 @@ const ScheduleDefenseForm = ({
                 <div>
                     <label className="text-sm font-semibold text-slate-700">Defense Date</label>
                     <div className="relative mt-1.5">
-                        <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Calendar className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             type="date"
                             value={form.data.scheduled_date}
                             onChange={(event) => form.setData('scheduled_date', event.target.value)}
                             disabled={isDisabled}
-                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                         />
                     </div>
                 </div>
@@ -497,26 +486,26 @@ const ScheduleDefenseForm = ({
                 <div>
                     <label className="text-sm font-semibold text-slate-700">Start Time</label>
                     <div className="relative mt-1.5">
-                        <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Clock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             type="time"
                             value={form.data.start_time}
                             onChange={(event) => form.setData('start_time', event.target.value)}
                             disabled={isDisabled}
-                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                         />
                     </div>
                 </div>
                 <div>
                     <label className="text-sm font-semibold text-slate-700">End Time</label>
                     <div className="relative mt-1.5">
-                        <Clock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Clock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             type="time"
                             value={form.data.end_time}
                             onChange={(event) => form.setData('end_time', event.target.value)}
                             disabled={isDisabled}
-                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                         />
                     </div>
                 </div>

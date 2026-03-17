@@ -144,7 +144,7 @@ const PanelistGroupsModal = ({ open, panelistId, panelistName, academicYear, onC
                             <Users className="h-5 w-5" />
                         </span>
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Panelist Groups</p>
+                            <p className="text-xs font-semibold tracking-widest text-emerald-700 uppercase">Panelist Groups</p>
                             <h2 className="text-lg font-semibold text-emerald-900">{panelistName ?? 'Selected Panelist'}</h2>
                             <p className="text-xs text-emerald-700">Academic Year: {displayAcademicYear}</p>
                         </div>
@@ -159,11 +159,7 @@ const PanelistGroupsModal = ({ open, panelistId, panelistName, academicYear, onC
                             <RefreshCcw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
                             Refresh
                         </button>
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="rounded-lg p-1.5 text-emerald-700 transition hover:bg-emerald-200"
-                        >
+                        <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-emerald-700 transition hover:bg-emerald-200">
                             <X className="h-5 w-5" />
                         </button>
                     </div>
@@ -181,9 +177,7 @@ const PanelistGroupsModal = ({ open, panelistId, panelistName, academicYear, onC
                     </div>
 
                     {errorMessage ? (
-                        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-                            {errorMessage}
-                        </div>
+                        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{errorMessage}</div>
                     ) : null}
 
                     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">

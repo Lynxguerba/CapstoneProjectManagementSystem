@@ -166,7 +166,7 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
                             <Users className="h-5 w-5" />
                         </span>
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Group Details</p>
+                            <p className="text-xs font-semibold tracking-widest text-slate-500 uppercase">Group Details</p>
                             <h2 className="text-lg font-semibold text-slate-900">{group?.name ?? 'Loading...'}</h2>
                         </div>
                     </div>
@@ -258,7 +258,7 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
                         </div>
                         <div className="max-h-[45vh] overflow-y-auto">
                             <table className="w-full text-left text-xs">
-                                <thead className="sticky top-0 bg-white text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                <thead className="sticky top-0 bg-white text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                                     <tr>
                                         <th className="px-4 py-3">Fullname</th>
                                         <th className="px-4 py-3">Email</th>
@@ -294,7 +294,7 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
                         </div>
                         <div className="max-h-[30vh] overflow-y-auto">
                             <table className="w-full text-left text-xs">
-                                <thead className="sticky top-0 bg-white text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                <thead className="sticky top-0 bg-white text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                                     <tr>
                                         <th className="px-4 py-3">Panelist</th>
                                         <th className="px-4 py-3">Email</th>
@@ -312,9 +312,7 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
                                                     {formatPanelRole(panelist.role)}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-slate-500">
-                                                {panelist.slot ? `Panel ${panelist.slot}` : '—'}
-                                            </td>
+                                            <td className="px-4 py-3 text-slate-500">{panelist.slot ? `Panel ${panelist.slot}` : '—'}</td>
                                         </tr>
                                     ))}
                                 </tbody>

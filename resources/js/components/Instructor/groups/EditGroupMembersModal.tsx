@@ -141,11 +141,7 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
     }, [open, members, editForm]);
 
     const toggleRemove = (memberId: number) => {
-        setMembers((previous) =>
-            previous.map((member) =>
-                member.id === memberId ? { ...member, isRemoved: !member.isRemoved } : member,
-            ),
-        );
+        setMembers((previous) => previous.map((member) => (member.id === memberId ? { ...member, isRemoved: !member.isRemoved } : member)));
     };
 
     const updateRole = (memberId: number, role: string) => {
@@ -208,7 +204,7 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                             <Users className="h-5 w-5" />
                         </span>
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Edit Group</p>
+                            <p className="text-xs font-semibold tracking-widest text-emerald-700 uppercase">Edit Group</p>
                             <h2 className="text-lg font-semibold text-emerald-900">{group?.name ?? 'Loading...'}</h2>
                         </div>
                     </div>
@@ -289,7 +285,7 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                         </div>
                         <div className="max-h-[45vh] overflow-y-auto">
                             <table className="w-full text-left text-xs">
-                                <thead className="sticky top-0 bg-white text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                <thead className="sticky top-0 bg-white text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                                     <tr>
                                         <th className="px-4 py-3">Student</th>
                                         <th className="px-4 py-3">Program</th>
@@ -355,9 +351,7 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                     ) : null}
 
                     {editForm.errors.members ? (
-                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
-                            {editForm.errors.members}
-                        </div>
+                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{editForm.errors.members}</div>
                     ) : null}
 
                     <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">

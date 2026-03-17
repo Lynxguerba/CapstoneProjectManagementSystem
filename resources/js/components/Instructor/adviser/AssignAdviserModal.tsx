@@ -23,14 +23,7 @@ type AssignAdviserModalProps = {
 
 const MAX_LOAD = 5;
 
-const AssignAdviserModal = ({
-    open,
-    groupId,
-    groupName,
-    currentAdviser,
-    advisers,
-    onClose,
-}: AssignAdviserModalProps) => {
+const AssignAdviserModal = ({ open, groupId, groupName, currentAdviser, advisers, onClose }: AssignAdviserModalProps) => {
     const [searchQuery, setSearchQuery] = React.useState('');
     const [isAssigning, setIsAssigning] = React.useState(false);
 
@@ -123,7 +116,7 @@ const AssignAdviserModal = ({
             >
                 <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-5 py-4">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Assign Adviser</p>
+                        <p className="text-xs font-semibold tracking-widest text-emerald-700 uppercase">Assign Adviser</p>
                         <h2 className="text-lg font-semibold text-emerald-900">{groupName ?? 'Selected Group'}</h2>
                         <p className="text-xs text-emerald-700">Current adviser: {currentAdviser || 'Unassigned'}</p>
                     </div>
@@ -139,12 +132,12 @@ const AssignAdviserModal = ({
 
                 <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             value={searchQuery}
                             onChange={(event) => setSearchQuery(event.target.value)}
                             placeholder="Search adviser by name or email"
-                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                         />
                     </div>
 
@@ -157,14 +150,11 @@ const AssignAdviserModal = ({
                             const statusClasses = isFull
                                 ? 'bg-rose-100 text-rose-700'
                                 : status === 'Partial'
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-emerald-100 text-emerald-700';
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-emerald-100 text-emerald-700';
 
                             return (
-                                <div
-                                    key={adviser.id}
-                                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
-                                >
+                                <div key={adviser.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                                     <div className="flex items-start justify-between gap-4">
                                         <div>
                                             <p className="text-sm font-semibold text-slate-800">{adviser.name}</p>
@@ -174,7 +164,9 @@ const AssignAdviserModal = ({
                                     </div>
 
                                     <div className="mt-3 flex items-center justify-between text-xs text-slate-600">
-                                        <span>Load: {load} / {MAX_LOAD}</span>
+                                        <span>
+                                            Load: {load} / {MAX_LOAD}
+                                        </span>
                                         <button
                                             type="button"
                                             onClick={() => assignAdviser(adviser.id)}

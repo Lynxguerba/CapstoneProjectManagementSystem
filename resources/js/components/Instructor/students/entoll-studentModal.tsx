@@ -27,14 +27,7 @@ type EnrollStudentForm = {
     program_set_id: number;
 };
 
-const EnrollStudentModal = ({
-    open,
-    onClose,
-    programSetId,
-    programSetName,
-    programSetProgram,
-    availableStudents = [],
-}: EnrollStudentModalProps) => {
+const EnrollStudentModal = ({ open, onClose, programSetId, programSetName, programSetProgram, availableStudents = [] }: EnrollStudentModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStudent, setSelectedStudent] = useState<StudentOption | null>(null);
@@ -102,12 +95,7 @@ const EnrollStudentModal = ({
             const lastName = (student.lastName ?? '').toLowerCase();
             const email = (student.email ?? '').toLowerCase();
 
-            return (
-                name.includes(query) ||
-                firstName.includes(query) ||
-                lastName.includes(query) ||
-                email.includes(query)
-            );
+            return name.includes(query) || firstName.includes(query) || lastName.includes(query) || email.includes(query);
         });
     }, [availableStudents, searchQuery]);
 
@@ -199,16 +187,16 @@ const EnrollStudentModal = ({
                         <p className="text-sm font-semibold text-slate-800">{programSetName}</p>
                     </div>
 
-                        <div>
-                            <label className="text-sm font-semibold text-slate-700">Search Student</label>
-                            {selectedStudent ? (
-                                <div className="mt-1.5 flex items-center justify-between rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2.5">
-                                    <div>
-                                        <p className="text-sm font-semibold text-emerald-900">{resolveStudentName(selectedStudent)}</p>
-                                        <p className="text-xs text-emerald-700">{selectedStudent.email}</p>
-                                    </div>
-                                    <button
-                                        type="button"
+                    <div>
+                        <label className="text-sm font-semibold text-slate-700">Search Student</label>
+                        {selectedStudent ? (
+                            <div className="mt-1.5 flex items-center justify-between rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2.5">
+                                <div>
+                                    <p className="text-sm font-semibold text-emerald-900">{resolveStudentName(selectedStudent)}</p>
+                                    <p className="text-xs text-emerald-700">{selectedStudent.email}</p>
+                                </div>
+                                <button
+                                    type="button"
                                     onClick={handleDeselectStudent}
                                     disabled={enrollForm.processing}
                                     className="rounded-lg p-1.5 text-emerald-600 transition-colors hover:bg-emerald-200"
@@ -260,9 +248,7 @@ const EnrollStudentModal = ({
                             <p className="mt-1 text-xs text-slate-500">Start typing to search for available students.</p>
                         )}
 
-                        {enrollForm.errors.student_id ? (
-                            <p className="mt-1 text-xs text-rose-600">{enrollForm.errors.student_id}</p>
-                        ) : null}
+                        {enrollForm.errors.student_id ? <p className="mt-1 text-xs text-rose-600">{enrollForm.errors.student_id}</p> : null}
 
                         <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                             <div className="flex items-center justify-between">
@@ -284,10 +270,7 @@ const EnrollStudentModal = ({
                                     Section program: <span className="font-semibold text-slate-700">{programSetProgram || 'Unassigned'}</span>
                                 </p>
                                 <p>
-                                    Student program:{' '}
-                                    <span className="font-semibold text-slate-700">
-                                        {selectedStudent?.program ?? 'Unassigned'}
-                                    </span>
+                                    Student program: <span className="font-semibold text-slate-700">{selectedStudent?.program ?? 'Unassigned'}</span>
                                 </p>
                                 {selectedStudent && programMismatch ? (
                                     <p className="text-rose-600">Student program does not match the selected section.</p>

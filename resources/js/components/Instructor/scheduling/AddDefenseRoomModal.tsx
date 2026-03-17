@@ -17,15 +17,7 @@ type DefenseRoomFormRowProps = {
     onCancel?: () => void;
 };
 
-const DefenseRoomFormRow = ({
-    data,
-    errors = {},
-    processing = false,
-    isEditing = false,
-    onChange,
-    onSubmit,
-    onCancel,
-}: DefenseRoomFormRowProps) => {
+const DefenseRoomFormRow = ({ data, errors = {}, processing = false, isEditing = false, onChange, onSubmit, onCancel }: DefenseRoomFormRowProps) => {
     return (
         <tr className="bg-emerald-50/70">
             <td className="px-4 py-3">
