@@ -10,13 +10,11 @@ type Props = {
     children: React.ReactNode;
 };
 
-
 type AcademicYearOption = {
     id: number;
     label: string;
     is_current: boolean;
 };
-
 
 type AdviserAuthUser = {
     role?: string;
@@ -36,7 +34,6 @@ const formatRoleLabel = (role: string): string => {
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
 };
-
 
 const AdviserLayout = ({ title, subtitle, children }: Props) => {
     const { academicYears = [], auth } = usePage<AdviserLayoutPageProps>().props;
@@ -58,10 +55,7 @@ const AdviserLayout = ({ title, subtitle, children }: Props) => {
     }, [academicYears, selectedAcademicYearId]);
 
     const selectedAcademicYear =
-        academicYears.find((year) => year.id === selectedAcademicYearId) ??
-        academicYears.find((year) => year.is_current) ??
-        academicYears[0] ??
-        null;
+        academicYears.find((year) => year.id === selectedAcademicYearId) ?? academicYears.find((year) => year.is_current) ?? academicYears[0] ?? null;
 
     React.useEffect(() => {
         if (!isAcademicYearOpen) {
@@ -115,7 +109,7 @@ const AdviserLayout = ({ title, subtitle, children }: Props) => {
                             <button
                                 type="button"
                                 onClick={() => setIsAcademicYearOpen((open) => !open)}
-                                className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900 shadow-sm transition hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                                className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900 shadow-sm transition hover:bg-emerald-100 focus:ring-2 focus:ring-emerald-300 focus:outline-none"
                                 aria-haspopup="menu"
                                 aria-expanded={isAcademicYearOpen}
                             >
@@ -123,27 +117,21 @@ const AdviserLayout = ({ title, subtitle, children }: Props) => {
                                     <GraduationCap className="h-5 w-5" aria-hidden="true" />
                                 </span>
 
-                                <span className="text-sm font-semibold sm:hidden">
-                                    {selectedAcademicYear?.label ?? 'Academic Year'}
-                                </span>
+                                <span className="text-sm font-semibold sm:hidden">{selectedAcademicYear?.label ?? 'Academic Year'}</span>
 
                                 <span className="hidden items-center gap-3 text-left leading-tight sm:flex">
                                     <span>
                                         <span className="block text-[10px] font-semibold tracking-wide text-emerald-700/80 uppercase">
                                             Current Year Level
                                         </span>
-                                        <span className="block text-sm font-semibold">
-                                            {selectedAcademicYear?.label ?? 'No Academic Year'}
-                                        </span>
+                                        <span className="block text-sm font-semibold">{selectedAcademicYear?.label ?? 'No Academic Year'}</span>
                                     </span>
 
                                     {activeRole ? <span className="h-8 w-px bg-emerald-200/80" aria-hidden="true" /> : null}
 
                                     {activeRole ? (
                                         <span>
-                                            <span className="block text-[10px] font-semibold tracking-wide text-emerald-700/80 uppercase">
-                                                Role
-                                            </span>
+                                            <span className="block text-[10px] font-semibold tracking-wide text-emerald-700/80 uppercase">Role</span>
                                             <span className="block text-sm font-semibold">{formatRoleLabel(activeRole)}</span>
                                         </span>
                                     ) : null}
@@ -154,10 +142,7 @@ const AdviserLayout = ({ title, subtitle, children }: Props) => {
                                     {activeRole ? ` • ${formatRoleLabel(activeRole)}` : ''}
                                 </span>
 
-                                <ChevronDown
-                                    className={`h-4 w-4 transition ${isAcademicYearOpen ? 'rotate-180' : ''}`}
-                                    aria-hidden="true"
-                                />
+                                <ChevronDown className={`h-4 w-4 transition ${isAcademicYearOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                             </button>
 
                             {isAcademicYearOpen ? (
@@ -185,9 +170,7 @@ const AdviserLayout = ({ title, subtitle, children }: Props) => {
                                                             setIsAcademicYearOpen(false);
                                                         }}
                                                         className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition ${
-                                                            isSelected
-                                                                ? 'bg-emerald-50 text-emerald-900'
-                                                                : 'text-slate-700 hover:bg-slate-50'
+                                                            isSelected ? 'bg-emerald-50 text-emerald-900' : 'text-slate-700 hover:bg-slate-50'
                                                         }`}
                                                     >
                                                         <span className="flex items-center gap-2">

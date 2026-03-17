@@ -53,13 +53,7 @@ const buildQuery = (params: Record<string, string | number | undefined>): Record
     return query;
 };
 
-const MonitoringSectionsPage = ({
-    sections = [],
-    academicYears = [],
-    programOptions = [],
-    filters,
-    pagination,
-}: MonitoringSectionsProps) => {
+const MonitoringSectionsPage = ({ sections = [], academicYears = [], programOptions = [], filters, pagination }: MonitoringSectionsProps) => {
     const currentAcademicYear = academicYears.find((year) => year.is_current)?.label ?? academicYears[0]?.label ?? 'All';
     const fallbackAcademicYear = currentAcademicYear || 'All';
     const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(filters?.academic_year ?? fallbackAcademicYear);
@@ -119,11 +113,9 @@ const MonitoringSectionsPage = ({
             '/admin/monitoring/sections',
             buildQuery({
                 search: overrides.search ?? searchTerm,
-                program: (overrides.program ?? selectedProgram) !== 'All' ? overrides.program ?? selectedProgram : undefined,
+                program: (overrides.program ?? selectedProgram) !== 'All' ? (overrides.program ?? selectedProgram) : undefined,
                 academic_year:
-                    (overrides.academic_year ?? selectedAcademicYear) !== 'All'
-                        ? overrides.academic_year ?? selectedAcademicYear
-                        : undefined,
+                    (overrides.academic_year ?? selectedAcademicYear) !== 'All' ? (overrides.academic_year ?? selectedAcademicYear) : undefined,
                 page: overrides.page ?? 1,
             }),
             { preserveState: true, replace: true },
@@ -228,7 +220,7 @@ const MonitoringSectionsPage = ({
 
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                     <table className="w-full text-left text-xs">
-                        <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                             <tr>
                                 <th className="px-6 py-4">Section</th>
                                 <th className="px-6 py-4">Program</th>
@@ -242,9 +234,7 @@ const MonitoringSectionsPage = ({
                             {sections.map((section, index) => (
                                 <tr
                                     key={section.id}
-                                    className={`transition-colors hover:bg-emerald-50/30 ${
-                                        index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'
-                                    }`}
+                                    className={`transition-colors hover:bg-emerald-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
                                 >
                                     <td className="px-6 py-3.5">
                                         <div className="font-semibold text-slate-800">{section.name ?? 'Untitled Section'}</div>
@@ -256,12 +246,8 @@ const MonitoringSectionsPage = ({
                                     <td className="px-6 py-3.5 text-slate-600">{section.program ?? '—'}</td>
                                     <td className="px-6 py-3.5 text-slate-600">{section.school_year ?? '—'}</td>
                                     <td className="px-6 py-3.5 text-slate-600">{section.instructor_name ?? 'Unassigned'}</td>
-                                    <td className="px-6 py-3.5 text-center font-semibold text-slate-800">
-                                        {section.students_count ?? 0}
-                                    </td>
-                                    <td className="px-6 py-3.5 text-center font-semibold text-slate-800">
-                                        {section.groups_count ?? 0}
-                                    </td>
+                                    <td className="px-6 py-3.5 text-center font-semibold text-slate-800">{section.students_count ?? 0}</td>
+                                    <td className="px-6 py-3.5 text-center font-semibold text-slate-800">{section.groups_count ?? 0}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -278,8 +264,7 @@ const MonitoringSectionsPage = ({
                 {pageMeta.total > 0 ? (
                     <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
                         <p className="text-xs font-medium text-slate-500">
-                            Showing <span className="text-slate-900">{startItem}</span> to{' '}
-                            <span className="text-slate-900">{endItem}</span> of{' '}
+                            Showing <span className="text-slate-900">{startItem}</span> to <span className="text-slate-900">{endItem}</span> of{' '}
                             <span className="text-slate-900">{pageMeta.total}</span> sections
                         </p>
                         <div className="flex items-center gap-1.5">

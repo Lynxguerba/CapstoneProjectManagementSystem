@@ -84,8 +84,8 @@ const MonitoringPanelistsPage = ({ panelists = [], academicYears = [], filters, 
         const statusClasses = isFull
             ? 'bg-rose-100 text-rose-700'
             : status === 'Partial'
-            ? 'bg-amber-100 text-amber-700'
-            : 'bg-emerald-100 text-emerald-700';
+              ? 'bg-amber-100 text-amber-700'
+              : 'bg-emerald-100 text-emerald-700';
 
         return { status, statusClasses };
     };
@@ -173,7 +173,7 @@ const MonitoringPanelistsPage = ({ panelists = [], academicYears = [], filters, 
 
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                     <table className="w-full text-left text-xs">
-                        <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                             <tr>
                                 <th className="px-6 py-4">Panelist</th>
                                 <th className="px-6 py-4">Email</th>
@@ -189,9 +189,7 @@ const MonitoringPanelistsPage = ({ panelists = [], academicYears = [], filters, 
                                 return (
                                     <tr
                                         key={panelist.id}
-                                        className={`transition-colors hover:bg-emerald-50/30 ${
-                                            index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'
-                                        }`}
+                                        className={`transition-colors hover:bg-emerald-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
                                     >
                                         <td className="px-6 py-3.5 font-semibold text-slate-800">{panelist.name}</td>
                                         <td className="px-6 py-3.5 text-slate-600">{panelist.email}</td>
@@ -218,8 +216,7 @@ const MonitoringPanelistsPage = ({ panelists = [], academicYears = [], filters, 
                 {pageMeta.total > 0 ? (
                     <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
                         <p className="text-xs font-medium text-slate-500">
-                            Showing <span className="text-slate-900">{startItem}</span> to{' '}
-                            <span className="text-slate-900">{endItem}</span> of{' '}
+                            Showing <span className="text-slate-900">{startItem}</span> to <span className="text-slate-900">{endItem}</span> of{' '}
                             <span className="text-slate-900">{pageMeta.total}</span> panelists
                         </p>
                         <div className="flex items-center gap-1.5">

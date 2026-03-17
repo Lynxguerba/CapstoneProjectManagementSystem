@@ -103,8 +103,7 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
     const notificationForm = useForm<Pick<SystemSettingsData, 'siteWideNotification'>>({
         siteWideNotification: '',
     });
-    const currentSiteWideNotification =
-        typeof settings?.siteWideNotification === 'string' ? settings.siteWideNotification.trim() : '';
+    const currentSiteWideNotification = typeof settings?.siteWideNotification === 'string' ? settings.siteWideNotification.trim() : '';
 
     const admins = React.useMemo(() => {
         return Array.isArray(adminUsers) ? adminUsers : [];
@@ -172,7 +171,7 @@ const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps)
                     {/* ── Academic Cycle & Site-wide Notification ── */}
                     <motion.section
                         variants={cardVariants}
-                       className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-1"
+                        className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-1"
                     >
                         <form onSubmit={submitAcademicYear}>
                             <SectionHeader

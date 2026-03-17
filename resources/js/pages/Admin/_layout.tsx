@@ -122,18 +122,14 @@ const AdminLayout = ({ title, subtitle, children }: Props) => {
                                         <span className="block text-[10px] font-semibold tracking-wide text-emerald-700/80 uppercase">
                                             Current Year Level
                                         </span>
-                                        <span className="block text-sm font-semibold">
-                                            {selectedAcademicYear?.label ?? 'No Academic Year'}
-                                        </span>
+                                        <span className="block text-sm font-semibold">{selectedAcademicYear?.label ?? 'No Academic Year'}</span>
                                     </span>
 
                                     {activeRole ? <span className="h-8 w-px bg-emerald-200/80" aria-hidden="true" /> : null}
 
                                     {activeRole ? (
                                         <span>
-                                            <span className="block text-[10px] font-semibold tracking-wide text-emerald-700/80 uppercase">
-                                                Role
-                                            </span>
+                                            <span className="block text-[10px] font-semibold tracking-wide text-emerald-700/80 uppercase">Role</span>
                                             <span className="block text-sm font-semibold">{formatRoleLabel(activeRole)}</span>
                                         </span>
                                     ) : null}
