@@ -367,6 +367,92 @@ const Dashboard = () => {
                         </motion.div>
                     ))}
                 </motion.section>
+                <motion.section
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.12 }}
+                    className="grid grid-cols-1 gap-6 xl:grid-cols-2"
+                >
+                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Layers3 className="h-4 w-4 text-emerald-600" />
+                                    <h3 className="text-sm font-semibold text-slate-900">Page Records Scale</h3>
+                                </div>
+                                <p className="mt-1 text-xs text-slate-500">Record volume per instructor module.</p>
+                            </div>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                                MUI X Charts
+                            </span>
+                        </div>
+
+                        <Box sx={{ mt: 3 }}>
+                            <BarChart
+                                height={260}
+                                xAxis={[{ data: pageSnapshots.map((page) => page.shortLabel), scaleType: 'band' }]}
+                                series={[{ data: pageSnapshots.map((page) => page.value), color: '#10b981' }]}
+                                margin={{ top: 20, right: 20, bottom: 50, left: 40 }}
+                                grid={{ vertical: true, horizontal: true }}
+                            />
+                        </Box>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                    <h3 className="text-sm font-semibold text-slate-900">Status Distribution</h3>
+                                </div>
+                                <p className="mt-1 text-xs text-slate-500">Scheduled vs pending outcomes.</p>
+                            </div>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                                MUI X Charts
+                            </span>
+                        </div>
+
+                        <Box sx={{ mt: 2 }}>
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                <div className="flex flex-1 justify-center">
+                                    <PieChart
+                                        height={260}
+                                        series={[
+                                            {
+                                                data: statusRecords.map((item, index) => ({
+                                                    id: index,
+                                                    value: item.value,
+                                                    label: item.label,
+                                                    color: item.color,
+                                                })),
+                                                innerRadius: 60,
+                                                outerRadius: 100,
+                                                paddingAngle: 3,
+                                                cornerRadius: 6,
+                                                highlightScope: { faded: 'global', highlighted: 'item' },
+                                                faded: { innerRadius: 60, additionalRadius: -4, color: 'gray' },
+                                            },
+                                        ]}
+                                        slotProps={{ legend: { hidden: true } }}
+                                    />
+                                </div>
+
+                                <div className="lg:w-44">
+                                    <div className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Legend</div>
+                                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 lg:grid-cols-1">
+                                        {statusRecords.map((item) => (
+                                            <div key={item.label} className="flex items-center gap-2 text-xs text-slate-700">
+                                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                                                <span className="truncate font-medium">{item.label}</span>
+                                                <span className="ml-auto text-slate-500 tabular-nums">{item.value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </Box>
+                    </div>
+                </motion.section>
 
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}
@@ -455,92 +541,7 @@ const Dashboard = () => {
                     </div>
                 </motion.section>
 
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.12 }}
-                    className="grid grid-cols-1 gap-6 xl:grid-cols-2"
-                >
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <Layers3 className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Page Records Scale</h3>
-                                </div>
-                                <p className="mt-1 text-xs text-slate-500">Record volume per instructor module.</p>
-                            </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                                MUI X Charts
-                            </span>
-                        </div>
-
-                        <Box sx={{ mt: 3 }}>
-                            <BarChart
-                                height={260}
-                                xAxis={[{ data: pageSnapshots.map((page) => page.shortLabel), scaleType: 'band' }]}
-                                series={[{ data: pageSnapshots.map((page) => page.value), color: '#10b981' }]}
-                                margin={{ top: 20, right: 20, bottom: 50, left: 40 }}
-                                grid={{ vertical: true, horizontal: true }}
-                            />
-                        </Box>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Status Distribution</h3>
-                                </div>
-                                <p className="mt-1 text-xs text-slate-500">Scheduled vs pending outcomes.</p>
-                            </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                                MUI X Charts
-                            </span>
-                        </div>
-
-                        <Box sx={{ mt: 2 }}>
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                                <div className="flex flex-1 justify-center">
-                                    <PieChart
-                                        height={260}
-                                        series={[
-                                            {
-                                                data: statusRecords.map((item, index) => ({
-                                                    id: index,
-                                                    value: item.value,
-                                                    label: item.label,
-                                                    color: item.color,
-                                                })),
-                                                innerRadius: 60,
-                                                outerRadius: 100,
-                                                paddingAngle: 3,
-                                                cornerRadius: 6,
-                                                highlightScope: { faded: 'global', highlighted: 'item' },
-                                                faded: { innerRadius: 60, additionalRadius: -4, color: 'gray' },
-                                            },
-                                        ]}
-                                        slotProps={{ legend: { hidden: true } }}
-                                    />
-                                </div>
-
-                                <div className="lg:w-44">
-                                    <div className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Legend</div>
-                                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 lg:grid-cols-1">
-                                        {statusRecords.map((item) => (
-                                            <div key={item.label} className="flex items-center gap-2 text-xs text-slate-700">
-                                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                                                <span className="truncate font-medium">{item.label}</span>
-                                                <span className="ml-auto text-slate-500 tabular-nums">{item.value}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </Box>
-                    </div>
-                </motion.section>
+                
 
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}
