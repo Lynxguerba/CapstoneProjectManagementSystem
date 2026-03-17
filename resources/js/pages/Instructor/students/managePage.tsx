@@ -94,9 +94,7 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
         return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
     }, [currentPage, totalPages]);
 
-    const subtitle = sectionMeta
-        ? `Manage enrollments for ${sectionName} (${sectionMeta})`
-        : `Manage enrollments for ${sectionName}`;
+    const subtitle = sectionMeta ? `Manage enrollments for ${sectionName} (${sectionMeta})` : `Manage enrollments for ${sectionName}`;
 
     const handleUnenrollRequest = (studentId: number, studentName: string) => {
         setSelectedStudent({ id: studentId, name: studentName });

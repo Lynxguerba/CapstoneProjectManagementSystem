@@ -94,10 +94,7 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
         <InstructorLayout title="Panelist Assignment" subtitle="Assign and manage panelist groups by academic year">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
-                    <Link
-                        href={instructorRoutes.dashboard.url()}
-                        className="font-medium text-slate-600 transition-colors hover:text-slate-900"
-                    >
+                    <Link href={instructorRoutes.dashboard.url()} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
                         Dashboard
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
@@ -301,8 +298,7 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
                 {filteredPanelists.length > 0 && (
                     <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
                         <p className="text-xs font-medium text-slate-500">
-                            Page <span className="text-slate-900">{currentPage}</span> of{' '}
-                            <span className="text-slate-900">{totalPages}</span>
+                            Page <span className="text-slate-900">{currentPage}</span> of <span className="text-slate-900">{totalPages}</span>
                         </p>
                         <div className="flex items-center gap-1.5">
                             <button

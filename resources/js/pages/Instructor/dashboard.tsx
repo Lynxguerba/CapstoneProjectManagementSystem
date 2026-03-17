@@ -2,17 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { Box } from '@mui/material';
 import { BarChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
-import {
-    CalendarCheck,
-    CheckCircle2,
-    ClipboardList,
-    DoorOpen,
-    GraduationCap,
-    Layers3,
-    Scale,
-    TriangleAlert,
-    Users,
-} from 'lucide-react';
+import { CalendarCheck, CheckCircle2, ClipboardList, DoorOpen, GraduationCap, Layers3, Scale, TriangleAlert, Users } from 'lucide-react';
 import InstructorLayout from './_layout';
 
 type DashboardStats = {
@@ -352,17 +342,12 @@ const Dashboard = () => {
                                         {stat.change}
                                     </span>
                                 </div>
-                                <div
-                                    className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.tone} shadow-sm`}
-                                >
+                                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.tone} shadow-sm`}>
                                     <stat.icon className="h-5 w-5 text-white" />
                                 </div>
                             </div>
                             <div className="mt-4 h-1.5 w-full rounded-full bg-emerald-100/60">
-                                <div
-                                    className={`h-1.5 rounded-full bg-gradient-to-r ${stat.tone}`}
-                                    style={{ width: `${stat.progress}%` }}
-                                />
+                                <div className={`h-1.5 rounded-full bg-gradient-to-r ${stat.tone}`} style={{ width: `${stat.progress}%` }} />
                             </div>
                         </motion.div>
                     ))}
@@ -494,10 +479,7 @@ const Dashboard = () => {
                                         <span>{page.progress}% scale</span>
                                     </div>
                                     <div className="mt-2 h-1.5 w-full rounded-full bg-emerald-100/60">
-                                        <div
-                                            className={`h-1.5 rounded-full bg-gradient-to-r ${page.tone}`}
-                                            style={{ width: `${page.progress}%` }}
-                                        />
+                                        <div className={`h-1.5 rounded-full bg-gradient-to-r ${page.tone}`} style={{ width: `${page.progress}%` }} />
                                     </div>
                                 </Link>
                             ))}
@@ -528,10 +510,7 @@ const Dashboard = () => {
                                             <span className="text-slate-500 tabular-nums">{record.value}</span>
                                         </div>
                                         <div className="mt-2 h-1.5 w-full rounded-full bg-white/80">
-                                            <div
-                                                className="h-1.5 rounded-full"
-                                                style={{ width: `${percent}%`, backgroundColor: record.color }}
-                                            />
+                                            <div className="h-1.5 rounded-full" style={{ width: `${percent}%`, backgroundColor: record.color }} />
                                         </div>
                                         <div className="mt-2 text-[11px] text-slate-500">{percent}% of records</div>
                                     </div>
@@ -540,8 +519,6 @@ const Dashboard = () => {
                         </div>
                     </div>
                 </motion.section>
-
-                
 
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}
@@ -731,10 +708,7 @@ const Dashboard = () => {
                             <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                                 <TriangleAlert className="h-4 w-4 text-emerald-600" /> Attention Required
                             </h2>
-                            <Link
-                                href="/instructor/adviser-assignment"
-                                className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
-                            >
+                            <Link href="/instructor/adviser-assignment" className="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
                                 Review assignments
                             </Link>
                         </div>

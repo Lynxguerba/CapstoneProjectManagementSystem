@@ -1,15 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import {
-    Calendar,
-    ChevronRight,
-    Filter,
-    GraduationCap,
-    LayoutGrid,
-    List,
-    Search,
-    Users,
-} from 'lucide-react';
+import { Calendar, ChevronRight, Filter, GraduationCap, LayoutGrid, List, Search, Users } from 'lucide-react';
 import React, { useState } from 'react';
 import InstructorLayout from './_layout';
 
@@ -34,11 +25,7 @@ const InstructorGroups = () => {
         totalStudents: ps.students_count ?? 0,
         totalGroups: ps.groups_count ?? 0,
         description:
-            ps.program === 'BSIT'
-                ? 'Information Technology Capstone Groups'
-                : ps.program === 'BSIS'
-                ? 'Information System Capstone Groups'
-                : '',
+            ps.program === 'BSIT' ? 'Information Technology Capstone Groups' : ps.program === 'BSIS' ? 'Information System Capstone Groups' : '',
     }));
 
     const schoolYearOptions = Array.from(new Set(programSets.map((ps) => ps.school_year).filter(Boolean)));
@@ -139,7 +126,7 @@ const InstructorGroups = () => {
                                     </option>
                                 ))}
                             </select>
-                        </div>                        
+                        </div>
 
                         <button
                             type="button"
@@ -250,9 +237,7 @@ const InstructorGroups = () => {
                                 {paginatedSets.map((set, index) => (
                                     <tr
                                         key={set.id}
-                                        className={`transition-colors hover:bg-green-50/30 ${
-                                            index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'
-                                        }`}
+                                        className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
                                     >
                                         <td className="px-6 py-3.5">
                                             <div>
@@ -307,8 +292,7 @@ const InstructorGroups = () => {
                 {filteredSets.length > 0 && (
                     <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
                         <p className="text-xs font-medium text-slate-500">
-                            Page <span className="text-slate-900">{currentPage}</span> of{' '}
-                            <span className="text-slate-900">{totalPages}</span>
+                            Page <span className="text-slate-900">{currentPage}</span> of <span className="text-slate-900">{totalPages}</span>
                         </p>
                         <div className="flex items-center gap-1.5">
                             <button

@@ -159,9 +159,10 @@ const ScheduleManagerPage = () => {
                     return true;
                 }
 
-                const haystack = `${schedule.group_name ?? ''} ${schedule.program_set_name ?? ''} ${schedule.room?.name ?? ''} ${schedule.manager?.name ?? ''}`
-                    .toLowerCase()
-                    .trim();
+                const haystack =
+                    `${schedule.group_name ?? ''} ${schedule.program_set_name ?? ''} ${schedule.room?.name ?? ''} ${schedule.manager?.name ?? ''}`
+                        .toLowerCase()
+                        .trim();
 
                 return haystack.includes(query);
             })
@@ -273,7 +274,7 @@ const ScheduleManagerPage = () => {
                     <div className="lg:col-span-3">
                         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                             <table className="w-full text-left text-xs">
-                                <thead className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                                <thead className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold tracking-wide text-slate-500 uppercase">
                                     <tr>
                                         <th className="px-4 py-3">Date</th>
                                         <th className="px-4 py-3">Group</th>
@@ -308,9 +309,7 @@ const ScheduleManagerPage = () => {
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="font-semibold text-slate-800">{schedule.group_name ?? 'Unnamed group'}</div>
-                                                    <div className="text-[10px] text-slate-500">
-                                                        {schedule.program_set_name ?? 'Program set'}
-                                                    </div>
+                                                    <div className="text-[10px] text-slate-500">{schedule.program_set_name ?? 'Program set'}</div>
                                                 </td>
                                                 <td className="px-4 py-3 text-slate-600">{schedule.stage ?? 'Stage'}</td>
                                                 <td className="px-4 py-3 text-slate-600">{schedule.room?.name ?? 'No room'}</td>

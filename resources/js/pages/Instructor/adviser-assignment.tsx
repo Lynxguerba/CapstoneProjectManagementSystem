@@ -48,18 +48,15 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
         return ['All', ...years];
     }, [academicYears]);
 
-    const getLoadForYear = React.useCallback(
-        (adviser: AdviserRow, academicYear: string): number => {
-            const workloads = adviser.workloads ?? [];
+    const getLoadForYear = React.useCallback((adviser: AdviserRow, academicYear: string): number => {
+        const workloads = adviser.workloads ?? [];
 
-            if (academicYear === 'All') {
-                return workloads.reduce((total, item) => total + (item.groups_count ?? 0), 0);
-            }
+        if (academicYear === 'All') {
+            return workloads.reduce((total, item) => total + (item.groups_count ?? 0), 0);
+        }
 
-            return workloads.find((item) => item.academic_year === academicYear)?.groups_count ?? 0;
-        },
-        [],
-    );
+        return workloads.find((item) => item.academic_year === academicYear)?.groups_count ?? 0;
+    }, []);
 
     const getStatusMeta = (load: number) => {
         const isFull = load >= MAX_LOAD;
@@ -67,8 +64,8 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
         const statusClasses = isFull
             ? 'bg-rose-100 text-rose-700'
             : status === 'Partial'
-            ? 'bg-amber-100 text-amber-700'
-            : 'bg-emerald-100 text-emerald-700';
+              ? 'bg-amber-100 text-amber-700'
+              : 'bg-emerald-100 text-emerald-700';
 
         return { status, statusClasses, isFull };
     };
@@ -78,8 +75,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
         const isAllYears = selectedAcademicYear === 'All';
 
         return advisers.filter((adviser) => {
-            const matchesSearch =
-                !query || adviser.name.toLowerCase().includes(query) || adviser.email.toLowerCase().includes(query);
+            const matchesSearch = !query || adviser.name.toLowerCase().includes(query) || adviser.email.toLowerCase().includes(query);
 
             if (!matchesSearch) {
                 return false;
@@ -130,10 +126,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
         <InstructorLayout title="Adviser Assignment" subtitle="Assign and manage adviser workloads by academic year">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
-                    <Link
-                        href={instructorRoutes.dashboard.url()}
-                        className="font-medium text-slate-600 transition-colors hover:text-slate-900"
-                    >
+                    <Link href={instructorRoutes.dashboard.url()} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
                         Dashboard
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
@@ -178,7 +171,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                                 value={statusFilter}
                                 onChange={(event) => setStatusFilter(event.target.value as 'all' | 'available' | 'partial' | 'full')}
                                 disabled={selectedAcademicYear === 'All'}
-                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm transition outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                             >
                                 <option value="all">All Statuses</option>
                                 <option value="available">Available</option>
@@ -237,9 +230,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                                                 </h3>
                                                 <p className="mt-1 text-xs text-slate-500">{adviser.email}</p>
                                             </div>
-                                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClasses}`}>
-                                                {status}
-                                            </span>
+                                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClasses}`}>{status}</span>
                                         </div>
 
                                         <div className="mt-4 space-y-1 text-xs text-slate-600">
@@ -248,7 +239,9 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                                                 {isAllYears ? '' : ` / ${MAX_LOAD}`}
                                             </p>
                                             <p className="text-[11px] text-slate-500">
-                                                {isAllYears ? 'Select an academic year to see the per-year limit.' : 'Limit resets per academic year.'}
+                                                {isAllYears
+                                                    ? 'Select an academic year to see the per-year limit.'
+                                                    : 'Limit resets per academic year.'}
                                             </p>
                                         </div>
 
@@ -383,8 +376,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                 {filteredAdvisers.length > 0 && (
                     <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
                         <p className="text-xs font-medium text-slate-500">
-                            Page <span className="text-slate-900">{currentPage}</span> of{' '}
-                            <span className="text-slate-900">{totalPages}</span>
+                            Page <span className="text-slate-900">{currentPage}</span> of <span className="text-slate-900">{totalPages}</span>
                         </p>
                         <div className="flex items-center gap-1.5">
                             <button

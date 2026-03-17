@@ -47,10 +47,7 @@ const InstructorGroupsManage = ({ programSet, groups = [] }: InstructorGroupsMan
         const query = searchTerm.trim().toLowerCase();
 
         return groups.filter((group) => {
-            const matchesSearch =
-                !query ||
-                group.name.toLowerCase().includes(query) ||
-                (group.leader_name ?? '').toLowerCase().includes(query);
+            const matchesSearch = !query || group.name.toLowerCase().includes(query) || (group.leader_name ?? '').toLowerCase().includes(query);
 
             return matchesSearch;
         });
@@ -236,9 +233,7 @@ const InstructorGroupsManage = ({ programSet, groups = [] }: InstructorGroupsMan
                                 {paginatedGroups.map((group, index) => (
                                     <tr
                                         key={group.id}
-                                        className={`transition-colors hover:bg-green-50/30 ${
-                                            index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'
-                                        }`}
+                                        className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
                                     >
                                         <td className="px-6 py-3.5">
                                             <div>
@@ -315,8 +310,7 @@ const InstructorGroupsManage = ({ programSet, groups = [] }: InstructorGroupsMan
                 {filteredGroups.length > 0 && (
                     <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
                         <p className="text-xs font-medium text-slate-500">
-                            Page <span className="text-slate-900">{currentPage}</span> of{' '}
-                            <span className="text-slate-900">{totalPages}</span>
+                            Page <span className="text-slate-900">{currentPage}</span> of <span className="text-slate-900">{totalPages}</span>
                         </p>
                         <div className="flex items-center gap-1.5">
                             <button

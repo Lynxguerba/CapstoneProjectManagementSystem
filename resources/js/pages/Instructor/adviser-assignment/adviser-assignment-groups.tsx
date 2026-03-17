@@ -433,9 +433,7 @@ const AdviserAssignmentGroups = ({
                                 <SlidersHorizontal className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                                 <select
                                     value={statusFilter}
-                                    onChange={(event) =>
-                                        setStatusFilter(event.target.value as 'all' | 'unassigned' | 'assigned' | 'reassign')
-                                    }
+                                    onChange={(event) => setStatusFilter(event.target.value as 'all' | 'unassigned' | 'assigned' | 'reassign')}
                                     className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                                 >
                                     <option value="all">All Statuses</option>

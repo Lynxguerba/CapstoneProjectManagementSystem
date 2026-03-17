@@ -1,18 +1,5 @@
 import { motion } from 'framer-motion';
-import {
-    ChevronRight,
-    Filter,
-    Search,
-    Settings,
-    Upload,
-    Plus,
-    Eye,
-    Users,
-    Calendar,
-    GraduationCap,
-    List,
-    LayoutGrid,
-} from 'lucide-react';
+import { ChevronRight, Filter, Search, Settings, Upload, Plus, Eye, Users, Calendar, GraduationCap, List, LayoutGrid } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import AddProgramSetModal from '../../components/Instructor/ProgramSetModal';
@@ -46,17 +33,11 @@ const InstructorStudents = () => {
         groups: 0,
         status: 'Active',
         description:
-            ps.program === 'BSIT'
-                ? 'Information Technology Capstone Projects'
-                : ps.program === 'BSIS'
-                ? 'Information System Capstone Projects'
-                : '',
+            ps.program === 'BSIT' ? 'Information Technology Capstone Projects' : ps.program === 'BSIS' ? 'Information System Capstone Projects' : '',
     }));
 
     const existingProgramSetNames = React.useMemo(() => {
-        return programSets
-            .map((programSet) => (typeof programSet.name === 'string' ? programSet.name.trim() : ''))
-            .filter((name) => name !== '');
+        return programSets.map((programSet) => (typeof programSet.name === 'string' ? programSet.name.trim() : '')).filter((name) => name !== '');
     }, [programSets]);
 
     // Filter states - default to current academic year instead of 'All'
@@ -310,7 +291,7 @@ const InstructorStudents = () => {
                                     >
                                         <td className="px-6 py-3.5">
                                             <div>
-                                                    <div className="font-semibold text-slate-800">{set.name}</div>
+                                                <div className="font-semibold text-slate-800">{set.name}</div>
                                                 <div className="text-[10px] text-slate-500">{set.description}</div>
                                             </div>
                                         </td>

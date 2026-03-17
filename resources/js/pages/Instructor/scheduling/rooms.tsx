@@ -126,24 +126,20 @@ const ManageDefenseRoomsPage = () => {
                 </nav>
 
                 {errorMessage ? (
-                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">
-                        {errorMessage}
-                    </div>
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">{errorMessage}</div>
                 ) : null}
 
-                <div className="text-xs text-slate-500">
-                    Use the first row to add a room. Edit or remove existing rooms from the actions column.
-                </div>
+                <div className="text-xs text-slate-500">Use the first row to add a room. Edit or remove existing rooms from the actions column.</div>
 
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                     <table className="w-full text-left text-xs">
-                        <thead className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                        <thead className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold tracking-wide text-slate-500 uppercase">
                             <tr>
                                 <th className="px-4 py-3">Room</th>
                                 <th className="px-4 py-3">Capacity</th>
                                 <th className="px-4 py-3">Status</th>
                                 <th className="px-4 py-3">Notes</th>
-                                <th className="px-4 py-3 text-right w-40">Actions</th>
+                                <th className="w-40 px-4 py-3 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -162,9 +158,7 @@ const ManageDefenseRoomsPage = () => {
                                 return (
                                     <tr
                                         key={room.id}
-                                        className={`transition-colors hover:bg-emerald-50/30 ${
-                                            index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'
-                                        }`}
+                                        className={`transition-colors hover:bg-emerald-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
                                     >
                                         <td className="px-4 py-3">
                                             <div className="font-semibold text-slate-800">{room.name}</div>
@@ -178,9 +172,7 @@ const ManageDefenseRoomsPage = () => {
                                         <td className="px-4 py-3">
                                             <span
                                                 className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${
-                                                    room.is_active
-                                                        ? 'bg-emerald-100 text-emerald-700'
-                                                        : 'bg-slate-200 text-slate-600'
+                                                    room.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
                                                 }`}
                                             >
                                                 {room.is_active ? 'Active' : 'Inactive'}
