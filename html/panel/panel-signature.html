@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Signature - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            overflow: hidden;
+        }
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .glass-effect {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .status-badge.for-signature {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+        .status-badge.for-review {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .status-badge.for-defense {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+        .status-badge.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .notification-dot {
+            position: relative;
+        }
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+        .signature-preview {
+            border: 2px dashed #cbd5e1;
+            background: #f8fafc;
+            padding: 1.5rem;
+            text-align: center;
+            font-family: 'Brush Script MT', cursive;
+            font-size: 2rem;
+            color: #1e40af;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+        }
+        .signature-preview:hover {
+            border-color: #8b5cf6;
+            background: #f5f3ff;
+        }
+        .signature-status {
+            transition: all 0.2s ease;
+        }
+        .signature-status:hover {
+            background: #f8fafc;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - EXACT COPY FROM PANEL-DASHBOARD -->
+    <aside class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-graduation-cap text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Panel Portal</p>
+                </div>
+            </div>
+           
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Panel Role</p>
+                    <p class="text-sm font-semibold text-white">Member</p>
+                </div>
+            </div>
+        </div>
+       
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="panel-dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Evaluation</p>
+            <a href="panel-review.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">For Review</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+            <a href="panel-defense.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-gavel w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">For Defense</span>
+                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">1</span>
+            </a>
+            <a href="panel-signature.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
+                <i class="fas fa-signature w-5"></i>
+                <span class="flex-1">For Signature</span>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Schedule</p>
+            <a href="panel-schedule.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">My Defense Schedule</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Records</p>
+            <a href="panel-completed.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-check-circle w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Completed</span>
+                <span class="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">4</span>
+            </a>
+        </nav>
+       
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-semibold shadow-lg">JP</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Juan Perez</p>
+                    <p class="text-xs text-slate-400">Panel Member</p>
+                </div>
+                <a href="instructor-dashboard.html" class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition" title="Switch to Instructor">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72">
+
+        <!-- TOP BAR - COMPLETE WITH PROGRAM, PHASE, SETTINGS, AND ROLE SWITCHER -->
+        <div class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Digital Signature</h2>
+                <span class="bg-purple-100 text-purple-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-circle text-[8px] text-purple-500"></i> Panel Member
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Notification Bell -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+               
+                <!-- Settings Icon -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+               
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <!-- Program Switch -->
+                    <div class="relative">
+                        <select id="programSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="bsit" selected>BS Information Technology</option>
+                            <option value="bsis">BS Information Systems</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Phase Switch -->
+                    <div class="relative">
+                        <select id="phaseSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="concept" selected>Phase 1: Concept</option>
+                            <option value="outline">Phase 2: Outline</option>
+                            <option value="predeployment">Phase 3: Pre-Deployment</option>
+                            <option value="deployment">Phase 4: Deployment</option>
+                            <option value="final">Phase 5: Final</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Role Switch -->
+                    <div class="relative">
+                        <select id="roleSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="panel" selected>Panel Member</option>
+                            <option value="panelChair">Panel Chair</option>
+                            <option value="adviser">Adviser</option>
+                            <option value="instructor">Instructor</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="p-8 space-y-6 mt-20 pb-12">
+            <!-- Header with count -->
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold flex items-center gap-2">
+                    <i class="fas fa-signature text-purple-600"></i>
+                    Documents Awaiting Your Signature (3)
+                </h3>
+                <div class="flex gap-2">
+                    <span class="text-sm text-slate-500">Last updated: March 15, 2026</span>
+                </div>
+            </div>
+           
+            <!-- Group Gamma - Detailed View -->
+            <div class="bg-white border rounded-xl p-6 hover:shadow-lg transition">
+                <div class="flex items-start justify-between mb-6">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <h4 class="font-semibold text-xl">Group Gamma</h4>
+                            <span class="status-badge for-signature">Ready for Signature</span>
+                        </div>
+                        <p class="text-sm text-slate-600">Mobile Health Tracker App - Final Approval Sheet</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-slate-500">Due: March 20, 2026</span>
+                    </div>
+                </div>
+               
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Document Info -->
+                    <div class="lg:col-span-2 space-y-4">
+                        <!-- PDF Preview -->
+                        <div class="border rounded-lg p-5 bg-slate-50 hover-scale">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-file-pdf text-red-500 text-3xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-medium text-lg">Approval_Sheet_Gamma.pdf</p>
+                                    <div class="flex items-center gap-4 mt-1">
+                                        <span class="text-xs text-slate-500">Generated: March 15, 2026</span>
+                                        <span class="text-xs text-slate-500">Size: 245 KB</span>
+                                        <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Final Version</span>
+                                    </div>
+                                </div>
+                                <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+                                    <i class="fas fa-eye"></i>
+                                    Preview
+                                </button>
+                            </div>
+                        </div>
+                       
+                        <!-- Signature Status Tracker -->
+                        <div class="border rounded-lg p-5">
+                            <h5 class="font-medium mb-4 flex items-center gap-2">
+                                <i class="fas fa-check-circle text-green-600"></i>
+                                Signature Status
+                            </h5>
+                            <div class="space-y-4">
+                                <!-- Chair -->
+                                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg signature-status">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">MS</div>
+                                        <div>
+                                            <p class="font-medium">Prof. Maria Santos</p>
+                                            <p class="text-xs text-slate-500">Panel Chair</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-green-600 font-medium flex items-center gap-1">
+                                            <i class="fas fa-check-circle"></i> Signed
+                                        </span>
+                                        <p class="text-xs text-slate-400">March 15, 2026 • 10:30 AM</p>
+                                    </div>
+                                </div>
+                               
+                                <!-- You (Pending) -->
+                                <div class="flex items-center justify-between p-3 bg-amber-50 rounded-lg signature-status border-2 border-amber-200">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold">JP</div>
+                                        <div>
+                                            <p class="font-medium">Prof. Juan Perez</p>
+                                            <p class="text-xs text-slate-500">Panel Member (You)</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-amber-600 font-medium flex items-center gap-1">
+                                            <i class="fas fa-clock"></i> Pending
+                                        </span>
+                                        <p class="text-xs text-slate-400">Awaiting your signature</p>
+                                    </div>
+                                </div>
+                               
+                                <!-- Other Panel -->
+                                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg signature-status">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">AL</div>
+                                        <div>
+                                            <p class="font-medium">Prof. Ana Lopez</p>
+                                            <p class="text-xs text-slate-500">Panel Member</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-green-600 font-medium flex items-center gap-1">
+                                            <i class="fas fa-check-circle"></i> Signed
+                                        </span>
+                                        <p class="text-xs text-slate-400">March 15, 2026 • 9:15 AM</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                   
+                    <!-- Signature Pad -->
+                    <div class="space-y-4">
+                        <div class="border rounded-lg p-5 bg-white">
+                            <h5 class="font-medium mb-4 flex items-center gap-2">
+                                <i class="fas fa-pen text-purple-600"></i>
+                                Your Digital Signature
+                            </h5>
+                           
+                            <!-- Pre-registered Signature Preview -->
+                            <div class="signature-preview mb-4">
+                                <span>Juan Perez</span>
+                            </div>
+                           
+                            <p class="text-xs text-slate-500 mb-4 text-center">
+                                <i class="fas fa-check-circle text-green-600"></i>
+                                This is your registered digital signature on file
+                            </p>
+                           
+                            <!-- Signature Confirmation -->
+                            <div class="space-y-3">
+                                <label class="flex items-center gap-2 p-3 bg-slate-50 rounded-lg">
+                                    <input type="checkbox" class="rounded text-purple-600">
+                                    <span class="text-sm">I confirm that I have reviewed the document and approve this capstone project</span>
+                                </label>
+                               
+                                <button class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2 text-lg font-medium">
+                                    <i class="fas fa-signature"></i>
+                                    Apply Signature
+                                </button>
+                               
+                                <p class="text-xs text-slate-400 text-center mt-2">
+                                    <i class="fas fa-info-circle"></i>
+                                    By clicking Apply Signature, you digitally sign this document. This action cannot be undone.
+                                </p>
+                            </div>
+                        </div>
+                       
+                        <!-- Audit Trail -->
+                        <div class="bg-slate-50 rounded-lg p-4">
+                            <h6 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Audit Trail</h6>
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-600">Document viewed:</span>
+                                    <span class="text-slate-800">March 15, 2026 • 11:30 AM</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-600">IP Address:</span>
+                                    <span class="text-slate-800">192.168.1.105</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-600">Device:</span>
+                                    <span class="text-slate-800">Chrome / Windows</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group Delta - Compact View -->
+            <div class="bg-white border rounded-xl p-5 hover:shadow-lg transition">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4 flex-1">
+                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-3">
+                                <h4 class="font-semibold text-lg">Group Delta</h4>
+                                <span class="status-badge for-signature">Ready for Signature</span>
+                            </div>
+                            <p class="text-sm text-slate-600">AI-Powered Chatbot System - Approval Sheet</p>
+                            <div class="flex items-center gap-4 mt-1">
+                                <span class="text-xs text-slate-500">Generated: March 14, 2026</span>
+                                <span class="text-xs text-slate-500">Size: 198 KB</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <div class="flex items-center gap-1 text-sm text-amber-600">
+                                <i class="fas fa-clock"></i>
+                                <span>Pending your signature</span>
+                            </div>
+                        </div>
+                        <button class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition flex items-center gap-2">
+                            <i class="fas fa-pen"></i>
+                            Sign Now
+                        </button>
+                        <button class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group Epsilon - Compact View -->
+            <div class="bg-white border rounded-xl p-5 hover:shadow-lg transition">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4 flex-1">
+                        <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-3">
+                                <h4 class="font-semibold text-lg">Group Epsilon</h4>
+                                <span class="status-badge for-signature">Ready for Signature</span>
+                            </div>
+                            <p class="text-sm text-slate-600">Inventory Management System - Approval Sheet</p>
+                            <div class="flex items-center gap-4 mt-1">
+                                <span class="text-xs text-slate-500">Generated: March 13, 2026</span>
+                                <span class="text-xs text-slate-500">Size: 312 KB</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <div class="flex items-center gap-1 text-sm text-amber-600">
+                                <i class="fas fa-clock"></i>
+                                <span>Pending your signature</span>
+                            </div>
+                        </div>
+                        <button class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition flex items-center gap-2">
+                            <i class="fas fa-pen"></i>
+                            Sign Now
+                        </button>
+                        <button class="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recently Signed Section -->
+            <div class="bg-white rounded-xl border p-6">
+                <h3 class="font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-history text-purple-600"></i>
+                    Recently Signed Documents
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-check-circle text-green-600"></i>
+                            <div>
+                                <p class="font-medium">Group Alpha - Approval Sheet</p>
+                                <p class="text-xs text-slate-500">Signed on March 10, 2026</p>
+                            </div>
+                        </div>
+                        <button class="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
+                            <i class="fas fa-download"></i>
+                            Download
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-check-circle text-green-600"></i>
+                            <div>
+                                <p class="font-medium">Group Beta - Approval Sheet</p>
+                                <p class="text-xs text-slate-500">Signed on March 8, 2026</p>
+                            </div>
+                        </div>
+                        <button class="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
+                            <i class="fas fa-download"></i>
+                            Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Digital Signature Information -->
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white">
+                <div class="flex items-center gap-4">
+                    <div class="bg-white/20 rounded-xl p-3">
+                        <i class="fas fa-shield-alt text-3xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg">About Digital Signatures</h4>
+                        <p class="text-purple-100 text-sm">Your digital signature is legally binding and securely stored. Each signature is timestamped and added to the audit trail.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Program switch handler
+        document.getElementById("programSwitch").addEventListener("change", function() {
+            const program = this.value;
+            showNotification('Switched to ' + (program === 'bsit' ? 'BS Information Technology' : 'BS Information Systems'));
+        });
+
+        // Phase switch handler
+        document.getElementById("phaseSwitch").addEventListener("change", function() {
+            const phase = this.value;
+            const phaseNames = {
+                'concept': 'Phase 1: Concept',
+                'outline': 'Phase 2: Outline',
+                'predeployment': 'Phase 3: Pre-Deployment',
+                'deployment': 'Phase 4: Deployment',
+                'final': 'Phase 5: Final'
+            };
+            showNotification('Switched to ' + phaseNames[phase]);
+        });
+
+        // Role switch handler
+        document.getElementById("roleSwitch").addEventListener("change", function() {
+            const role = this.value;
+            switch(role) {
+                case 'panelChair':
+                    window.location.href = 'panel-chair.html';
+                    break;
+                case 'adviser':
+                    window.location.href = 'adviser.html';
+                    break;
+                case 'instructor':
+                    window.location.href = 'instructor-dashboard.html';
+                    break;
+                default:
+                    showNotification('Staying in Panel view');
+            }
+        });
+
+        // Settings click handler
+        document.querySelector('.fa-cog').parentElement.addEventListener('click', function() {
+            showNotification('Settings opened');
+        });
+
+        // Apply Signature button
+        document.querySelector('.bg-purple-600.text-white.py-3').addEventListener('click', function() {
+            if(document.querySelector('input[type="checkbox"]').checked) {
+                showNotification('Document signed successfully! Digital signature applied.');
+            } else {
+                showNotification('Please confirm that you have reviewed the document');
+            }
+        });
+
+        // Sign Now buttons
+        document.querySelectorAll('.bg-purple-600.text-white.px-6').forEach(button => {
+            button.addEventListener('click', function() {
+                showNotification('Redirecting to signature page...');
+            });
+        });
+
+        // Preview buttons
+        document.querySelectorAll('.fa-eye').forEach(button => {
+            button.addEventListener('click', function() {
+                showNotification('Opening document preview');
+            });
+        });
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

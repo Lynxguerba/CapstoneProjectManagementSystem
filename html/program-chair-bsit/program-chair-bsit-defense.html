@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BSIT Defenses - Program Chair - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-badge.scheduled {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-badge.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .calendar-day {
+            border: 1px solid #e2e8f0;
+            padding: 0.5rem;
+            min-height: 100px;
+        }
+
+        .event {
+            background: #dbeafe;
+            padding: 0.25rem;
+            border-radius: 0.375rem;
+            font-size: 0.7rem;
+            margin-bottom: 0.25rem;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - SAME AS DASHBOARD -->
+    <aside
+        class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-laptop-code text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · BSIT Program Chair</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">2nd Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Program</p>
+                    <p class="text-sm font-semibold text-white">BS Information Technology</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="program-chair-bsit-dashboard.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">8</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Approval</p>
+            <a href="program-chair-bsit-pending.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Pending Signatures</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">5</span>
+            </a>
+            <a href="program-chair-bsit-approved.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-pdf w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Approved Sheets</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Program Oversight
+            </p>
+            <a href="program-chair-bsit-groups.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">BSIT Groups</span>
+                <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded-full">28</span>
+            </a>
+            
+            <a href="program-chair-bsit-faculty.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chalkboard-teacher w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">BSIT Faculty</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Schedule</p>
+            <a href="program-chair-bsit-defense.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg">
+                <i class="fas fa-calendar-alt w-5"></i>
+                <span class="flex-1">BSIT Defenses</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Settings</p>
+            <a href="program-chair-bsit-settings.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-cog w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Program Settings</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                    MS</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Dr. Maria Santos</p>
+                    <p class="text-xs text-slate-400">Program Chair, BSIT</p>
+                </div>
+                <a href="program-chair-bsis-dashboard.html"
+                    class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"
+                    title="Switch to BSIS">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72">
+
+        <!-- TOP BAR -->
+        <div
+            class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40">
+            <h2 class="text-2xl font-bold text-slate-800">BSIT Defense Schedules</h2>
+            <div class="flex items-center gap-4">
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- DEFENSES CONTENT -->
+        <div class="p-8 space-y-6 mt-20 pb-12">
+            <div class="bg-white rounded-xl border p-6">
+                <p class="text-slate-500">Defense schedules content here...</p>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

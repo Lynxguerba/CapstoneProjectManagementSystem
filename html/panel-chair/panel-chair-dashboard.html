@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Chair Dashboard - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+       
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+       
+        body {
+            overflow: hidden;
+        }
+       
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+       
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+       
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+       
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+       
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+       
+        .status-badge.pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+       
+        .status-badge.approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+       
+        .status-badge.re-defense {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+       
+        .status-badge.in-progress {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+       
+        .status-badge.completed {
+            background: #e0f2fe;
+            color: #075985;
+        }
+       
+        .status-badge.signed {
+            background: #dcfce7;
+            color: #166534;
+        }
+       
+        .status-badge.pending-signature {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+       
+        .progress-bar {
+            height: 0.5rem;
+            border-radius: 9999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+       
+        .progress-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.3s ease;
+        }
+       
+        .notification-dot {
+            position: relative;
+        }
+       
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+       
+        .tab-active {
+            border-bottom: 2px solid #8b5cf6;
+            color: #6d28d9;
+            font-weight: 500;
+        }
+       
+        .tab-link {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+       
+        .tab-link:hover {
+            color: #8b5cf6;
+            border-bottom: 2px solid #c4b5fd;
+        }
+       
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+       
+        .fixed-height-card {
+            height: 320px;
+            display: flex;
+            flex-direction: column;
+        }
+       
+        .chart-wrapper {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+       
+        .smooth-scroll {
+            scroll-behavior: smooth;
+        }
+       
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+       
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+       
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+       
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+       
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+       
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+       
+        .summary-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+       
+        .summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+       
+        .panelist-avatar {
+            transition: all 0.2s ease;
+        }
+       
+        .panelist-avatar:hover {
+            transform: scale(1.1);
+        }
+       
+        .verdict-card {
+            border-left-width: 4px;
+            transition: all 0.2s ease;
+        }
+       
+        .verdict-card:hover {
+            transform: translateX(4px);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - COMPLETE PANEL CHAIR SIDEBAR -->
+    <aside class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-gavel text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Panel Chair Portal</p>
+                </div>
+            </div>
+           
+            <!-- Quick Stats in Sidebar -->
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Chair Role</p>
+                    <p class="text-sm font-semibold text-white">Panel Chair</p>
+                </div>
+            </div>
+        </div>
+       
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <!-- Main Navigation -->
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="panel-chair-dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-600/20">
+                <i class="fas fa-tachometer-alt w-5"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">8</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Evaluation</p>
+            <a href="panel-chair-evaluation.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Evaluation Sheets</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">5</span>
+            </a>
+            <a href="panel-chair-defense-list.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-check-circle w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">List of Defense</span>
+                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+            <a href="panel-chair-comments.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Panel Comments</span>
+                <span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded-full">12</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Defense Day</p>
+            <a href="panel-chair-minutes.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-clipboard-list w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Minutes of Meeting</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Approval</p>
+            <a href="panel-chair-signatures.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Digital Signatures</span>
+                <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded-full">4</span>
+            </a>
+            <a href="panel-chair-approval.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-pdf w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Approval Sheets</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Reports</p>
+            <a href="panel-chair-analytics.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-line w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Analytics</span>
+            </a>
+        </nav>
+       
+        <!-- User Profile in Sidebar -->
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg">MS</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Maria Santos</p>
+                    <p class="text-xs text-slate-400">Panel Chair · College of Computing</p>
+                </div>
+                <a href="instructor-dashboard.html" class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition" title="Switch Role">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72 smooth-scroll">
+
+        <!-- TOP BAR -->
+        <div class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40 shadow-sm">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Panel Chairman Dashboard</h2>
+                <span class="bg-violet-100 text-violet-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-gavel text-[10px]"></i> Chair Oversight
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Notifications -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+               
+                <!-- Settings -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+               
+                <!-- Program & Phase Selectors -->
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <div class="relative">
+                        <select class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
+                            <option value="bsit" selected>BS Information Technology</option>
+                            <option value="bsis">BS Information Systems</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                    <div class="relative">
+                        <select class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
+                            <option value="concept" selected>Phase 1: Concept</option>
+                            <option value="outline">Phase 2: Outline</option>
+                            <option value="predeployment">Phase 3: Pre-Deployment</option>
+                            <option value="deployment">Phase 4: Deployment</option>
+                            <option value="final">Phase 5: Final</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                    <div class="relative">
+                        <select class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400">
+                            <option value="chair" selected>Panel Chair</option>
+                            <option value="panel">Panel Member</option>
+                            <option value="adviser">Adviser</option>
+                            <option value="instructor">Instructor</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD CONTENT - FULL VERSION -->
+        <div class="p-8 space-y-8 mt-20 pb-12">
+            <!-- WELCOME BANNER -->
+            <div class="bg-gradient-to-r from-blue-700 to-blue-900 rounded-2xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">Welcome back, Chair Santos! ⚖️</h3>
+                        <p class="text-violet-100">You have <span class="font-bold">5 pending verdicts</span> and <span class="font-bold">3 defenses today</span></p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur rounded-xl px-6 py-3">
+                        <p class="text-sm text-violet-200">Next Defense</p>
+                        <p class="text-lg font-bold">Group Alpha</p>
+                        <p class="text-xs text-violet-200">Today 2:00 PM · Room 201</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUICK STATS CARDS -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Pending Verdicts</p>
+                            <p class="text-3xl font-bold text-amber-600">5</p>
+                            <p class="text-xs text-amber-600 mt-2">Requires decision</p>
+                        </div>
+                        <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-gavel text-2xl text-amber-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Today's Defenses</p>
+                            <p class="text-3xl font-bold text-blue-600">3</p>
+                            <p class="text-xs text-blue-600 mt-2">2:00 PM, 4:00 PM</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-calendar-day text-2xl text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Panel Comments</p>
+                            <p class="text-3xl font-bold text-purple-600">24</p>
+                            <p class="text-xs text-purple-600 mt-2">12 new</p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-comments text-2xl text-purple-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Pending Signatures</p>
+                            <p class="text-3xl font-bold text-violet-600">4</p>
+                            <p class="text-xs text-violet-600 mt-2">Awaiting your approval</p>
+                        </div>
+                        <div class="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-signature text-2xl text-violet-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 p-6 hover-scale shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-slate-500 mb-1">Completed</p>
+                            <p class="text-3xl font-bold text-green-600">8</p>
+                            <p class="text-xs text-green-600 mt-2">This semester</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-check-double text-2xl text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS SECTION -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Verdict Distribution Chart -->
+                <div class="fixed-height-card bg-white rounded-xl border border-slate-100 p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-chart-pie text-violet-500"></i> Verdict Distribution
+                        </h3>
+                        <span class="text-xs text-slate-500">Current AY</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="verdictChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Panel Progress Chart -->
+                <div class="fixed-height-card bg-white rounded-xl border border-slate-100 p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-chart-bar text-blue-500"></i> Panel Progress
+                        </h3>
+                        <span class="text-xs text-slate-500">Per Group</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="panelProgressChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Defense Schedule Chart -->
+                <div class="fixed-height-card bg-white rounded-xl border border-slate-100 p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-calendar-alt text-emerald-500"></i> Defense Schedule
+                        </h3>
+                        <span class="text-xs text-slate-500">This Week</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="defenseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PENDING VERDICTS SECTION -->
+            <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-gavel text-amber-500"></i>
+                        Pending Verdicts
+                    </h2>
+                    <span class="text-xs bg-amber-100 text-amber-700 px-3 py-1 rounded-full">5 groups waiting</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <!-- Group Alpha -->
+                    <div class="verdict-card border-l-4 border-l-amber-500 bg-amber-50/30 rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="font-semibold text-lg">Group Alpha</h3>
+                                    <span class="status-badge in-progress text-xs">Panel Complete</span>
+                                </div>
+                                <p class="text-sm text-slate-600">E-Learning Platform with AI</p>
+                            </div>
+                            <a href="panel-chair-defense-details.html?group=alpha" class="bg-violet-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-violet-700">
+                                View Details
+                            </a>
+                        </div>
+
+                        <!-- Panelist Comments Summary -->
+                        <div class="mt-4 space-y-2">
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs">PS</div>
+                                <span class="flex-1">Prof. Santos:</span>
+                                <span class="text-green-600">✓ Approved</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 text-xs">JL</div>
+                                <span class="flex-1">Prof. Lopez:</span>
+                                <span class="text-amber-600">⏳ Minor Revisions</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-xs">MR</div>
+                                <span class="flex-1">Prof. Reyes:</span>
+                                <span class="text-green-600">✓ Approved</span>
+                            </div>
+                        </div>
+
+                        <!-- Evaluation Sheet Link -->
+                        <div class="mt-3 pt-3 border-t border-slate-200">
+                            <a href="#" class="text-violet-600 text-sm hover:text-violet-800 flex items-center gap-1">
+                                <i class="fas fa-file-alt"></i>
+                                View Evaluation Sheet
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Group Beta -->
+                    <div class="verdict-card border-l-4 border-l-amber-500 bg-amber-50/30 rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="font-semibold text-lg">Group Beta</h3>
+                                    <span class="status-badge in-progress text-xs">Panel Complete</span>
+                                </div>
+                                <p class="text-sm text-slate-600">Inventory Management System</p>
+                            </div>
+                            <a href="panel-chair-defense-details.html?group=beta" class="bg-violet-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-violet-700">
+                                View Details
+                            </a>
+                        </div>
+
+                        <div class="mt-4 space-y-2">
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs">PS</div>
+                                <span class="flex-1">Prof. Santos:</span>
+                                <span class="text-green-600">✓ Approved</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 text-xs">JL</div>
+                                <span class="flex-1">Prof. Lopez:</span>
+                                <span class="text-green-600">✓ Approved</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-xs">MR</div>
+                                <span class="flex-1">Prof. Reyes:</span>
+                                <span class="text-green-600">✓ Approved</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 pt-3 border-t border-slate-200">
+                            <a href="#" class="text-violet-600 text-sm hover:text-violet-800 flex items-center gap-1">
+                                <i class="fas fa-file-alt"></i>
+                                View Evaluation Sheet
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Group Gamma -->
+                    <div class="verdict-card border-l-4 border-l-amber-500 bg-amber-50/30 rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="font-semibold text-lg">Group Gamma</h3>
+                                    <span class="status-badge in-progress text-xs">2/3 Panel</span>
+                                </div>
+                                <p class="text-sm text-slate-600">Mobile Health Tracker</p>
+                            </div>
+                            <a href="panel-chair-defense-details.html?group=gamma" class="bg-violet-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-violet-700">
+                                View Details
+                            </a>
+                        </div>
+
+                        <div class="mt-4 space-y-2">
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs">PS</div>
+                                <span class="flex-1">Prof. Santos:</span>
+                                <span class="text-green-600">✓ Approved</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 text-xs">JL</div>
+                                <span class="flex-1">Prof. Lopez:</span>
+                                <span class="text-slate-400">⏳ Pending</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-xs">MR</div>
+                                <span class="flex-1">Prof. Reyes:</span>
+                                <span class="text-green-600">✓ Approved</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 pt-3 border-t border-slate-200">
+                            <span class="text-sm text-slate-400 flex items-center gap-1">
+                                <i class="fas fa-clock"></i>
+                                Awaiting 1 more panel evaluation
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Group Delta -->
+                    <div class="verdict-card border-l-4 border-l-amber-500 bg-amber-50/30 rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="font-semibold text-lg">Group Delta</h3>
+                                    <span class="status-badge in-progress text-xs">Panel Complete</span>
+                                </div>
+                                <p class="text-sm text-slate-600">AI Chatbot System</p>
+                            </div>
+                            <a href="panel-chair-defense-details.html?group=delta" class="bg-violet-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-violet-700">
+                                View Details
+                            </a>
+                        </div>
+
+                        <div class="mt-4 space-y-2">
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs">PS</div>
+                                <span class="flex-1">Prof. Santos:</span>
+                                <span class="text-amber-600">⏳ Minor Revisions</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 text-xs">JL</div>
+                                <span class="flex-1">Prof. Lopez:</span>
+                                <span class="text-green-600">✓ Approved</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-xs">MR</div>
+                                <span class="flex-1">Prof. Reyes:</span>
+                                <span class="text-red-600">⚠️ Re-Defense</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 pt-3 border-t border-slate-200">
+                            <a href="#" class="text-violet-600 text-sm hover:text-violet-800 flex items-center gap-1">
+                                <i class="fas fa-file-alt"></i>
+                                View Evaluation Sheet
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TODAY'S DEFENSE SCHEDULE -->
+            <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-calendar-day text-blue-500"></i>
+                        Today's Defense Schedule
+                    </h2>
+                    <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">3 defenses today</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Defense 1 -->
+                    <div class="border rounded-xl p-4 hover:shadow-md transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">LIVE NOW</span>
+                            <span class="text-sm font-medium">Room 201</span>
+                        </div>
+                        <h3 class="font-semibold text-lg">Group Alpha</h3>
+                        <p class="text-sm text-slate-500 mb-2">E-Learning Platform</p>
+                        <div class="flex items-center gap-2 text-sm text-slate-600 mb-3">
+                            <i class="fas fa-clock"></i>
+                            <span>2:00 PM - 3:30 PM</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex -space-x-2">
+                                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs border-2 border-white">PS</div>
+                                <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs border-2 border-white">JL</div>
+                                <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-xs border-2 border-white">MR</div>
+                            </div>
+                            <a href="panel-chair-defense-details.html?group=alpha" class="bg-violet-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-violet-700">
+                                Monitor
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Defense 2 -->
+                    <div class="border rounded-xl p-4 hover:shadow-md transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full">Up Next</span>
+                            <span class="text-sm font-medium">Room 202</span>
+                        </div>
+                        <h3 class="font-semibold text-lg">Group Epsilon</h3>
+                        <p class="text-sm text-slate-500 mb-2">Library System</p>
+                        <div class="flex items-center gap-2 text-sm text-slate-600 mb-3">
+                            <i class="fas fa-clock"></i>
+                            <span>4:00 PM - 5:30 PM</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex -space-x-2">
+                                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs border-2 border-white">PS</div>
+                                <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs border-2 border-white">JL</div>
+                                <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-xs border-2 border-white">MR</div>
+                            </div>
+                            <a href="panel-chair-defense-details.html?group=epsilon" class="bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-sm">
+                                Not Started
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Defense 3 -->
+                    <div class="border rounded-xl p-4 hover:shadow-md transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full">Scheduled</span>
+                            <span class="text-sm font-medium">Room 203</span>
+                        </div>
+                        <h3 class="font-semibold text-lg">Group Zeta</h3>
+                        <p class="text-sm text-slate-500 mb-2">HR Analytics</p>
+                        <div class="flex items-center gap-2 text-sm text-slate-600 mb-3">
+                            <i class="fas fa-clock"></i>
+                            <span>6:00 PM - 7:30 PM</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex -space-x-2">
+                                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs border-2 border-white">PS</div>
+                                <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs border-2 border-white">JL</div>
+                                <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-xs border-2 border-white">MR</div>
+                            </div>
+                            <a href="panel-chair-defense-details.html?group=zeta" class="bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-sm">
+                                Not Started
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Charts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verdict Distribution Chart (Doughnut)
+            new Chart(document.getElementById('verdictChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Approved', 'Re-Defense', 'Pending'],
+                    datasets: [{
+                        data: [8, 2, 5],
+                        backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12, padding: 15 }
+                        }
+                    }
+                }
+            });
+
+            // Panel Progress Chart (Bar)
+            new Chart(document.getElementById('panelProgressChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Group A', 'Group B', 'Group C', 'Group D', 'Group E'],
+                    datasets: [{
+                        label: 'Panelists Completed',
+                        data: [3, 3, 2, 3, 1],
+                        backgroundColor: '#8b5cf6',
+                        borderRadius: 6,
+                        barPercentage: 0.6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 3,
+                            grid: { display: false },
+                            ticks: { stepSize: 1 }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Defense Schedule Chart (Line)
+            new Chart(document.getElementById('defenseChart'), {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                    datasets: [{
+                        label: 'Defenses',
+                        data: [2, 3, 4, 2, 3, 1],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { display: false }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

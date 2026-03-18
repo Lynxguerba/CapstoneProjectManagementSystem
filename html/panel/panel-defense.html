@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Defense Evaluation - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            overflow: hidden;
+        }
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .glass-effect {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .status-badge.for-defense {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+        .status-badge.for-review {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .status-badge.for-signature {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+        .status-badge.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .notification-dot {
+            position: relative;
+        }
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - EXACT COPY FROM PANEL-DASHBOARD -->
+    <aside class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-graduation-cap text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Panel Portal</p>
+                </div>
+            </div>
+           
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Panel Role</p>
+                    <p class="text-sm font-semibold text-white">Member</p>
+                </div>
+            </div>
+        </div>
+       
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="panel-dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Evaluation</p>
+            <a href="panel-review.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">For Review</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">2</span>
+            </a>
+            <a href="panel-defense.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
+                <i class="fas fa-gavel w-5"></i>
+                <span class="flex-1">For Defense</span>
+                <span class="bg-white/20 text-xs px-2 py-1 rounded-full">1</span>
+            </a>
+            <a href="panel-signature.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">For Signature</span>
+                <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Schedule</p>
+            <a href="panel-schedule.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">My Defense Schedule</span>
+            </a>
+           
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Records</p>
+            <a href="panel-completed.html" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-check-circle w-5 text-slate-400 group-hover:text-blue-400"></i>
+                <span class="flex-1">Completed</span>
+                <span class="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">4</span>
+            </a>
+        </nav>
+       
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-semibold shadow-lg">JP</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Juan Perez</p>
+                    <p class="text-xs text-slate-400">Panel Member</p>
+                </div>
+                <a href="instructor-dashboard.html" class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition" title="Switch to Instructor">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72">
+
+        <!-- TOP BAR - COMPLETE WITH PROGRAM, PHASE, SETTINGS, AND ROLE SWITCHER -->
+        <div class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Defense Evaluation</h2>
+                <span class="bg-purple-100 text-purple-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-circle text-[8px] text-purple-500"></i> Panel Member
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Notification Bell -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+               
+                <!-- Settings Icon -->
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+               
+                <div class="flex items-center gap-3 border-l pl-4 border-slate-200">
+                    <!-- Program Switch -->
+                    <div class="relative">
+                        <select id="programSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="bsit" selected>BS Information Technology</option>
+                            <option value="bsis">BS Information Systems</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Phase Switch -->
+                    <div class="relative">
+                        <select id="phaseSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="concept" selected>Phase 1: Concept</option>
+                            <option value="outline">Phase 2: Outline</option>
+                            <option value="predeployment">Phase 3: Pre-Deployment</option>
+                            <option value="deployment">Phase 4: Deployment</option>
+                            <option value="final">Phase 5: Final</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Role Switch -->
+                    <div class="relative">
+                        <select id="roleSwitch" class="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-sm">
+                            <option value="panel" selected>Panel Member</option>
+                            <option value="panelChair">Panel Chair</option>
+                            <option value="adviser">Adviser</option>
+                            <option value="instructor">Instructor</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="p-8 space-y-6 mt-20 pb-12">
+
+            <!-- DEFENSE SCHEDULE TABLE -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            
+                <div class="p-6 border-b border-slate-200 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold flex items-center gap-2">
+                        <i class="fas fa-gavel text-purple-600"></i>
+                        My Assigned Defense Schedule
+                    </h3>
+            
+                    <span class="text-sm text-slate-500">
+                        Total: <span class="font-semibold text-purple-600">3 Defenses</span>
+                    </span>
+                </div>
+            
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm text-left">
+            
+                        <!-- TABLE HEADER -->
+                        <thead class="bg-slate-100 text-slate-600 uppercase text-xs tracking-wider">
+                            <tr>
+                                <th class="px-6 py-4">Group Name</th>
+                                <th class="px-6 py-4">Project Title</th>
+                                <th class="px-6 py-4">Schedule</th>
+                                <th class="px-6 py-4">Time</th>
+                                <th class="px-6 py-4">Room</th>
+                                <th class="px-6 py-4">Documents</th>
+                                <th class="px-6 py-4">Panel Comment</th>
+                                <th class="px-6 py-4 text-center">Action</th>
+                            </tr>
+                        </thead>
+            
+                        <!-- TABLE BODY -->
+                        <tbody class="divide-y divide-slate-200">
+            
+                            <!-- ROW 1 -->
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 font-medium text-slate-800">
+                                    Group Alpha
+                                </td>
+                                <td class="px-6 py-4">
+                                    E-Learning Platform with AI Recommendations
+                                </td>
+                                <td class="px-6 py-4">
+                                    March 15, 2026
+                                </td>
+                                <td class="px-6 py-4">
+                                    2:00 PM – 3:30 PM
+                                </td>
+                                <td class="px-6 py-4">
+                                    Room 201
+                                </td>
+            
+                                <!-- DOCUMENTS -->
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-2">
+                                        <a href="#" class="text-blue-600 hover:underline flex items-center gap-1">
+                                            <i class="fas fa-file-pdf"></i> Manuscript.pdf
+                                        </a>
+                                        <a href="#" class="text-blue-600 hover:underline flex items-center gap-1">
+                                            <i class="fas fa-file-powerpoint"></i> Presentation.pptx
+                                        </a>
+                                        <a href="#" class="text-blue-600 hover:underline flex items-center gap-1">
+                                            <i class="fas fa-database"></i> System Documentation
+                                        </a>
+                                    </div>
+                                </td>
+            
+                                <!-- COMMENT -->
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-2">
+                                
+                                        
+                                
+                                        <!-- Open Modal Button -->
+                                        <button onclick="openCommentModal('Group Alpha')"
+                                            class="text-purple-600 text-xs font-medium hover:underline flex items-center gap-1">
+                                            <i class="fas fa-comment-dots"></i>
+                                            View / Add Comment
+                                        </button>
+                                
+                                    </div>
+                                </td>
+
+            
+                                <!-- ACTION -->
+                                <td class="px-6 py-4 text-center">
+                                    <button
+                                        class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-xs">
+                                        Evaluate
+                                    </button>
+                                </td>
+                            </tr>
+            
+                            <!-- ROW 2 -->
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 font-medium text-slate-800">
+                                    Group Delta
+                                </td>
+                                <td class="px-6 py-4">
+                                    AI Chatbot System
+                                </td>
+                                <td class="px-6 py-4">
+                                    March 18, 2026
+                                </td>
+                                <td class="px-6 py-4">
+                                    1:00 PM – 2:30 PM
+                                </td>
+                                <td class="px-6 py-4">
+                                    Room 202
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-2">
+                                        <a href="#" class="text-blue-600 hover:underline flex items-center gap-1">
+                                            <i class="fas fa-file-pdf"></i> Manuscript.pdf
+                                        </a>
+                                    </div>
+                                </td>
+                                <!-- COMMENT -->
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-2">
+                                
+                                
+                                
+                                        <!-- Open Modal Button -->
+                                        <button onclick="openCommentModal('Group Alpha')"
+                                            class="text-purple-600 text-xs font-medium hover:underline flex items-center gap-1">
+                                            <i class="fas fa-comment-dots"></i>
+                                            View / Add Comment
+                                        </button>
+                                
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <button
+                                        class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-xs">
+                                        Evaluate
+                                    </button>
+                                </td>
+                            </tr>
+            
+                            <!-- ROW 3 -->
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 font-medium text-slate-800">
+                                    Group Epsilon
+                                </td>
+                                <td class="px-6 py-4">
+                                    Inventory Management System
+                                </td>
+                                <td class="px-6 py-4">
+                                    March 25, 2026
+                                </td>
+                                <td class="px-6 py-4">
+                                    9:00 AM – 10:30 AM
+                                </td>
+                                <td class="px-6 py-4">
+                                    Room 203
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-slate-400 text-xs">No documents uploaded yet</span>
+                                </td>
+                                <!-- COMMENT -->
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-2">
+                                
+                                
+                                
+                                        <!-- Open Modal Button -->
+                                        <button onclick="openCommentModal('Group Alpha')"
+                                            class="text-purple-600 text-xs font-medium hover:underline flex items-center gap-1">
+                                            <i class="fas fa-comment-dots"></i>
+                                            View / Add Comment
+                                        </button>
+                                
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <button class="bg-slate-400 text-white px-4 py-2 rounded-lg text-xs cursor-not-allowed">
+                                        Not Available
+                                    </button>
+                                </td>
+                            </tr>
+            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+            <!-- Other Upcoming Defenses -->
+            <div class="bg-white rounded-xl border p-6">
+                <h3 class="font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-calendar-alt text-purple-500"></i>
+                    Other Upcoming Defenses
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition">
+                        <div class="flex items-center gap-4">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <div>
+                                <p class="font-medium">Group Delta</p>
+                                <p class="text-xs text-slate-500">AI Chatbot System</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-medium">March 18, 2026</p>
+                            <p class="text-xs text-slate-500">1:00 PM - Room 202</p>
+                        </div>
+                        <span class="status-badge for-review">Scheduled</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition">
+                        <div class="flex items-center gap-4">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <div>
+                                <p class="font-medium">Group Epsilon</p>
+                                <p class="text-xs text-slate-500">Inventory System</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-medium">March 25, 2026</p>
+                            <p class="text-xs text-slate-500">9:00 AM - Room 203</p>
+                        </div>
+                        <span class="status-badge for-review">Scheduled</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- COMMENT MODAL -->
+<div id="commentModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl p-6 animate-slide-up">
+
+        <div class="flex justify-between items-center mb-4">
+            <h4 class="font-semibold text-lg flex items-center gap-2">
+                <i class="fas fa-comment text-purple-600"></i>
+                Panel Comment
+            </h4>
+            <button onclick="closeCommentModal()" class="text-slate-400 hover:text-red-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <p class="text-sm text-slate-500 mb-3" id="groupNameDisplay"></p>
+
+        <textarea 
+            class="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-purple-400 focus:outline-none"
+            rows="5"
+            placeholder="Enter your detailed comment or recommendations here...">
+        </textarea>
+
+        <div class="flex justify-end gap-3 mt-5">
+            <button 
+                onclick="closeCommentModal()" 
+                class="px-4 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-100 transition">
+                Cancel
+            </button>
+
+            <button 
+                class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
+                Save Comment
+            </button>
+        </div>
+
+    </div>
+</div>
+<!-- COMMENT MODAL -->
+<div id="commentModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl p-6 animate-slide-up">
+
+        <div class="flex justify-between items-center mb-4">
+            <h4 class="font-semibold text-lg flex items-center gap-2">
+                <i class="fas fa-comment text-purple-600"></i>
+                Panel Comment
+            </h4>
+            <button onclick="closeCommentModal()" class="text-slate-400 hover:text-red-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <p class="text-sm text-slate-500 mb-3" id="groupNameDisplay"></p>
+
+        <textarea
+            class="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-purple-400 focus:outline-none"
+            rows="5" placeholder="Enter your detailed comment or recommendations here...">
+        </textarea>
+
+        <div class="flex justify-end gap-3 mt-5">
+            <button onclick="closeCommentModal()"
+                class="px-4 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-100 transition">
+                Cancel
+            </button>
+
+            <button class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
+                Save Comment
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
+    <script>
+        // Program switch handler
+        document.getElementById("programSwitch").addEventListener("change", function() {
+            const program = this.value;
+            showNotification('Switched to ' + (program === 'bsit' ? 'BS Information Technology' : 'BS Information Systems'));
+        });
+
+        // Phase switch handler
+        document.getElementById("phaseSwitch").addEventListener("change", function() {
+            const phase = this.value;
+            const phaseNames = {
+                'concept': 'Phase 1: Concept',
+                'outline': 'Phase 2: Outline',
+                'predeployment': 'Phase 3: Pre-Deployment',
+                'deployment': 'Phase 4: Deployment',
+                'final': 'Phase 5: Final'
+            };
+            showNotification('Switched to ' + phaseNames[phase]);
+        });
+
+        // Role switch handler
+        document.getElementById("roleSwitch").addEventListener("change", function() {
+            const role = this.value;
+            switch(role) {
+                case 'panelChair':
+                    window.location.href = 'panel-chair.html';
+                    break;
+                case 'adviser':
+                    window.location.href = 'adviser.html';
+                    break;
+                case 'instructor':
+                    window.location.href = 'instructor-dashboard.html';
+                    break;
+                default:
+                    showNotification('Staying in Panel view');
+            }
+        });
+
+        // Settings click handler
+        document.querySelector('.fa-cog').parentElement.addEventListener('click', function() {
+            showNotification('Settings opened');
+        });
+
+        // Attendance confirmation
+        document.querySelector('.bg-green-600.text-white').addEventListener('click', function() {
+            showNotification('Attendance confirmed!');
+        });
+
+        // Submit evaluation
+        document.querySelector('.bg-green-600.text-white.py-3').addEventListener('click', function() {
+            showNotification('Evaluation submitted to Chair');
+        });
+
+        // Save draft
+        document.querySelector('.border-2.border-slate-200').addEventListener('click', function() {
+            showNotification('Draft saved');
+        });
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-slide-up';
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

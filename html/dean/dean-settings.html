@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Department Settings - Dean - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        .notification-dot {
+            position: relative;
+        }
+
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .settings-section {
+            transition: all 0.2s ease;
+        }
+
+        .settings-section:hover {
+            background: #f8fafc;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - EXACT COPY FROM DASHBOARD -->
+    <aside
+        class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-university text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Dean Portal</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">2nd Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">College</p>
+                    <p class="text-sm font-semibold text-white">Computing</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="dean-dashboard.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">6</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Approval</p>
+            <a href="dean-pending-signatures.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Pending Signatures</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">4</span>
+            </a>
+            <a href="dean-approval-sheets.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-pdf w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Approval Sheets</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Reports</p>
+            <a href="dean-analytics.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-line w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Department Analytics</span>
+            </a>
+            <a href="dean-completion-reports.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Completion Reports</span>
+            </a>
+            <a href="dean-program-comparison.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-bar w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Program Comparison</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Oversight</p>
+            <a href="dean-all-groups.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">All Groups</span>
+                <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded-full">45</span>
+            </a>
+            <a href="dean-faculty-overview.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-user-tie w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Faculty Overview</span>
+            </a>
+            <a href="dean-defense-schedules.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-calendar-alt w-5 text-slate-400 group-hover:text-emerald-400"></i>
+                <span class="flex-1">Defense Schedules</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Settings</p>
+            <a href="dean-settings.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg">
+                <i class="fas fa-cog w-5"></i>
+                <span class="flex-1">Department Settings</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                    DR</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Dr. Roberto Reyes</p>
+                    <p class="text-xs text-slate-400">Dean, College of Computing</p>
+                </div>
+                <a href="instructor-dashboard.html"
+                    class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"
+                    title="Switch Role">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72">
+
+        <!-- TOP BAR -->
+        <div
+            class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Department Settings</h2>
+                <span class="bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-cog"></i> College of Computing
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button
+                    class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <button
+                    class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i class="fas fa-cog text-slate-600"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- SETTINGS CONTENT -->
+        <div class="p-8 space-y-6 mt-20 pb-12">
+            <!-- Academic Year Settings -->
+            <div class="bg-white rounded-xl border p-6 settings-section">
+                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-calendar-alt text-emerald-600"></i>
+                    Academic Year Settings
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Current Academic Year</label>
+                        <select class="w-full border border-slate-200 rounded-lg px-4 py-2">
+                            <option>2024-2025</option>
+                            <option>2023-2024</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Current Semester</label>
+                        <select class="w-full border border-slate-200 rounded-lg px-4 py-2">
+                            <option>2nd Semester</option>
+                            <option>1st Semester</option>
+                            <option>Summer</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">Save
+                        Changes</button>
+                </div>
+            </div>
+
+            <!-- Program Settings -->
+            <div class="bg-white rounded-xl border p-6 settings-section">
+                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-graduation-cap text-emerald-600"></i>
+                    Program Settings
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div>
+                            <p class="font-medium">BS Information Technology</p>
+                            <p class="text-sm text-slate-500">Program Code: BSIT</p>
+                        </div>
+                        <span class="status-badge bg-green-100 text-green-700 px-3 py-1">Active</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div>
+                            <p class="font-medium">BS Information Systems</p>
+                            <p class="text-sm text-slate-500">Program Code: BSIS</p>
+                        </div>
+                        <span class="status-badge bg-green-100 text-green-700 px-3 py-1">Active</span>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button class="text-emerald-600 hover:text-emerald-800 text-sm font-medium">
+                        <i class="fas fa-plus mr-1"></i> Add New Program
+                    </button>
+                </div>
+            </div>
+
+            <!-- Section Management -->
+            <div class="bg-white rounded-xl border p-6 settings-section">
+                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-users text-emerald-600"></i>
+                    Section Management
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div>
+                            <p class="font-medium">BSIT-3A</p>
+                            <p class="text-sm text-slate-500">28 students · Adviser: Prof. Cruz</p>
+                        </div>
+                        <button class="text-emerald-600 hover:text-emerald-800">Edit</button>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div>
+                            <p class="font-medium">BSIT-3B</p>
+                            <p class="text-sm text-slate-500">27 students · Adviser: Prof. Reyes</p>
+                        </div>
+                        <button class="text-emerald-600 hover:text-emerald-800">Edit</button>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div>
+                            <p class="font-medium">BSIT-3C</p>
+                            <p class="text-sm text-slate-500">26 students · Adviser: Prof. Santos</p>
+                        </div>
+                        <button class="text-emerald-600 hover:text-emerald-800">Edit</button>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div>
+                            <p class="font-medium">BSIS-3A</p>
+                            <p class="text-sm text-slate-500">24 students · Adviser: Prof. Lim</p>
+                        </div>
+                        <button class="text-emerald-600 hover:text-emerald-800">Edit</button>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button class="text-emerald-600 hover:text-emerald-800 text-sm font-medium">
+                        <i class="fas fa-plus mr-1"></i> Add New Section
+                    </button>
+                </div>
+            </div>
+
+            <!-- System Preferences -->
+            <div class="bg-white rounded-xl border p-6 settings-section">
+                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-sliders-h text-emerald-600"></i>
+                    System Preferences
+                </h3>
+                <div class="space-y-4">
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm">Enable automatic notifications for deadlines</span>
+                        <input type="checkbox" checked class="rounded text-emerald-600">
+                    </label>
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm">Require digital signatures for all approvals</span>
+                        <input type="checkbox" checked class="rounded text-emerald-600">
+                    </label>
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm">Allow instructors to override deadlines</span>
+                        <input type="checkbox" checked class="rounded text-emerald-600">
+                    </label>
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm">Enable anti-duplication check for titles</span>
+                        <input type="checkbox" checked class="rounded text-emerald-600">
+                    </label>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700">Save
+                        Preferences</button>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="bg-white rounded-xl border border-red-200 p-6">
+                <h3 class="text-lg font-semibold mb-4 text-red-600 flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Danger Zone
+                </h3>
+                <p class="text-sm text-slate-600 mb-4">These actions are irreversible and should be used with caution.
+                </p>
+                <div class="flex gap-4">
+                    <button class="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50">
+                        Archive Old Data
+                    </button>
+                    <button class="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50">
+                        Reset Department Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

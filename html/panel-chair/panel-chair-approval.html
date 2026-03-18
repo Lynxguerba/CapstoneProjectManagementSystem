@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval Sheets - Panel Chair - Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        .notification-dot {
+            position: relative;
+        }
+
+        .notification-dot::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .approval-card {
+            transition: all 0.2s ease;
+        }
+
+        .approval-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex font-sans text-slate-700">
+
+    <!-- SIDEBAR - EXACT COPY FROM DASHBOARD -->
+    <aside
+        class="w-72 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-gavel text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1
+                        class="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-xs text-slate-400">v2.0 · Panel Chair Portal</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-4">
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">AY 2024-2025</p>
+                    <p class="text-sm font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-2 text-center">
+                    <p class="text-xs text-slate-400">Chair Role</p>
+                    <p class="text-sm font-semibold text-white">Panel Chair</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mb-2">Main</p>
+            <a href="panel-chair-dashboard.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-tachometer-alt w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Dashboard</span>
+                <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-full">8</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Evaluation</p>
+            <a href="panel-chair-evaluation.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-file-alt w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Evaluation Sheets</span>
+                <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full">5</span>
+            </a>
+            <a href="panel-chair-defense-list.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-check-circle w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">List of Defense</span>
+                <span class="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded-full">3</span>
+            </a>
+            <a href="panel-chair-comments.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-users w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Panel Comments</span>
+                <span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded-full">12</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Defense Day</p>
+            <a href="panel-chair-minutes.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-clipboard-list w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Minutes of Meeting</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Approval</p>
+            <a href="panel-chair-signatures.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-signature w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Digital Signatures</span>
+                <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded-full">4</span>
+            </a>
+            <a href="panel-chair-approval.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg">
+                <i class="fas fa-file-pdf w-5"></i>
+                <span class="flex-1">Approval Sheets</span>
+            </a>
+
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 mt-4 mb-2">Reports</p>
+            <a href="panel-chair-analytics.html"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <i class="fas fa-chart-line w-5 text-slate-400 group-hover:text-violet-400"></i>
+                <span class="flex-1">Analytics</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-lg">
+                    MS</div>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">Prof. Maria Santos</p>
+                    <p class="text-xs text-slate-400">Panel Chair · College of Computing</p>
+                </div>
+                <a href="instructor-dashboard.html"
+                    class="w-8 h-8 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"
+                    title="Switch Role">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-y-auto ml-72">
+        <div
+            class="glass-effect border-b border-slate-200/50 px-8 py-4 flex justify-between items-center fixed top-0 left-72 right-0 z-40">
+            <div class="flex items-center gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Approval Sheets</h2>
+                <span class="bg-violet-100 text-violet-700 text-xs px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fas fa-file-pdf"></i> Final Documents
+                </span>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 relative notification-dot">
+                    <i class="fas fa-bell text-slate-600"></i>
+                </button>
+                <div class="flex items-center gap-3 border-l pl-4">
+                    <select class="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm">
+                        <option>BS Information Technology</option>
+                        <option>BS Information Systems</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-8 space-y-6 mt-20 pb-12">
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-white rounded-xl border p-6">
+                    <p class="text-sm text-slate-500">Total Approval Sheets</p>
+                    <p class="text-3xl font-bold">15</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6">
+                    <p class="text-sm text-slate-500">Generated</p>
+                    <p class="text-3xl font-bold text-green-600">12</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6">
+                    <p class="text-sm text-slate-500">Pending</p>
+                    <p class="text-3xl font-bold text-amber-600">3</p>
+                </div>
+                <div class="bg-white rounded-xl border p-6">
+                    <p class="text-sm text-slate-500">This Month</p>
+                    <p class="text-3xl font-bold text-blue-600">8</p>
+                </div>
+            </div>
+
+            <!-- Generate All Button -->
+            <div class="bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold mb-2">Generate Approval Sheets</h3>
+                        <p class="text-violet-100 text-sm">Create PDF approval sheets for all completed groups</p>
+                    </div>
+                    <button
+                        class="bg-white text-violet-600 px-6 py-2.5 rounded-lg hover:bg-violet-50 transition font-medium flex items-center gap-2">
+                        <i class="fas fa-file-pdf mr-2"></i>Generate All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="bg-white rounded-xl border p-4 flex flex-col md:flex-row gap-4">
+                <div class="flex-1 relative">
+                    <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" placeholder="Search by group..."
+                        class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400">
+                </div>
+                <select class="border border-slate-200 rounded-lg px-4 py-2 text-sm">
+                    <option>All Status</option>
+                    <option>Generated</option>
+                    <option>Pending</option>
+                </select>
+            </div>
+
+            <!-- Approval Sheets List -->
+            <div class="bg-white rounded-xl border p-6">
+                <h3 class="font-semibold mb-4">Finalized Approval Sheets</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Group Alpha -->
+                    <div class="approval-card border rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium">Group Alpha</h4>
+                                    <p class="text-xs text-slate-400">E-Learning Platform</p>
+                                    <p class="text-xs text-slate-400 mt-1">Generated: March 12, 2026</p>
+                                </div>
+                            </div>
+                            <button class="text-violet-600 hover:text-violet-800">
+                                <i class="fas fa-download text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="mt-3 flex gap-2 text-xs">
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Chair: You</span>
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Panel (3/3)</span>
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Dean</span>
+                        </div>
+                    </div>
+
+                    <!-- Group Beta -->
+                    <div class="approval-card border rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium">Group Beta</h4>
+                                    <p class="text-xs text-slate-400">Inventory System</p>
+                                    <p class="text-xs text-slate-400 mt-1">Generated: March 11, 2026</p>
+                                </div>
+                            </div>
+                            <button class="text-violet-600 hover:text-violet-800">
+                                <i class="fas fa-download text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="mt-3 flex gap-2 text-xs">
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Chair: You</span>
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Panel (3/3)</span>
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Dean</span>
+                        </div>
+                    </div>
+
+                    <!-- Group Gamma -->
+                    <div class="approval-card border rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium">Group Gamma</h4>
+                                    <p class="text-xs text-slate-400">Mobile Health App</p>
+                                    <p class="text-xs text-slate-400 mt-1">Generated: March 10, 2026</p>
+                                </div>
+                            </div>
+                            <button class="text-violet-600 hover:text-violet-800">
+                                <i class="fas fa-download text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="mt-3 flex gap-2 text-xs">
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Chair: You</span>
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Panel (3/3)</span>
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Dean</span>
+                        </div>
+                    </div>
+
+                    <!-- Group Delta -->
+                    <div class="approval-card border rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium">Group Delta</h4>
+                                    <p class="text-xs text-slate-400">AI Chatbot System</p>
+                                    <p class="text-xs text-slate-400 mt-1">Generated: March 9, 2026</p>
+                                </div>
+                            </div>
+                            <button class="text-violet-600 hover:text-violet-800">
+                                <i class="fas fa-download text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="mt-3 flex gap-2 text-xs">
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Chair: You</span>
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Panel (3/3)</span>
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Dean</span>
+                        </div>
+                    </div>
+
+                    <!-- Group Epsilon -->
+                    <div class="approval-card border rounded-xl p-5">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium">Group Epsilon</h4>
+                                    <p class="text-xs text-slate-400">Library System</p>
+                                    <p class="text-xs text-slate-400 mt-1">Generated: March 8, 2026</p>
+                                </div>
+                            </div>
+                            <button class="text-violet-600 hover:text-violet-800">
+                                <i class="fas fa-download text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="mt-3 flex gap-2 text-xs">
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Chair: You</span>
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Panel (3/3)</span>
+                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ Dean</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-slate-500">
+                    Showing <span class="font-medium">1</span> to <span class="font-medium">5</span> of <span
+                        class="font-medium">15</span> approval sheets
+                </div>
+                <div class="flex gap-2">
+                    <button class="w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center"
+                        disabled>
+                        <i class="fas fa-chevron-left text-sm"></i>
+                    </button>
+                    <button
+                        class="w-10 h-10 rounded-lg bg-violet-600 text-white flex items-center justify-center">1</button>
+                    <button
+                        class="w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">2</button>
+                    <button
+                        class="w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">3</button>
+                    <button
+                        class="w-10 h-10 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50">
+                        <i class="fas fa-chevron-right text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Templates -->
+            <div class="bg-white rounded-xl border p-6">
+                <h3 class="font-semibold mb-4">Approval Sheet Templates</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="border rounded-lg p-4 hover:bg-slate-50 cursor-pointer transition">
+                        <i class="fas fa-file-word text-blue-500 text-2xl mb-2"></i>
+                        <p class="font-medium">Standard Template</p>
+                        <p class="text-xs text-slate-400">Default format with signatures</p>
+                    </div>
+                    <div class="border rounded-lg p-4 hover:bg-slate-50 cursor-pointer transition">
+                        <i class="fas fa-file-word text-blue-500 text-2xl mb-2"></i>
+                        <p class="font-medium">With Evaluation Summary</p>
+                        <p class="text-xs text-slate-400">Includes scores and comments</p>
+                    </div>
+                    <div class="border rounded-lg p-4 hover:bg-slate-50 cursor-pointer transition">
+                        <i class="fas fa-file-word text-blue-500 text-2xl mb-2"></i>
+                        <p class="font-medium">Detailed Version</p>
+                        <p class="text-xs text-slate-400">With full panel recommendations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>
