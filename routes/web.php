@@ -2596,6 +2596,181 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
     Route::get('/concepts', function () {
         return Inertia::render('Instructor/concepts');
     })->name('instructor.concepts');
+    Route::get('/phase1', function () {
+        $userId = Auth::guard('web')->id();
+        $programSets = [];
+        $groups = [];
+        $defenseSchedules = [];
+        $settings = [
+            'titleProposalDeadline' => '',
+            'finalDefenseDeadline' => '',
+        ];
+
+        $resolveUserName = static function (?User $user): string {
+            if (! $user) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $fullName = $firstName !== '' || $lastName !== ''
+                ? trim($firstName.' '.$lastName)
+                : (is_string($user->name) ? $user->name : '');
+
+            return $fullName;
+        };
+
+        try {
+            if (class_exists(ProgramSet::class) && Schema::hasTable('program_sets')) {
+                $programSets = ProgramSet::query()
+                    ->with('academicYear')
+                    ->when($userId !== null, fn ($query) => $query->where('instructor_id', $userId))
+                    ->orderByDesc('created_at')
+                    ->get(['id', 'name', 'program', 'academic_year_id', 'instructor_id'])
+                    ->map(function (ProgramSet $programSet): array {
+                        $schoolYear = $programSet->academicYear?->label;
+
+                        if ($schoolYear === null && Schema::hasColumn('program_sets', 'school_year')) {
+                            $schoolYear = $programSet->school_year;
+                        }
+
+                        return [
+                            'id' => $programSet->id,
+                            'name' => $programSet->name,
+                            'program' => $programSet->program,
+                            'school_year' => $schoolYear,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $programSets = [];
+        }
+
+        try {
+            if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups')) {
+                $groups = \App\Models\Group::query()
+                    ->with(['programSet.academicYear', 'leader', 'members'])
+                    ->when($userId !== null, function ($query) use ($userId) {
+                        $query->whereHas('programSet', fn ($subQuery) => $subQuery->where('instructor_id', $userId));
+                    })
+                    ->withCount('members')
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->map(function (\App\Models\Group $group) use ($resolveUserName): array {
+                        $programSet = $group->programSet;
+                        $schoolYear = $programSet?->academicYear?->label;
+
+                        if ($schoolYear === null && $programSet && Schema::hasColumn('program_sets', 'school_year')) {
+                            $schoolYear = $programSet->school_year;
+                        }
+
+                        $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+                        $leaderName = $resolveUserName($group->leader);
+
+                        $members = $group->members
+                            ? $group->members
+                                ->map(fn (User $member): array => [
+                                    'id' => $member->id,
+                                    'name' => $resolveUserName($member),
+                                ])
+                                ->values()
+                                ->all()
+                            : [];
+
+                        return [
+                            'id' => $group->id,
+                            'name' => $group->name,
+                            'program_set_id' => $programSet?->id,
+                            'program_set_name' => $programSet?->name ?: $fallbackName,
+                            'program' => $programSet?->program,
+                            'school_year' => $schoolYear,
+                            'leader_name' => $leaderName !== '' ? $leaderName : null,
+                            'members' => $members,
+                            'members_count' => $group->members_count ?? 0,
+                            'created_at' => $group->created_at?->format('Y-m-d'),
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $groups = [];
+        }
+
+        try {
+            if (class_exists(\App\Models\DefenseSchedule::class) && Schema::hasTable('defense_schedules')) {
+                $defenseSchedules = \App\Models\DefenseSchedule::query()
+                    ->with(['group.programSet.academicYear', 'room'])
+                    ->orderBy('scheduled_date')
+                    ->orderBy('start_time')
+                    ->get()
+                    ->map(function (\App\Models\DefenseSchedule $schedule): array {
+                        $group = $schedule->group;
+                        $programSet = $group?->programSet;
+                        $schoolYear = $programSet?->academicYear?->label;
+
+                        if ($schoolYear === null && $programSet && Schema::hasColumn('program_sets', 'school_year')) {
+                            $schoolYear = $programSet->school_year;
+                        }
+
+                        $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+
+                        return [
+                            'id' => $schedule->id,
+                            'group_id' => $group?->id,
+                            'group_name' => $group?->name,
+                            'program_set_id' => $programSet?->id,
+                            'program_set_name' => $programSet?->name ?: $fallbackName,
+                            'program' => $programSet?->program,
+                            'school_year' => $schoolYear,
+                            'stage' => $schedule->stage,
+                            'status' => $schedule->status,
+                            'scheduled_date' => $schedule->scheduled_date?->format('Y-m-d'),
+                            'start_time' => $schedule->start_time,
+                            'end_time' => $schedule->end_time,
+                            'room' => $schedule->room
+                                ? [
+                                    'id' => $schedule->room->id,
+                                    'name' => $schedule->room->name,
+                                ]
+                                : null,
+                            'created_at' => $schedule->created_at?->format('Y-m-d'),
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $defenseSchedules = [];
+        }
+
+        try {
+            if (class_exists(\App\Models\SystemSetting::class) && Schema::hasTable('system_settings')) {
+                $settingsQuery = \App\Models\SystemSetting::query()
+                    ->whereIn('key', ['titleProposalDeadline', 'finalDefenseDeadline'])
+                    ->pluck('value', 'key');
+
+                $settings = [
+                    'titleProposalDeadline' => (string) ($settingsQuery['titleProposalDeadline'] ?? ''),
+                    'finalDefenseDeadline' => (string) ($settingsQuery['finalDefenseDeadline'] ?? ''),
+                ];
+            }
+        } catch (\Throwable $e) {
+            $settings = [
+                'titleProposalDeadline' => '',
+                'finalDefenseDeadline' => '',
+            ];
+        }
+
+        return Inertia::render('Instructor/phase1', [
+            'programSets' => $programSets,
+            'groups' => $groups,
+            'defenseSchedules' => $defenseSchedules,
+            'settings' => $settings,
+        ]);
+    })->name('instructor.phase1');
 
     Route::get('/evaluation', function () {
         return Inertia::render('Instructor/evaluation');

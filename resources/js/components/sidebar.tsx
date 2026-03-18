@@ -25,6 +25,10 @@ import {
     LayoutList,
     UserRoundCog,
     UserCheck,
+    Lightbulb,
+    ListTree,
+    PackageCheck,
+    Rocket
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -183,6 +187,11 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { icon: UserRoundCog, label: 'Adviser Assignment', href: '/instructor/adviser-assignment' },
                     { icon: UserCheck, label: 'Panelist Assignment', href: '/instructor/panelist-assignment' },
                     { icon: Calendar, label: 'Defense Scheduling', href: '/instructor/scheduling' },
+                    { label: 'Capstone Phases', isSection: true },
+                    { icon: Lightbulb, label: 'Phase 1: Concept', href: '/instructor/phase1' },
+                    { icon: ListTree, label: 'Phase 2: Outline', href: '' },
+                    { icon: PackageCheck, label: 'Phase 3: Pre-Deployment', href: '' },
+                    { icon: Rocket, label: 'Phase 4: Deployment', href: '' },
                     { label: 'Academic Control', isSection: true },
                     { icon: BookOpen, label: 'Title Repository', href: '/instructor/titles' },
                     { icon: FileText, label: 'Concept Review', href: '/instructor/concepts' },
