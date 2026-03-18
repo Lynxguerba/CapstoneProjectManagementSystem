@@ -1,6 +1,7 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, useForm, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import {
+    AlertCircle,
     CalendarClock,
     CheckCircle2,
     ChevronRight,
@@ -8,18 +9,22 @@ import {
     CreditCard,
     Download,
     Eye,
+    FilePlus,
     FileText,
     Filter,
     Pencil,
-    Plus,
     RotateCcw,
     Search,
     ShieldCheck,
     Trash2,
+    X,
     Users,
     XCircle,
 } from 'lucide-react';
 import React from 'react';
+import { createPortal } from 'react-dom';
+import DeleteRequirementModal from '../../components/Instructor/requirements/DeleteRequirementModal';
+import EditRequirementModal from '../../components/Instructor/requirements/EditRequirementModal';
 import InstructorLayout from './_layout';
 
 type TabKey = 'deadlines' | 'documents' | 'defense' | 'payments';
@@ -79,6 +84,7 @@ type Phase1Props = {
     programSets?: ProgramSetOption[];
     groups?: GroupRow[];
     defenseSchedules?: DefenseScheduleRow[];
+    requirements?: RequirementRecord[];
     settings?: {
         titleProposalDeadline?: string | null;
         finalDefenseDeadline?: string | null;
@@ -88,12 +94,14 @@ type Phase1Props = {
 
 type DeadlineRow = {
     id: string;
-    task: string;
-    type: string;
+    requirementType: string;
+    academicYear: string;
     dueDate: string | null;
     submitted: number;
     total: number;
     status: 'Due Soon' | 'On Track';
+    mandatory: boolean;
+    record: RequirementRecord;
 };
 
 type PaymentRow = {
@@ -106,12 +114,29 @@ type PaymentRow = {
 
 type DocumentRow = {
     id: string;
+    groupId: number;
     name: string;
     group: string;
     type: string;
     submittedAt: string;
     status: 'Approved' | 'For Review' | 'Revise' | 'Missing';
     iconColor: string;
+};
+
+type RequirementFormData = {
+    requirement_type: string;
+    due_date: string;
+    academic_year_id: string;
+    is_mandatory: boolean;
+};
+
+type RequirementRecord = {
+    id: number;
+    requirement_type: string;
+    due_date: string | null;
+    is_mandatory: boolean;
+    academic_year_id: number | null;
+    academic_year_label?: string | null;
 };
 
 const avatarColors = [
@@ -195,17 +220,40 @@ const Phase1Page = () => {
     const programSets = props.programSets ?? [];
     const groups = props.groups ?? [];
     const defenseSchedules = props.defenseSchedules ?? [];
-    const settings = props.settings ?? {};
+    const requirements = props.requirements ?? [];
     const academicYears = props.academicYears ?? [];
 
-    const currentAcademicYear = academicYears.find((year) => year.is_current)?.label ?? academicYears[0]?.label ?? 'All';
+    const currentAcademicYearRecord = academicYears.find((year) => year.is_current) ?? academicYears[0];
+    const currentAcademicYear = currentAcademicYearRecord?.label ?? 'All';
+    const currentAcademicYearId = currentAcademicYearRecord ? String(currentAcademicYearRecord.id) : '';
 
     const [activeTab, setActiveTab] = React.useState<TabKey>('deadlines');
     const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(currentAcademicYear || 'All');
     const [selectedProgramSet, setSelectedProgramSet] = React.useState('All');
     const [searchTerm, setSearchTerm] = React.useState('');
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [isAppearing, setIsAppearing] = React.useState(false);
+    const [requirementsAcademicYear, setRequirementsAcademicYear] = React.useState(currentAcademicYear || 'All');
+    const [editingRequirement, setEditingRequirement] = React.useState<RequirementRecord | null>(null);
+    const [deletingRequirement, setDeletingRequirement] = React.useState<RequirementRecord | null>(null);
+    const requirementForm = useForm<RequirementFormData>({
+        requirement_type: '',
+        due_date: '',
+        academic_year_id: currentAcademicYearId,
+        is_mandatory: true,
+    });
 
     const academicYearOptions = React.useMemo(() => ['All', ...academicYears.map((year) => year.label)], [academicYears]);
+
+    React.useEffect(() => {
+        if (requirementsAcademicYear === 'All') {
+            return;
+        }
+
+        if (!academicYearOptions.includes(requirementsAcademicYear)) {
+            setRequirementsAcademicYear('All');
+        }
+    }, [academicYearOptions, requirementsAcademicYear]);
 
     const formatProgramSetLabel = React.useCallback((programSet: ProgramSetOption): string => {
         const name = programSet.name?.trim() ?? '';
@@ -233,6 +281,40 @@ const Phase1Page = () => {
         return filtered.sort((first, second) => first.label.localeCompare(second.label));
     }, [programSets, formatProgramSetLabel, selectedAcademicYear]);
 
+    const academicYearSelectOptions = React.useMemo(() => {
+        return academicYears.map((year) => ({
+            value: String(year.id),
+            label: year.label,
+            isCurrent: year.is_current,
+        }));
+    }, [academicYears]);
+
+    const defaultAcademicYearId = currentAcademicYearId || (academicYearSelectOptions[0]?.value ?? '');
+
+    React.useEffect(() => {
+        if (!isModalOpen) {
+            return;
+        }
+
+        requirementForm.setData({
+            requirement_type: '',
+            due_date: '',
+            academic_year_id: defaultAcademicYearId,
+            is_mandatory: true,
+        });
+    }, [defaultAcademicYearId, isModalOpen]);
+
+    React.useEffect(() => {
+        if (!isModalOpen) {
+            setIsAppearing(false);
+            requirementForm.reset();
+            requirementForm.clearErrors();
+            return;
+        }
+
+        setIsAppearing(true);
+    }, [isModalOpen, requirementForm]);
+
     React.useEffect(() => {
         if (selectedProgramSet === 'All') {
             return;
@@ -243,6 +325,27 @@ const Phase1Page = () => {
             setSelectedProgramSet('All');
         }
     }, [programSetOptions, selectedProgramSet]);
+
+    React.useEffect(() => {
+        if (!isModalOpen) {
+            return;
+        }
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && !requirementForm.processing) {
+                setIsModalOpen(false);
+            }
+        };
+
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        window.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            document.body.style.overflow = originalOverflow;
+            window.removeEventListener('keydown', onKeyDown);
+        };
+    }, [isModalOpen, requirementForm.processing]);
 
     const selectedProgramSetId = selectedProgramSet !== 'All' ? Number(selectedProgramSet) : null;
 
@@ -298,7 +401,7 @@ const Phase1Page = () => {
     const totalGroups = filteredGroups.length;
     const pendingCount = Math.max(0, totalGroups - completedCount - cancelledCount);
 
-    const deadlineStatus = (dueDate?: string | null): DeadlineRow['status'] => {
+    const deadlineStatus = React.useCallback((dueDate?: string | null): DeadlineRow['status'] => {
         const date = parseDate(dueDate);
         if (!date) {
             return 'On Track';
@@ -308,37 +411,61 @@ const Phase1Page = () => {
         const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
         return diffDays <= 7 ? 'Due Soon' : 'On Track';
-    };
+    }, []);
+
+    const resolveAcademicYearLabel = React.useCallback(
+        (academicYearId?: number | null, fallbackLabel?: string | null) => {
+            if (fallbackLabel && fallbackLabel.trim() !== '') {
+                return fallbackLabel;
+            }
+
+            const match = academicYears.find((year) => year.id === academicYearId);
+            return match?.label ?? 'All';
+        },
+        [academicYears],
+    );
+
+    const resolveRequirementCounts = React.useCallback(
+        (academicYearLabel: string) => {
+            const normalizedLabel = academicYearLabel.trim();
+            const targetGroups =
+                normalizedLabel === '' || normalizedLabel === 'All'
+                    ? filteredGroups
+                    : filteredGroups.filter((group) => group.school_year === normalizedLabel);
+            const total = targetGroups.length;
+            const submitted = targetGroups.filter((group) => scheduleByGroupId.get(group.id)?.status === 'Completed').length;
+
+            return { submitted, total };
+        },
+        [filteredGroups, scheduleByGroupId],
+    );
 
     const deadlines = React.useMemo(() => {
-        const rows: DeadlineRow[] = [];
+        return requirements.map((requirement) => {
+            const academicYearLabel = resolveAcademicYearLabel(requirement.academic_year_id, requirement.academic_year_label ?? null);
+            const counts = resolveRequirementCounts(academicYearLabel);
 
-        if (settings.titleProposalDeadline) {
-            rows.push({
-                id: 'title-proposal',
-                task: 'Title Proposal Deadline',
-                type: 'System Setting',
-                dueDate: settings.titleProposalDeadline,
-                submitted: completedCount,
-                total: totalGroups,
-                status: deadlineStatus(settings.titleProposalDeadline),
-            });
+            return {
+                id: String(requirement.id),
+                requirementType: requirement.requirement_type,
+                academicYear: academicYearLabel,
+                dueDate: requirement.due_date,
+                submitted: counts.submitted,
+                total: counts.total,
+                status: deadlineStatus(requirement.due_date),
+                mandatory: requirement.is_mandatory,
+                record: requirement,
+            } satisfies DeadlineRow;
+        });
+    }, [deadlineStatus, requirements, resolveAcademicYearLabel, resolveRequirementCounts]);
+
+    const filteredDeadlines = React.useMemo(() => {
+        if (requirementsAcademicYear === 'All') {
+            return deadlines;
         }
 
-        if (settings.finalDefenseDeadline) {
-            rows.push({
-                id: 'final-defense',
-                task: 'Final Defense Deadline',
-                type: 'System Setting',
-                dueDate: settings.finalDefenseDeadline,
-                submitted: completedCount,
-                total: totalGroups,
-                status: deadlineStatus(settings.finalDefenseDeadline),
-            });
-        }
-
-        return rows;
-    }, [settings, completedCount, totalGroups]);
+        return deadlines.filter((row) => row.academicYear === requirementsAcademicYear);
+    }, [deadlines, requirementsAcademicYear]);
 
     const resolveDocumentStatus = (status?: DefenseScheduleRow['status'] | null): DocumentRow['status'] => {
         if (status === 'Completed') {
@@ -377,6 +504,7 @@ const Phase1Page = () => {
 
             return {
                 id: `doc-${group.id}`,
+                groupId: group.id,
                 name: group.name,
                 group: group.program_set_name ?? '—',
                 type: group.program ?? '—',
@@ -386,6 +514,51 @@ const Phase1Page = () => {
             } satisfies DocumentRow;
         });
     }, [filteredGroups, scheduleByGroupId]);
+
+    const mandatoryRequirementTargets = React.useMemo(() => {
+        return requirements
+            .filter((requirement) => requirement.is_mandatory)
+            .map((requirement) => ({
+                academicYearLabel: resolveAcademicYearLabel(requirement.academic_year_id, requirement.academic_year_label ?? null),
+            }));
+    }, [requirements, resolveAcademicYearLabel]);
+
+    const groupById = React.useMemo(() => {
+        return new Map(filteredGroups.map((group) => [group.id, group]));
+    }, [filteredGroups]);
+
+    const missingRequirementsByGroupId = React.useMemo(() => {
+        const map = new Map<number, boolean>();
+
+        if (mandatoryRequirementTargets.length === 0) {
+            return map;
+        }
+
+        documents.forEach((doc) => {
+            if (doc.status === 'Approved') {
+                return;
+            }
+
+            const group = groupById.get(doc.groupId);
+            if (!group) {
+                return;
+            }
+
+            const hasMandatoryRequirement = mandatoryRequirementTargets.some((requirement) => {
+                if (requirement.academicYearLabel === 'All' || requirement.academicYearLabel.trim() === '') {
+                    return true;
+                }
+
+                return group.school_year === requirement.academicYearLabel;
+            });
+
+            if (hasMandatoryRequirement) {
+                map.set(doc.groupId, true);
+            }
+        });
+
+        return map;
+    }, [documents, groupById, mandatoryRequirementTargets]);
 
     const payments = React.useMemo(() => {
         return filteredGroups.map((group) => {
@@ -410,6 +583,8 @@ const Phase1Page = () => {
     const defenseRows = React.useMemo(() => {
         return filteredGroups.map((group) => {
             const schedule = scheduleByGroupId.get(group.id);
+            const missingRequirements = missingRequirementsByGroupId.get(group.id) ?? false;
+            const status = missingRequirements ? 'Missing Requirements' : (schedule?.status ?? 'Not Scheduled');
 
             return {
                 id: `defense-${group.id}`,
@@ -418,10 +593,10 @@ const Phase1Page = () => {
                 scheduleDate: schedule?.scheduled_date ? formatDateLabel(schedule.scheduled_date) : '—',
                 scheduleTime: schedule?.start_time && schedule?.end_time ? formatTimeRange(schedule.start_time, schedule.end_time) : '--',
                 room: schedule?.room?.name ?? '—',
-                status: schedule?.status ?? 'Not Scheduled',
+                status,
             };
         });
-    }, [filteredGroups, scheduleByGroupId]);
+    }, [filteredGroups, missingRequirementsByGroupId, scheduleByGroupId]);
 
     const documentSummary = React.useMemo(() => {
         const counts = documents.reduce(
@@ -473,11 +648,33 @@ const Phase1Page = () => {
         ];
     }, [documents]);
 
+    const isRequirementFormValid =
+        requirementForm.data.requirement_type.trim() !== '' &&
+        requirementForm.data.due_date !== '' &&
+        requirementForm.data.academic_year_id !== '';
+
+    const handleRequirementSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!isRequirementFormValid || requirementForm.processing) {
+            return;
+        }
+
+        requirementForm.post('/instructor/requirements', {
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: () => {
+                requirementForm.reset();
+                setIsModalOpen(false);
+            },
+        });
+    };
+
     const tabs = React.useMemo(
         () => [
             {
                 id: 'deadlines' as const,
-                label: 'Deadline Manager',
+                label: 'Requirements Manager',
                 count: String(deadlines.length),
                 icon: CalendarClock,
                 badge: 'bg-amber-100 text-amber-700',
@@ -570,6 +767,9 @@ const Phase1Page = () => {
     };
 
     const defenseBadge = (status: string) => {
+        if (status === 'Missing Requirements') {
+            return 'border-rose-200 bg-rose-100 text-rose-700';
+        }
         if (status === 'Completed') {
             return 'border-emerald-200 bg-emerald-100 text-emerald-700';
         }
@@ -647,13 +847,8 @@ const Phase1Page = () => {
         </div>
     );
 
-    const subtitle =
-        selectedAcademicYear !== 'All' && selectedAcademicYear !== ''
-            ? `Academic Year ${selectedAcademicYear}`
-            : 'Phase 1 deliverables and defense status';
-
     return (
-        <InstructorLayout title="Phase 1: Concept" subtitle={subtitle}>
+        <InstructorLayout title="Phase 1: Concept" subtitle='Defining core objectives, system architecture, and project scope'>
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="space-y-6">
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
                     <Link href="/instructor/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
@@ -664,30 +859,6 @@ const Phase1Page = () => {
                         Phase 1
                     </span>
                 </nav>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {overviewCards.map((card) => {
-                        const Icon = card.icon;
-
-                        return (
-                            <div
-                                key={card.label}
-                                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${card.iconTone}`}>
-                                        <Icon className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-semibold text-slate-500">{card.label}</p>
-                                        <p className={`text-2xl font-semibold ${card.valueTone}`}>{card.value}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-
                 <div className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
@@ -720,48 +891,66 @@ const Phase1Page = () => {
                             <div>
                                 <div className="flex items-center gap-2">
                                     <CalendarClock className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Deadline Manager</h3>
+                                    <h3 className="text-sm font-semibold text-slate-900">Requirements Manager</h3>
                                 </div>
-                                <p className="text-xs text-slate-500">Manage submission deadlines for Phase 1</p>
+                                <p className="text-xs text-slate-500">Manage submission requirements for Phase 1 groups</p>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => alert('UI only: add deadline')}
-                                className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800"
-                            >
-                                <Plus className="h-4 w-4" />
-                                Add Deadline
-                            </button>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className="relative">
+                                    <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                    <select
+                                        value={requirementsAcademicYear}
+                                        onChange={(event) => setRequirementsAcademicYear(event.target.value)}
+                                        aria-label="Filter academic year"
+                                        className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                    >
+                                        {academicYearOptions.map((year) => {
+                                            const isCurrent = academicYears.find((ay) => ay.label === year)?.is_current;
+                                            return (
+                                                <option key={year} value={year}>
+                                                    {year === 'All' ? 'All Years' : `${year}${isCurrent ? ' (current)' : ''}`}
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setEditingRequirement(null);
+                                        setDeletingRequirement(null);
+                                        setIsModalOpen(true);
+                                    }}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800"
+                                >
+                                    <FilePlus className="h-4 w-4" />
+                                    Add Requirement
+                                </button>
+                            </div>
                         </div>
-                        <div className="border-b border-slate-100 px-6 py-4">{renderFilters()}</div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                                     <tr>
-                                        <th className="px-6 py-3 text-left">Task</th>
-                                        <th className="px-6 py-3 text-left">Type</th>
+                                        <th className="px-6 py-3 text-left">Requirement Type</th>
                                         <th className="px-6 py-3 text-left">Due Date</th>
                                         <th className="px-6 py-3 text-left">Groups Completed</th>
+                                        <th className="px-6 py-3 text-left">Mandatory</th>
                                         <th className="px-6 py-3 text-left">Status</th>
                                         <th className="px-6 py-3 text-left">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {deadlines.length === 0 ? (
+                                    {filteredDeadlines.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">
-                                                No deadlines found. Configure deadlines in system settings.
+                                                No requirements found. Add a new requirement to get started.
                                             </td>
                                         </tr>
                                     ) : (
-                                        deadlines.map((row) => (
+                                        filteredDeadlines.map((row) => (
                                             <tr key={row.id} className="text-slate-600 transition-colors hover:bg-emerald-50/40">
-                                                <td className="px-6 py-3 font-semibold text-slate-900">{row.task}</td>
-                                                <td className="px-6 py-3">
-                                                    <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600">
-                                                        {row.type}
-                                                    </span>
-                                                </td>
+                                                <td className="px-6 py-3 font-semibold text-slate-900">{row.requirementType}</td>
                                                 <td className="px-6 py-3 font-semibold text-amber-600">{formatDateLabel(row.dueDate)}</td>
                                                 <td className="px-6 py-3">
                                                     <div className="flex items-center gap-2">
@@ -780,6 +969,18 @@ const Phase1Page = () => {
                                                 </td>
                                                 <td className="px-6 py-3">
                                                     <span
+                                                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold ${
+                                                            row.mandatory
+                                                                ? 'border-rose-200 bg-rose-100 text-rose-700'
+                                                                : 'border-slate-200 bg-slate-100 text-slate-600'
+                                                        }`}
+                                                    >
+                                                        {row.mandatory ? <AlertCircle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                                                        {row.mandatory ? 'Mandatory' : 'Optional'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-3">
+                                                    <span
                                                         className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold ${statusBadge(row.status)}`}
                                                     >
                                                         {row.status}
@@ -787,10 +988,24 @@ const Phase1Page = () => {
                                                 </td>
                                                 <td className="px-6 py-3">
                                                     <div className="flex gap-1">
-                                                        <button className="flex h-8 w-8 items-center justify-center rounded-xl text-emerald-600 transition hover:bg-emerald-50">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setDeletingRequirement(null);
+                                                                setEditingRequirement(row.record);
+                                                            }}
+                                                            className="flex h-8 w-8 items-center justify-center rounded-xl text-emerald-600 transition hover:bg-emerald-50"
+                                                        >
                                                             <Pencil className="h-4 w-4" />
                                                         </button>
-                                                        <button className="flex h-8 w-8 items-center justify-center rounded-xl text-amber-600 transition hover:bg-amber-50">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setEditingRequirement(null);
+                                                                setDeletingRequirement(row.record);
+                                                            }}
+                                                            className="flex h-8 w-8 items-center justify-center rounded-xl text-amber-600 transition hover:bg-amber-50"
+                                                        >
                                                             <Trash2 className="h-4 w-4" />
                                                         </button>
                                                     </div>
@@ -808,9 +1023,9 @@ const Phase1Page = () => {
                     <div className="space-y-4">
                         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">{renderFilters()}</div>
                         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                            <div className="space-y-4">
+                            {/* <div className="space-y-4">
                                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                                    <h3 className="mb-2 text-sm font-semibold text-slate-900">Document Status Summary</h3>
+                                    <h3 className="mb-2 text-sm font-semibold text-slate-900">Document Statuas Summary</h3>
                                     <p className="mb-3 text-xs text-slate-500">Concept document status across filtered groups</p>
                                     <div className="space-y-2">
                                         {documentSummary.map((item) => {
@@ -828,7 +1043,7 @@ const Phase1Page = () => {
                                         })}
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
 
                             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-2">
                                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
@@ -961,7 +1176,12 @@ const Phase1Page = () => {
                                                 </td>
                                                 <td className="px-6 py-3 text-xs text-slate-500">{row.room}</td>
                                                 <td className="px-6 py-3">
-                                                    <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${defenseBadge(row.status)}`}>
+                                                    <span
+                                                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold ${defenseBadge(
+                                                            row.status,
+                                                        )}`}
+                                                    >
+                                                        {row.status === 'Missing Requirements' ? <AlertCircle className="h-3.5 w-3.5" /> : null}
                                                         {row.status}
                                                     </span>
                                                 </td>
@@ -1064,6 +1284,161 @@ const Phase1Page = () => {
                     </div>
                 ) : null}
             </motion.section>
+            <EditRequirementModal
+                open={editingRequirement !== null}
+                requirement={editingRequirement}
+                academicYearOptions={academicYearSelectOptions}
+                onClose={() => setEditingRequirement(null)}
+            />
+            <DeleteRequirementModal
+                open={deletingRequirement !== null}
+                requirement={deletingRequirement}
+                onClose={() => setDeletingRequirement(null)}
+            />
+            {(() => {
+                const shouldRenderModal = isModalOpen || isAppearing;
+
+                if (!shouldRenderModal || typeof document === 'undefined') {
+                    return null;
+                }
+
+                return createPortal(
+                    <div
+                        className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity duration-200 ${
+                            isAppearing ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        role="dialog"
+                        aria-modal="true"
+                        onMouseDown={(event) => {
+                            if (event.target === event.currentTarget && !requirementForm.processing) {
+                                setIsModalOpen(false);
+                            }
+                        }}
+                    >
+                        <div
+                            className={`max-h-[90vh] w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl transition-all duration-200 ${
+                                isAppearing ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-95 opacity-0'
+                            }`}
+                            onMouseDown={(event) => event.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                    <FilePlus className="h-5 w-5 text-emerald-800" />
+                                    <h2 className="text-lg font-bold text-emerald-900">Add Requirement</h2>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsModalOpen(false)}
+                                    disabled={requirementForm.processing}
+                                    className="rounded-lg p-1.5 text-emerald-700 transition-all duration-200 hover:rotate-90 hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleRequirementSubmit} className="space-y-4 p-4">
+                                <div>
+                                    <label className="text-sm font-semibold text-slate-700">Requirement Type</label>
+                                    <input
+                                        type="text"
+                                        value={requirementForm.data.requirement_type}
+                                        onChange={(event) => requirementForm.setData('requirement_type', event.target.value)}
+                                        placeholder="e.g., Concept Paper"
+                                        className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                    />
+                                    {requirementForm.errors.requirement_type ? (
+                                        <p className="mt-1 text-xs text-rose-600">{requirementForm.errors.requirement_type}</p>
+                                    ) : null}
+                                </div>
+
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <label className="text-sm font-semibold text-slate-700">Academic Year</label>
+                                        <select
+                                            value={requirementForm.data.academic_year_id}
+                                            onChange={(event) => requirementForm.setData('academic_year_id', event.target.value)}
+                                            className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                        >
+                                            {academicYearSelectOptions.length === 0 ? (
+                                                <option value="" disabled>
+                                                    No academic years found
+                                                </option>
+                                            ) : (
+                                                academicYearSelectOptions.map((option) => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                        {option.isCurrent ? ' (current)' : ''}
+                                                    </option>
+                                                ))
+                                            )}
+                                        </select>
+                                        {requirementForm.errors.academic_year_id ? (
+                                            <p className="mt-1 text-xs text-rose-600">{requirementForm.errors.academic_year_id}</p>
+                                        ) : null}
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-semibold text-slate-700">Due Date</label>
+                                        <input
+                                            type="date"
+                                            value={requirementForm.data.due_date}
+                                            onChange={(event) => requirementForm.setData('due_date', event.target.value)}
+                                            className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                        />
+                                        {requirementForm.errors.due_date ? (
+                                            <p className="mt-1 text-xs text-rose-600">{requirementForm.errors.due_date}</p>
+                                        ) : null}
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                                                requirementForm.data.is_mandatory ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-500'
+                                            }`}
+                                        >
+                                            <AlertCircle className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-800">Mandatory for Defense</p>
+                                            <p className="text-xs text-slate-500">Blocks defense scheduling until approved.</p>
+                                        </div>
+                                    </div>
+                                    <label className="relative inline-flex cursor-pointer items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={requirementForm.data.is_mandatory}
+                                            onChange={(event) => requirementForm.setData('is_mandatory', event.target.checked)}
+                                            className="peer sr-only"
+                                        />
+                                        <div className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-emerald-600" />
+                                        <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5" />
+                                    </label>
+                                </div>
+
+                                <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsModalOpen(false)}
+                                        disabled={requirementForm.processing}
+                                        className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={!isRequirementFormValid || requirementForm.processing}
+                                        className="rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        Save Requirement
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>,
+                    document.body,
+                );
+            })()}
         </InstructorLayout>
     );
 };

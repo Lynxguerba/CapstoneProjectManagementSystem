@@ -6,15 +6,19 @@ use App\Http\Controllers\AssignGroupAdviserController;
 use App\Http\Controllers\AssignGroupPanelistController;
 use App\Http\Controllers\BulkEnrollStudentsController;
 use App\Http\Controllers\DestroyDefenseRoomController;
+use App\Http\Controllers\DestroyDocumentRequirementController;
 use App\Http\Controllers\EnrollStudentController;
 use App\Http\Controllers\StoreDefenseRoomController;
+use App\Http\Controllers\StoreDocumentRequirementController;
 use App\Http\Controllers\UnenrollStudentController;
 use App\Http\Controllers\UpdateDefenseRoomController;
 use App\Http\Controllers\UpdateDefenseScheduleStatusController;
+use App\Http\Controllers\UpdateDocumentRequirementController;
 use App\Http\Controllers\UpdateGroupMembersController;
 use App\Http\Controllers\UpdateProgramSetNameController;
 use App\Http\Controllers\UpsertDefenseScheduleController;
 use App\Models\AcademicYear;
+use App\Models\DocumentRequirement;
 use App\Models\ProgramSet;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -1925,6 +1929,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         $programSets = [];
         $groups = [];
         $defenseSchedules = [];
+        $requirements = [];
+        $academicYears = [];
         $settings = [
             'titleProposalDeadline' => '',
             'finalDefenseDeadline' => '',
@@ -2071,6 +2077,46 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         }
 
         try {
+            if (Schema::hasTable('academic_years')) {
+                $academicYears = AcademicYear::query()
+                    ->orderByDesc('start_year')
+                    ->orderByDesc('end_year')
+                    ->get(['id', 'label', 'is_current'])
+                    ->map(static fn (AcademicYear $academicYear): array => [
+                        'id' => $academicYear->id,
+                        'label' => $academicYear->label,
+                        'is_current' => $academicYear->is_current,
+                    ])
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $academicYears = [];
+        }
+
+        try {
+            if (class_exists(DocumentRequirement::class) && Schema::hasTable('document_requirements')) {
+                $requirements = DocumentRequirement::query()
+                    ->with('academicYear')
+                    ->where('stage', 'Concept')
+                    ->orderBy('due_date')
+                    ->get()
+                    ->map(static fn (DocumentRequirement $requirement): array => [
+                        'id' => $requirement->id,
+                        'requirement_type' => $requirement->requirement_type,
+                        'due_date' => $requirement->due_date?->format('Y-m-d'),
+                        'is_mandatory' => $requirement->is_mandatory,
+                        'academic_year_id' => $requirement->academic_year_id,
+                        'academic_year_label' => $requirement->academicYear?->label,
+                    ])
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $requirements = [];
+        }
+
+        try {
             if (class_exists(\App\Models\SystemSetting::class) && Schema::hasTable('system_settings')) {
                 $settingsQuery = \App\Models\SystemSetting::query()
                     ->whereIn('key', ['titleProposalDeadline', 'finalDefenseDeadline'])
@@ -2092,9 +2138,14 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             'programSets' => $programSets,
             'groups' => $groups,
             'defenseSchedules' => $defenseSchedules,
+            'requirements' => $requirements,
+            'academicYears' => $academicYears,
             'settings' => $settings,
         ]);
     })->name('instructor.phase1');
+    Route::post('/requirements', StoreDocumentRequirementController::class)->name('instructor.requirements.store');
+    Route::patch('/requirements/{requirement}', UpdateDocumentRequirementController::class)->name('instructor.requirements.update');
+    Route::delete('/requirements/{requirement}', DestroyDocumentRequirementController::class)->name('instructor.requirements.destroy');
 
     Route::get('/evaluation', function () {
         return Inertia::render('Instructor/evaluation');
