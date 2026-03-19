@@ -2,8 +2,8 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Calendar, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, CircleCheck, Clock, DoorOpen, Plus, Search, XCircle } from 'lucide-react';
 import React from 'react';
-import defenseSchedules from '../../routes/instructor/defense-schedules';
 import instructorRoutes from '../../routes/instructor';
+import defenseSchedules from '../../routes/instructor/defense-schedules';
 import InstructorLayout from './_layout';
 
 type AcademicYearOption = {

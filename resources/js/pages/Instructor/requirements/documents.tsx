@@ -99,13 +99,14 @@ const GroupDocumentsPage = () => {
     const rows = React.useMemo(() => {
         return requirements.map((requirement) => {
             const submission = latestSubmissionByRequirement.get(requirement.id);
-            const status = submission?.status === 'Revision Required'
-                ? 'Revision Required'
-                : submission?.status === 'Approved'
-                  ? 'Approved'
-                  : submission
-                    ? 'Submitted'
-                    : 'Missing';
+            const status =
+                submission?.status === 'Revision Required'
+                    ? 'Revision Required'
+                    : submission?.status === 'Approved'
+                      ? 'Approved'
+                      : submission
+                        ? 'Submitted'
+                        : 'Missing';
 
             return {
                 id: requirement.id,
@@ -164,7 +165,7 @@ const GroupDocumentsPage = () => {
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                            <thead className="bg-slate-50 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
                                 <tr>
                                     <th className="px-6 py-3 text-left">Requirement</th>
                                     <th className="px-6 py-3 text-left">Due Date</th>

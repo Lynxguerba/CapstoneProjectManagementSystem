@@ -61,7 +61,7 @@ const PaymentsTab = ({
             <div className="border-b border-slate-100 px-6 py-4">{filters}</div>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <thead className="bg-slate-50 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
                         <tr>
                             <th className="px-6 py-3 text-left">Group</th>
                             <th className="px-6 py-3 text-left">Members</th>

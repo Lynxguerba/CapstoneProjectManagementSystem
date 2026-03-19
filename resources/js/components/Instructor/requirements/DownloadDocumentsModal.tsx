@@ -144,7 +144,7 @@ const DownloadDocumentsModal = ({ open, groupName, documents, onClose }: Downloa
 
                     <div className="max-h-[55vh] overflow-y-auto rounded-xl border border-slate-200">
                         <table className="w-full text-left text-xs">
-                            <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                            <thead className="bg-slate-50 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
                                 <tr>
                                     <th className="px-4 py-3">Requirement</th>
                                     <th className="px-4 py-3">Status</th>

@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Settings, Shield, User } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { useState } from 'react';
 import ESignature from '@/components/Settings/ESignature';
 import PasswordManager from '@/components/Settings/PasswordManager';

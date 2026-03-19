@@ -2,8 +2,8 @@ import { Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ChevronRight, Search, Upload, UserMinus, UserPlus } from 'lucide-react';
 import React from 'react';
-import EnrollStudentModal from '../../../components/Instructor/students/entoll-studentModal';
 import BulkEnrollStudentsModal from '../../../components/Instructor/students/BulkEnrollStudentsModal';
+import EnrollStudentModal from '../../../components/Instructor/students/entoll-studentModal';
 import UnenrollStudentModal from '../../../components/Instructor/students/UnenrollStudentModal';
 import InstructorLayout from '../_layout';
 

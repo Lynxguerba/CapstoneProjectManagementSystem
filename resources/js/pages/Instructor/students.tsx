@@ -1,7 +1,7 @@
+import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ChevronRight, Filter, Search, Settings, Upload, Plus, Eye, Users, Calendar, GraduationCap, List, LayoutGrid } from 'lucide-react';
 import React, { useState } from 'react';
-import { Link, usePage } from '@inertiajs/react';
 import AddProgramSetModal from '../../components/Instructor/ProgramSetModal';
 import ProgramSetDetailsModal from '../../components/Instructor/students/ProgramSetDetailsModal';
 import InstructorLayout from './_layout';

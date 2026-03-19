@@ -28,14 +28,14 @@ import {
     Lightbulb,
     ListTree,
     PackageCheck,
-    Rocket
+    Rocket,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import logoCpms from '../assets/logo-cpms.png';
-import SignOutModal from './signout-modal';
 import { ROLE_REDIRECTS, ROLE_ROUTE_PREFIXES, normalizeRole } from '../types/auth';
+import SignOutModal from './signout-modal';
 
 type SidebarAuthUser = {
     role?: string;

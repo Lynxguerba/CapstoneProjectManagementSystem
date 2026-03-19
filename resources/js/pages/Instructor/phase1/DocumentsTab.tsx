@@ -56,7 +56,7 @@ const DocumentsTab = ({
                     <div className="border-b border-slate-100 px-6 py-4">{filters}</div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                            <thead className="bg-slate-50 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
                                 <tr>
                                     <th className="px-6 py-3 text-left">Document</th>
                                     <th className="px-6 py-3 text-left">Program Set</th>
@@ -83,7 +83,7 @@ const DocumentsTab = ({
                                                     </div>
                                                     <span
                                                         className={`text-sm font-semibold ${
-                                                            row.status === 'Missing' ? 'italic text-slate-400' : 'text-slate-700'
+                                                            row.status === 'Missing' ? 'text-slate-400 italic' : 'text-slate-700'
                                                         }`}
                                                     >
                                                         {row.name}
@@ -98,7 +98,9 @@ const DocumentsTab = ({
                                             </td>
                                             <td className="px-6 py-3 text-xs text-slate-500">{row.submittedAt}</td>
                                             <td className="px-6 py-3">
-                                                <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${documentBadge(row.status)}`}>
+                                                <span
+                                                    className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${documentBadge(row.status)}`}
+                                                >
                                                     {row.status}
                                                 </span>
                                             </td>

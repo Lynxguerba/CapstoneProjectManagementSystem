@@ -143,7 +143,6 @@ type RequirementDocumentDetail = {
     downloadUrl?: string | null;
 };
 
-
 type RequirementRecord = {
     id: number;
     requirement_type: string;
@@ -152,14 +151,7 @@ type RequirementRecord = {
     academic_year_label?: string | null;
 };
 
-const avatarColors = [
-    'bg-emerald-600',
-    'bg-emerald-500',
-    'bg-emerald-700',
-    'bg-slate-600',
-    'bg-slate-500',
-    'bg-amber-500',
-];
+const avatarColors = ['bg-emerald-600', 'bg-emerald-500', 'bg-emerald-700', 'bg-slate-600', 'bg-slate-500', 'bg-amber-500'];
 
 const pad = (value: number): string => value.toString().padStart(2, '0');
 
@@ -223,7 +215,10 @@ const getInitials = (value?: string | null): string => {
         .map((part) => part.trim())
         .filter(Boolean);
 
-    const initials = parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('');
+    const initials = parts
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() ?? '')
+        .join('');
 
     return initials || '—';
 };
@@ -286,10 +281,7 @@ const Phase1Page = () => {
             academicYear: programSet.school_year ?? null,
         }));
 
-        const filtered =
-            selectedAcademicYear === 'All'
-                ? options
-                : options.filter((option) => option.academicYear === selectedAcademicYear);
+        const filtered = selectedAcademicYear === 'All' ? options : options.filter((option) => option.academicYear === selectedAcademicYear);
 
         return filtered.sort((first, second) => first.label.localeCompare(second.label));
     }, [programSets, formatProgramSetLabel, selectedAcademicYear]);
@@ -304,7 +296,6 @@ const Phase1Page = () => {
 
     const defaultAcademicYearId = currentAcademicYearId || (academicYearSelectOptions[0]?.value ?? '');
 
-
     React.useEffect(() => {
         if (selectedProgramSet === 'All') {
             return;
@@ -315,7 +306,6 @@ const Phase1Page = () => {
             setSelectedProgramSet('All');
         }
     }, [programSetOptions, selectedProgramSet]);
-
 
     const selectedProgramSetId = selectedProgramSet !== 'All' ? Number(selectedProgramSet) : null;
 
@@ -335,9 +325,7 @@ const Phase1Page = () => {
                 return true;
             }
 
-            const haystack = `${group.name} ${group.program_set_name ?? ''} ${group.leader_name ?? ''} ${group.program ?? ''}`
-                .trim()
-                .toLowerCase();
+            const haystack = `${group.name} ${group.program_set_name ?? ''} ${group.leader_name ?? ''} ${group.program ?? ''}`.trim().toLowerCase();
 
             return haystack.includes(query);
         });
@@ -514,8 +502,7 @@ const Phase1Page = () => {
 
         groups.forEach((group) => {
             const academicYearLabel = group.school_year ?? 'All';
-            const requirementsForGroup =
-                requirementsByAcademicYearLabel.get(academicYearLabel) ?? requirementsByAcademicYearLabel.get('All') ?? [];
+            const requirementsForGroup = requirementsByAcademicYearLabel.get(academicYearLabel) ?? requirementsByAcademicYearLabel.get('All') ?? [];
             const submissions = documentSubmissionsByGroupId.get(group.id) ?? [];
             const latestByRequirement = new Map<number, DocumentSubmissionRow>();
 
@@ -537,13 +524,14 @@ const Phase1Page = () => {
 
             const details = requirementsForGroup.map((requirement) => {
                 const submission = latestByRequirement.get(requirement.id);
-                const status = submission?.status === 'Revision Required'
-                    ? 'Revision Required'
-                    : submission?.status === 'Approved'
-                      ? 'Approved'
-                      : submission
-                        ? 'Submitted'
-                        : 'Missing';
+                const status =
+                    submission?.status === 'Revision Required'
+                        ? 'Revision Required'
+                        : submission?.status === 'Approved'
+                          ? 'Approved'
+                          : submission
+                            ? 'Submitted'
+                            : 'Missing';
 
                 return {
                     id: requirement.id,
@@ -638,8 +626,8 @@ const Phase1Page = () => {
         return new Map(filteredGroups.map((group) => [group.id, group]));
     }, [filteredGroups]);
 
-    const downloadGroup = downloadGroupId !== null ? groupById.get(downloadGroupId) ?? null : null;
-    const downloadDocuments = downloadGroupId !== null ? documentDetailsByGroup.get(downloadGroupId) ?? [] : [];
+    const downloadGroup = downloadGroupId !== null ? (groupById.get(downloadGroupId) ?? null) : null;
+    const downloadDocuments = downloadGroupId !== null ? (documentDetailsByGroup.get(downloadGroupId) ?? []) : [];
 
     const missingRequirementsByGroupId = React.useMemo(() => {
         const map = new Map<number, boolean>();
@@ -1027,7 +1015,7 @@ const Phase1Page = () => {
     );
 
     return (
-        <InstructorLayout title="Phase 1: Concept" subtitle='Defining core objectives, system architecture, and project scope'>
+        <InstructorLayout title="Phase 1: Concept" subtitle="Defining core objectives, system architecture, and project scope">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="space-y-6">
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
                     <Link href="/instructor/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
@@ -1056,9 +1044,7 @@ const Phase1Page = () => {
                             >
                                 <Icon className={`h-4 w-4 ${tab.iconClass}`} />
                                 <span className="whitespace-nowrap">{tab.label}</span>
-                                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${tab.badge}`}>
-                                    {tab.count}
-                                </span>
+                                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${tab.badge}`}>{tab.count}</span>
                             </button>
                         );
                     })}
@@ -1105,7 +1091,6 @@ const Phase1Page = () => {
                     />
                 ) : null}
 
-
                 {activeTab === 'defense' ? (
                     <DefenseTab
                         rows={defenseRows}
@@ -1121,7 +1106,6 @@ const Phase1Page = () => {
                     />
                 ) : null}
 
-
                 {activeTab === 'payments' ? (
                     <PaymentsTab
                         payments={payments}
@@ -1136,7 +1120,6 @@ const Phase1Page = () => {
                         onNextPage={handleNextPaymentsPage}
                     />
                 ) : null}
-
             </motion.section>
             <DownloadDocumentsModal
                 open={downloadGroupId !== null}

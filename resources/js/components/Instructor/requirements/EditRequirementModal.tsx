@@ -90,8 +90,7 @@ const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose 
         };
     }, [open, onClose, editForm.processing]);
 
-    const isFormValid =
-        editForm.data.requirement_type.trim() !== '' && editForm.data.due_date !== '' && editForm.data.academic_year_id !== '';
+    const isFormValid = editForm.data.requirement_type.trim() !== '' && editForm.data.due_date !== '' && editForm.data.academic_year_id !== '';
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -197,7 +196,9 @@ const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose 
                                     ))
                                 )}
                             </select>
-                            {editForm.errors.academic_year_id ? <p className="mt-1 text-xs text-rose-600">{editForm.errors.academic_year_id}</p> : null}
+                            {editForm.errors.academic_year_id ? (
+                                <p className="mt-1 text-xs text-rose-600">{editForm.errors.academic_year_id}</p>
+                            ) : null}
                         </div>
                         <div>
                             <label className="text-sm font-semibold text-slate-700">Due Date</label>

@@ -24,18 +24,7 @@ type DefenseTabProps = {
     onNextPage: () => void;
 };
 
-const DefenseTab = ({
-    rows,
-    pagedRows,
-    pageStart,
-    perPage,
-    page,
-    totalPages,
-    filters,
-    defenseBadge,
-    onPrevPage,
-    onNextPage,
-}: DefenseTabProps) => {
+const DefenseTab = ({ rows, pagedRows, pageStart, perPage, page, totalPages, filters, defenseBadge, onPrevPage, onNextPage }: DefenseTabProps) => {
     return (
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
@@ -50,7 +39,7 @@ const DefenseTab = ({
             <div className="border-b border-slate-100 px-6 py-4">{filters}</div>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <thead className="bg-slate-50 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
                         <tr>
                             <th className="px-6 py-3 text-left">Group</th>
                             <th className="px-6 py-3 text-left">Program Set</th>

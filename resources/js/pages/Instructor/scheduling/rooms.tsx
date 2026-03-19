@@ -2,7 +2,8 @@ import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ChevronRight, PencilLine, Trash2 } from 'lucide-react';
 import React from 'react';
-import DefenseRoomFormRow, { DefenseRoomFormData } from '../../../components/Instructor/scheduling/AddDefenseRoomModal';
+import type { DefenseRoomFormData } from '../../../components/Instructor/scheduling/AddDefenseRoomModal';
+import DefenseRoomFormRow from '../../../components/Instructor/scheduling/AddDefenseRoomModal';
 import InstructorLayout from '../_layout';
 
 type RoomRow = {

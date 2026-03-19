@@ -71,7 +71,7 @@ class UpdateSystemSettingsRequest extends FormRequest
             if (! Schema::hasTable('academic_years')) {
                 return;
             }
-            
+
             $academicYearExists = AcademicYear::query()
                 ->where('start_year', $startYear)
                 ->where('end_year', $endYear)

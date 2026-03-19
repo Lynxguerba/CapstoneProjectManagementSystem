@@ -124,7 +124,7 @@ const DeadlinesTab = ({
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <thead className="bg-slate-50 text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
                         <tr>
                             <th className="px-6 py-3 text-left">Requirement Type</th>
                             <th className="px-6 py-3 text-left">Academic Year</th>
