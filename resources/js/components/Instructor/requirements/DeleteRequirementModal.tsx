@@ -7,7 +7,6 @@ type RequirementRecord = {
     id: number;
     requirement_type: string;
     due_date: string | null;
-    is_mandatory: boolean;
     academic_year_id: number | null;
     academic_year_label?: string | null;
 };

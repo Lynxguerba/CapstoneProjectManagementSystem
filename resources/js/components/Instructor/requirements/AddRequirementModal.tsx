@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { PencilLine, X } from 'lucide-react';
+import { FilePlus, X } from 'lucide-react';
 import React from 'react';
 import { createPortal } from 'react-dom';
 
@@ -9,65 +9,49 @@ type AcademicYearOption = {
     isCurrent?: boolean;
 };
 
-type RequirementRecord = {
-    id: number;
-    requirement_type: string;
-    due_date: string | null;
-    academic_year_id: number | null;
-};
-
 type RequirementFormData = {
     requirement_type: string;
     due_date: string;
     academic_year_id: string;
 };
 
-type EditRequirementModalProps = {
+type AddRequirementModalProps = {
     open: boolean;
-    requirement: RequirementRecord | null;
     academicYearOptions: AcademicYearOption[];
+    defaultAcademicYearId: string;
     onClose: () => void;
 };
 
 const requirementTypeOptions = ['Concept Papers', 'Minutes', 'Recommendation Letter', 'Acknowledgement Receipt', 'Evaluation Sheet'];
 
-const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose }: EditRequirementModalProps) => {
+const AddRequirementModal = ({ open, academicYearOptions, defaultAcademicYearId, onClose }: AddRequirementModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
-
-    const defaultAcademicYearId = React.useMemo(() => {
-        return academicYearOptions.find((option) => option.isCurrent)?.value ?? academicYearOptions[0]?.value ?? '';
-    }, [academicYearOptions]);
-
-    const editForm = useForm<RequirementFormData>({
-        requirement_type: requirement?.requirement_type ?? '',
-        due_date: requirement?.due_date ?? '',
-        academic_year_id: requirement?.academic_year_id ? String(requirement.academic_year_id) : defaultAcademicYearId,
+    const wasOpen = React.useRef(false);
+    const form = useForm<RequirementFormData>({
+        requirement_type: '',
+        due_date: '',
+        academic_year_id: defaultAcademicYearId,
     });
 
     React.useEffect(() => {
         if (!open) {
+            wasOpen.current = false;
             setIsAppearing(false);
-            editForm.reset();
-            editForm.clearErrors();
+            form.reset();
+            form.clearErrors();
             return;
         }
 
-        setIsAppearing(true);
-
-        if (requirement) {
-            editForm.setData({
-                requirement_type: requirement.requirement_type ?? '',
-                due_date: requirement.due_date ?? '',
-                academic_year_id: requirement.academic_year_id ? String(requirement.academic_year_id) : defaultAcademicYearId,
-            });
-        } else {
-            editForm.setData({
+        if (!wasOpen.current) {
+            wasOpen.current = true;
+            setIsAppearing(true);
+            form.setData({
                 requirement_type: '',
                 due_date: '',
                 academic_year_id: defaultAcademicYearId,
             });
         }
-    }, [open, requirement, defaultAcademicYearId]);
+    }, [defaultAcademicYearId, form, open]);
 
     React.useEffect(() => {
         if (!open) {
@@ -75,7 +59,7 @@ const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose 
         }
 
         const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && !editForm.processing) {
+            if (event.key === 'Escape' && !form.processing) {
                 onClose();
             }
         };
@@ -88,23 +72,22 @@ const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose 
             document.body.style.overflow = originalOverflow;
             window.removeEventListener('keydown', onKeyDown);
         };
-    }, [open, onClose, editForm.processing]);
+    }, [form.processing, onClose, open]);
 
-    const isFormValid =
-        editForm.data.requirement_type.trim() !== '' && editForm.data.due_date !== '' && editForm.data.academic_year_id !== '';
+    const isFormValid = form.data.requirement_type.trim() !== '' && form.data.due_date !== '' && form.data.academic_year_id !== '';
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        if (!requirement || !isFormValid || editForm.processing) {
+        if (!isFormValid || form.processing) {
             return;
         }
 
-        editForm.patch(`/instructor/requirements/${requirement.id}`, {
+        form.post('/instructor/requirements', {
             preserveScroll: true,
             preserveState: false,
             onSuccess: () => {
-                editForm.reset();
+                form.reset();
                 onClose();
             },
         });
@@ -122,13 +105,13 @@ const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose 
 
     return createPortal(
         <div
-            className={`fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity duration-200 ${
+            className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity duration-200 ${
                 isAppearing ? 'opacity-100' : 'opacity-0'
             }`}
             role="dialog"
             aria-modal="true"
             onMouseDown={(event) => {
-                if (event.target === event.currentTarget && !editForm.processing) {
+                if (event.target === event.currentTarget && !form.processing) {
                     onClose();
                 }
             }}
@@ -141,13 +124,13 @@ const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose 
             >
                 <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                     <div className="flex items-center gap-2">
-                        <PencilLine className="h-5 w-5 text-emerald-800" />
-                        <h2 className="text-lg font-bold text-emerald-900">Edit Requirement</h2>
+                        <FilePlus className="h-5 w-5 text-emerald-800" />
+                        <h2 className="text-lg font-bold text-emerald-900">Add Requirement</h2>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        disabled={editForm.processing}
+                        disabled={form.processing}
                         className="rounded-lg p-1.5 text-emerald-700 transition-all duration-200 hover:rotate-90 hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <X className="h-5 w-5" />
@@ -158,10 +141,9 @@ const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose 
                     <div>
                         <label className="text-sm font-semibold text-slate-700">Requirement Type</label>
                         <select
-                            value={editForm.data.requirement_type}
-                            onChange={(event) => editForm.setData('requirement_type', event.target.value)}
-                            disabled={editForm.processing}
-                            className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
+                            value={form.data.requirement_type}
+                            onChange={(event) => form.setData('requirement_type', event.target.value)}
+                            className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                         >
                             <option value="" disabled>
                                 Select requirement type
@@ -172,17 +154,16 @@ const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose 
                                 </option>
                             ))}
                         </select>
-                        {editForm.errors.requirement_type ? <p className="mt-1 text-xs text-rose-600">{editForm.errors.requirement_type}</p> : null}
+                        {form.errors.requirement_type ? <p className="mt-1 text-xs text-rose-600">{form.errors.requirement_type}</p> : null}
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <label className="text-sm font-semibold text-slate-700">Academic Year</label>
                             <select
-                                value={editForm.data.academic_year_id}
-                                onChange={(event) => editForm.setData('academic_year_id', event.target.value)}
-                                disabled={editForm.processing}
-                                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
+                                value={form.data.academic_year_id}
+                                onChange={(event) => form.setData('academic_year_id', event.target.value)}
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                             >
                                 {academicYearOptions.length === 0 ? (
                                     <option value="" disabled>
@@ -197,18 +178,17 @@ const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose 
                                     ))
                                 )}
                             </select>
-                            {editForm.errors.academic_year_id ? <p className="mt-1 text-xs text-rose-600">{editForm.errors.academic_year_id}</p> : null}
+                            {form.errors.academic_year_id ? <p className="mt-1 text-xs text-rose-600">{form.errors.academic_year_id}</p> : null}
                         </div>
                         <div>
                             <label className="text-sm font-semibold text-slate-700">Due Date</label>
                             <input
                                 type="date"
-                                value={editForm.data.due_date}
-                                onChange={(event) => editForm.setData('due_date', event.target.value)}
-                                disabled={editForm.processing}
-                                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
+                                value={form.data.due_date}
+                                onChange={(event) => form.setData('due_date', event.target.value)}
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                             />
-                            {editForm.errors.due_date ? <p className="mt-1 text-xs text-rose-600">{editForm.errors.due_date}</p> : null}
+                            {form.errors.due_date ? <p className="mt-1 text-xs text-rose-600">{form.errors.due_date}</p> : null}
                         </div>
                     </div>
 
@@ -216,17 +196,17 @@ const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose 
                         <button
                             type="button"
                             onClick={onClose}
-                            disabled={editForm.processing}
+                            disabled={form.processing}
                             className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            disabled={!isFormValid || editForm.processing}
+                            disabled={!isFormValid || form.processing}
                             className="rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            Update Requirement
+                            Save Requirement
                         </button>
                     </div>
                 </form>
@@ -236,4 +216,4 @@ const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose 
     );
 };
 
-export default EditRequirementModal;
+export default AddRequirementModal;

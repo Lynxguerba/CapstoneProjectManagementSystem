@@ -1,4 +1,4 @@
-import { Link, useForm, usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import {
     AlertCircle,
@@ -17,12 +17,11 @@ import {
     Search,
     ShieldCheck,
     Trash2,
-    X,
     Users,
     XCircle,
 } from 'lucide-react';
 import React from 'react';
-import { createPortal } from 'react-dom';
+import AddRequirementModal from '../../components/Instructor/requirements/AddRequirementModal';
 import DeleteRequirementModal from '../../components/Instructor/requirements/DeleteRequirementModal';
 import EditRequirementModal from '../../components/Instructor/requirements/EditRequirementModal';
 import InstructorLayout from './_layout';
@@ -100,7 +99,6 @@ type DeadlineRow = {
     submitted: number;
     total: number;
     status: 'Due Soon' | 'On Track';
-    mandatory: boolean;
     record: RequirementRecord;
 };
 
@@ -123,18 +121,11 @@ type DocumentRow = {
     iconColor: string;
 };
 
-type RequirementFormData = {
-    requirement_type: string;
-    due_date: string;
-    academic_year_id: string;
-    is_mandatory: boolean;
-};
 
 type RequirementRecord = {
     id: number;
     requirement_type: string;
     due_date: string | null;
-    is_mandatory: boolean;
     academic_year_id: number | null;
     academic_year_label?: string | null;
 };
@@ -232,16 +223,9 @@ const Phase1Page = () => {
     const [selectedProgramSet, setSelectedProgramSet] = React.useState('All');
     const [searchTerm, setSearchTerm] = React.useState('');
     const [isModalOpen, setIsModalOpen] = React.useState(false);
-    const [isAppearing, setIsAppearing] = React.useState(false);
     const [requirementsAcademicYear, setRequirementsAcademicYear] = React.useState(currentAcademicYear || 'All');
     const [editingRequirement, setEditingRequirement] = React.useState<RequirementRecord | null>(null);
     const [deletingRequirement, setDeletingRequirement] = React.useState<RequirementRecord | null>(null);
-    const requirementForm = useForm<RequirementFormData>({
-        requirement_type: '',
-        due_date: '',
-        academic_year_id: currentAcademicYearId,
-        is_mandatory: true,
-    });
 
     const academicYearOptions = React.useMemo(() => ['All', ...academicYears.map((year) => year.label)], [academicYears]);
 
@@ -291,29 +275,6 @@ const Phase1Page = () => {
 
     const defaultAcademicYearId = currentAcademicYearId || (academicYearSelectOptions[0]?.value ?? '');
 
-    React.useEffect(() => {
-        if (!isModalOpen) {
-            return;
-        }
-
-        requirementForm.setData({
-            requirement_type: '',
-            due_date: '',
-            academic_year_id: defaultAcademicYearId,
-            is_mandatory: true,
-        });
-    }, [defaultAcademicYearId, isModalOpen]);
-
-    React.useEffect(() => {
-        if (!isModalOpen) {
-            setIsAppearing(false);
-            requirementForm.reset();
-            requirementForm.clearErrors();
-            return;
-        }
-
-        setIsAppearing(true);
-    }, [isModalOpen, requirementForm]);
 
     React.useEffect(() => {
         if (selectedProgramSet === 'All') {
@@ -326,26 +287,6 @@ const Phase1Page = () => {
         }
     }, [programSetOptions, selectedProgramSet]);
 
-    React.useEffect(() => {
-        if (!isModalOpen) {
-            return;
-        }
-
-        const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && !requirementForm.processing) {
-                setIsModalOpen(false);
-            }
-        };
-
-        const originalOverflow = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-        window.addEventListener('keydown', onKeyDown);
-
-        return () => {
-            document.body.style.overflow = originalOverflow;
-            window.removeEventListener('keydown', onKeyDown);
-        };
-    }, [isModalOpen, requirementForm.processing]);
 
     const selectedProgramSetId = selectedProgramSet !== 'All' ? Number(selectedProgramSet) : null;
 
@@ -453,7 +394,6 @@ const Phase1Page = () => {
                 submitted: counts.submitted,
                 total: counts.total,
                 status: deadlineStatus(requirement.due_date),
-                mandatory: requirement.is_mandatory,
                 record: requirement,
             } satisfies DeadlineRow;
         });
@@ -516,11 +456,9 @@ const Phase1Page = () => {
     }, [filteredGroups, scheduleByGroupId]);
 
     const mandatoryRequirementTargets = React.useMemo(() => {
-        return requirements
-            .filter((requirement) => requirement.is_mandatory)
-            .map((requirement) => ({
-                academicYearLabel: resolveAcademicYearLabel(requirement.academic_year_id, requirement.academic_year_label ?? null),
-            }));
+        return requirements.map((requirement) => ({
+            academicYearLabel: resolveAcademicYearLabel(requirement.academic_year_id, requirement.academic_year_label ?? null),
+        }));
     }, [requirements, resolveAcademicYearLabel]);
 
     const groupById = React.useMemo(() => {
@@ -648,28 +586,6 @@ const Phase1Page = () => {
         ];
     }, [documents]);
 
-    const isRequirementFormValid =
-        requirementForm.data.requirement_type.trim() !== '' &&
-        requirementForm.data.due_date !== '' &&
-        requirementForm.data.academic_year_id !== '';
-
-    const handleRequirementSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-
-        if (!isRequirementFormValid || requirementForm.processing) {
-            return;
-        }
-
-        requirementForm.post('/instructor/requirements', {
-            preserveScroll: true,
-            preserveState: false,
-            onSuccess: () => {
-                requirementForm.reset();
-                setIsModalOpen(false);
-            },
-        });
-    };
-
     const tabs = React.useMemo(
         () => [
             {
@@ -682,7 +598,7 @@ const Phase1Page = () => {
             },
             {
                 id: 'documents' as const,
-                label: 'Documents',
+                label: 'Groups Documents',
                 count: String(documents.length),
                 icon: FileText,
                 badge: 'bg-slate-100 text-slate-600',
@@ -933,9 +849,9 @@ const Phase1Page = () => {
                                 <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                                     <tr>
                                         <th className="px-6 py-3 text-left">Requirement Type</th>
+                                        <th className="px-6 py-3 text-left">Academic Year</th>
                                         <th className="px-6 py-3 text-left">Due Date</th>
                                         <th className="px-6 py-3 text-left">Groups Completed</th>
-                                        <th className="px-6 py-3 text-left">Mandatory</th>
                                         <th className="px-6 py-3 text-left">Status</th>
                                         <th className="px-6 py-3 text-left">Actions</th>
                                     </tr>
@@ -951,33 +867,28 @@ const Phase1Page = () => {
                                         filteredDeadlines.map((row) => (
                                             <tr key={row.id} className="text-slate-600 transition-colors hover:bg-emerald-50/40">
                                                 <td className="px-6 py-3 font-semibold text-slate-900">{row.requirementType}</td>
+                                                <td className="px-6 py-3 text-xs text-slate-500">{row.academicYear}</td>
                                                 <td className="px-6 py-3 font-semibold text-amber-600">{formatDateLabel(row.dueDate)}</td>
                                                 <td className="px-6 py-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="h-2 w-28 overflow-hidden rounded-full bg-slate-200">
-                                                            <div
-                                                                className="h-full rounded-full bg-emerald-500"
-                                                                style={{
-                                                                    width: `${row.total > 0 ? Math.round((row.submitted / row.total) * 100) : 0}%`,
-                                                                }}
-                                                            />
+                                                    {row.total === 0 ? (
+                                                        <span className="text-xs text-slate-400">No groups yet</span>
+                                                    ) : row.submitted === 0 ? (
+                                                        <span className="text-xs text-slate-400">No submissions yet</span>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-2 w-28 overflow-hidden rounded-full bg-slate-200">
+                                                                <div
+                                                                    className="h-full rounded-full bg-emerald-500"
+                                                                    style={{
+                                                                        width: `${Math.round((row.submitted / row.total) * 100)}%`,
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <span className="text-xs text-slate-500">
+                                                                {row.submitted}/{row.total}
+                                                            </span>
                                                         </div>
-                                                        <span className="text-xs text-slate-500">
-                                                            {row.submitted}/{row.total}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-3">
-                                                    <span
-                                                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold ${
-                                                            row.mandatory
-                                                                ? 'border-rose-200 bg-rose-100 text-rose-700'
-                                                                : 'border-slate-200 bg-slate-100 text-slate-600'
-                                                        }`}
-                                                    >
-                                                        {row.mandatory ? <AlertCircle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                                                        {row.mandatory ? 'Mandatory' : 'Optional'}
-                                                    </span>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-3">
                                                     <span
@@ -1023,9 +934,7 @@ const Phase1Page = () => {
                     <div className="space-y-4">
                         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">{renderFilters()}</div>
                         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                           
-
-                            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-2">
+                            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-3">
                                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
                                     <div>
                                         <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -1264,6 +1173,12 @@ const Phase1Page = () => {
                     </div>
                 ) : null}
             </motion.section>
+            <AddRequirementModal
+                open={isModalOpen}
+                academicYearOptions={academicYearSelectOptions}
+                defaultAcademicYearId={defaultAcademicYearId}
+                onClose={() => setIsModalOpen(false)}
+            />
             <EditRequirementModal
                 open={editingRequirement !== null}
                 requirement={editingRequirement}
@@ -1275,150 +1190,6 @@ const Phase1Page = () => {
                 requirement={deletingRequirement}
                 onClose={() => setDeletingRequirement(null)}
             />
-            {(() => {
-                const shouldRenderModal = isModalOpen || isAppearing;
-
-                if (!shouldRenderModal || typeof document === 'undefined') {
-                    return null;
-                }
-
-                return createPortal(
-                    <div
-                        className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity duration-200 ${
-                            isAppearing ? 'opacity-100' : 'opacity-0'
-                        }`}
-                        role="dialog"
-                        aria-modal="true"
-                        onMouseDown={(event) => {
-                            if (event.target === event.currentTarget && !requirementForm.processing) {
-                                setIsModalOpen(false);
-                            }
-                        }}
-                    >
-                        <div
-                            className={`max-h-[90vh] w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl transition-all duration-200 ${
-                                isAppearing ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-95 opacity-0'
-                            }`}
-                            onMouseDown={(event) => event.stopPropagation()}
-                        >
-                            <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
-                                <div className="flex items-center gap-2">
-                                    <FilePlus className="h-5 w-5 text-emerald-800" />
-                                    <h2 className="text-lg font-bold text-emerald-900">Add Requirement</h2>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    disabled={requirementForm.processing}
-                                    className="rounded-lg p-1.5 text-emerald-700 transition-all duration-200 hover:rotate-90 hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    <X className="h-5 w-5" />
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleRequirementSubmit} className="space-y-4 p-4">
-                                <div>
-                                    <label className="text-sm font-semibold text-slate-700">Requirement Type</label>
-                                    <input
-                                        type="text"
-                                        value={requirementForm.data.requirement_type}
-                                        onChange={(event) => requirementForm.setData('requirement_type', event.target.value)}
-                                        placeholder="e.g., Concept Paper"
-                                        className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                                    />
-                                    {requirementForm.errors.requirement_type ? (
-                                        <p className="mt-1 text-xs text-rose-600">{requirementForm.errors.requirement_type}</p>
-                                    ) : null}
-                                </div>
-
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700">Academic Year</label>
-                                        <select
-                                            value={requirementForm.data.academic_year_id}
-                                            onChange={(event) => requirementForm.setData('academic_year_id', event.target.value)}
-                                            className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                                        >
-                                            {academicYearSelectOptions.length === 0 ? (
-                                                <option value="" disabled>
-                                                    No academic years found
-                                                </option>
-                                            ) : (
-                                                academicYearSelectOptions.map((option) => (
-                                                    <option key={option.value} value={option.value}>
-                                                        {option.label}
-                                                        {option.isCurrent ? ' (current)' : ''}
-                                                    </option>
-                                                ))
-                                            )}
-                                        </select>
-                                        {requirementForm.errors.academic_year_id ? (
-                                            <p className="mt-1 text-xs text-rose-600">{requirementForm.errors.academic_year_id}</p>
-                                        ) : null}
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-slate-700">Due Date</label>
-                                        <input
-                                            type="date"
-                                            value={requirementForm.data.due_date}
-                                            onChange={(event) => requirementForm.setData('due_date', event.target.value)}
-                                            className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
-                                        />
-                                        {requirementForm.errors.due_date ? (
-                                            <p className="mt-1 text-xs text-rose-600">{requirementForm.errors.due_date}</p>
-                                        ) : null}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                    <div className="flex items-center gap-3">
-                                        <div
-                                            className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                                                requirementForm.data.is_mandatory ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-500'
-                                            }`}
-                                        >
-                                            <AlertCircle className="h-4 w-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-slate-800">Mandatory for Defense</p>
-                                            <p className="text-xs text-slate-500">Blocks defense scheduling until approved.</p>
-                                        </div>
-                                    </div>
-                                    <label className="relative inline-flex cursor-pointer items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={requirementForm.data.is_mandatory}
-                                            onChange={(event) => requirementForm.setData('is_mandatory', event.target.checked)}
-                                            className="peer sr-only"
-                                        />
-                                        <div className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-emerald-600" />
-                                        <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5" />
-                                    </label>
-                                </div>
-
-                                <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        disabled={requirementForm.processing}
-                                        className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={!isRequirementFormValid || requirementForm.processing}
-                                        className="rounded-xl bg-emerald-700 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        Save Requirement
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>,
-                    document.body,
-                );
-            })()}
         </InstructorLayout>
     );
 };
