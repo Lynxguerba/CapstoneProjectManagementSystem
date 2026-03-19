@@ -1,30 +1,29 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import {
-    AlertCircle,
     CalendarClock,
     CheckCircle2,
     ChevronRight,
     Clock3,
     CreditCard,
-    Download,
-    Eye,
-    FilePlus,
     FileText,
     Filter,
-    Pencil,
     RotateCcw,
     Search,
     ShieldCheck,
-    Trash2,
     Users,
     XCircle,
 } from 'lucide-react';
 import React from 'react';
 import AddRequirementModal from '../../components/Instructor/requirements/AddRequirementModal';
 import DeleteRequirementModal from '../../components/Instructor/requirements/DeleteRequirementModal';
+import DownloadDocumentsModal from '../../components/Instructor/requirements/DownloadDocumentsModal';
 import EditRequirementModal from '../../components/Instructor/requirements/EditRequirementModal';
 import InstructorLayout from './_layout';
+import DeadlinesTab from './phase1/DeadlinesTab';
+import DefenseTab from './phase1/DefenseTab';
+import DocumentsTab from './phase1/DocumentsTab';
+import PaymentsTab from './phase1/PaymentsTab';
 
 type TabKey = 'deadlines' | 'documents' | 'defense' | 'payments';
 
@@ -84,6 +83,7 @@ type Phase1Props = {
     groups?: GroupRow[];
     defenseSchedules?: DefenseScheduleRow[];
     requirements?: RequirementRecord[];
+    documentSubmissions?: DocumentSubmissionRow[];
     settings?: {
         titleProposalDeadline?: string | null;
         finalDefenseDeadline?: string | null;
@@ -119,6 +119,28 @@ type DocumentRow = {
     submittedAt: string;
     status: 'Approved' | 'For Review' | 'Revise' | 'Missing';
     iconColor: string;
+};
+
+type DocumentSubmissionRow = {
+    id: number;
+    group_id: number;
+    document_requirement_id: number;
+    requirement_type?: string | null;
+    status?: 'Submitted' | 'Approved' | 'Revision Required' | string | null;
+    file_name?: string | null;
+    file_path?: string | null;
+    mime_type?: string | null;
+    file_size?: number | null;
+    submitted_at?: string | null;
+};
+
+type RequirementDocumentDetail = {
+    id: number;
+    requirementType: string;
+    status: 'Missing' | 'Submitted' | 'Approved' | 'Revision Required';
+    fileName?: string | null;
+    submittedAt?: string | null;
+    downloadUrl?: string | null;
 };
 
 
@@ -212,6 +234,7 @@ const Phase1Page = () => {
     const groups = props.groups ?? [];
     const defenseSchedules = props.defenseSchedules ?? [];
     const requirements = props.requirements ?? [];
+    const documentSubmissions = props.documentSubmissions ?? [];
     const academicYears = props.academicYears ?? [];
 
     const currentAcademicYearRecord = academicYears.find((year) => year.is_current) ?? academicYears[0];
@@ -224,8 +247,14 @@ const Phase1Page = () => {
     const [searchTerm, setSearchTerm] = React.useState('');
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [requirementsAcademicYear, setRequirementsAcademicYear] = React.useState(currentAcademicYear || 'All');
+    const [requirementsStatus, setRequirementsStatus] = React.useState<'All' | 'Due Soon' | 'On Track'>('All');
+    const [documentsPage, setDocumentsPage] = React.useState(1);
+    const [deadlinesPage, setDeadlinesPage] = React.useState(1);
+    const [defensePage, setDefensePage] = React.useState(1);
+    const [paymentsPage, setPaymentsPage] = React.useState(1);
     const [editingRequirement, setEditingRequirement] = React.useState<RequirementRecord | null>(null);
     const [deletingRequirement, setDeletingRequirement] = React.useState<RequirementRecord | null>(null);
+    const [downloadGroupId, setDownloadGroupId] = React.useState<number | null>(null);
 
     const academicYearOptions = React.useMemo(() => ['All', ...academicYears.map((year) => year.label)], [academicYears]);
 
@@ -366,25 +395,38 @@ const Phase1Page = () => {
         [academicYears],
     );
 
+    const requirementSubmissionsByRequirementId = React.useMemo(() => {
+        const map = new Map<number, Set<number>>();
+
+        documentSubmissions.forEach((submission) => {
+            const set = map.get(submission.document_requirement_id) ?? new Set<number>();
+            set.add(submission.group_id);
+            map.set(submission.document_requirement_id, set);
+        });
+
+        return map;
+    }, [documentSubmissions]);
+
     const resolveRequirementCounts = React.useCallback(
-        (academicYearLabel: string) => {
+        (requirementId: number, academicYearLabel: string) => {
             const normalizedLabel = academicYearLabel.trim();
             const targetGroups =
                 normalizedLabel === '' || normalizedLabel === 'All'
                     ? filteredGroups
                     : filteredGroups.filter((group) => group.school_year === normalizedLabel);
             const total = targetGroups.length;
-            const submitted = targetGroups.filter((group) => scheduleByGroupId.get(group.id)?.status === 'Completed').length;
+            const submittedGroupIds = requirementSubmissionsByRequirementId.get(requirementId) ?? new Set<number>();
+            const submitted = targetGroups.filter((group) => submittedGroupIds.has(group.id)).length;
 
             return { submitted, total };
         },
-        [filteredGroups, scheduleByGroupId],
+        [filteredGroups, requirementSubmissionsByRequirementId],
     );
 
     const deadlines = React.useMemo(() => {
         return requirements.map((requirement) => {
             const academicYearLabel = resolveAcademicYearLabel(requirement.academic_year_id, requirement.academic_year_label ?? null);
-            const counts = resolveRequirementCounts(academicYearLabel);
+            const counts = resolveRequirementCounts(requirement.id, academicYearLabel);
 
             return {
                 id: String(requirement.id),
@@ -400,25 +442,33 @@ const Phase1Page = () => {
     }, [deadlineStatus, requirements, resolveAcademicYearLabel, resolveRequirementCounts]);
 
     const filteredDeadlines = React.useMemo(() => {
-        if (requirementsAcademicYear === 'All') {
-            return deadlines;
+        let filtered = deadlines;
+
+        if (requirementsAcademicYear !== 'All') {
+            filtered = filtered.filter((row) => row.academicYear === requirementsAcademicYear);
         }
 
-        return deadlines.filter((row) => row.academicYear === requirementsAcademicYear);
-    }, [deadlines, requirementsAcademicYear]);
+        if (requirementsStatus !== 'All') {
+            filtered = filtered.filter((row) => row.status === requirementsStatus);
+        }
 
-    const resolveDocumentStatus = (status?: DefenseScheduleRow['status'] | null): DocumentRow['status'] => {
-        if (status === 'Completed') {
-            return 'Approved';
+        return filtered;
+    }, [deadlines, requirementsAcademicYear, requirementsStatus]);
+
+    const deadlinesPerPage = 6;
+    const totalDeadlinePages = Math.max(1, Math.ceil(filteredDeadlines.length / deadlinesPerPage));
+    const deadlinesPageStart = (deadlinesPage - 1) * deadlinesPerPage;
+    const pagedDeadlines = filteredDeadlines.slice(deadlinesPageStart, deadlinesPageStart + deadlinesPerPage);
+
+    React.useEffect(() => {
+        setDeadlinesPage(1);
+    }, [filteredDeadlines.length, requirementsAcademicYear, requirementsStatus]);
+
+    React.useEffect(() => {
+        if (deadlinesPage > totalDeadlinePages) {
+            setDeadlinesPage(totalDeadlinePages);
         }
-        if (status === 'Scheduled' || status === 'Pending') {
-            return 'For Review';
-        }
-        if (status === 'Cancelled') {
-            return 'Revise';
-        }
-        return 'Missing';
-    };
+    }, [deadlinesPage, totalDeadlinePages]);
 
     const resolvePaymentStatus = (status?: DefenseScheduleRow['status'] | null): PaymentRow['status'] => {
         if (status === 'Completed') {
@@ -430,6 +480,87 @@ const Phase1Page = () => {
         return 'Not Paid';
     };
 
+    const requirementsByAcademicYearLabel = React.useMemo(() => {
+        const map = new Map<string, RequirementRecord[]>();
+
+        requirements.forEach((requirement) => {
+            const label = resolveAcademicYearLabel(requirement.academic_year_id, requirement.academic_year_label ?? null);
+            const current = map.get(label) ?? [];
+            current.push(requirement);
+            map.set(label, current);
+        });
+
+        return map;
+    }, [requirements, resolveAcademicYearLabel]);
+
+    const documentSubmissionsByGroupId = React.useMemo(() => {
+        const map = new Map<number, DocumentSubmissionRow[]>();
+
+        documentSubmissions.forEach((submission) => {
+            const list = map.get(submission.group_id) ?? [];
+            list.push(submission);
+            map.set(submission.group_id, list);
+        });
+
+        return map;
+    }, [documentSubmissions]);
+
+    const buildDownloadUrl = React.useCallback((submissionId: number) => {
+        return `/instructor/document-submissions/${submissionId}/download`;
+    }, []);
+
+    const documentDetailsByGroup = React.useMemo(() => {
+        const map = new Map<number, RequirementDocumentDetail[]>();
+
+        groups.forEach((group) => {
+            const academicYearLabel = group.school_year ?? 'All';
+            const requirementsForGroup =
+                requirementsByAcademicYearLabel.get(academicYearLabel) ?? requirementsByAcademicYearLabel.get('All') ?? [];
+            const submissions = documentSubmissionsByGroupId.get(group.id) ?? [];
+            const latestByRequirement = new Map<number, DocumentSubmissionRow>();
+
+            submissions.forEach((submission) => {
+                const requirementId = submission.document_requirement_id;
+                const existing = latestByRequirement.get(requirementId);
+                if (!existing) {
+                    latestByRequirement.set(requirementId, submission);
+                    return;
+                }
+
+                const nextDate = submission.submitted_at ?? '';
+                const existingDate = existing.submitted_at ?? '';
+
+                if (nextDate > existingDate || (nextDate === existingDate && submission.id > existing.id)) {
+                    latestByRequirement.set(requirementId, submission);
+                }
+            });
+
+            const details = requirementsForGroup.map((requirement) => {
+                const submission = latestByRequirement.get(requirement.id);
+                const status = submission?.status === 'Revision Required'
+                    ? 'Revision Required'
+                    : submission?.status === 'Approved'
+                      ? 'Approved'
+                      : submission
+                        ? 'Submitted'
+                        : 'Missing';
+
+                return {
+                    id: requirement.id,
+                    requirementType: requirement.requirement_type,
+                    status,
+                    fileName: submission?.file_name ?? null,
+                    submittedAt: submission?.submitted_at ?? null,
+                    downloadUrl: submission ? buildDownloadUrl(submission.id) : null,
+                } satisfies RequirementDocumentDetail;
+            });
+
+            map.set(group.id, details);
+        });
+
+        return map;
+    }, [buildDownloadUrl, documentSubmissionsByGroupId, groups, requirementsByAcademicYearLabel]);
+
     const documents = React.useMemo(() => {
         const iconTone: Record<DocumentRow['status'], string> = {
             Approved: 'bg-emerald-50 text-emerald-600',
@@ -439,8 +570,35 @@ const Phase1Page = () => {
         };
 
         return filteredGroups.map((group) => {
-            const schedule = scheduleByGroupId.get(group.id);
-            const status = resolveDocumentStatus(schedule?.status ?? null);
+            const details = documentDetailsByGroup.get(group.id) ?? [];
+            const requiredCount = details.length;
+            const submittedDocs = details.filter((detail) => detail.status !== 'Missing');
+            const submittedCount = submittedDocs.length;
+            const hasRevision = details.some((detail) => detail.status === 'Revision Required');
+            const allApproved = requiredCount > 0 && details.every((detail) => detail.status === 'Approved');
+
+            let status: DocumentRow['status'] = 'Missing';
+            if (requiredCount > 0 && hasRevision) {
+                status = 'Revise';
+            } else if (requiredCount > 0 && submittedCount === 0) {
+                status = 'Missing';
+            } else if (requiredCount > 0 && allApproved) {
+                status = 'Approved';
+            } else if (requiredCount > 0 && submittedCount > 0) {
+                status = 'For Review';
+            }
+
+            const latestSubmittedAt = submittedDocs.reduce((latest, detail) => {
+                if (!detail.submittedAt) {
+                    return latest;
+                }
+
+                if (!latest || detail.submittedAt > latest) {
+                    return detail.submittedAt;
+                }
+
+                return latest;
+            }, '' as string);
 
             return {
                 id: `doc-${group.id}`,
@@ -448,12 +606,27 @@ const Phase1Page = () => {
                 name: group.name,
                 group: group.program_set_name ?? '—',
                 type: group.program ?? '—',
-                submittedAt: schedule?.scheduled_date ? formatDateLabel(schedule.scheduled_date) : formatDateLabel(group.created_at),
+                submittedAt: latestSubmittedAt ? formatDateLabel(latestSubmittedAt) : '—',
                 status,
                 iconColor: iconTone[status],
             } satisfies DocumentRow;
         });
-    }, [filteredGroups, scheduleByGroupId]);
+    }, [documentDetailsByGroup, filteredGroups]);
+
+    const documentsPerPage = 6;
+    const totalDocumentPages = Math.max(1, Math.ceil(documents.length / documentsPerPage));
+    const documentsPageStart = (documentsPage - 1) * documentsPerPage;
+    const pagedDocuments = documents.slice(documentsPageStart, documentsPageStart + documentsPerPage);
+
+    React.useEffect(() => {
+        setDocumentsPage(1);
+    }, [documents.length, searchTerm, selectedAcademicYear, selectedProgramSet]);
+
+    React.useEffect(() => {
+        if (documentsPage > totalDocumentPages) {
+            setDocumentsPage(totalDocumentPages);
+        }
+    }, [documentsPage, totalDocumentPages]);
 
     const mandatoryRequirementTargets = React.useMemo(() => {
         return requirements.map((requirement) => ({
@@ -464,6 +637,9 @@ const Phase1Page = () => {
     const groupById = React.useMemo(() => {
         return new Map(filteredGroups.map((group) => [group.id, group]));
     }, [filteredGroups]);
+
+    const downloadGroup = downloadGroupId !== null ? groupById.get(downloadGroupId) ?? null : null;
+    const downloadDocuments = downloadGroupId !== null ? documentDetailsByGroup.get(downloadGroupId) ?? [] : [];
 
     const missingRequirementsByGroupId = React.useMemo(() => {
         const map = new Map<number, boolean>();
@@ -536,6 +712,33 @@ const Phase1Page = () => {
         });
     }, [filteredGroups, missingRequirementsByGroupId, scheduleByGroupId]);
 
+    const defensePerPage = 6;
+    const totalDefensePages = Math.max(1, Math.ceil(defenseRows.length / defensePerPage));
+    const defensePageStart = (defensePage - 1) * defensePerPage;
+    const pagedDefenseRows = defenseRows.slice(defensePageStart, defensePageStart + defensePerPage);
+
+    const paymentsPerPage = 6;
+    const totalPaymentsPages = Math.max(1, Math.ceil(payments.length / paymentsPerPage));
+    const paymentsPageStart = (paymentsPage - 1) * paymentsPerPage;
+    const pagedPayments = payments.slice(paymentsPageStart, paymentsPageStart + paymentsPerPage);
+
+    React.useEffect(() => {
+        setDefensePage(1);
+        setPaymentsPage(1);
+    }, [filteredGroups.length, searchTerm, selectedAcademicYear, selectedProgramSet]);
+
+    React.useEffect(() => {
+        if (defensePage > totalDefensePages) {
+            setDefensePage(totalDefensePages);
+        }
+    }, [defensePage, totalDefensePages]);
+
+    React.useEffect(() => {
+        if (paymentsPage > totalPaymentsPages) {
+            setPaymentsPage(totalPaymentsPages);
+        }
+    }, [paymentsPage, totalPaymentsPages]);
+
     const documentSummary = React.useMemo(() => {
         const counts = documents.reduce(
             (carry, doc) => {
@@ -585,6 +788,66 @@ const Phase1Page = () => {
             },
         ];
     }, [documents]);
+
+    const handleAddRequirement = () => {
+        setEditingRequirement(null);
+        setDeletingRequirement(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEditRequirement = (record: RequirementRecord) => {
+        setDeletingRequirement(null);
+        setEditingRequirement(record);
+    };
+
+    const handleDeleteRequirement = (record: RequirementRecord) => {
+        setEditingRequirement(null);
+        setDeletingRequirement(record);
+    };
+
+    const handleViewDocuments = (groupId: number) => {
+        router.visit(`/instructor/requirements/${groupId}/documents`);
+    };
+
+    const handleOpenDownload = (groupId: number) => {
+        setDownloadGroupId(groupId);
+    };
+
+    const handleCloseDownload = () => {
+        setDownloadGroupId(null);
+    };
+
+    const handlePrevDeadlinesPage = () => {
+        setDeadlinesPage((page) => Math.max(1, page - 1));
+    };
+
+    const handleNextDeadlinesPage = () => {
+        setDeadlinesPage((page) => Math.min(totalDeadlinePages, page + 1));
+    };
+
+    const handlePrevDocumentsPage = () => {
+        setDocumentsPage((page) => Math.max(1, page - 1));
+    };
+
+    const handleNextDocumentsPage = () => {
+        setDocumentsPage((page) => Math.min(totalDocumentPages, page + 1));
+    };
+
+    const handlePrevDefensePage = () => {
+        setDefensePage((page) => Math.max(1, page - 1));
+    };
+
+    const handleNextDefensePage = () => {
+        setDefensePage((page) => Math.min(totalDefensePages, page + 1));
+    };
+
+    const handlePrevPaymentsPage = () => {
+        setPaymentsPage((page) => Math.max(1, page - 1));
+    };
+
+    const handleNextPaymentsPage = () => {
+        setPaymentsPage((page) => Math.min(totalPaymentsPages, page + 1));
+    };
 
     const tabs = React.useMemo(
         () => [
@@ -802,377 +1065,85 @@ const Phase1Page = () => {
                 </div>
 
                 {activeTab === 'deadlines' ? (
-                    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <CalendarClock className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Requirements Manager</h3>
-                                </div>
-                                <p className="text-xs text-slate-500">Manage submission requirements for Phase 1 groups</p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <div className="relative">
-                                    <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                                    <select
-                                        value={requirementsAcademicYear}
-                                        onChange={(event) => setRequirementsAcademicYear(event.target.value)}
-                                        aria-label="Filter academic year"
-                                        className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                                    >
-                                        {academicYearOptions.map((year) => {
-                                            const isCurrent = academicYears.find((ay) => ay.label === year)?.is_current;
-                                            return (
-                                                <option key={year} value={year}>
-                                                    {year === 'All' ? 'All Years' : `${year}${isCurrent ? ' (current)' : ''}`}
-                                                </option>
-                                            );
-                                        })}
-                                    </select>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setEditingRequirement(null);
-                                        setDeletingRequirement(null);
-                                        setIsModalOpen(true);
-                                    }}
-                                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800"
-                                >
-                                    <FilePlus className="h-4 w-4" />
-                                    Add Requirement
-                                </button>
-                            </div>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left">Requirement Type</th>
-                                        <th className="px-6 py-3 text-left">Academic Year</th>
-                                        <th className="px-6 py-3 text-left">Due Date</th>
-                                        <th className="px-6 py-3 text-left">Groups Completed</th>
-                                        <th className="px-6 py-3 text-left">Status</th>
-                                        <th className="px-6 py-3 text-left">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {filteredDeadlines.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">
-                                                No requirements found. Add a new requirement to get started.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        filteredDeadlines.map((row) => (
-                                            <tr key={row.id} className="text-slate-600 transition-colors hover:bg-emerald-50/40">
-                                                <td className="px-6 py-3 font-semibold text-slate-900">{row.requirementType}</td>
-                                                <td className="px-6 py-3 text-xs text-slate-500">{row.academicYear}</td>
-                                                <td className="px-6 py-3 font-semibold text-amber-600">{formatDateLabel(row.dueDate)}</td>
-                                                <td className="px-6 py-3">
-                                                    {row.total === 0 ? (
-                                                        <span className="text-xs text-slate-400">No groups yet</span>
-                                                    ) : row.submitted === 0 ? (
-                                                        <span className="text-xs text-slate-400">No submissions yet</span>
-                                                    ) : (
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="h-2 w-28 overflow-hidden rounded-full bg-slate-200">
-                                                                <div
-                                                                    className="h-full rounded-full bg-emerald-500"
-                                                                    style={{
-                                                                        width: `${Math.round((row.submitted / row.total) * 100)}%`,
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <span className="text-xs text-slate-500">
-                                                                {row.submitted}/{row.total}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-3">
-                                                    <span
-                                                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold ${statusBadge(row.status)}`}
-                                                    >
-                                                        {row.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-3">
-                                                    <div className="flex gap-1">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setDeletingRequirement(null);
-                                                                setEditingRequirement(row.record);
-                                                            }}
-                                                            className="flex h-8 w-8 items-center justify-center rounded-xl text-emerald-600 transition hover:bg-emerald-50"
-                                                        >
-                                                            <Pencil className="h-4 w-4" />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setEditingRequirement(null);
-                                                                setDeletingRequirement(row.record);
-                                                            }}
-                                                            className="flex h-8 w-8 items-center justify-center rounded-xl text-amber-600 transition hover:bg-amber-50"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <DeadlinesTab
+                        academicYearOptions={academicYearOptions}
+                        academicYears={academicYears}
+                        requirementsAcademicYear={requirementsAcademicYear}
+                        requirementsStatus={requirementsStatus}
+                        rows={filteredDeadlines}
+                        pagedRows={pagedDeadlines}
+                        pageStart={deadlinesPageStart}
+                        perPage={deadlinesPerPage}
+                        page={deadlinesPage}
+                        totalPages={totalDeadlinePages}
+                        onAcademicYearChange={setRequirementsAcademicYear}
+                        onStatusChange={(value) => setRequirementsStatus(value)}
+                        onAddRequirement={handleAddRequirement}
+                        onEditRequirement={handleEditRequirement}
+                        onDeleteRequirement={handleDeleteRequirement}
+                        onPrevPage={handlePrevDeadlinesPage}
+                        onNextPage={handleNextDeadlinesPage}
+                        formatDateLabel={formatDateLabel}
+                        statusBadge={statusBadge}
+                    />
                 ) : null}
 
                 {activeTab === 'documents' ? (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-3">
-                                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
-                                    <div>
-                                        <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                                            <FileText className="h-4 w-4 text-emerald-600" /> Submitted Documents
-                                        </h3>
-                                        <p className="text-xs text-slate-500">Documents linked to concept defense schedules</p>
-                                    </div>
-                                    <button className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
-                                        <Download className="h-3.5 w-3.5" /> Download All
-                                    </button>
-                                </div>
-                                <div className="border-b border-slate-100 px-6 py-4">{renderFilters()}</div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left">Document</th>
-                                                <th className="px-6 py-3 text-left">Program Set</th>
-                                                <th className="px-6 py-3 text-left">Program</th>
-                                                <th className="px-6 py-3 text-left">Submitted</th>
-                                                <th className="px-6 py-3 text-left">Status</th>
-                                                <th className="px-6 py-3 text-left">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {documents.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">
-                                                        No document activity found for the current filters.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                documents.map((row) => (
-                                                    <tr key={row.id} className="text-slate-600 transition-colors hover:bg-emerald-50/40">
-                                                        <td className="px-6 py-3">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${row.iconColor}`}>
-                                                                    <FileText className="h-4 w-4" />
-                                                                </div>
-                                                                <span
-                                                                    className={`text-sm font-semibold ${row.status === 'Missing' ? 'italic text-slate-400' : 'text-slate-700'}`}
-                                                                >
-                                                                    {row.name}
-                                                                </span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-3 font-semibold text-slate-900">{row.group}</td>
-                                                        <td className="px-6 py-3">
-                                                            <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600">
-                                                                {row.type}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-3 text-xs text-slate-500">{row.submittedAt}</td>
-                                                        <td className="px-6 py-3">
-                                                            <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${documentBadge(row.status)}`}>
-                                                                {row.status}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-3">
-                                                            <div className="flex flex-wrap gap-1">
-                                                                <button className="flex h-8 w-8 items-center justify-center rounded-xl text-emerald-600 transition hover:bg-emerald-50">
-                                                                    <Eye className="h-4 w-4" />
-                                                                </button>
-                                                                <button className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100">
-                                                                    <Download className="h-4 w-4" />
-                                                                </button>
-                                                                {row.status === 'For Review' ? (
-                                                                    <button className="rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100">
-                                                                        Approve
-                                                                    </button>
-                                                                ) : null}
-                                                                {row.status === 'Missing' ? (
-                                                                    <button className="rounded-xl bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100">
-                                                                        Remind
-                                                                    </button>
-                                                                ) : null}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <DocumentsTab
+                        documents={documents}
+                        pagedDocuments={pagedDocuments}
+                        documentsPageStart={documentsPageStart}
+                        documentsPerPage={documentsPerPage}
+                        documentsPage={documentsPage}
+                        totalDocumentPages={totalDocumentPages}
+                        filters={renderFilters()}
+                        onPrevPage={handlePrevDocumentsPage}
+                        onNextPage={handleNextDocumentsPage}
+                        onViewDocuments={handleViewDocuments}
+                        onOpenDownload={handleOpenDownload}
+                        documentBadge={documentBadge}
+                    />
                 ) : null}
+
 
                 {activeTab === 'defense' ? (
-                    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Defense Status</h3>
-                                </div>
-                                <p className="text-xs text-slate-500">Monitor concept defense schedules by group</p>
-                            </div>
-                        </div>
-                        <div className="border-b border-slate-100 px-6 py-4">{renderFilters()}</div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left">Group</th>
-                                        <th className="px-6 py-3 text-left">Program Set</th>
-                                        <th className="px-6 py-3 text-left">Schedule</th>
-                                        <th className="px-6 py-3 text-left">Room</th>
-                                        <th className="px-6 py-3 text-left">Status</th>
-                                        <th className="px-6 py-3 text-left">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {defenseRows.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">
-                                                No groups found for the selected filters.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        defenseRows.map((row) => (
-                                            <tr key={row.id} className="text-slate-600 transition-colors hover:bg-emerald-50/40">
-                                                <td className="px-6 py-3 font-semibold text-slate-900">{row.group}</td>
-                                                <td className="px-6 py-3 text-xs text-slate-500">{row.programSet}</td>
-                                                <td className="px-6 py-3">
-                                                    <div className="text-xs font-semibold text-slate-700">{row.scheduleDate}</div>
-                                                    <div className="text-[11px] text-slate-500">{row.scheduleTime}</div>
-                                                </td>
-                                                <td className="px-6 py-3 text-xs text-slate-500">{row.room}</td>
-                                                <td className="px-6 py-3">
-                                                    <span
-                                                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold ${defenseBadge(
-                                                            row.status,
-                                                        )}`}
-                                                    >
-                                                        {row.status === 'Missing Requirements' ? <AlertCircle className="h-3.5 w-3.5" /> : null}
-                                                        {row.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-3">
-                                                    <button className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100">
-                                                        <Eye className="h-4 w-4" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <DefenseTab
+                        rows={defenseRows}
+                        pagedRows={pagedDefenseRows}
+                        pageStart={defensePageStart}
+                        perPage={defensePerPage}
+                        page={defensePage}
+                        totalPages={totalDefensePages}
+                        filters={renderFilters()}
+                        defenseBadge={defenseBadge}
+                        onPrevPage={handlePrevDefensePage}
+                        onNextPage={handleNextDefensePage}
+                    />
                 ) : null}
 
+
                 {activeTab === 'payments' ? (
-                    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <CreditCard className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Payment Verification</h3>
-                                </div>
-                                <p className="text-xs text-slate-500">Review and approve group payment submissions</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => alert('UI only: export payments')}
-                                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-                            >
-                                <Download className="h-4 w-4" />
-                                Export
-                            </button>
-                        </div>
-                        <div className="border-b border-slate-100 px-6 py-4">{renderFilters()}</div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left">Group</th>
-                                        <th className="px-6 py-3 text-left">Members</th>
-                                        <th className="px-6 py-3 text-left">Submitted</th>
-                                        <th className="px-6 py-3 text-left">Status</th>
-                                        <th className="px-6 py-3 text-left">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {payments.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-8 text-center text-sm text-slate-500">
-                                                No payment activity found for the current filters.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        payments.map((row) => (
-                                            <tr key={row.id} className="text-slate-600 transition-colors hover:bg-emerald-50/40">
-                                                <td className="px-6 py-3 font-semibold text-slate-900">{row.group}</td>
-                                                <td className="px-6 py-3">
-                                                    <div className="flex -space-x-2">
-                                                        {row.members.map((member, index) => (
-                                                            <div
-                                                                key={`${row.id}-${member.initials}-${index}`}
-                                                                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-semibold text-white ${member.color}`}
-                                                            >
-                                                                {member.initials}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-3 text-xs text-slate-500">{row.submittedAt}</td>
-                                                <td className="px-6 py-3">
-                                                    <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${paymentBadge(row.status)}`}>
-                                                        {row.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-3">
-                                                    {row.status === 'Pending' ? (
-                                                        <div className="flex gap-2">
-                                                            <button className="rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100">
-                                                                Approve
-                                                            </button>
-                                                            <button className="rounded-xl bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100">
-                                                                Reject
-                                                            </button>
-                                                        </div>
-                                                    ) : (
-                                                        <button className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100">
-                                                            <Eye className="h-4 w-4" />
-                                                        </button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <PaymentsTab
+                        payments={payments}
+                        pagedPayments={pagedPayments}
+                        pageStart={paymentsPageStart}
+                        perPage={paymentsPerPage}
+                        page={paymentsPage}
+                        totalPages={totalPaymentsPages}
+                        filters={renderFilters()}
+                        paymentBadge={paymentBadge}
+                        onPrevPage={handlePrevPaymentsPage}
+                        onNextPage={handleNextPaymentsPage}
+                    />
                 ) : null}
+
             </motion.section>
+            <DownloadDocumentsModal
+                open={downloadGroupId !== null}
+                groupName={downloadGroup?.name ?? 'Selected group'}
+                documents={downloadDocuments}
+                onClose={handleCloseDownload}
+            />
             <AddRequirementModal
                 open={isModalOpen}
                 academicYearOptions={academicYearSelectOptions}
