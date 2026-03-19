@@ -49,7 +49,7 @@ jobs:
       - name: Generate Application Key
         run: php artisan key:generate
 
-        name: Configure SQLite      
+      - name: Configure SQLite      
         run: |
           touch database/database.sqlite
           echo "DB_CONNECTION=sqlite" >> .env
