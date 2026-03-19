@@ -25,20 +25,13 @@ type DeanPageProps = {
     } | null;
 };
 
-const formatRole = (role: string): string => {
-    return role
-        .split('_')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-};
-
 const DeanSettings = () => {
     const { auth, eSignature } = usePage<DeanPageProps>().props;
     const user = auth?.user;
     const assignedRoles = user?.roles?.length ? user.roles : user?.role ? [user.role] : ['dean'];
 
-    const [name, setName] = useState(user?.name ?? 'Dean');
-    const [email, setEmail] = useState(user?.email ?? 'dean@example.com');
+    const [name] = useState(user?.name ?? 'Dean');
+    const [email] = useState(user?.email ?? 'dean@example.com');
 
     return (
         <DeanLayout title="Settings" subtitle="Profile details, assigned role, and e-signature setup">

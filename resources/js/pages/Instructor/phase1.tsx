@@ -2,17 +2,12 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import {
     CalendarClock,
-    CheckCircle2,
     ChevronRight,
-    Clock3,
     CreditCard,
     FileText,
     Filter,
-    RotateCcw,
     Search,
     ShieldCheck,
-    Users,
-    XCircle,
 } from 'lucide-react';
 import React from 'react';
 import AddRequirementModal from '../../components/Instructor/requirements/AddRequirementModal';
@@ -347,17 +342,6 @@ const Phase1Page = () => {
 
         return map;
     }, [conceptSchedules]);
-
-    const completedCount = React.useMemo(() => {
-        return filteredGroups.filter((group) => scheduleByGroupId.get(group.id)?.status === 'Completed').length;
-    }, [filteredGroups, scheduleByGroupId]);
-
-    const cancelledCount = React.useMemo(() => {
-        return filteredGroups.filter((group) => scheduleByGroupId.get(group.id)?.status === 'Cancelled').length;
-    }, [filteredGroups, scheduleByGroupId]);
-
-    const totalGroups = filteredGroups.length;
-    const pendingCount = Math.max(0, totalGroups - completedCount - cancelledCount);
 
     const deadlineStatus = React.useCallback((dueDate?: string | null): DeadlineRow['status'] => {
         const date = parseDate(dueDate);
@@ -727,56 +711,6 @@ const Phase1Page = () => {
         }
     }, [paymentsPage, totalPaymentsPages]);
 
-    const documentSummary = React.useMemo(() => {
-        const counts = documents.reduce(
-            (carry, doc) => {
-                carry[doc.status] = (carry[doc.status] ?? 0) + 1;
-                return carry;
-            },
-            {
-                Approved: 0,
-                'For Review': 0,
-                Revise: 0,
-                Missing: 0,
-            } as Record<DocumentRow['status'], number>,
-        );
-
-        return [
-            {
-                label: 'Approved',
-                count: counts.Approved,
-                tone: 'border-emerald-100 bg-emerald-50',
-                icon: CheckCircle2,
-                iconClass: 'text-emerald-500',
-                countClass: 'text-emerald-600',
-            },
-            {
-                label: 'For Review',
-                count: counts['For Review'],
-                tone: 'border-amber-100 bg-amber-50',
-                icon: Clock3,
-                iconClass: 'text-amber-500',
-                countClass: 'text-amber-600',
-            },
-            {
-                label: 'Revise',
-                count: counts.Revise,
-                tone: 'border-amber-100 bg-amber-50',
-                icon: RotateCcw,
-                iconClass: 'text-amber-500',
-                countClass: 'text-amber-600',
-            },
-            {
-                label: 'Missing',
-                count: counts.Missing,
-                tone: 'border-slate-200 bg-slate-50',
-                icon: XCircle,
-                iconClass: 'text-slate-500',
-                countClass: 'text-slate-600',
-            },
-        ];
-    }, [documents]);
-
     const handleAddRequirement = () => {
         setEditingRequirement(null);
         setDeletingRequirement(null);
@@ -874,37 +808,6 @@ const Phase1Page = () => {
         ],
         [deadlines.length, documents.length, defenseRows.length, payments.length],
     );
-
-    const overviewCards = [
-        {
-            label: 'Total Groups',
-            value: String(totalGroups),
-            icon: Users,
-            iconTone: 'bg-emerald-100 text-emerald-600',
-            valueTone: 'text-slate-900',
-        },
-        {
-            label: 'Approved',
-            value: String(completedCount),
-            icon: CheckCircle2,
-            iconTone: 'bg-emerald-100 text-emerald-600',
-            valueTone: 'text-emerald-600',
-        },
-        {
-            label: 'Pending',
-            value: String(pendingCount),
-            icon: Clock3,
-            iconTone: 'bg-amber-100 text-amber-600',
-            valueTone: 'text-amber-600',
-        },
-        {
-            label: 'Re-defense',
-            value: String(cancelledCount),
-            icon: RotateCcw,
-            iconTone: 'bg-slate-100 text-slate-600',
-            valueTone: 'text-slate-600',
-        },
-    ];
 
     const statusBadge = (status: DeadlineRow['status']) => {
         return status === 'Due Soon' ? 'border-amber-200 bg-amber-100 text-amber-700' : 'border-emerald-200 bg-emerald-100 text-emerald-700';

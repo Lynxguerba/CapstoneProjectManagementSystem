@@ -204,7 +204,7 @@ const PanelistDocumentViewer = () => {
                                 <label className="text-xs font-semibold text-slate-600">Comment type</label>
                                 <select
                                     value={commentType}
-                                    onChange={(e) => setCommentType(e.target.value as any)}
+                                    onChange={(e) => setCommentType(e.target.value as CommentType)}
                                     className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                                 >
                                     <option value="Suggestion">Suggestion</option>
@@ -218,7 +218,7 @@ const PanelistDocumentViewer = () => {
                                 <label className="text-xs font-semibold text-slate-600">Severity</label>
                                 <select
                                     value={severity}
-                                    onChange={(e) => setSeverity(e.target.value as any)}
+                                    onChange={(e) => setSeverity(e.target.value as Severity)}
                                     className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                                 >
                                     <option value="Minor">Minor</option>

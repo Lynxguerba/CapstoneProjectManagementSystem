@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { CheckCircle2, FileText, MessageSquareText, Search, XCircle } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import AdviserLayout from './_layout';
@@ -299,7 +299,6 @@ const AdviserConcepts = () => {
                     )}
                 </motion.section>
 
-                <AnimatePresence>{selectedGroupId && selectedConceptId && false ? <motion.div /> : null}</AnimatePresence>
             </div>
         </AdviserLayout>
     );

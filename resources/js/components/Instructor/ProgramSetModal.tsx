@@ -5,6 +5,16 @@ import { createPortal } from 'react-dom';
 
 type ProgramType = 'BSIT' | 'BSIS';
 
+type AcademicYearOption = {
+    id: number;
+    label: string;
+    is_current: boolean;
+};
+
+type AddProgramSetPageProps = {
+    academicYears?: AcademicYearOption[];
+};
+
 type AddProgramSetForm = {
     name: string;
     program: ProgramType;
@@ -30,8 +40,8 @@ const AddProgramSetModal = ({ open, onClose, existingProgramSetNames = [] }: Add
         academic_year_id: null,
     });
 
-    const { props } = usePage<any>();
-    const academicYears = (props.academicYears ?? []) as { id: number; label: string; is_current: boolean }[];
+    const { props } = usePage<AddProgramSetPageProps>();
+    const academicYears = props.academicYears ?? [];
 
     const normalizedExistingNames = React.useMemo(() => {
         return new Set(existingProgramSetNames.map(normalizeProgramSetName).filter((name) => name !== ''));

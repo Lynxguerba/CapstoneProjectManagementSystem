@@ -26,20 +26,13 @@ type ProgramChairpersonPageProps = {
     } | null;
 };
 
-const formatRole = (role: string): string => {
-    return role
-        .split('_')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-};
-
 const ProgramChairpersonSettings = () => {
     const { auth, eSignature } = usePage<ProgramChairpersonPageProps>().props;
     const user = auth?.user;
     const assignedRoles = user?.roles?.length ? user.roles : user?.role ? [user.role] : ['program_chairperson'];
 
-    const [name, setName] = useState(user?.name ?? 'Program Chairperson');
-    const [email, setEmail] = useState(user?.email ?? 'programchairperson@example.com');
+    const [name] = useState(user?.name ?? 'Program Chairperson');
+    const [email] = useState(user?.email ?? 'programchairperson@example.com');
 
     return (
         <ProgramChairpersonLayout title="Settings" subtitle="Profile details, assigned role, and e-signature setup">

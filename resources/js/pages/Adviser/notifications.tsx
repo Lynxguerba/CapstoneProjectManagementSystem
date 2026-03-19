@@ -59,7 +59,7 @@ const AdviserNotifications = () => {
                             <Filter size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500" />
                             <select
                                 value={tone}
-                                onChange={(e) => setTone(e.target.value as any)}
+                                onChange={(e) => setTone(e.target.value as typeof tone)}
                                 className="w-full appearance-none rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                             >
                                 <option value="all">All</option>

@@ -94,7 +94,7 @@ const StudentTitles = () => {
                             <label className="block text-xs font-semibold tracking-wide text-slate-600 uppercase">Status</label>
                             <select
                                 value={status}
-                                onChange={(e) => setStatus(e.target.value as any)}
+                                onChange={(e) => setStatus(e.target.value as typeof status)}
                                 className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                             >
                                 <option value="all">All</option>

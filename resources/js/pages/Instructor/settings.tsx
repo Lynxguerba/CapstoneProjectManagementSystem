@@ -25,20 +25,13 @@ type InstructorPageProps = {
     } | null;
 };
 
-const formatRole = (role: string): string => {
-    return role
-        .split('_')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-};
-
 const InstructorSettings = () => {
     const { auth, eSignature } = usePage<InstructorPageProps>().props;
     const user = auth?.user;
     const assignedRoles = user?.roles?.length ? user.roles : user?.role ? [user.role] : ['instructor'];
 
-    const [name, setName] = useState(user?.name ?? 'Instructor');
-    const [email, setEmail] = useState(user?.email ?? 'instructor@example.com');
+    const [name] = useState(user?.name ?? 'Instructor');
+    const [email] = useState(user?.email ?? 'instructor@example.com');
 
     return (
         <InstructorLayout title="Settings" subtitle="Profile details, assigned role, and e-signature setup">

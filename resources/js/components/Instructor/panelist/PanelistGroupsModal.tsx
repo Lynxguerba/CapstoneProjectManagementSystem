@@ -63,7 +63,7 @@ const PanelistGroupsModal = ({ open, panelistId, panelistName, academicYear, onC
 
                 setGroups(nextGroups);
                 setSummary(payload.summary ?? null);
-            } catch (error) {
+            } catch {
                 if (signal?.aborted) {
                     return;
                 }

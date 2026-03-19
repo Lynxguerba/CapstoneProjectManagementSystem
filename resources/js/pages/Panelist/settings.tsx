@@ -25,20 +25,13 @@ type PanelistPageProps = {
     } | null;
 };
 
-const formatRole = (role: string): string => {
-    return role
-        .split('_')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-};
-
 const PanelSettings = () => {
     const { auth, eSignature } = usePage<PanelistPageProps>().props;
     const user = auth?.user;
     const assignedRoles = user?.roles?.length ? user.roles : user?.role ? [user.role] : ['panelist'];
 
-    const [name, setName] = useState(user?.name ?? 'Panelist');
-    const [email, setEmail] = useState(user?.email ?? 'panelist@example.com');
+    const [name] = useState(user?.name ?? 'Panelist');
+    const [email] = useState(user?.email ?? 'panelist@example.com');
 
     return (
         <PanelLayout title="Settings" subtitle="Profile details, assigned role, and e-signature setup">

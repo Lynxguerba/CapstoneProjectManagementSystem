@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { CalendarClock, FileText, FolderOpen, Scale, Users } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import AdviserLayout from './_layout';
 
@@ -34,7 +35,7 @@ const AdviserGroupDetails = () => {
         { label: 'Deployment', status: 'next' },
     ];
 
-    const tabs: Array<{ key: TabKey; label: string; icon: any }> = [
+    const tabs: Array<{ key: TabKey; label: string; icon: LucideIcon }> = [
         { key: 'overview', label: 'Overview', icon: Users },
         { key: 'concepts', label: 'Concepts', icon: FileText },
         { key: 'documents', label: 'Documents', icon: FolderOpen },

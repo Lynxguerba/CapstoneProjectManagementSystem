@@ -1,6 +1,6 @@
 import { router, useForm } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Plus, Search, UserPlus, X } from 'lucide-react';
+import { Search, UserPlus, X } from 'lucide-react';
 import React from 'react';
 import { createPortal } from 'react-dom';
 
@@ -136,7 +136,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                 }
 
                 setAvailableStudents(Array.isArray(payload.students) ? payload.students : []);
-            } catch (error) {
+            } catch {
                 if (!isActive || controller.signal.aborted) {
                     return;
                 }

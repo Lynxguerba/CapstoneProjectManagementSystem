@@ -96,7 +96,7 @@ const EvaluationPage = () => {
                         <div className="flex flex-wrap gap-3">
                             <select
                                 value={groupFilter}
-                                onChange={(e) => setGroupFilter(e.target.value as any)}
+                                onChange={(e) => setGroupFilter(e.target.value as typeof groupFilter)}
                                 className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="all">All Groups</option>

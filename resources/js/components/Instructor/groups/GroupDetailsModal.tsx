@@ -84,7 +84,7 @@ const GroupDetailsModal = ({ open, groupId, onClose }: GroupDetailsModalProps) =
                 setMembers(Array.isArray(payload.members) ? payload.members : []);
                 setAdviser(payload.adviser ?? null);
                 setPanelists(Array.isArray(payload.panelists) ? payload.panelists : []);
-            } catch (error) {
+            } catch {
                 if (!isActive || controller.signal.aborted) {
                     return;
                 }

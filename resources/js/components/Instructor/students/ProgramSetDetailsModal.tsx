@@ -67,7 +67,7 @@ const ProgramSetDetailsModal = ({ open, onClose, programSetId }: ProgramSetDetai
 
                 setProgramSet(payload.programSet ?? null);
                 setStudents(Array.isArray(payload.enrolledStudents) ? payload.enrolledStudents : []);
-            } catch (error) {
+            } catch {
                 if (!isActive || controller.signal.aborted) {
                     return;
                 }

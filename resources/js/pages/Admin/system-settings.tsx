@@ -96,15 +96,13 @@ const cardVariants: Variants = {
     show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: easeOut } },
 };
 
-const AdminSystemSettings = ({ settings, adminUsers }: AdminSystemSettingsProps) => {
+const AdminSystemSettings = ({ adminUsers }: AdminSystemSettingsProps) => {
     const academicYearForm = useForm<Pick<SystemSettingsData, 'academicYear'>>({
         academicYear: '',
     });
     const notificationForm = useForm<Pick<SystemSettingsData, 'siteWideNotification'>>({
         siteWideNotification: '',
     });
-    const currentSiteWideNotification = typeof settings?.siteWideNotification === 'string' ? settings.siteWideNotification.trim() : '';
-
     const admins = React.useMemo(() => {
         return Array.isArray(adminUsers) ? adminUsers : [];
     }, [adminUsers]);

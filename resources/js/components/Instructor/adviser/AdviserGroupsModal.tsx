@@ -63,7 +63,7 @@ const AdviserGroupsModal = ({ open, adviserId, adviserName, academicYear, onClos
 
                 setGroups(nextGroups);
                 setSummary(payload.summary ?? null);
-            } catch (error) {
+            } catch {
                 if (signal?.aborted) {
                     return;
                 }

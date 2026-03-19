@@ -25,20 +25,13 @@ type AdviserPageProps = {
     } | null;
 };
 
-const formatRole = (role: string): string => {
-    return role
-        .split('_')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-};
-
 const AdviserSettings = () => {
     const { auth, eSignature } = usePage<AdviserPageProps>().props;
     const user = auth?.user;
     const assignedRoles = user?.roles?.length ? user.roles : user?.role ? [user.role] : ['adviser'];
 
-    const [name, setName] = useState(user?.name ?? 'Adviser');
-    const [email, setEmail] = useState(user?.email ?? 'adviser@example.com');
+    const [name] = useState(user?.name ?? 'Adviser');
+    const [email] = useState(user?.email ?? 'adviser@example.com');
 
     return (
         <AdviserLayout title="Settings" subtitle="Profile details, assigned role, and e-signature setup">

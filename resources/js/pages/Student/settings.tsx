@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import * as LucideIcons from 'lucide-react';
+import { KeyRound, ShieldCheck, User } from 'lucide-react';
 import React, { useState } from 'react';
 import StudentLayout from './_layout';
 
@@ -8,15 +8,6 @@ const StudentSettings = () => {
     const [email] = useState('juan@student.edu');
     const [program, setProgram] = useState('BSIT');
     const [section, setSection] = useState('BSIT 4A');
-
-    const UserIcon = (LucideIcons as any).User as React.ComponentType<{ size?: number; className?: string }>;
-    const KeyRoundIcon = (LucideIcons as any).KeyRound as React.ComponentType<{ size?: number; className?: string }>;
-    const ShieldCheckIcon = ((LucideIcons as any).ShieldCheck2 ??
-        (LucideIcons as any).ShieldCheck ??
-        (LucideIcons as any).Shield) as React.ComponentType<{
-        size?: number;
-        className?: string;
-    }>;
 
     return (
         <StudentLayout title="Profile & Settings" subtitle="Account and academic details (UI only)">
@@ -27,7 +18,7 @@ const StudentSettings = () => {
                     className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2"
                 >
                     <div className="flex items-center gap-2">
-                        <UserIcon size={18} className="text-slate-700" />
+                        <User size={18} className="text-slate-700" />
                         <h3 className="text-lg font-semibold text-slate-900">Profile</h3>
                     </div>
 
@@ -91,7 +82,7 @@ const StudentSettings = () => {
                         className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
                     >
                         <div className="flex items-center gap-2">
-                            <ShieldCheckIcon size={18} className="text-slate-700" />
+                            <ShieldCheck size={18} className="text-slate-700" />
                             <h3 className="text-lg font-semibold text-slate-900">Role</h3>
                         </div>
                         <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -107,7 +98,7 @@ const StudentSettings = () => {
                         className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
                     >
                         <div className="flex items-center gap-2">
-                            <KeyRoundIcon size={18} className="text-slate-700" />
+                            <KeyRound size={18} className="text-slate-700" />
                             <h3 className="text-lg font-semibold text-slate-900">Change Password</h3>
                         </div>
                         <p className="mt-1 text-sm text-slate-500">UI only. Hook validation later.</p>

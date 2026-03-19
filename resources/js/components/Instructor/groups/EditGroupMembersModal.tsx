@@ -83,7 +83,7 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                 const loadedMembers = Array.isArray(payload.members) ? payload.members : [];
                 setGroup(payload.group ?? null);
                 setMembers(loadedMembers.map((member: GroupMember) => ({ ...member, isRemoved: false })));
-            } catch (error) {
+            } catch {
                 if (!isActive || controller.signal.aborted) {
                     return;
                 }

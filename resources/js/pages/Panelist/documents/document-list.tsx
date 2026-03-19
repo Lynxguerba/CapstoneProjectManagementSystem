@@ -147,7 +147,7 @@ const PanelistDocumentList = () => {
                                 <Filter size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500" />
                                 <select
                                     value={categoryFilter}
-                                    onChange={(e) => setCategoryFilter(e.target.value as any)}
+                                    onChange={(e) => setCategoryFilter(e.target.value as typeof categoryFilter)}
                                     className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                                 >
                                     <option value="all">All categories</option>
@@ -162,7 +162,7 @@ const PanelistDocumentList = () => {
                                 <Filter size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500" />
                                 <select
                                     value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value as any)}
+                                    onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
                                     className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                                 >
                                     <option value="all">All status</option>

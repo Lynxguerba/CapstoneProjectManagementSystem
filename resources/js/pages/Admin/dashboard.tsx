@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
 import { LineChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
-import { FileArchive, Clock3, FolderKanban, ShieldCheck, Users } from 'lucide-react';
+import { FileArchive, Clock3, FolderKanban, Users } from 'lucide-react';
 import React from 'react';
 import AdminLayout from './_layout';
 
@@ -44,15 +44,8 @@ const fallbackTrend = [24, 30, 28, 35, 39, 42, 47];
 
 const fallbackRoles: RoleDistribution[] = [];
 
-const toneStyles: Record<NonNullable<DashboardItem['tone']>, string> = {
-    info: 'border-indigo-200 bg-indigo-50 text-indigo-700',
-    warning: 'border-amber-200 bg-amber-50 text-amber-700',
-    success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-};
-
 const AdminDashboard = ({
     stats = fallbackStats,
-    recentActivities = [],
     approvalTrend = fallbackTrend,
     roleDistribution = fallbackRoles,
 }: AdminDashboardProps) => {

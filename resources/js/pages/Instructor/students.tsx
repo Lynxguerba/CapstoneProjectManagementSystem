@@ -1,24 +1,37 @@
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Filter, Search, Settings, Upload, Plus, Eye, Users, Calendar, GraduationCap, List, LayoutGrid } from 'lucide-react';
+import { ChevronRight, Filter, Settings, Plus, Eye, Users, Calendar, GraduationCap, List, LayoutGrid } from 'lucide-react';
 import React, { useState } from 'react';
 import AddProgramSetModal from '../../components/Instructor/ProgramSetModal';
 import ProgramSetDetailsModal from '../../components/Instructor/students/ProgramSetDetailsModal';
 import InstructorLayout from './_layout';
 
+type AcademicYearOption = {
+    id: number;
+    label: string;
+    is_current: boolean;
+};
+
+type ProgramSetSummary = {
+    id: number;
+    name?: string | null;
+    program: string;
+    school_year: string;
+    instructor_name?: string;
+    students_count?: number;
+};
+
+type InstructorStudentsPageProps = {
+    programSets?: ProgramSetSummary[];
+    academicYears?: AcademicYearOption[];
+};
+
 const InstructorStudents = () => {
-    const { props } = usePage<any>();
-    const programSets = (props.programSets ?? []) as {
-        id: number;
-        name?: string | null;
-        program: string;
-        school_year: string;
-        instructor_name?: string;
-        students_count?: number;
-    }[];
+    const { props } = usePage<InstructorStudentsPageProps>();
+    const programSets = props.programSets ?? [];
 
     // Academic years from backend (same as ProgramSetModal)
-    const academicYears = (props.academicYears ?? []) as { id: number; label: string; is_current: boolean }[];
+    const academicYears = props.academicYears ?? [];
 
     // Get current academic year label (fallback to first available or empty)
     const currentAcademicYear = academicYears.find((ay) => ay.is_current)?.label ?? academicYears[0]?.label ?? '';

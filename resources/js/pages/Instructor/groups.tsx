@@ -13,9 +13,13 @@ type ProgramSetSummary = {
     groups_count?: number;
 };
 
+type InstructorGroupsPageProps = {
+    programSets?: ProgramSetSummary[];
+};
+
 const InstructorGroups = () => {
-    const { props } = usePage<any>();
-    const programSets = (props.programSets ?? []) as ProgramSetSummary[];
+    const { props } = usePage<InstructorGroupsPageProps>();
+    const programSets = props.programSets ?? [];
 
     const groupSets = programSets.map((ps) => ({
         id: ps.id,

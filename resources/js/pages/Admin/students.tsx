@@ -60,18 +60,6 @@ const resolveStudentProgram = (student: RawStudentRow): StudentProgram | undefin
     return undefined;
 };
 
-const resolveProgramDescription = (program?: StudentProgram): string => {
-    if (program === 'BSIT') {
-        return 'Information Technology Capstone Projects';
-    }
-
-    if (program === 'BSIS') {
-        return 'Information System Capstone Projects';
-    }
-
-    return '';
-};
-
 const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
     const initialStudents = React.useMemo(() => {
         if (!Array.isArray(students)) {
