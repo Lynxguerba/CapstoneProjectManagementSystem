@@ -932,7 +932,6 @@ const Phase1Page = () => {
 
                 {activeTab === 'documents' ? (
                     <div className="space-y-4">
-                        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">{renderFilters()}</div>
                         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
                             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-3">
                                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
@@ -946,6 +945,7 @@ const Phase1Page = () => {
                                         <Download className="h-3.5 w-3.5" /> Download All
                                     </button>
                                 </div>
+                                <div className="border-b border-slate-100 px-6 py-4">{renderFilters()}</div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
                                         <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
