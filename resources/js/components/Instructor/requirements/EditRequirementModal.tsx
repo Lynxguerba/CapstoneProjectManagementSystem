@@ -29,7 +29,7 @@ type EditRequirementModalProps = {
     onClose: () => void;
 };
 
-const requirementTypeOptions = ['Concept Papers', 'Minutes', 'Recommendation Letter', 'Acknowledgement Receipt', 'Evaluation Sheet'];
+const requirementTypeOptions = ['Concept Papers', 'Manuscript', 'Minutes', 'Recommendation Letter', 'Acknowledgement Receipt', 'Evaluation Sheet'];
 
 const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose }: EditRequirementModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);

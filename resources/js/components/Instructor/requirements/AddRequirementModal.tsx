@@ -22,7 +22,7 @@ type AddRequirementModalProps = {
     onClose: () => void;
 };
 
-const requirementTypeOptions = ['Concept Papers', 'Minutes', 'Recommendation Letter', 'Acknowledgement Receipt', 'Evaluation Sheet'];
+const requirementTypeOptions = ['Concept Papers', 'Manuscript', 'Minutes', 'Recommendation Letter', 'Acknowledgement Receipt', 'Evaluation Sheet'];
 
 const AddRequirementModal = ({ open, academicYearOptions, defaultAcademicYearId, onClose }: AddRequirementModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
