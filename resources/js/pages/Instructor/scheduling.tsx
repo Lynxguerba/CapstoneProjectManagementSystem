@@ -71,7 +71,7 @@ type CalendarDay = {
     isToday: boolean;
 };
 
-const stageOptions = ['Concept', 'Outline', 'Pre-Deployment', 'Deployment'];
+const stageOptions = ['Concept', 'Outline', 'Pre-Deployment', 'Deployment', 'Final'];
 
 const statusStyles: Record<string, { badge: string; dot: string; event: string }> = {
     Scheduled: {

@@ -63,7 +63,7 @@ type ScheduleForm = {
     notes: string;
 };
 
-const stageOptions = ['Concept', 'Outline', 'Pre-Deployment', 'Deployment'];
+const stageOptions = ['Concept', 'Outline', 'Pre-Deployment', 'Deployment', 'Final'];
 
 const ScheduleDefenseForm = ({
     groups,

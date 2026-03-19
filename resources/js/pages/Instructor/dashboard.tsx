@@ -2,7 +2,8 @@ import { Link, usePage } from '@inertiajs/react';
 import { Box } from '@mui/material';
 import { BarChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
-import { CalendarCheck, CheckCircle2, ClipboardList, DoorOpen, GraduationCap, Layers3, Scale, TriangleAlert, Users } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, GraduationCap, Layers3, Scale, TriangleAlert, Users } from 'lucide-react';
+import React from 'react';
 import InstructorLayout from './_layout';
 
 type DashboardStats = {
@@ -32,6 +33,28 @@ type StageRecord = {
     label: string;
     completed: number;
     total: number;
+};
+
+type ProgramSetSummary = {
+    id: number;
+    name?: string | null;
+    program: string;
+    school_year?: string | null;
+    students_count?: number;
+    groups_count?: number;
+};
+
+type StatusRecordsByYear = {
+    label: string;
+    academic_year_id?: number | null;
+    is_current: boolean;
+    records: StatusRecord[];
+};
+
+type ProgramDistributionRecord = {
+    label: string;
+    value: number;
+    color: string;
 };
 
 type GroupMember = {
@@ -72,7 +95,10 @@ type AttentionItem = {
 type InstructorDashboardProps = {
     stats?: DashboardStats;
     statusRecords?: StatusRecord[];
+    statusRecordsByYear?: StatusRecordsByYear[];
     stageScale?: StageRecord[];
+    programSets?: ProgramSetSummary[];
+    programDistribution?: ProgramDistributionRecord[];
     groups?: GroupRow[];
     upcomingSchedules?: UpcomingSchedule[];
     attentionItems?: AttentionItem[];
@@ -160,16 +186,17 @@ const Dashboard = () => {
     const { props } = usePage<InstructorDashboardProps>();
     const stats = props.stats ?? fallbackStats;
     const statusRecords = props.statusRecords ?? [];
+    const statusRecordsByYear = props.statusRecordsByYear ?? [];
     const stageScale = props.stageScale ?? [];
+    const programSets = props.programSets ?? [];
+    const programDistribution = props.programDistribution ?? [];
     const groups = props.groups ?? [];
     const upcomingSchedules = props.upcomingSchedules ?? [];
     const attentionItems = props.attentionItems ?? [];
 
     const adviserProgress = progressFor(stats.adviserAssigned, stats.totalGroups);
     const panelProgress = progressFor(stats.panelSlotsFilled, stats.panelSlotsTotal);
-    const groupedProgress = progressFor(stats.groupedStudents, stats.students);
     const schedulingProgress = progressFor(stats.scheduledGroups, stats.totalGroups);
-    const roomsProgress = progressFor(stats.roomsActive, stats.roomsTotal);
     const upcomingProgress = progressFor(stats.upcomingDefenses, Math.max(stats.totalGroups, stats.scheduledGroups));
 
     const quickStats = [
@@ -211,76 +238,67 @@ const Dashboard = () => {
         },
     ] as const;
 
-    const pageSnapshots = [
-        {
-            id: 'groups',
-            label: 'Groups Management',
-            shortLabel: 'Groups',
-            value: stats.totalGroups,
-            helper: `${stats.programSets} program set${stats.programSets === 1 ? '' : 's'}`,
-            progress: schedulingProgress,
-            href: '/instructor/groups',
-            icon: Users,
-            tone: 'from-emerald-600 to-emerald-400',
-        },
-        {
-            id: 'students',
-            label: 'Students Management',
-            shortLabel: 'Students',
-            value: stats.students,
-            helper: `${stats.groupedStudents} grouped`,
-            progress: groupedProgress,
-            href: '/instructor/students',
-            icon: ClipboardList,
-            tone: 'from-emerald-700 to-emerald-500',
-        },
-        {
-            id: 'adviser',
-            label: 'Adviser Assignment',
-            shortLabel: 'Advisers',
-            value: stats.adviserAssigned,
-            helper: `${stats.adviserUnassigned} unassigned`,
-            progress: adviserProgress,
-            href: '/instructor/adviser-assignment',
-            icon: GraduationCap,
-            tone: 'from-green-600 to-emerald-500',
-        },
-        {
-            id: 'panelist',
-            label: 'Panelist Assignment',
-            shortLabel: 'Panelists',
-            value: stats.panelSlotsFilled,
-            helper: `${stats.panelSlotsOpen} open slots`,
-            progress: panelProgress,
-            href: '/instructor/panelist-assignment',
-            icon: Layers3,
-            tone: 'from-teal-600 to-emerald-500',
-        },
-        {
-            id: 'scheduling',
-            label: 'Defense Scheduling',
-            shortLabel: 'Schedules',
-            value: stats.scheduledGroups,
-            helper: `${stats.upcomingDefenses} upcoming`,
-            progress: schedulingProgress,
-            href: '/instructor/scheduling',
-            icon: CalendarCheck,
-            tone: 'from-emerald-600 to-green-500',
-        },
-        {
-            id: 'rooms',
-            label: 'Defense Rooms',
-            shortLabel: 'Rooms',
-            value: stats.roomsActive,
-            helper: `${stats.roomsTotal} total rooms`,
-            progress: roomsProgress,
-            href: '/instructor/scheduling/rooms',
-            icon: DoorOpen,
-            tone: 'from-emerald-500 to-teal-500',
-        },
-    ] as const;
+    const statusYearMap = React.useMemo(() => {
+        const map = new Map<string, StatusRecordsByYear>();
+        statusRecordsByYear.forEach((record) => {
+            map.set(record.label, record);
+        });
 
-    const statusTotal = statusRecords.reduce((sum, item) => sum + item.value, 0);
+        return map;
+    }, [statusRecordsByYear]);
+
+    const statusAcademicYearOptions = React.useMemo(() => {
+        const labels = statusRecordsByYear.map((year) => year.label).filter((label) => label !== '');
+        const uniqueLabels = Array.from(new Set(labels));
+
+        return ['All', ...uniqueLabels];
+    }, [statusRecordsByYear]);
+
+    const defaultStatusYear = React.useMemo(() => {
+        const currentYear = statusRecordsByYear.find((year) => year.is_current);
+
+        return currentYear?.label ?? 'All';
+    }, [statusRecordsByYear]);
+
+    const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(defaultStatusYear);
+
+    React.useEffect(() => {
+        if (statusAcademicYearOptions.includes(selectedAcademicYear)) {
+            return;
+        }
+
+        setSelectedAcademicYear(defaultStatusYear);
+    }, [defaultStatusYear, selectedAcademicYear, statusAcademicYearOptions]);
+
+    const activeStatusRecords =
+        selectedAcademicYear === 'All' ? statusRecords : (statusRecordsByYear.find((year) => year.label === selectedAcademicYear)?.records ?? []);
+
+    const programToneStyles: Record<string, string> = {
+        BSIT: 'from-emerald-600 to-emerald-400',
+        BSIS: 'from-teal-600 to-emerald-500',
+    };
+
+    const programSetSnapshots = programSets.map((programSet, index) => {
+        const name = typeof programSet.name === 'string' ? programSet.name.trim() : '';
+        const labelParts = [programSet.program, programSet.school_year].filter((value): value is string => Boolean(value));
+        const label = name !== '' ? name : labelParts.join(' ');
+        const shortLabel = label.length > 12 ? `${label.slice(0, 12)}...` : label;
+        const groupsCount = programSet.groups_count ?? 0;
+
+        return {
+            id: programSet.id,
+            label: label !== '' ? label : `Program Set ${index + 1}`,
+            shortLabel: shortLabel !== '' ? shortLabel : `Set ${index + 1}`,
+            program: programSet.program,
+            schoolYear: programSet.school_year ?? '',
+            groupsCount,
+            progress: progressFor(groupsCount, stats.totalGroups),
+            tone: programToneStyles[programSet.program] ?? 'from-emerald-600 to-emerald-500',
+        };
+    });
+
+    const programDistributionTotal = programDistribution.reduce((sum, record) => sum + record.value, 0);
+    const hasProgramDistribution = programDistribution.some((record) => record.value > 0);
 
     const statusPillStyles: Record<string, string> = {
         Scheduled: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -310,6 +328,7 @@ const Dashboard = () => {
         Outline: 'bg-emerald-500',
         'Pre-Deployment': 'bg-emerald-400',
         Deployment: 'bg-emerald-300',
+        Final: 'bg-emerald-200',
     };
 
     const attentionToneStyles: Record<AttentionItem['tone'], string> = {
@@ -363,23 +382,29 @@ const Dashboard = () => {
                             <div>
                                 <div className="flex items-center gap-2">
                                     <Layers3 className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Page Records Scale</h3>
+                                    <h3 className="text-sm font-semibold text-slate-900">Program Set Group Scale</h3>
                                 </div>
-                                <p className="mt-1 text-xs text-slate-500">Record volume per instructor module.</p>
+                                <p className="mt-1 text-xs text-slate-500">Group counts for each program set you handle.</p>
                             </div>
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                                MUI X Charts
+                                {programSetSnapshots.length} program set{programSetSnapshots.length === 1 ? '' : 's'}
                             </span>
                         </div>
 
                         <Box sx={{ mt: 3 }}>
-                            <BarChart
-                                height={260}
-                                xAxis={[{ data: pageSnapshots.map((page) => page.shortLabel), scaleType: 'band' }]}
-                                series={[{ data: pageSnapshots.map((page) => page.value), color: '#10b981' }]}
-                                margin={{ top: 20, right: 20, bottom: 50, left: 40 }}
-                                grid={{ vertical: true, horizontal: true }}
-                            />
+                            {programSetSnapshots.length > 0 ? (
+                                <BarChart
+                                    height={260}
+                                    xAxis={[{ data: programSetSnapshots.map((set) => set.shortLabel), scaleType: 'band' }]}
+                                    series={[{ data: programSetSnapshots.map((set) => set.groupsCount), color: '#10b981' }]}
+                                    margin={{ top: 20, right: 20, bottom: 50, left: 40 }}
+                                    grid={{ vertical: true, horizontal: true }}
+                                />
+                            ) : (
+                                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-xs text-slate-500">
+                                    No program set records available yet.
+                                </div>
+                            )}
                         </Box>
                     </div>
 
@@ -390,42 +415,79 @@ const Dashboard = () => {
                                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                                     <h3 className="text-sm font-semibold text-slate-900">Status Distribution</h3>
                                 </div>
-                                <p className="mt-1 text-xs text-slate-500">Scheduled vs pending outcomes.</p>
+                                <p className="mt-1 text-xs text-slate-500">Scheduled vs pending outcomes by academic year.</p>
                             </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                                MUI X Charts
-                            </span>
+                            <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                                <span>A.Y</span>
+                                <select
+                                    value={selectedAcademicYear}
+                                    onChange={(event) => setSelectedAcademicYear(event.target.value)}
+                                    className="bg-transparent text-[11px] font-semibold text-emerald-700 focus:outline-none"
+                                >
+                                    {statusAcademicYearOptions.map((year) => {
+                                        if (year === 'All') {
+                                            return (
+                                                <option key={year} value={year}>
+                                                    All A.Y.
+                                                </option>
+                                            );
+                                        }
+
+                                        const yearMeta = statusYearMap.get(year);
+                                        const suffix = yearMeta?.is_current ? ' (current)' : '';
+
+                                        return (
+                                            <option key={year} value={year}>
+                                                {year}
+                                                {suffix}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                            </div>
                         </div>
 
                         <Box sx={{ mt: 2 }}>
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <motion.div
+                                key={selectedAcademicYear}
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+                            >
                                 <div className="flex flex-1 justify-center">
-                                    <PieChart
-                                        height={260}
-                                        series={[
-                                            {
-                                                data: statusRecords.map((item, index) => ({
-                                                    id: index,
-                                                    value: item.value,
-                                                    label: item.label,
-                                                    color: item.color,
-                                                })),
-                                                innerRadius: 60,
-                                                outerRadius: 100,
-                                                paddingAngle: 3,
-                                                cornerRadius: 6,
-                                                highlightScope: { faded: 'global', highlighted: 'item' },
-                                                faded: { innerRadius: 60, additionalRadius: -4, color: 'gray' },
-                                            },
-                                        ]}
-                                        slotProps={{ legend: { hidden: true } }}
-                                    />
+                                    {activeStatusRecords.length > 0 ? (
+                                        <PieChart
+                                            height={260}
+                                            series={[
+                                                {
+                                                    data: activeStatusRecords.map((item, index) => ({
+                                                        id: index,
+                                                        value: item.value,
+                                                        label: item.label,
+                                                        color: item.color,
+                                                    })),
+                                                    innerRadius: 60,
+                                                    outerRadius: 100,
+                                                    paddingAngle: 3,
+                                                    cornerRadius: 6,
+                                                    highlightScope: { faded: 'global', highlighted: 'item' },
+                                                    faded: { innerRadius: 60, additionalRadius: -4, color: 'gray' },
+                                                },
+                                            ]}
+                                            slotProps={{ legend: { hidden: true } }}
+                                        />
+                                    ) : (
+                                        <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-xs text-slate-500">
+                                            No status records for the selected academic year.
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="lg:w-44">
                                     <div className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Legend</div>
                                     <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 lg:grid-cols-1">
-                                        {statusRecords.map((item) => (
+                                        {activeStatusRecords.map((item) => (
                                             <div key={item.label} className="flex items-center gap-2 text-xs text-slate-700">
                                                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                                                 <span className="truncate font-medium">{item.label}</span>
@@ -434,7 +496,7 @@ const Dashboard = () => {
                                         ))}
                                     </div>
                                 </div>
-                            </div>
+                            </motion.div>
                         </Box>
                     </div>
                 </motion.section>
@@ -445,77 +507,111 @@ const Dashboard = () => {
                     transition={{ delay: 0.08 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-3"
                 >
+                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                        <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-emerald-600" />
+                            <h3 className="text-sm font-semibold text-slate-900">Program Distribution</h3>
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">Students handled per BSIS and BSIT program set.</p>
+
+                        <Box sx={{ mt: 2 }}>
+                            {hasProgramDistribution ? (
+                                <motion.div
+                                    key={programDistributionTotal}
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="flex flex-col items-center gap-4"
+                                >
+                                    <PieChart
+                                        sx={{ ml: 10 }}
+                                        height={220}
+                                        series={[
+                                            {
+                                                data: programDistribution.map((record, index) => ({
+                                                    id: index,
+                                                    value: record.value,
+                                                    label: record.label,
+                                                    color: record.color,
+                                                })),
+                                                innerRadius: 70,
+                                                outerRadius: 100,
+                                                paddingAngle: 4,
+                                                cornerRadius: 6,
+                                                highlightScope: { faded: 'global', highlighted: 'item' },
+                                                faded: { innerRadius: 70, additionalRadius: -4, color: 'gray' },
+                                            },
+                                        ]}
+                                        slotProps={{ legend: { hidden: true } }}
+                                    />
+                                    <div className="text-xs font-semibold text-slate-600">
+                                        Total students: {programDistributionTotal.toLocaleString()}
+                                    </div>
+                                    <div className="grid w-full grid-cols-2 gap-2">
+                                        {programDistribution.map((record) => (
+                                            <div key={record.label} className="flex items-center gap-2 text-xs text-slate-700">
+                                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: record.color }} />
+                                                <span className="font-medium">{record.label}</span>
+                                                <span className="ml-auto text-slate-500 tabular-nums">{record.value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <div className="rounded-xl border border-slate-200 bg-emerald-50/50 p-4 text-xs text-slate-500">
+                                    No students assigned to BSIS or BSIT yet.
+                                </div>
+                            )}
+                        </Box>
+                    </div>
                     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md xl:col-span-2">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-sm font-semibold text-slate-900">Workspace Pages</h3>
-                                <p className="mt-1 text-xs text-slate-500">Module records aligned with the instructor workflow.</p>
+                                <h3 className="text-sm font-semibold text-slate-900">Program Set Groups</h3>
+                                <p className="mt-1 text-xs text-slate-500">Groups grouped by program set ownership.</p>
                             </div>
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                                Current AY
+                                {stats.totalGroups} total group{stats.totalGroups === 1 ? '' : 's'}
                             </span>
                         </div>
 
                         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-                            {pageSnapshots.map((page) => (
+                            {programSetSnapshots.map((programSet) => (
                                 <Link
-                                    key={page.id}
-                                    href={page.href}
+                                    key={programSet.id}
+                                    href={`/instructor/groups/${programSet.id}/manage`}
                                     className="group rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50 hover:shadow-md"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
-                                            <div className="text-sm font-semibold text-slate-900">{page.label}</div>
-                                            <div className="mt-1 text-xs text-slate-500">{page.helper}</div>
+                                            <div className="text-sm font-semibold text-slate-900">{programSet.label}</div>
+                                            <div className="mt-1 text-xs text-slate-500">
+                                                {programSet.program || 'Program'} • {programSet.schoolYear || 'A.Y. pending'}
+                                            </div>
                                         </div>
                                         <div
-                                            className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${page.tone} shadow-sm`}
+                                            className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${programSet.tone} shadow-sm`}
                                         >
-                                            <page.icon className="h-4 w-4 text-white" />
+                                            <Users className="h-4 w-4 text-white" />
                                         </div>
                                     </div>
                                     <div className="mt-4 flex items-center justify-between text-xs text-slate-600">
-                                        <span className="font-semibold">{page.value.toLocaleString()} records</span>
-                                        <span>{page.progress}% scale</span>
+                                        <span className="font-semibold">{programSet.groupsCount.toLocaleString()} groups</span>
+                                        <span>{programSet.progress}% scale</span>
                                     </div>
                                     <div className="mt-2 h-1.5 w-full rounded-full bg-emerald-100/60">
-                                        <div className={`h-1.5 rounded-full bg-gradient-to-r ${page.tone}`} style={{ width: `${page.progress}%` }} />
+                                        <div
+                                            className={`h-1.5 rounded-full bg-gradient-to-r ${programSet.tone}`}
+                                            style={{ width: `${programSet.progress}%` }}
+                                        />
                                     </div>
                                 </Link>
                             ))}
-                        </div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
-                        <div className="flex items-center gap-2">
-                            <TriangleAlert className="h-4 w-4 text-emerald-600" />
-                            <h3 className="text-sm font-semibold text-slate-900">Status Records</h3>
-                        </div>
-                        <p className="mt-1 text-xs text-slate-500">Latest schedule status per group.</p>
-
-                        <div className="mt-5 space-y-3">
-                            {statusRecords.map((record) => {
-                                const percent = statusTotal > 0 ? Math.round((record.value / statusTotal) * 100) : 0;
-
-                                return (
-                                    <div
-                                        key={record.label}
-                                        className="rounded-xl border border-slate-200 bg-emerald-50/40 p-4 transition-colors hover:border-emerald-200 hover:bg-emerald-50/70"
-                                    >
-                                        <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-                                            <div className="flex items-center gap-2">
-                                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: record.color }} />
-                                                {record.label}
-                                            </div>
-                                            <span className="text-slate-500 tabular-nums">{record.value}</span>
-                                        </div>
-                                        <div className="mt-2 h-1.5 w-full rounded-full bg-white/80">
-                                            <div className="h-1.5 rounded-full" style={{ width: `${percent}%`, backgroundColor: record.color }} />
-                                        </div>
-                                        <div className="mt-2 text-[11px] text-slate-500">{percent}% of records</div>
-                                    </div>
-                                );
-                            })}
+                            {programSetSnapshots.length === 0 ? (
+                                <div className="rounded-xl border border-slate-200 bg-emerald-50/50 p-4 text-xs text-slate-500">
+                                    No program sets available for your account yet.
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 </motion.section>

@@ -37,7 +37,7 @@ class DefenseScheduleFactory extends Factory
             'scheduled_date' => $date->format('Y-m-d'),
             'start_time' => $startTime->format('H:i:s'),
             'end_time' => $endTime->format('H:i:s'),
-            'stage' => $this->faker->randomElement(['Concept', 'Outline', 'Pre-Deployment', 'Deployment']),
+            'stage' => $this->faker->randomElement(['Concept', 'Outline', 'Pre-Deployment', 'Deployment', 'Final']),
             'status' => 'Scheduled',
             'notes' => null,
             'scheduled_by' => $scheduledBy->id,

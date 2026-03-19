@@ -28,7 +28,7 @@ class UpsertDefenseScheduleRequest extends FormRequest
             'scheduled_date' => ['required', 'date'],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
-            'stage' => ['required', 'string', 'in:Concept,Outline,Pre-Deployment,Deployment'],
+            'stage' => ['required', 'string', 'in:Concept,Outline,Pre-Deployment,Deployment,Final'],
             'status' => ['nullable', 'string', 'in:Scheduled,Completed,Pending,Cancelled'],
             'notes' => ['nullable', 'string'],
         ];

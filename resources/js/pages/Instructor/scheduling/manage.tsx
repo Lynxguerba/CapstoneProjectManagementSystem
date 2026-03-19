@@ -61,7 +61,7 @@ type ScheduleManagerPageProps = {
     defaultStage?: string | null;
 };
 
-const stageOptions = ['Concept', 'Outline', 'Pre-Deployment', 'Deployment'];
+const stageOptions = ['Concept', 'Outline', 'Pre-Deployment', 'Deployment', 'Final'];
 
 const pad = (value: number): string => value.toString().padStart(2, '0');
 

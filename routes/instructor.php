@@ -32,6 +32,9 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         $userId = Auth::guard('web')->id();
         $programSetIds = [];
         $programSetsCount = 0;
+        $programSetSummaries = [];
+        $statusRecordsByYear = [];
+        $programDistribution = [];
         $groupIds = [];
         $groupsCount = 0;
         $studentsCount = 0;
@@ -58,6 +61,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             'Outline' => 0,
             'Pre-Deployment' => 0,
             'Deployment' => 0,
+            'Final' => 0,
         ];
         $latestSchedulesByGroup = collect();
         $panelCountsByGroup = collect();
@@ -124,6 +128,63 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         } catch (\Throwable $e) {
             $programSetIds = [];
             $programSetsCount = 0;
+        }
+
+        try {
+            if (class_exists(ProgramSet::class) && Schema::hasTable('program_sets') && count($programSetIds) > 0) {
+                $hasGroupsTable = Schema::hasTable('groups');
+                $hasProgramSetStudentTable = Schema::hasTable('program_set_student');
+
+                $programSetsQuery = ProgramSet::query()
+                    ->with(['academicYear'])
+                    ->when($userId !== null, fn ($query) => $query->where('instructor_id', $userId))
+                    ->when($hasProgramSetStudentTable, fn ($query) => $query->withCount('students'))
+                    ->when($hasGroupsTable, fn ($query) => $query->withCount('groups'))
+                    ->orderByDesc('created_at')
+                    ->get(['id', 'name', 'program', 'academic_year_id', 'instructor_id']);
+
+                $programSetSummaries = $programSetsQuery
+                    ->map(fn (ProgramSet $programSet): array => [
+                        'id' => $programSet->id,
+                        'name' => $programSet->name,
+                        'program' => $programSet->program,
+                        'school_year' => $programSet->academicYear?->label,
+                        'students_count' => $hasProgramSetStudentTable ? ($programSet->students_count ?? 0) : 0,
+                        'groups_count' => $hasGroupsTable ? ($programSet->groups_count ?? 0) : 0,
+                    ])
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $programSetSummaries = [];
+        }
+
+        $programDistributionCounts = [
+            'BSIS' => 0,
+            'BSIT' => 0,
+        ];
+
+        try {
+            if (
+                Schema::hasTable('users')
+                && Schema::hasTable('program_sets')
+                && Schema::hasTable('program_set_student')
+                && count($programSetIds) > 0
+            ) {
+                foreach (array_keys($programDistributionCounts) as $program) {
+                    $programDistributionCounts[$program] = User::query()
+                        ->whereHas('programSets', function (Builder $query) use ($programSetIds, $program): void {
+                            $query->whereIn('program_sets.id', $programSetIds)
+                                ->where('program_sets.program', $program);
+                        })
+                        ->count();
+                }
+            }
+        } catch (\Throwable $e) {
+            $programDistributionCounts = [
+                'BSIS' => 0,
+                'BSIT' => 0,
+            ];
         }
 
         try {
@@ -284,6 +345,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 'Outline' => 0,
                 'Pre-Deployment' => 0,
                 'Deployment' => 0,
+                'Final' => 0,
             ];
             $upcomingDefenses = 0;
             $upcomingSchedules = [];
@@ -321,10 +383,11 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         $status = is_string($schedule?->status) && $schedule?->status !== '' ? $schedule->status : 'Unscheduled';
                         $stage = is_string($schedule?->stage) ? $schedule->stage : null;
                         $progress = match ($stage) {
-                            'Concept' => 25,
-                            'Outline' => 50,
-                            'Pre-Deployment' => 75,
-                            'Deployment' => 100,
+                            'Concept' => 20,
+                            'Outline' => 40,
+                            'Pre-Deployment' => 60,
+                            'Deployment' => 80,
+                            'Final' => 100,
                             default => 0,
                         };
                         $panelCount = (int) ($panelCountsByGroup->get($group->id) ?? 0);
@@ -421,6 +484,92 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             ->values()
             ->all();
 
+        $programColors = [
+            'BSIT' => '#10b981',
+            'BSIS' => '#22c55e',
+        ];
+
+        $programDistribution = collect($programDistributionCounts)
+            ->map(function (int $value, string $label) use ($programColors): array {
+                return [
+                    'label' => $label,
+                    'value' => $value,
+                    'color' => $programColors[$label] ?? '#94a3b8',
+                ];
+            })
+            ->values()
+            ->all();
+
+        try {
+            if (
+                class_exists(\App\Models\Group::class)
+                && Schema::hasTable('groups')
+                && Schema::hasTable('program_sets')
+                && count($groupIds) > 0
+            ) {
+                $groupsByYear = \App\Models\Group::query()
+                    ->with(['programSet.academicYear'])
+                    ->whereIn('id', $groupIds)
+                    ->get(['id', 'program_set_id']);
+
+                $statusBucketsByYear = [];
+                $yearMeta = [];
+
+                foreach ($groupsByYear as $group) {
+                    $programSet = $group->programSet;
+                    $yearLabel = $programSet?->academicYear?->label ?? '';
+
+                    if ($yearLabel === '') {
+                        $yearLabel = 'Unspecified';
+                    }
+
+                    if (! array_key_exists($yearLabel, $statusBucketsByYear)) {
+                        $statusBucketsByYear[$yearLabel] = [
+                            'Scheduled' => 0,
+                            'Pending' => 0,
+                            'Completed' => 0,
+                            'Cancelled' => 0,
+                            'Unscheduled' => 0,
+                        ];
+                        $yearMeta[$yearLabel] = [
+                            'academic_year_id' => $programSet?->academic_year_id,
+                            'is_current' => $programSet?->academicYear?->is_current ?? false,
+                        ];
+                    }
+
+                    $schedule = $latestSchedulesByGroup->get($group->id);
+                    $status = is_string($schedule?->status) && $schedule?->status !== '' ? $schedule->status : 'Unscheduled';
+                    $statusBucketsByYear[$yearLabel][$status] = ($statusBucketsByYear[$yearLabel][$status] ?? 0) + 1;
+                }
+
+                $statusRecordsByYear = collect($statusBucketsByYear)
+                    ->map(function (array $buckets, string $label) use ($statusColors, $yearMeta): array {
+                        $meta = $yearMeta[$label] ?? ['academic_year_id' => null, 'is_current' => false];
+
+                        return [
+                            'label' => $label,
+                            'academic_year_id' => $meta['academic_year_id'],
+                            'is_current' => $meta['is_current'],
+                            'records' => collect($buckets)
+                                ->map(function (int $value, string $statusLabel) use ($statusColors): array {
+                                    return [
+                                        'label' => $statusLabel,
+                                        'value' => $value,
+                                        'color' => $statusColors[$statusLabel] ?? '#94a3b8',
+                                    ];
+                                })
+                                ->values()
+                                ->all(),
+                        ];
+                    })
+                    ->sortByDesc(fn (array $record): int => (int) ($record['academic_year_id'] ?? 0))
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $statusRecordsByYear = [];
+        }
+
         $stageScale = collect($stageBuckets)
             ->map(function (int $value, string $label) use ($groupsCount): array {
                 return [
@@ -450,7 +599,10 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 'roomsActive' => $roomsActive,
             ],
             'statusRecords' => $statusRecords,
+            'statusRecordsByYear' => $statusRecordsByYear,
             'stageScale' => $stageScale,
+            'programSets' => $programSetSummaries,
+            'programDistribution' => $programDistribution,
             'groups' => $groups,
             'upcomingSchedules' => $upcomingSchedules,
             'attentionItems' => $attentionItems,
@@ -1898,7 +2050,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         if (! is_string($defaultStage) || $defaultStage === '') {
             $defaultStage = null;
         }
-        if (! in_array($defaultStage, ['Concept', 'Outline', 'Pre-Deployment', 'Deployment'], true)) {
+        if (! in_array($defaultStage, ['Concept', 'Outline', 'Pre-Deployment', 'Deployment', 'Final'], true)) {
             $defaultStage = null;
         }
 
@@ -2146,22 +2298,6 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
     Route::post('/requirements', StoreDocumentRequirementController::class)->name('instructor.requirements.store');
     Route::patch('/requirements/{requirement}', UpdateDocumentRequirementController::class)->name('instructor.requirements.update');
     Route::delete('/requirements/{requirement}', DestroyDocumentRequirementController::class)->name('instructor.requirements.destroy');
-
-    Route::get('/evaluation', function () {
-        return Inertia::render('Instructor/evaluation');
-    })->name('instructor.evaluation');
-    Route::get('/verdict', function () {
-        return Inertia::render('Instructor/verdict');
-    })->name('instructor.verdict');
-    Route::get('/minutes', function () {
-        return Inertia::render('Instructor/minutes');
-    })->name('instructor.minutes');
-    Route::get('/deadlines', function () {
-        return Inertia::render('Instructor/deadlines');
-    })->name('instructor.deadlines');
-    Route::get('/deployment', function () {
-        return Inertia::render('Instructor/deployment');
-    })->name('instructor.deployment');
     Route::get('/notifications', function () {
         return Inertia::render('Instructor/notifications');
     })->name('instructor.notifications');
