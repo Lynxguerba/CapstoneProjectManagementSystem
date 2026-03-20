@@ -2,7 +2,8 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Calendar, ChevronRight, GraduationCap, Search, SlidersHorizontal, Trash2, UserCheck, Users } from 'lucide-react';
 import React from 'react';
-import { createPortal } from 'react-dom';
+import AssignmentRequestApproveModal from '../../components/Adviser/AssignmentRequestApproveModal';
+import AssignmentRequestConfirmModal from '../../components/Adviser/AssignmentRequestConfirmModal';
 import adviserRoutes from '../../routes/adviser';
 import AdviserLayout from './_layout';
 
@@ -123,6 +124,10 @@ const AdviserGroups = () => {
         request: AssignmentRequestRow | null;
         action: 'dismiss' | 'decline';
     }>({ open: false, request: null, action: 'dismiss' });
+    const [approveState, setApproveState] = React.useState<{
+        open: boolean;
+        request: AssignmentRequestRow | null;
+    }>({ open: false, request: null });
 
     const academicYearOptions = React.useMemo(() => {
         const years = academicYears.map((year) => year.label);
@@ -262,7 +267,7 @@ const AdviserGroups = () => {
         return rows;
     }, [filteredAssigned, filteredRequests]);
 
-    const handleApprove = (requestId: number) => {
+    const handleApprove = (requestId: number, onFinish?: () => void) => {
         if (processingRequestId !== null) {
             return;
         }
@@ -276,6 +281,7 @@ const AdviserGroups = () => {
                 preserveScroll: true,
                 onFinish: () => {
                     setProcessingRequestId(null);
+                    onFinish?.();
                 },
             },
         );
@@ -287,6 +293,22 @@ const AdviserGroups = () => {
 
     const closeConfirm = () => {
         setConfirmState({ open: false, request: null, action: 'dismiss' });
+    };
+
+    const openApprove = (request: AssignmentRequestRow) => {
+        setApproveState({ open: true, request });
+    };
+
+    const closeApprove = () => {
+        setApproveState({ open: false, request: null });
+    };
+
+    const confirmApprove = () => {
+        if (!approveState.request || processingRequestId !== null) {
+            return;
+        }
+
+        handleApprove(approveState.request.id, closeApprove);
     };
 
     const confirmDismiss = () => {
@@ -493,7 +515,12 @@ const AdviserGroups = () => {
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => handleApprove(row.requestId as number)}
+                                                            onClick={() => {
+                                                                const request = assignmentRequests.find((item) => item.id === row.requestId);
+                                                                if (request) {
+                                                                    openApprove(request);
+                                                                }
+                                                            }}
                                                             disabled={isProcessing}
                                                             className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                                                         >
@@ -511,7 +538,7 @@ const AdviserGroups = () => {
                                                             }
                                                         }}
                                                         disabled={isProcessing}
-                                                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-600 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
                                                     >
                                                         <Trash2 className="h-3 w-3" />
                                                         Delete
@@ -542,65 +569,21 @@ const AdviserGroups = () => {
                 </motion.section>
             </motion.section>
 
-            {confirmState.open && typeof document !== 'undefined'
-                ? createPortal(
-                      <div
-                          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-                          role="dialog"
-                          aria-modal="true"
-                          onMouseDown={(event) => {
-                              if (event.target === event.currentTarget) {
-                                  closeConfirm();
-                              }
-                          }}
-                      >
-                          <motion.div
-                              initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              transition={{ duration: 0.2 }}
-                              className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
-                              onMouseDown={(event) => event.stopPropagation()}
-                          >
-                              <div className="flex items-start justify-between gap-3">
-                                  <div>
-                                      <p className="text-sm font-semibold text-slate-900">
-                                          {confirmState.action === 'decline' ? 'Decline assignment request' : 'Remove reassignment notice'}
-                                      </p>
-                                      <p className="mt-1 text-xs text-slate-600">
-                                          {confirmState.request?.group_name} will be removed from your request list.
-                                      </p>
-                                  </div>
-                                  <button
-                                      type="button"
-                                      onClick={closeConfirm}
-                                      className="rounded-lg p-1 text-slate-500 transition hover:bg-slate-100"
-                                  >
-                                      <ChevronRight className="h-4 w-4 rotate-90" />
-                                  </button>
-                              </div>
-
-                              <div className="mt-5 flex items-center justify-end gap-2">
-                                  <button
-                                      type="button"
-                                      onClick={closeConfirm}
-                                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
-                                  >
-                                      Cancel
-                                  </button>
-                                  <button
-                                      type="button"
-                                      onClick={confirmDismiss}
-                                      disabled={processingRequestId !== null}
-                                      className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                  >
-                                      Confirm
-                                  </button>
-                              </div>
-                          </motion.div>
-                      </div>,
-                      document.body,
-                  )
-                : null}
+            <AssignmentRequestConfirmModal
+                open={confirmState.open}
+                action={confirmState.action}
+                groupName={confirmState.request?.group_name}
+                processing={processingRequestId !== null}
+                onClose={closeConfirm}
+                onConfirm={confirmDismiss}
+            />
+            <AssignmentRequestApproveModal
+                open={approveState.open}
+                groupName={approveState.request?.group_name}
+                processing={processingRequestId !== null}
+                onClose={closeApprove}
+                onConfirm={confirmApprove}
+            />
         </AdviserLayout>
     );
 };
