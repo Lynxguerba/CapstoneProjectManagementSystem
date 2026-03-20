@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AssignGroupAdviserRequest;
 use App\Models\Group;
 use App\Models\GroupAdviser;
+use App\Models\GroupAdviserRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Schema;
@@ -38,32 +39,67 @@ class AssignGroupAdviserController extends Controller
         $currentAssignment = $group->adviserAssignment;
         $isAlreadyAssigned = $currentAssignment?->adviser_id === $adviser->id;
 
-        if (! $isAlreadyAssigned) {
-            $groupYear = $group->programSet?->academicYear?->label ?? $group->programSet?->school_year;
-            $loadQuery = GroupAdviser::query()->where('adviser_id', $adviser->id);
+        if ($isAlreadyAssigned) {
+            return back()->with('success', 'Adviser already assigned.');
+        }
 
-            if (is_string($groupYear) && $groupYear !== '') {
-                $loadQuery->whereHas('group.programSet', function ($query) use ($groupYear) {
-                    $query->where(function ($subQuery) use ($groupYear) {
-                        $subQuery->whereHas('academicYear', fn ($academicQuery) => $academicQuery->where('label', $groupYear));
+        $groupYear = $group->programSet?->academicYear?->label ?? $group->programSet?->school_year;
+        $loadQuery = GroupAdviser::query()->where('adviser_id', $adviser->id);
 
-                        if (Schema::hasColumn('program_sets', 'school_year')) {
-                            $subQuery->orWhere('school_year', $groupYear);
-                        }
-                    });
+        if (is_string($groupYear) && $groupYear !== '') {
+            $loadQuery->whereHas('group.programSet', function ($query) use ($groupYear) {
+                $query->where(function ($subQuery) use ($groupYear) {
+                    $subQuery->whereHas('academicYear', fn ($academicQuery) => $academicQuery->where('label', $groupYear));
+
+                    if (Schema::hasColumn('program_sets', 'school_year')) {
+                        $subQuery->orWhere('school_year', $groupYear);
+                    }
                 });
-            }
+            });
+        }
 
-            $currentLoad = $loadQuery->count();
-            $maxLoad = 5;
+        $currentLoad = $loadQuery->count();
+        $maxLoad = 5;
 
-            if ($currentLoad >= $maxLoad) {
-                $label = is_string($groupYear) && $groupYear !== '' ? $groupYear : 'this academic year';
+        if ($currentLoad >= $maxLoad) {
+            $label = is_string($groupYear) && $groupYear !== '' ? $groupYear : 'this academic year';
 
-                throw ValidationException::withMessages([
-                    'adviser_id' => "Selected adviser already reached {$maxLoad} groups for {$label}.",
+            throw ValidationException::withMessages([
+                'adviser_id' => "Selected adviser already reached {$maxLoad} groups for {$label}.",
+            ]);
+        }
+
+        $hasRequestTable = Schema::hasTable('group_adviser_requests');
+        $isReassign = $currentAssignment !== null && $currentAssignment->adviser_id !== $adviser->id;
+
+        if ($hasRequestTable) {
+            GroupAdviserRequest::query()
+                ->where('group_id', $group->id)
+                ->where('request_type', GroupAdviserRequest::TYPE_REQUEST)
+                ->where('status', GroupAdviserRequest::STATUS_PENDING)
+                ->update([
+                    'status' => GroupAdviserRequest::STATUS_REJECTED,
+                    'responded_by' => $userId,
+                    'responded_at' => now(),
                 ]);
-            }
+
+            GroupAdviserRequest::query()->updateOrCreate(
+                [
+                    'group_id' => $group->id,
+                    'adviser_id' => $adviser->id,
+                    'request_type' => GroupAdviserRequest::TYPE_REQUEST,
+                    'status' => GroupAdviserRequest::STATUS_PENDING,
+                ],
+                [
+                    'requested_by' => $userId,
+                ],
+            );
+
+            $message = $isReassign
+                ? 'Reassignment request sent for adviser approval.'
+                : 'Assignment request sent for adviser approval.';
+
+            return back()->with('success', $message);
         }
 
         GroupAdviser::query()->updateOrCreate(
@@ -74,6 +110,16 @@ class AssignGroupAdviserController extends Controller
             ],
         );
 
-        return back()->with('success', 'Adviser assigned successfully.');
+        if ($hasRequestTable && $currentAssignment?->adviser_id) {
+            GroupAdviserRequest::query()->create([
+                'group_id' => $group->id,
+                'adviser_id' => $currentAssignment->adviser_id,
+                'requested_by' => $userId,
+                'request_type' => GroupAdviserRequest::TYPE_REASSIGN_NOTICE,
+                'status' => GroupAdviserRequest::STATUS_PENDING,
+            ]);
+        }
+
+        return back()->with('success', $isReassign ? 'Adviser reassigned successfully.' : 'Adviser assigned successfully.');
     }
 }
