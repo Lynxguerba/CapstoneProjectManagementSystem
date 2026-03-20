@@ -1,10 +1,10 @@
 # Capstone Projects Management System (CPMS)
 
-![Capstone Projects Management System Hero](docs/images/readme-hero-1.png)
+![Capstone Projects Management System Hero](concept/thumbnail1.png)
 
 A centralized platform for Davao del Norte State College to manage the full capstone lifecycle. CPMS streamlines how students, advisers, and instructors collaborate from initial concept submission through review, revisions, approvals, and final archiving. It provides role-based workflows, program set organization, and academic year tracking so capstone delivery is structured, transparent, and measurable.
 
-![CPMS Multi-Device Preview](docs/images/readme-hero-2.png)
+![CPMS Multi-Device Preview](concept/thumbnail2.png)
 
 **Concept**
 CPMS is built to remove the friction in capstone coordination. It organizes students into groups, links them with advisers, and provides a clear submission and review trail for capstone artifacts. The system focuses on a clean, green-themed UI and concise workflows to reduce administrative overhead and help students ship quality projects.
