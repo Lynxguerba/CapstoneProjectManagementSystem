@@ -27,6 +27,7 @@ use App\Models\ProgramSet;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
@@ -911,21 +912,45 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             $userId = Auth::guard('web')->id();
             if (class_exists(\App\Models\ProgramSet::class) && \Illuminate\Support\Facades\Schema::hasTable('program_sets')) {
                 $hasProgramSetStudentTable = \Illuminate\Support\Facades\Schema::hasTable('program_set_student');
+                $hasGroupsTable = \Illuminate\Support\Facades\Schema::hasTable('groups');
+                $hasGroupMembersTable = \Illuminate\Support\Facades\Schema::hasTable('group_members');
 
                 $programSetsQuery = \App\Models\ProgramSet::query()
                     ->with(['academicYear', 'instructor'])
                     ->when($userId !== null, fn ($query) => $query->where('instructor_id', $userId))
                     ->orderByDesc('created_at')
-                    ->get(['id', 'name', 'program', 'academic_year_id', 'instructor_id']);
+                    ->select(['id', 'name', 'program', 'academic_year_id', 'instructor_id']);
 
                 if ($hasProgramSetStudentTable) {
-                    $programSetsQuery = \App\Models\ProgramSet::query()
-                        ->with(['academicYear', 'instructor'])
-                        ->when($userId !== null, fn ($query) => $query->where('instructor_id', $userId))
-                        ->withCount('students')
-                        ->orderByDesc('created_at')
-                        ->get(['id', 'name', 'program', 'academic_year_id', 'instructor_id']);
+                    $programSetsQuery->withCount('students');
                 }
+
+                if ($hasProgramSetStudentTable && $hasGroupsTable) {
+                    $unassignedStudentsQuery = DB::table('program_set_student as pss')
+                        ->whereColumn('pss.program_set_id', 'program_sets.id')
+                        ->whereNotExists(function ($query) use ($hasGroupMembersTable) {
+                            $query->select(DB::raw(1))
+                                ->from('groups as g')
+                                ->whereColumn('g.program_set_id', 'pss.program_set_id')
+                                ->where(function ($subQuery) use ($hasGroupMembersTable) {
+                                    $subQuery->whereColumn('g.leader_id', 'pss.student_id');
+
+                                    if ($hasGroupMembersTable) {
+                                        $subQuery->orWhereExists(function ($memberQuery) {
+                                            $memberQuery->select(DB::raw(1))
+                                                ->from('group_members as gm')
+                                                ->whereColumn('gm.group_id', 'g.id')
+                                                ->whereColumn('gm.student_id', 'pss.student_id');
+                                        });
+                                    }
+                                });
+                        })
+                        ->selectRaw('count(*)');
+
+                    $programSetsQuery->selectSub($unassignedStudentsQuery, 'unassigned_students_count');
+                }
+
+                $programSetsQuery = $programSetsQuery->get();
 
                 $programSets = $programSetsQuery
                     ->map(fn ($ps) => [
@@ -935,6 +960,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         'school_year' => $ps->academicYear?->label,
                         'instructor_name' => $ps->instructor?->name,
                         'students_count' => $hasProgramSetStudentTable ? ($ps->students_count ?? 0) : 0,
+                        'unassigned_students_count' => $hasProgramSetStudentTable && $hasGroupsTable ? ((int) $ps->unassigned_students_count) : 0,
                     ])->all();
             }
         } catch (\Throwable $e) {

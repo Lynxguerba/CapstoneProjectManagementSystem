@@ -1,9 +1,10 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Calendar, ChevronRight, GraduationCap, Search, SlidersHorizontal, Trash2, UserCheck, Users } from 'lucide-react';
+import { Calendar, ChevronRight, Eye, GraduationCap, Search, SlidersHorizontal, Trash2, UserCheck, Users } from 'lucide-react';
 import React from 'react';
 import AssignmentRequestApproveModal from '../../components/Adviser/AssignmentRequestApproveModal';
 import AssignmentRequestConfirmModal from '../../components/Adviser/AssignmentRequestConfirmModal';
+import GroupDetailsModal from '../../components/Adviser/GroupDetailsModal';
 import adviserRoutes from '../../routes/adviser';
 import AdviserLayout from './_layout';
 
@@ -11,6 +12,14 @@ type AcademicYearOption = {
     id: number;
     label: string;
     is_current: boolean;
+};
+
+type GroupMemberRow = {
+    id: number;
+    name: string;
+    email: string;
+    role?: string | null;
+    is_leader?: boolean;
 };
 
 type AssignedGroupRow = {
@@ -22,6 +31,7 @@ type AssignedGroupRow = {
     school_year?: string | null;
     leader_name?: string | null;
     members_count?: number;
+    members?: GroupMemberRow[];
 };
 
 type AssignmentRequestRow = {
@@ -128,6 +138,10 @@ const AdviserGroups = () => {
         open: boolean;
         request: AssignmentRequestRow | null;
     }>({ open: false, request: null });
+    const [detailsState, setDetailsState] = React.useState<{
+        open: boolean;
+        group: AssignedGroupRow | null;
+    }>({ open: false, group: null });
 
     const academicYearOptions = React.useMemo(() => {
         const years = academicYears.map((year) => year.label);
@@ -293,6 +307,14 @@ const AdviserGroups = () => {
 
     const closeConfirm = () => {
         setConfirmState({ open: false, request: null, action: 'dismiss' });
+    };
+
+    const openDetails = (group: AssignedGroupRow) => {
+        setDetailsState({ open: true, group });
+    };
+
+    const closeDetails = () => {
+        setDetailsState({ open: false, group: null });
     };
 
     const openApprove = (request: AssignmentRequestRow) => {
@@ -544,12 +566,19 @@ const AdviserGroups = () => {
                                                         Delete
                                                     </button>
                                                 ) : (
-                                                    <Link
-                                                        href={adviserRoutes.groupDetails.url()}
-                                                        className="inline-flex items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const group = assignedGroups.find((item) => item.id === row.groupId);
+                                                            if (group) {
+                                                                openDetails(group);
+                                                            }
+                                                        }}
+                                                        className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
                                                     >
+                                                        <Eye className="h-3 w-3" />
                                                         View details
-                                                    </Link>
+                                                    </button>
                                                 )}
                                             </td>
                                         </tr>
@@ -583,6 +612,14 @@ const AdviserGroups = () => {
                 processing={processingRequestId !== null}
                 onClose={closeApprove}
                 onConfirm={confirmApprove}
+            />
+            <GroupDetailsModal
+                open={detailsState.open}
+                groupName={detailsState.group?.name}
+                programSetName={detailsState.group?.program_set_name}
+                schoolYear={detailsState.group?.school_year}
+                members={detailsState.group?.members ?? []}
+                onClose={closeDetails}
             />
         </AdviserLayout>
     );

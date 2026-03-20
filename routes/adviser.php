@@ -320,7 +320,7 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
                 && $userId !== null
             ) {
                 $assignedGroups = Group::query()
-                    ->with(['programSet.academicYear', 'leader'])
+                    ->with(['programSet.academicYear', 'leader', 'members'])
                     ->whereHas('adviserAssignment', fn ($query) => $query->where('adviser_id', $userId))
                     ->withCount('members')
                     ->orderByDesc('created_at')
@@ -329,7 +329,36 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
                         $programSet = $group->programSet;
                         $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
                         $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
-                        $leaderName = $resolveUserName($group->leader);
+                        $leader = $group->leader;
+                        $leaderName = $resolveUserName($leader);
+                        $leaderId = $leader?->id;
+                        $leaderEmail = is_string($leader?->email) ? $leader->email : null;
+
+                        $memberRows = $group->members
+                            ->filter(fn (User $member) => $leaderId === null || $member->id !== $leaderId)
+                            ->map(function (User $member) use ($resolveUserName): array {
+                                return [
+                                    'id' => $member->id,
+                                    'name' => $resolveUserName($member),
+                                    'email' => $member->email ?? '',
+                                    'role' => $member->pivot?->role,
+                                    'is_leader' => false,
+                                ];
+                            });
+
+                        $members = collect();
+
+                        if ($leaderId !== null) {
+                            $members->push([
+                                'id' => $leaderId,
+                                'name' => $leaderName !== '' ? $leaderName : 'Leader',
+                                'email' => $leaderEmail ?? '',
+                                'role' => 'Leader',
+                                'is_leader' => true,
+                            ]);
+                        }
+
+                        $members = $members->merge($memberRows)->values()->all();
 
                         return [
                             'id' => $group->id,
@@ -340,6 +369,7 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
                             'school_year' => $schoolYear,
                             'leader_name' => $leaderName !== '' ? $leaderName : null,
                             'members_count' => $group->members_count ?? 0,
+                            'members' => $members,
                         ];
                     })
                     ->values()
@@ -403,7 +433,81 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
         return Inertia::render('Adviser/group-details');
     })->name('adviser.group-details');
     Route::get('/concepts', function () {
-        return Inertia::render('Adviser/concepts');
+        $groups = [];
+
+        try {
+            $userId = Auth::guard('web')->id();
+            if ($userId !== null && class_exists(Group::class) && Schema::hasTable('groups')) {
+                $groupsQuery = Group::query()
+                    ->with(['programSet.academicYear'])
+                    ->whereHas('adviserAssignment', fn ($query) => $query->where('adviser_id', $userId))
+                    ->orderByDesc('updated_at')
+                    ->get(['id', 'name', 'program_set_id', 'updated_at']);
+
+                $groupIds = $groupsQuery->pluck('id');
+                $conceptSubmissionsByGroup = collect();
+
+                if (
+                    class_exists(DocumentSubmission::class)
+                    && Schema::hasTable('document_submissions')
+                    && Schema::hasTable('document_requirements')
+                ) {
+                    $conceptSubmissionsByGroup = DocumentSubmission::query()
+                        ->with('requirement')
+                        ->whereIn('group_id', $groupIds)
+                        ->whereHas('requirement', fn ($query) => $query->where('stage', 'Concept'))
+                        ->orderByDesc('created_at')
+                        ->get()
+                        ->groupBy('group_id');
+                }
+
+                $groups = $groupsQuery
+                    ->map(function (Group $group) use ($conceptSubmissionsByGroup): array {
+                        $programSet = $group->programSet;
+                        $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
+                        $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+                        $concepts = $conceptSubmissionsByGroup
+                            ->get($group->id, collect())
+                            ->map(function (DocumentSubmission $submission): array {
+                                $decision = match ($submission->status) {
+                                    'Approved' => 'Approved',
+                                    'Revision Required' => 'For Revision',
+                                    default => 'Pending',
+                                };
+
+                                return [
+                                    'id' => $submission->id,
+                                    'title' => $submission->requirement?->requirement_type ?? $submission->file_name,
+                                    'decision' => $decision,
+                                    'submitted_at' => $submission->created_at?->format('Y-m-d'),
+                                ];
+                            })
+                            ->values()
+                            ->all();
+
+                        $latestSubmission = $conceptSubmissionsByGroup->get($group->id)?->first();
+                        $updatedAt = $latestSubmission?->created_at?->format('Y-m-d') ?? $group->updated_at?->format('Y-m-d');
+
+                        return [
+                            'group_id' => $group->id,
+                            'group_name' => $group->name,
+                            'program_set_id' => $programSet?->id,
+                            'program_set_name' => $programSet?->name ?: $fallbackName,
+                            'school_year' => $schoolYear,
+                            'updated_at' => $updatedAt,
+                            'concepts' => $concepts,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $groups = [];
+        }
+
+        return Inertia::render('Adviser/concepts', [
+            'groups' => $groups,
+        ]);
     })->name('adviser.concepts');
     Route::get('/documents', function () {
         return Inertia::render('Adviser/documents');

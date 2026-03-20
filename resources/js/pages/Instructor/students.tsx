@@ -19,6 +19,7 @@ type ProgramSetSummary = {
     school_year: string;
     instructor_name?: string;
     students_count?: number;
+    unassigned_students_count?: number;
 };
 
 type InstructorStudentsPageProps = {
@@ -43,7 +44,7 @@ const InstructorStudents = () => {
         program: ps.program,
         schoolYear: ps.school_year,
         totalStudents: ps.students_count ?? 0,
-        groups: 0,
+        unassignedStudents: ps.unassigned_students_count ?? 0,
         status: 'Active',
         description:
             ps.program === 'BSIT' ? 'Information Technology Capstone Projects' : ps.program === 'BSIS' ? 'Information System Capstone Projects' : '',
@@ -253,8 +254,8 @@ const InstructorStudents = () => {
                                             <div className="text-[10px] text-slate-600">Students</div>
                                         </div>
                                         <div className="text-center">
-                                            <div className="text-lg font-bold text-slate-800">{set.groups}</div>
-                                            <div className="text-[10px] text-slate-600">Groups</div>
+                                            <div className="text-lg font-bold text-slate-800">{set.unassignedStudents}</div>
+                                            <div className="text-[10px] text-slate-600">Unassigned Students</div>
                                         </div>
                                     </div>
 
@@ -292,7 +293,7 @@ const InstructorStudents = () => {
                                     <th className="px-6 py-4">Set Name</th>
                                     <th className="px-6 py-4">School Year</th>
                                     <th className="px-6 py-4">Students</th>
-                                    <th className="px-6 py-4">Groups</th>
+                                    <th className="px-6 py-4">Unassigned Students</th>
                                     <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -310,7 +311,7 @@ const InstructorStudents = () => {
                                         </td>
                                         <td className="px-6 py-3.5 text-slate-600">{set.schoolYear}</td>
                                         <td className="px-6 py-3.5 font-semibold text-slate-800">{set.totalStudents}</td>
-                                        <td className="px-6 py-3.5 font-semibold text-slate-800">{set.groups}</td>
+                                        <td className="px-6 py-3.5 font-semibold text-slate-800">{set.unassignedStudents}</td>
                                         <td className="px-6 py-3.5 text-right">
                                             <div className="flex items-center justify-end gap-1">
                                                 <button
