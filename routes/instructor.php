@@ -71,6 +71,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         $groups = [];
         $upcomingSchedules = [];
         $attentionItems = [];
+        $panelists = [];
 
         $resolveUserName = static function (?User $user): string {
             if (! $user) {
@@ -256,6 +257,52 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
         $panelSlotsTotal = $groupsCount * 3;
         $panelSlotsOpen = max(0, $panelSlotsTotal - $panelSlotsFilled);
+
+        try {
+            if (
+                Schema::hasTable('users')
+                && Schema::hasTable('groups')
+                && Schema::hasTable('group_panelists')
+                && count($groupIds) > 0
+            ) {
+                $hasRoleTables = Schema::hasTable('roles') && Schema::hasTable('role_user');
+                $panelistsQuery = User::query()
+                    ->when($hasRoleTables, function ($query) {
+                        $query->where(function ($roleQuery) {
+                            $roleQuery->where('role', 'like', '%panelist%')
+                                ->orWhereHas('roles', fn ($subQuery) => $subQuery->where('slug', 'panelist'));
+                        });
+                    }, function ($query) {
+                        $query->where('role', 'like', '%panelist%');
+                    })
+                    ->whereHas('panelGroups', fn ($query) => $query->whereIn('groups.id', $groupIds))
+                    ->withCount(['panelGroups as groups_count' => fn ($query) => $query->whereIn('groups.id', $groupIds)])
+                    ->orderByDesc('groups_count')
+                    ->orderBy('last_name')
+                    ->limit(4)
+                    ->get(['id', 'name', 'first_name', 'last_name', 'email']);
+
+                $panelists = $panelistsQuery
+                    ->map(function (User $panelist): array {
+                        $firstName = is_string($panelist->first_name) ? trim($panelist->first_name) : '';
+                        $lastName = is_string($panelist->last_name) ? trim($panelist->last_name) : '';
+                        $fullName = $firstName !== '' || $lastName !== ''
+                            ? trim($firstName.' '.$lastName)
+                            : (is_string($panelist->name) ? $panelist->name : '');
+
+                        return [
+                            'id' => $panelist->id,
+                            'name' => $fullName,
+                            'email' => $panelist->email ?? null,
+                            'groups_count' => (int) ($panelist->groups_count ?? 0),
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $panelists = [];
+        }
 
         try {
             if (class_exists(\App\Models\DefenseRoom::class) && Schema::hasTable('defense_rooms')) {
@@ -609,6 +656,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             'groups' => $groups,
             'upcomingSchedules' => $upcomingSchedules,
             'attentionItems' => $attentionItems,
+            'panelists' => $panelists,
         ]);
     })->name('instructor.dashboard');
     Route::get('/groups', function () {

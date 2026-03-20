@@ -26,6 +26,20 @@ services:
       DB_PASSWORD: root
     networks:
       - cpms
+    
+  node:
+    image: node:20-alpine
+    container_name: cpms_node
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - /var/www/node_modules
+    ports:
+      - "5173:5173"
+    command: npm run dev
+    networks:
+      - cpms
+
 
   db:
     image: mysql:8.0

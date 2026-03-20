@@ -2,8 +2,9 @@ import { Link, usePage } from '@inertiajs/react';
 import { Box } from '@mui/material';
 import { BarChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
-import { CalendarCheck, CheckCircle2, GraduationCap, Layers3, Scale, TriangleAlert, Users } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, GraduationCap, Layers3, Scale, TriangleAlert, UserCheck, Users } from 'lucide-react';
 import React from 'react';
+import panelistAssignment from '../../routes/instructor/panelist-assignment';
 import InstructorLayout from './_layout';
 
 type DashboardStats = {
@@ -57,6 +58,13 @@ type ProgramDistributionRecord = {
     color: string;
 };
 
+type PanelistSummary = {
+    id: number;
+    name?: string | null;
+    email?: string | null;
+    groups_count?: number;
+};
+
 type GroupMember = {
     name: string;
     initials: string;
@@ -99,6 +107,7 @@ type InstructorDashboardProps = {
     stageScale?: StageRecord[];
     programSets?: ProgramSetSummary[];
     programDistribution?: ProgramDistributionRecord[];
+    panelists?: PanelistSummary[];
     groups?: GroupRow[];
     upcomingSchedules?: UpcomingSchedule[];
     attentionItems?: AttentionItem[];
@@ -190,6 +199,7 @@ const Dashboard = () => {
     const stageScale = props.stageScale ?? [];
     const programSets = props.programSets ?? [];
     const programDistribution = props.programDistribution ?? [];
+    const panelists = props.panelists ?? [];
     const groups = props.groups ?? [];
     const upcomingSchedules = props.upcomingSchedules ?? [];
     const attentionItems = props.attentionItems ?? [];
@@ -278,6 +288,8 @@ const Dashboard = () => {
         BSIS: 'from-teal-600 to-emerald-500',
     };
 
+    const panelistToneStyles = ['from-emerald-600 to-emerald-500', 'from-teal-600 to-emerald-500', 'from-green-600 to-emerald-500'];
+
     const programSetSnapshots = programSets.map((programSet, index) => {
         const name = typeof programSet.name === 'string' ? programSet.name.trim() : '';
         const labelParts = [programSet.program, programSet.school_year].filter((value): value is string => Boolean(value));
@@ -296,6 +308,23 @@ const Dashboard = () => {
             tone: programToneStyles[programSet.program] ?? 'from-emerald-600 to-emerald-500',
         };
     });
+
+    const panelistSnapshots = panelists.map((panelist, index) => {
+        const name = typeof panelist.name === 'string' ? panelist.name.trim() : '';
+        const email = typeof panelist.email === 'string' ? panelist.email.trim() : '';
+        const groupsCount = panelist.groups_count ?? 0;
+
+        return {
+            id: panelist.id,
+            name: name !== '' ? name : `Panelist ${index + 1}`,
+            email: email !== '' ? email : null,
+            groupsCount,
+            progress: progressFor(groupsCount, stats.totalGroups),
+            tone: panelistToneStyles[index % panelistToneStyles.length],
+        };
+    });
+
+    const panelistHighlights = panelistSnapshots.slice(0, 4);
 
     const programDistributionTotal = programDistribution.reduce((sum, record) => sum + record.value, 0);
     const hasProgramDistribution = programDistribution.some((record) => record.value > 0);
@@ -567,49 +596,47 @@ const Dashboard = () => {
                     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md xl:col-span-2">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-sm font-semibold text-slate-900">Program Set Groups</h3>
-                                <p className="mt-1 text-xs text-slate-500">Groups grouped by program set ownership.</p>
+                                <h3 className="text-sm font-semibold text-slate-900">Panelist Assignments</h3>
+                                <p className="mt-1 text-xs text-slate-500">Panelists assigned across your program set groups.</p>
                             </div>
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                                {stats.totalGroups} total group{stats.totalGroups === 1 ? '' : 's'}
+                                {panelistHighlights.length} panelist{panelistHighlights.length === 1 ? '' : 's'}
                             </span>
                         </div>
 
                         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-                            {programSetSnapshots.map((programSet) => (
+                            {panelistHighlights.map((panelist) => (
                                 <Link
-                                    key={programSet.id}
-                                    href={`/instructor/groups/${programSet.id}/manage`}
+                                    key={panelist.id}
+                                    href={panelistAssignment.manage.url({ panelist: panelist.id })}
                                     className="group rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50 hover:shadow-md"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
-                                            <div className="text-sm font-semibold text-slate-900">{programSet.label}</div>
-                                            <div className="mt-1 text-xs text-slate-500">
-                                                {programSet.program || 'Program'} • {programSet.schoolYear || 'A.Y. pending'}
-                                            </div>
+                                            <div className="text-sm font-semibold text-slate-900">{panelist.name}</div>
+                                            <div className="mt-1 text-xs text-slate-500">{panelist.email ?? 'Email pending'}</div>
                                         </div>
                                         <div
-                                            className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${programSet.tone} shadow-sm`}
+                                            className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${panelist.tone} shadow-sm`}
                                         >
-                                            <Users className="h-4 w-4 text-white" />
+                                            <UserCheck className="h-4 w-4 text-white" />
                                         </div>
                                     </div>
                                     <div className="mt-4 flex items-center justify-between text-xs text-slate-600">
-                                        <span className="font-semibold">{programSet.groupsCount.toLocaleString()} groups</span>
-                                        <span>{programSet.progress}% scale</span>
+                                        <span className="font-semibold">{panelist.groupsCount.toLocaleString()} groups</span>
+                                        <span>{panelist.progress}% coverage</span>
                                     </div>
                                     <div className="mt-2 h-1.5 w-full rounded-full bg-emerald-100/60">
                                         <div
-                                            className={`h-1.5 rounded-full bg-gradient-to-r ${programSet.tone}`}
-                                            style={{ width: `${programSet.progress}%` }}
+                                            className={`h-1.5 rounded-full bg-gradient-to-r ${panelist.tone}`}
+                                            style={{ width: `${panelist.progress}%` }}
                                         />
                                     </div>
                                 </Link>
                             ))}
-                            {programSetSnapshots.length === 0 ? (
+                            {panelistHighlights.length === 0 ? (
                                 <div className="rounded-xl border border-slate-200 bg-emerald-50/50 p-4 text-xs text-slate-500">
-                                    No program sets available for your account yet.
+                                    No panelists assigned to your groups yet.
                                 </div>
                             ) : null}
                         </div>

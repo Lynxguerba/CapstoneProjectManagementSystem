@@ -25,13 +25,13 @@ COPY composer.json composer.lock ./
 COPY package.json package-lock.json ./
 
 # Install Node dependencies
-RUN npm install
+# RUN npm install
 
 # Copy the rest of the project
 COPY . .
 
 # Build frontend assets
-RUN npm run build
+# RUN npm run build
 
 # Expose port
 EXPOSE 8000
