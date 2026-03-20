@@ -29,6 +29,7 @@ import {
     ListTree,
     PackageCheck,
     Rocket,
+    Flag
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -194,6 +195,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { icon: ListTree, label: 'Phase 2: Outline', href: '' },
                     { icon: PackageCheck, label: 'Phase 3: Pre-Deployment', href: '' },
                     { icon: Rocket, label: 'Phase 4: Deployment', href: '' },
+                    { icon: Flag, label: 'Phase 5: Finals', href: '' },
                     { label: 'Settings', isSection: true },
                     { icon: Bell, label: 'Notifications', href: '/instructor/notifications' },
                     { icon: Settings, label: 'Profile & Settings', href: '/instructor/settings' },
