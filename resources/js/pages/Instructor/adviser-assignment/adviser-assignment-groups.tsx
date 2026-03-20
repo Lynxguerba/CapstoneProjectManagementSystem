@@ -35,6 +35,7 @@ type GroupRow = {
     adviser_id?: number | null;
     adviser_name?: string | null;
     members_count?: number;
+    pending_request_id?: number | null;
 };
 
 type ProgramSetOption = {
@@ -63,7 +64,7 @@ const AdviserAssignmentGroups = ({
     const [viewMode, setViewMode] = React.useState<'card' | 'list'>('card');
     const [assigningGroupId, setAssigningGroupId] = React.useState<number | null>(null);
     const [errorMessage, setErrorMessage] = React.useState('');
-    const [statusFilter, setStatusFilter] = React.useState<'all' | 'unassigned' | 'assigned' | 'reassign'>('all');
+    const [statusFilter, setStatusFilter] = React.useState<'all' | 'unassigned' | 'assigned' | 'reassign' | 'pending'>('all');
     const [selectedProgramSet, setSelectedProgramSet] = React.useState('All');
 
     // ── Pagination ──────────────────────────────────────────────────────────
@@ -181,16 +182,21 @@ const AdviserAssignmentGroups = ({
 
                 const isAssignedToAdviser = group.adviser_id === adviser.id;
                 const isReassign = !isAssignedToAdviser && Boolean(group.adviser_id);
+                const isPending = Boolean(group.pending_request_id);
 
                 if (statusFilter === 'assigned') {
                     return isAssignedToAdviser;
+                }
+
+                if (statusFilter === 'pending') {
+                    return isPending;
                 }
 
                 if (statusFilter === 'reassign') {
                     return isReassign;
                 }
 
-                return !group.adviser_id;
+                return !group.adviser_id && !isPending;
             }
 
             const groupName = group.name.toLowerCase();
@@ -208,16 +214,21 @@ const AdviserAssignmentGroups = ({
 
             const isAssignedToAdviser = group.adviser_id === adviser.id;
             const isReassign = !isAssignedToAdviser && Boolean(group.adviser_id);
+            const isPending = Boolean(group.pending_request_id);
 
             if (statusFilter === 'assigned') {
                 return isAssignedToAdviser;
+            }
+
+            if (statusFilter === 'pending') {
+                return isPending;
             }
 
             if (statusFilter === 'reassign') {
                 return isReassign;
             }
 
-            return !group.adviser_id;
+            return !group.adviser_id && !isPending;
         });
     }, [groups, searchTerm, selectedAcademicYear, selectedProgramSet, statusFilter, adviser.id, getProgramSetKey]);
 
@@ -431,16 +442,19 @@ const AdviserAssignmentGroups = ({
                             </div>
                             <div className="relative">
                                 <SlidersHorizontal className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                                <select
-                                    value={statusFilter}
-                                    onChange={(event) => setStatusFilter(event.target.value as 'all' | 'unassigned' | 'assigned' | 'reassign')}
-                                    className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                                >
-                                    <option value="all">All Statuses</option>
-                                    <option value="unassigned">Unassigned</option>
-                                    <option value="assigned">Assigned</option>
-                                    <option value="reassign">Reassign</option>
-                                </select>
+                            <select
+                                value={statusFilter}
+                                onChange={(event) =>
+                                    setStatusFilter(event.target.value as 'all' | 'unassigned' | 'assigned' | 'reassign' | 'pending')
+                                }
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="unassigned">Unassigned</option>
+                                <option value="pending">Pending Approval</option>
+                                <option value="assigned">Assigned</option>
+                                <option value="reassign">Reassign</option>
+                            </select>
                             </div>
                         </div>
 
@@ -479,9 +493,18 @@ const AdviserAssignmentGroups = ({
                                 const groupYear = group.school_year ?? 'Unassigned';
                                 const loadForYear = getLoadForYear(groupYear);
                                 const isAssignedToAdviser = group.adviser_id === adviser.id;
+                                const isPending = Boolean(group.pending_request_id);
                                 const isAtLimit = loadForYear >= MAX_LOAD;
-                                const isDisabled = assigningGroupId !== null || (isAtLimit && !isAssignedToAdviser);
+                                const isDisabled = assigningGroupId !== null || (isAtLimit && !isAssignedToAdviser) || isPending;
                                 const isReassign = !isAssignedToAdviser && group.adviser_id;
+                                const statusLabel = isPending
+                                    ? 'Pending Approval'
+                                    : isAssignedToAdviser
+                                      ? 'Handled'
+                                      : isReassign
+                                        ? 'Reassign'
+                                        : 'Unassigned';
+                                const actionLabel = isAssignedToAdviser ? 'Assigned' : isPending ? 'Pending Approval' : 'Request Approval';
 
                                 return (
                                     <div
@@ -498,14 +521,16 @@ const AdviserAssignmentGroups = ({
                                                 </div>
                                                 <span
                                                     className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                                        isAssignedToAdviser
+                                                        isPending
+                                                            ? 'bg-amber-100 text-amber-700'
+                                                            : isAssignedToAdviser
                                                             ? 'bg-emerald-100 text-emerald-700'
                                                             : group.adviser_id
                                                               ? 'bg-amber-100 text-amber-700'
                                                               : 'bg-slate-100 text-slate-600'
                                                     }`}
                                                 >
-                                                    {isAssignedToAdviser ? 'Handled' : group.adviser_id ? 'Assigned' : 'Unassigned'}
+                                                    {statusLabel}
                                                 </span>
                                             </div>
 
@@ -523,7 +548,7 @@ const AdviserAssignmentGroups = ({
                                                 onClick={() => assignGroup(group.id)}
                                                 disabled={isDisabled || isAssignedToAdviser}
                                                 className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold shadow-sm transition ${
-                                                    isAssignedToAdviser
+                                                    isAssignedToAdviser || isPending
                                                         ? 'border border-slate-200 bg-slate-100 text-slate-500'
                                                         : isReassign
                                                           ? 'bg-amber-500 text-white hover:bg-amber-600'
@@ -531,7 +556,7 @@ const AdviserAssignmentGroups = ({
                                                 } ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
                                             >
                                                 <UserCheck className="h-3.5 w-3.5" />
-                                                {isAssignedToAdviser ? 'Assigned' : isReassign ? 'Reassign' : 'Assign'}
+                                                {actionLabel}
                                             </button>
                                         </div>
                                     </div>
@@ -561,13 +586,23 @@ const AdviserAssignmentGroups = ({
                                         const groupYear = group.school_year ?? 'Unassigned';
                                         const loadForYear = getLoadForYear(groupYear);
                                         const isAssignedToAdviser = group.adviser_id === adviser.id;
+                                        const isPending = Boolean(group.pending_request_id);
                                         const isAtLimit = loadForYear >= MAX_LOAD;
-                                        const isDisabled = assigningGroupId !== null || (isAtLimit && !isAssignedToAdviser);
+                                        const isDisabled = assigningGroupId !== null || (isAtLimit && !isAssignedToAdviser) || isPending;
                                         const isReassign = !isAssignedToAdviser && group.adviser_id;
-                                        const status = isAssignedToAdviser ? 'Handled' : group.adviser_id ? 'Assigned' : 'Unassigned';
-                                        const statusClasses = isAssignedToAdviser
+                                        const actionLabel = isAssignedToAdviser ? 'Assigned' : isPending ? 'Pending Approval' : 'Request Approval';
+                                        const status = isPending
+                                            ? 'Pending Approval'
+                                            : isAssignedToAdviser
+                                              ? 'Handled'
+                                              : isReassign
+                                                ? 'Reassign'
+                                                : 'Unassigned';
+                                        const statusClasses = isPending
+                                            ? 'bg-amber-100 text-amber-700'
+                                            : isAssignedToAdviser
                                             ? 'bg-emerald-100 text-emerald-700'
-                                            : group.adviser_id
+                                            : isReassign
                                               ? 'bg-amber-100 text-amber-700'
                                               : 'bg-slate-100 text-slate-600';
 
@@ -592,7 +627,7 @@ const AdviserAssignmentGroups = ({
                                                         onClick={() => assignGroup(group.id)}
                                                         disabled={isDisabled || isAssignedToAdviser}
                                                         className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold shadow-sm transition ${
-                                                            isAssignedToAdviser
+                                                            isAssignedToAdviser || isPending
                                                                 ? 'border border-slate-200 bg-slate-100 text-slate-500'
                                                                 : isReassign
                                                                   ? 'bg-amber-500 text-white hover:bg-amber-600'
@@ -600,7 +635,7 @@ const AdviserAssignmentGroups = ({
                                                         } ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
                                                     >
                                                         <UserCheck className="h-3 w-3" />
-                                                        {isAssignedToAdviser ? 'Assigned' : isReassign ? 'Reassign' : 'Assign'}
+                                                        {actionLabel}
                                                     </button>
                                                 </td>
                                             </tr>

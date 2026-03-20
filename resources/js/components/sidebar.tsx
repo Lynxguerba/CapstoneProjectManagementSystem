@@ -150,7 +150,9 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                 ];
             case 'adviser':
                 return [
+                    { label: 'Main', isSection: true },
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/adviser/dashboard' },
+                    { label: 'Group Management', isSection: true },
                     { icon: Users, label: 'Groups', href: '/adviser/groups' },
                     { icon: FileText, label: 'Concepts', href: '/adviser/concepts' },
                     { icon: FolderOpen, label: 'Documents', href: '/adviser/documents' },

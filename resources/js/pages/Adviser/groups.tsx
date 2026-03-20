@@ -1,201 +1,606 @@
-import { Link } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Filter, Search, Users } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import { Calendar, ChevronRight, GraduationCap, Search, SlidersHorizontal, Trash2, UserCheck, Users } from 'lucide-react';
+import React from 'react';
+import { createPortal } from 'react-dom';
+import adviserRoutes from '../../routes/adviser';
 import AdviserLayout from './_layout';
 
-type GroupStatus = 'On Track' | 'Needs Review' | 'For Defense' | 'Revision Cycle';
+type AcademicYearOption = {
+    id: number;
+    label: string;
+    is_current: boolean;
+};
 
-type Group = {
-    id: string;
+type AssignedGroupRow = {
+    id: number;
     name: string;
-    members: string[];
-    currentPhase: string;
-    conceptStatus: string;
-    documentStatus: string;
-    defenseSchedule: string;
-    status: GroupStatus;
+    program_set_id?: number | null;
+    program_set_name?: string | null;
+    program?: string | null;
+    school_year?: string | null;
+    leader_name?: string | null;
+    members_count?: number;
+};
+
+type AssignmentRequestRow = {
+    id: number;
+    request_type: string;
+    group_id?: number | null;
+    group_name: string;
+    program_set_id?: number | null;
+    program_set_name?: string | null;
+    program?: string | null;
+    school_year?: string | null;
+    requested_by?: string | null;
+    requested_at?: string | null;
+    current_adviser_name?: string | null;
+};
+
+type ProgramSetOption = {
+    value: string;
+    label: string;
+    academicYear: string | null;
+};
+
+type AdviserGroupsPageProps = {
+    assignedGroups?: AssignedGroupRow[];
+    assignmentRequests?: AssignmentRequestRow[];
+    academicYears?: AcademicYearOption[];
+};
+
+type CombinedRow = {
+    key: string;
+    rowType: 'assigned' | 'request' | 'reassign';
+    groupId?: number | null;
+    requestId?: number | null;
+    groupName: string;
+    programSetName?: string | null;
+    schoolYear?: string | null;
+    leaderName?: string | null;
+    membersCount?: number;
+    requestedBy?: string | null;
+    requestedAt?: string | null;
+    currentAdviserName?: string | null;
+};
+
+const parseDateTime = (value?: string | null): Date | null => {
+    if (!value) {
+        return null;
+    }
+
+    const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+    const date = new Date(normalized);
+
+    if (Number.isNaN(date.getTime())) {
+        return null;
+    }
+
+    return date;
+};
+
+const formatDateTime = (value?: string | null): string => {
+    const date = parseDateTime(value);
+
+    if (!date) {
+        return value ?? '';
+    }
+
+    return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+    });
+};
+
+const getProgramSetKey = (item: { program_set_id?: number | null; program_set_name?: string | null; school_year?: string | null }): string => {
+    if (item.program_set_id !== null && item.program_set_id !== undefined) {
+        return `id:${item.program_set_id}`;
+    }
+
+    const name = item.program_set_name ?? '';
+    const year = item.school_year ?? '';
+
+    return `name:${name}::${year}`;
 };
 
 const AdviserGroups = () => {
-    const [query, setQuery] = useState('');
-    const [status, setStatus] = useState<'all' | GroupStatus>('all');
+    const { props } = usePage<AdviserGroupsPageProps>();
+    const assignedGroups = props.assignedGroups ?? [];
+    const assignmentRequests = props.assignmentRequests ?? [];
+    const academicYears = props.academicYears ?? [];
 
-    const groups: Group[] = [
-        {
-            id: 'g1',
-            name: 'Group Alpha',
-            members: ['Juan D.', 'Maria S.', 'Carlo T.', 'Ana P.'],
-            currentPhase: 'Concept',
-            conceptStatus: 'Pending',
-            documentStatus: '—',
-            defenseSchedule: '—',
-            status: 'Needs Review',
-        },
-        {
-            id: 'g2',
-            name: 'Group Beta',
-            members: ['Mark R.', 'Lea C.', 'John K.', 'Kate V.'],
-            currentPhase: 'Outline Defense',
-            conceptStatus: 'Approved',
-            documentStatus: 'For Revision',
-            defenseSchedule: '2026-03-21 • 9:00 AM',
-            status: 'Revision Cycle',
-        },
-        {
-            id: 'g3',
-            name: 'Group Gamma',
-            members: ['Luis A.', 'Ella M.', 'Ryan L.', 'Mia G.'],
-            currentPhase: 'Pre-Oral',
-            conceptStatus: 'Approved',
-            documentStatus: 'Approved',
-            defenseSchedule: '2026-03-28 • 1:00 PM',
-            status: 'For Defense',
-        },
-        {
-            id: 'g4',
-            name: 'Group Delta',
-            members: ['Tom B.', 'Amy J.', 'Ken S.', 'Lara N.'],
-            currentPhase: 'Final Defense',
-            conceptStatus: 'Approved',
-            documentStatus: 'Pending',
-            defenseSchedule: 'TBD',
-            status: 'On Track',
-        },
-    ];
+    const currentAcademicYear = academicYears.find((year) => year.is_current)?.label ?? academicYears[0]?.label ?? 'All';
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(currentAcademicYear || 'All');
+    const [selectedProgramSet, setSelectedProgramSet] = React.useState('All');
+    const [statusFilter, setStatusFilter] = React.useState<'all' | 'assigned' | 'pending' | 'reassign'>('all');
+    const [processingRequestId, setProcessingRequestId] = React.useState<number | null>(null);
+    const [confirmState, setConfirmState] = React.useState<{
+        open: boolean;
+        request: AssignmentRequestRow | null;
+        action: 'dismiss' | 'decline';
+    }>({ open: false, request: null, action: 'dismiss' });
 
-    const filtered = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        return groups.filter((g) => {
-            const matchesQuery = !q || g.name.toLowerCase().includes(q) || g.members.some((m) => m.toLowerCase().includes(q));
-            const matchesStatus = status === 'all' || g.status === status;
-            return matchesQuery && matchesStatus;
+    const academicYearOptions = React.useMemo(() => {
+        const years = academicYears.map((year) => year.label);
+        return ['All', ...years];
+    }, [academicYears]);
+
+    const programSetOptions = React.useMemo((): ProgramSetOption[] => {
+        const options = new Map<string, ProgramSetOption>();
+        const combinedItems = [...assignedGroups, ...assignmentRequests];
+
+        combinedItems.forEach((item) => {
+            const label = (item.program_set_name ?? '').trim();
+
+            if (!label) {
+                return;
+            }
+
+            const value = getProgramSetKey(item);
+            if (!options.has(value)) {
+                options.set(value, {
+                    value,
+                    label,
+                    academicYear: item.school_year ?? null,
+                });
+            }
         });
-    }, [groups, query, status]);
 
-    const statusPill = (s: GroupStatus): string => {
-        if (s === 'For Defense') {
-            return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+        const allOptions = Array.from(options.values());
+        const filteredOptions =
+            selectedAcademicYear === 'All' ? allOptions : allOptions.filter((option) => option.academicYear === selectedAcademicYear);
+
+        return filteredOptions.sort((first, second) => first.label.localeCompare(second.label));
+    }, [assignedGroups, assignmentRequests, selectedAcademicYear]);
+
+    React.useEffect(() => {
+        if (selectedProgramSet === 'All') {
+            return;
         }
 
-        if (s === 'Needs Review') {
-            return 'bg-amber-50 text-amber-700 border-amber-200';
+        const isStillAvailable = programSetOptions.some((option) => option.value === selectedProgramSet);
+        if (!isStillAvailable) {
+            setSelectedProgramSet('All');
+        }
+    }, [programSetOptions, selectedProgramSet]);
+
+    const matchesFilters = React.useCallback(
+        (item: { name?: string | null; group_name?: string | null; leader_name?: string | null; program_set_name?: string | null; school_year?: string | null }) => {
+            if (selectedAcademicYear !== 'All' && item.school_year !== selectedAcademicYear) {
+                return false;
+            }
+
+            if (selectedProgramSet !== 'All' && getProgramSetKey(item) !== selectedProgramSet) {
+                return false;
+            }
+
+            const query = searchTerm.trim().toLowerCase();
+            if (!query) {
+                return true;
+            }
+
+            const haystack = [item.name, item.group_name, item.leader_name, item.program_set_name]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
+            return haystack.includes(query);
+        },
+        [searchTerm, selectedAcademicYear, selectedProgramSet],
+    );
+
+    const filteredAssigned = React.useMemo(() => {
+        if (statusFilter === 'pending' || statusFilter === 'reassign') {
+            return [];
         }
 
-        if (s === 'Revision Cycle') {
-            return 'bg-rose-50 text-rose-700 border-rose-200';
+        return assignedGroups.filter((group) => matchesFilters(group));
+    }, [assignedGroups, matchesFilters, statusFilter]);
+
+    const filteredRequests = React.useMemo(() => {
+        return assignmentRequests.filter((request) => {
+            const isReassignNotice = request.request_type === 'ReassignNotice';
+            const isPendingRequest = !isReassignNotice;
+
+            if (statusFilter === 'assigned') {
+                return false;
+            }
+
+            if (statusFilter === 'pending' && !isPendingRequest) {
+                return false;
+            }
+
+            if (statusFilter === 'reassign' && !isReassignNotice) {
+                return false;
+            }
+
+            return matchesFilters({
+                group_name: request.group_name,
+                program_set_name: request.program_set_name,
+                school_year: request.school_year,
+            });
+        });
+    }, [assignmentRequests, matchesFilters, statusFilter]);
+
+    const combinedRows = React.useMemo<CombinedRow[]>(() => {
+        const rows: CombinedRow[] = [];
+
+        filteredRequests.forEach((request) => {
+            const isReassignNotice = request.request_type === 'ReassignNotice';
+
+            rows.push({
+                key: `request-${request.id}`,
+                rowType: isReassignNotice ? 'reassign' : 'request',
+                requestId: request.id,
+                groupId: request.group_id,
+                groupName: request.group_name,
+                programSetName: request.program_set_name,
+                schoolYear: request.school_year,
+                requestedBy: request.requested_by,
+                requestedAt: request.requested_at,
+                currentAdviserName: request.current_adviser_name,
+            });
+        });
+
+        filteredAssigned.forEach((group) => {
+            rows.push({
+                key: `group-${group.id}`,
+                rowType: 'assigned',
+                groupId: group.id,
+                groupName: group.name,
+                programSetName: group.program_set_name,
+                schoolYear: group.school_year,
+                leaderName: group.leader_name,
+                membersCount: group.members_count,
+            });
+        });
+
+        return rows;
+    }, [filteredAssigned, filteredRequests]);
+
+    const handleApprove = (requestId: number) => {
+        if (processingRequestId !== null) {
+            return;
         }
 
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        setProcessingRequestId(requestId);
+
+        router.post(
+            adviserRoutes.assignmentRequests.approve.url({ assignmentRequest: requestId }),
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setProcessingRequestId(null);
+                },
+            },
+        );
     };
 
+    const openConfirm = (request: AssignmentRequestRow, action: 'dismiss' | 'decline') => {
+        setConfirmState({ open: true, request, action });
+    };
+
+    const closeConfirm = () => {
+        setConfirmState({ open: false, request: null, action: 'dismiss' });
+    };
+
+    const confirmDismiss = () => {
+        if (!confirmState.request || processingRequestId !== null) {
+            return;
+        }
+
+        const requestId = confirmState.request.id;
+        setProcessingRequestId(requestId);
+
+        router.delete(adviserRoutes.assignmentRequests.dismiss.url({ assignmentRequest: requestId }), {
+            preserveScroll: true,
+            onFinish: () => {
+                setProcessingRequestId(null);
+                closeConfirm();
+            },
+        });
+    };
+
+    const pendingCount = assignmentRequests.filter((request) => request.request_type !== 'ReassignNotice').length;
+
     return (
-        <AdviserLayout title="Groups" subtitle="Assigned capstone groups (UI only)">
-            <div className="space-y-6">
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-                >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="flex items-center gap-2">
-                            <Users size={18} className="text-slate-700" />
-                            <div>
-                                <div className="text-lg font-semibold text-slate-900">Group Directory</div>
-                                <div className="text-sm text-slate-500">Search, filter, and open details.</div>
-                            </div>
+        <AdviserLayout title="Groups" subtitle="Review assignment requests and manage handled groups">
+            <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
+                <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+                    <Link href={adviserRoutes.dashboard.url()} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <span className="font-semibold text-slate-800" aria-current="page">
+                        Groups
+                    </span>
+                </nav>
+
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative">
+                            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search group, leader, or program set..."
+                                value={searchTerm}
+                                onChange={(event) => setSearchTerm(event.target.value)}
+                                className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm transition-all outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 md:w-64"
+                            />
                         </div>
+                        <div className="relative">
+                            <Calendar className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                            <select
+                                value={selectedAcademicYear}
+                                onChange={(event) => setSelectedAcademicYear(event.target.value)}
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                            >
+                                {academicYearOptions.map((year) => {
+                                    const isCurrent = academicYears.find((item) => item.label === year)?.is_current;
 
-                        <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
-                            <div className="relative w-full sm:w-72">
-                                <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500" />
-                                <input
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    placeholder="Search group or member..."
-                                    className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                                />
-                            </div>
-
-                            <div className="relative w-full sm:w-56">
-                                <Filter size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500" />
-                                <select
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value as typeof status)}
-                                    className="w-full appearance-none rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                                >
-                                    <option value="all">All statuses</option>
-                                    <option value="On Track">On Track</option>
-                                    <option value="Needs Review">Needs Review</option>
-                                    <option value="For Defense">For Defense</option>
-                                    <option value="Revision Cycle">Revision Cycle</option>
-                                </select>
-                            </div>
+                                    return (
+                                        <option key={year} value={year}>
+                                            {year === 'All' ? 'All Academic Years' : `${year}${isCurrent ? ' (current)' : ''}`}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                        </div>
+                        <div className="relative">
+                            <GraduationCap className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                            <select
+                                value={selectedProgramSet}
+                                onChange={(event) => setSelectedProgramSet(event.target.value)}
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                            >
+                                <option value="All">All Program Sets</option>
+                                {programSetOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {selectedAcademicYear === 'All' && option.academicYear
+                                            ? `${option.label} (${option.academicYear})`
+                                            : option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="relative">
+                            <SlidersHorizontal className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                            <select
+                                value={statusFilter}
+                                onChange={(event) => setStatusFilter(event.target.value as 'all' | 'assigned' | 'pending' | 'reassign')}
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="pending">Pending Approval</option>
+                                <option value="reassign">Assigned to Other Adviser</option>
+                                <option value="assigned">Assigned Groups</option>
+                            </select>
                         </div>
                     </div>
-                </motion.section>
+
+                    <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                            <Users className="h-3 w-3" />
+                            Assigned: {assignedGroups.length}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-[11px] font-semibold text-green-700">
+                            <UserCheck className="h-3 w-3" />
+                            Pending Approval: {pendingCount}
+                        </span>
+                    </div>
+                </div>
 
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.06 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+                    transition={{ delay: 0.05 }}
+                    className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="text-sm font-semibold text-slate-900">Groups ({filtered.length})</div>
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                            UI only
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-semibold text-slate-900">Assigned Groups</p>
+                            <p className="text-xs text-slate-500">Includes pending approvals and reassigned groups in one list.</p>
+                        </div>
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                            {combinedRows.length} total
                         </span>
                     </div>
 
                     <div className="mt-4 overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-200 text-slate-600">
-                                    <th className="py-3 text-left font-semibold">Group</th>
-                                    <th className="py-3 text-left font-semibold">Members</th>
-                                    <th className="py-3 text-left font-semibold">Phase</th>
-                                    <th className="py-3 text-left font-semibold">Concept</th>
-                                    <th className="py-3 text-left font-semibold">Documents</th>
-                                    <th className="py-3 text-left font-semibold">Defense</th>
-                                    <th className="py-3 text-left font-semibold">Status</th>
-                                    <th className="py-3 text-right font-semibold">Action</th>
+                        <table className="w-full text-left text-xs">
+                            <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                <tr>
+                                    <th className="px-6 py-4">Group</th>
+                                    <th className="px-6 py-4">Program Set</th>
+                                    <th className="px-6 py-4">A.Y</th>
+                                    <th className="px-6 py-4">Details</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filtered.map((g) => (
-                                    <tr key={g.id} className="transition-colors hover:bg-slate-50">
-                                        <td className="py-3 font-semibold whitespace-nowrap text-slate-900">{g.name}</td>
-                                        <td className="min-w-52 py-3 text-slate-600">
-                                            <div className="line-clamp-2">{g.members.join(', ')}</div>
-                                        </td>
-                                        <td className="py-3 whitespace-nowrap text-slate-600">{g.currentPhase}</td>
-                                        <td className="py-3 whitespace-nowrap text-slate-600">{g.conceptStatus}</td>
-                                        <td className="py-3 whitespace-nowrap text-slate-600">{g.documentStatus}</td>
-                                        <td className="py-3 whitespace-nowrap text-slate-600">{g.defenseSchedule}</td>
-                                        <td className="py-3 whitespace-nowrap">
-                                            <span
-                                                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusPill(g.status)}`}
-                                            >
-                                                {g.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 text-right whitespace-nowrap">
-                                            <Link
-                                                href="/adviser/group-details"
-                                                preserveScroll
-                                                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-800"
-                                            >
-                                                View details
-                                            </Link>
+                                {combinedRows.map((row) => {
+                                    const isRequest = row.rowType === 'request';
+                                    const isReassign = row.rowType === 'reassign';
+                                    const isAssigned = row.rowType === 'assigned';
+                                    const statusLabel = isRequest ? 'Pending Approval' : isReassign ? 'Assigned to Other Adviser' : 'Assigned';
+                                    const statusClasses = isRequest
+                                        ? 'bg-amber-100 text-amber-700'
+                                        : isReassign
+                                          ? 'bg-slate-100 text-slate-600'
+                                          : 'bg-emerald-100 text-emerald-700';
+                                    const isProcessing = row.requestId !== undefined && processingRequestId === row.requestId;
+
+                                    return (
+                                        <tr key={row.key} className="transition-colors hover:bg-emerald-50/40">
+                                            <td className="px-6 py-3.5">
+                                                <div className="font-semibold text-slate-800">{row.groupName}</div>
+                                            </td>
+                                            <td className="px-6 py-3.5 text-slate-600">{row.programSetName ?? '—'}</td>
+                                            <td className="px-6 py-3.5 text-slate-600">{row.schoolYear ?? '—'}</td>
+                                            <td className="px-6 py-3.5 text-slate-600">
+                                                {isAssigned ? (
+                                                    <div className="space-y-1">
+                                                        <div>Leader: {row.leaderName ?? '—'}</div>
+                                                        <div>Members: {row.membersCount ?? 0}</div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-1">
+                                                        <div>
+                                                            {isReassign
+                                                                ? row.currentAdviserName
+                                                                    ? `Assigned to ${row.currentAdviserName}`
+                                                                    : 'Assigned to another adviser'
+                                                                : 'Waiting for approval'}
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-500">
+                                                            {isReassign
+                                                                ? row.requestedBy
+                                                                    ? `Updated by ${row.requestedBy}`
+                                                                    : 'Reassignment logged'
+                                                                : row.requestedBy
+                                                                  ? `Requested by ${row.requestedBy}`
+                                                                  : 'Request submitted'}
+                                                            {row.requestedAt ? ` • ${formatDateTime(row.requestedAt)}` : ''}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-3.5">
+                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClasses}`}>{statusLabel}</span>
+                                            </td>
+                                            <td className="px-6 py-3.5 text-right">
+                                                {isRequest && row.requestId ? (
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const request = assignmentRequests.find((item) => item.id === row.requestId);
+                                                                if (request) {
+                                                                    openConfirm(request, 'decline');
+                                                                }
+                                                            }}
+                                                            disabled={isProcessing}
+                                                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        >
+                                                            <Trash2 className="h-3 w-3" />
+                                                            Decline
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleApprove(row.requestId as number)}
+                                                            disabled={isProcessing}
+                                                            className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        >
+                                                            <UserCheck className="h-3 w-3" />
+                                                            Approve
+                                                        </button>
+                                                    </div>
+                                                ) : isReassign && row.requestId ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const request = assignmentRequests.find((item) => item.id === row.requestId);
+                                                            if (request) {
+                                                                openConfirm(request, 'dismiss');
+                                                            }
+                                                        }}
+                                                        disabled={isProcessing}
+                                                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    >
+                                                        <Trash2 className="h-3 w-3" />
+                                                        Delete
+                                                    </button>
+                                                ) : (
+                                                    <Link
+                                                        href={adviserRoutes.groupDetails.url()}
+                                                        className="inline-flex items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                                    >
+                                                        View details
+                                                    </Link>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+
+                                {combinedRows.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-6 text-center text-xs text-slate-500">
+                                            No groups match the current filters.
                                         </td>
                                     </tr>
-                                ))}
+                                ) : null}
                             </tbody>
                         </table>
                     </div>
                 </motion.section>
-            </div>
+            </motion.section>
+
+            {confirmState.open && typeof document !== 'undefined'
+                ? createPortal(
+                      <div
+                          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+                          role="dialog"
+                          aria-modal="true"
+                          onMouseDown={(event) => {
+                              if (event.target === event.currentTarget) {
+                                  closeConfirm();
+                              }
+                          }}
+                      >
+                          <motion.div
+                              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              transition={{ duration: 0.2 }}
+                              className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+                              onMouseDown={(event) => event.stopPropagation()}
+                          >
+                              <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                          {confirmState.action === 'decline' ? 'Decline assignment request' : 'Remove reassignment notice'}
+                                      </p>
+                                      <p className="mt-1 text-xs text-slate-600">
+                                          {confirmState.request?.group_name} will be removed from your request list.
+                                      </p>
+                                  </div>
+                                  <button
+                                      type="button"
+                                      onClick={closeConfirm}
+                                      className="rounded-lg p-1 text-slate-500 transition hover:bg-slate-100"
+                                  >
+                                      <ChevronRight className="h-4 w-4 rotate-90" />
+                                  </button>
+                              </div>
+
+                              <div className="mt-5 flex items-center justify-end gap-2">
+                                  <button
+                                      type="button"
+                                      onClick={closeConfirm}
+                                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                                  >
+                                      Cancel
+                                  </button>
+                                  <button
+                                      type="button"
+                                      onClick={confirmDismiss}
+                                      disabled={processingRequestId !== null}
+                                      className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                      Confirm
+                                  </button>
+                              </div>
+                          </motion.div>
+                      </div>,
+                      document.body,
+                  )
+                : null}
         </AdviserLayout>
     );
 };
