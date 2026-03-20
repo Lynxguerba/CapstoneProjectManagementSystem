@@ -22,6 +22,7 @@ use App\Models\AcademicYear;
 use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
+use App\Models\GroupAdviserRequest;
 use App\Models\ProgramSet;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,6 +34,8 @@ use Inertia\Inertia;
 Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(function () {
     Route::get('/dashboard', function () {
         $userId = Auth::guard('web')->id();
+        $pendingRequestsByGroup = collect();
+        $pendingRequestsByGroup = collect();
         $programSetIds = [];
         $programSetsCount = 0;
         $programSetSummaries = [];
@@ -1292,6 +1295,16 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         $groups = [];
         try {
             if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups')) {
+                $pendingRequestsByGroup = collect();
+
+                if (Schema::hasTable('group_adviser_requests')) {
+                    $pendingRequestsByGroup = GroupAdviserRequest::query()
+                        ->where('adviser_id', $adviser->id)
+                        ->where('request_type', GroupAdviserRequest::TYPE_REQUEST)
+                        ->where('status', GroupAdviserRequest::STATUS_PENDING)
+                        ->pluck('id', 'group_id');
+                }
+
                 $groups = \App\Models\Group::query()
                     ->with(['programSet.academicYear', 'leader', 'adviserAssignment.adviser'])
                     ->when($userId !== null, function ($query) use ($userId) {
@@ -1300,7 +1313,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     ->withCount('members')
                     ->orderByDesc('created_at')
                     ->get()
-                    ->map(function (\App\Models\Group $group) use ($resolveUserName): array {
+                    ->map(function (\App\Models\Group $group) use ($resolveUserName, $pendingRequestsByGroup): array {
                         $programSet = $group->programSet;
                         $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
                         $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
@@ -1317,6 +1330,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             'adviser_id' => $group->adviserAssignment?->adviser_id,
                             'adviser_name' => $adviserName !== '' ? $adviserName : null,
                             'members_count' => $group->members_count ?? 0,
+                            'pending_request_id' => $pendingRequestsByGroup->get($group->id),
                         ];
                     })
                     ->values()
