@@ -188,7 +188,13 @@ const AdviserGroups = () => {
     }, [programSetOptions, selectedProgramSet]);
 
     const matchesFilters = React.useCallback(
-        (item: { name?: string | null; group_name?: string | null; leader_name?: string | null; program_set_name?: string | null; school_year?: string | null }) => {
+        (item: {
+            name?: string | null;
+            group_name?: string | null;
+            leader_name?: string | null;
+            program_set_name?: string | null;
+            school_year?: string | null;
+        }) => {
             if (selectedAcademicYear !== 'All' && item.school_year !== selectedAcademicYear) {
                 return false;
             }
@@ -202,10 +208,7 @@ const AdviserGroups = () => {
                 return true;
             }
 
-            const haystack = [item.name, item.group_name, item.leader_name, item.program_set_name]
-                .filter(Boolean)
-                .join(' ')
-                .toLowerCase();
+            const haystack = [item.name, item.group_name, item.leader_name, item.program_set_name].filter(Boolean).join(' ').toLowerCase();
 
             return haystack.includes(query);
         },
@@ -516,7 +519,9 @@ const AdviserGroups = () => {
                                                 )}
                                             </td>
                                             <td className="px-6 py-3.5">
-                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClasses}`}>{statusLabel}</span>
+                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClasses}`}>
+                                                    {statusLabel}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-3.5 text-right">
                                                 {isRequest && row.requestId ? (
