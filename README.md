@@ -6,24 +6,28 @@ A centralized platform for Davao del Norte State College to manage the full caps
 
 ![CPMS Multi-Device Preview](concept/thumbnail2.png)
 
-**Concept**
+## Concept
+
 CPMS is built to remove the friction in capstone coordination. It organizes students into groups, links them with advisers, and provides a clear submission and review trail for capstone artifacts. The system focuses on a clean, green-themed UI and concise workflows to reduce administrative overhead and help students ship quality projects.
 
-**Key Capabilities**
+## Key Capabilities
+
 - Group management with adviser assignment and reassignment flows.
 - Concept submission review with approve, request revision, and reject actions.
 - Program set and academic year organization for cohort-based tracking.
 - Role-based views for students, advisers, and instructors.
 - Consistent, modal-driven UI for confirmations and approvals.
 
-**Tech Stack (Based on This Repository)**
+## Tech Stack (Based on This Repository)
+
 - Backend: Laravel 12, PHP 8.2+, Inertia.js v2, Laravel Wayfinder.
 - Frontend: React 19, TypeScript, Tailwind CSS 4, Vite.
 - UI/UX: MUI, Framer Motion, Lucide Icons.
 - Tooling: ESLint, Prettier, Laravel Pint, Pest.
 - Data: Relational database via Laravel Eloquent (configured in `.env`).
 
-**Project Structure**
+## Project Structure
+
 - `app/` Laravel application logic (controllers, models, policies).
 - `routes/` HTTP routes for web and role-specific modules.
 - `resources/js/pages/` Inertia React pages per role.
@@ -32,33 +36,43 @@ CPMS is built to remove the friction in capstone coordination. It organizes stud
 - `public/` Static assets.
 - `tests/` Pest tests.
 
-**Local Development**
+## Local Development
+
 - Install dependencies and build assets: `composer run setup`.
 - Run the app with Vite and queue worker: `composer run dev`.
 
-Setup & Configuration
-Prerequisites
+## Setup & Configuration
+
+### Prerequisites
+
 Make sure the following are installed on your machine before getting started:
-Tool
-Version
-Purpose
-Docker Desktop
-Latest
-Runs PHP, MySQL, and related services
-Node.js
-20+ (LTS)
-Frontend asset compilation via npm
-Git
-Latest
-Source control
+
+| Tool | Version | Purpose |
+| --- | --- | --- |
+| Docker Desktop | Latest | Runs PHP, MySQL, and related services |
+| Node.js | 20+ (LTS) | Frontend asset compilation via npm |
+| Git | Latest | Source control |
+
 Note: PHP and Composer do not need to be installed locally. All PHP operations run through Docker.
-1. Clone the Repository
+
+### 1. Clone the Repository
+
+```bash
 git clone https://github.com/your-org/cpms.git
 cd cpms
-2. Environment Configuration
+```
+
+### 2. Environment Configuration
+
 Copy the example environment file and configure it for your local setup:
+
+```bash
 cp .env.example .env
-Open .env and update the following values:
+```
+
+Open `.env` and update the following values:
+
+```dotenv
 APP_NAME="Capstone Projects Management System"
 APP_ENV=local
 APP_KEY=                        # Generated in a later step
@@ -78,9 +92,15 @@ QUEUE_CONNECTION=database
 
 # Cache
 CACHE_STORE=database
-3. Docker Services
+```
+
+### 3. Docker Services
+
 The project uses Docker to run PHP-FPM, MySQL, and a queue worker. The compose file is located at the project root.
-docker-compose.yml (reference)
+
+`docker-compose.yml` (reference):
+
+```yaml
 services:
   app:
     build:
@@ -145,72 +165,131 @@ networks:
 
 volumes:
   cpms_mysql_data:
-Build and start all services
+```
+
+Build and start all services:
+
+```bash
 docker compose up -d --build
+```
+
 Verify all containers are running:
+
+```bash
 docker compose ps
-You should see cpms_app, cpms_nginx, cpms_mysql, and cpms_queue with a status of Up.
-4. Install PHP Dependencies
+```
+
+You should see `cpms_app`, `cpms_nginx`, `cpms_mysql`, and `cpms_queue` with a status of `Up`.
+
+### 4. Install PHP Dependencies
+
 Run Composer inside the app container:
+
+```bash
 docker compose exec app composer install
+```
+
 Generate the application key:
+
+```bash
 docker compose exec app php artisan key:generate
-5. Install Node.js Dependencies
+```
+
+### 5. Install Node.js Dependencies
+
 Run npm on your host machine (not inside Docker):
+
+```bash
 npm install
-6. Database Migration & Seeding
+```
+
+### 6. Database Migration & Seeding
+
 Run migrations inside the Docker container to set up the database schema:
+
+```bash
 docker compose exec app php artisan migrate
+```
+
 To also seed the database with initial/demo data:
+
+```bash
 docker compose exec app php artisan migrate --seed
+```
+
 To reset and re-run all migrations from scratch:
+
+```bash
 docker compose exec app php artisan migrate:fresh --seed
-7. Running the Application
-Start backend (Docker services)
+```
+
+### 7. Running the Application
+
+Start backend (Docker services):
+
+```bash
 docker compose up -d
-Start frontend dev server (Vite)
-On your host machine:
+```
+
+Start frontend dev server (Vite) on your host machine:
+
+```bash
 npm run dev
-The application will be available at http://localhost:8000.
-Vite HMR (Hot Module Replacement) runs on http://localhost:5173 and is proxied automatically.
-All-in-one (using Composer scripts)
-Alternatively, use the built-in Composer scripts after Docker is running:
+```
+
+The application will be available at `http://localhost:8000`.
+
+Vite HMR (Hot Module Replacement) runs on `http://localhost:5173` and is proxied automatically.
+
+All-in-one (using Composer scripts) after Docker is running:
+
+```bash
 # Install all dependencies and build assets
 docker compose exec app composer run setup
 
 # Start the app with Vite and queue worker
 docker compose exec app composer run dev
-8. Building for Production
+```
+
+### 8. Building for Production
+
 Compile and optimize all frontend assets:
+
+```bash
 npm run build
+```
+
 Then run the app in production mode via Docker with:
+
+```bash
 APP_ENV=production docker compose up -d
+```
+
 Make sure to also cache Laravel config and routes for better performance:
+
+```bash
 docker compose exec app php artisan config:cache
 docker compose exec app php artisan route:cache
 docker compose exec app php artisan view:cache
-Common Docker Commands
-Action
-Command
-Start all services
-docker compose up -d
-Stop all services
-docker compose down
-Rebuild containers
-docker compose up -d --build
-View container logs
-docker compose logs -f app
-Open a shell in app container
-docker compose exec app bash
-Run an Artisan command
-docker compose exec app php artisan <command>
-Run Composer
-docker compose exec app composer <command>
-Access MySQL CLI
-docker compose exec mysql mysql -u cpms_user -psecret cpms
-Reset database
-docker compose exec app php artisan migrate:fresh --seed
-Useful Artisan Commands
+```
+
+## Common Docker Commands
+
+| Action | Command |
+| --- | --- |
+| Start all services | `docker compose up -d` |
+| Stop all services | `docker compose down` |
+| Rebuild containers | `docker compose up -d --build` |
+| View container logs | `docker compose logs -f app` |
+| Open a shell in app container | `docker compose exec app bash` |
+| Run an Artisan command | `docker compose exec app php artisan <command>` |
+| Run Composer | `docker compose exec app composer <command>` |
+| Access MySQL CLI | `docker compose exec mysql mysql -u cpms_user -psecret cpms` |
+| Reset database | `docker compose exec app php artisan migrate:fresh --seed` |
+
+## Useful Artisan Commands
+
+```bash
 # Generate application key
 docker compose exec app php artisan key:generate
 
@@ -231,19 +310,29 @@ docker compose exec app php artisan route:list
 
 # Run Pest tests
 docker compose exec app php artisan test
-Troubleshooting
-Port conflict on 8000 or 3307
-Change the host port mappings in docker-compose.yml under the ports key for webserver or mysql.
-.env changes not reflecting
-Clear the config cache inside the container:
-docker compose exec app php artisan config:clear
-MySQL connection refused
-Ensure the DB_HOST in .env is set to mysql (the Docker service name), not 127.0.0.1 or localhost.
-npm run dev not finding the app
-Make sure docker compose up -d is running before starting Vite. Vite needs the Laravel backend available at APP_URL.
-Vite assets not loading in browser
-Confirm VITE_APP_URL or APP_URL in .env matches the port your Nginx container exposes (default http://localhost:8000).
-Permission errors on storage or cache
-Fix file permissions inside the container:
-docker compose exec app chmod -R 775 storage bootstrap/cache
-docker compose exec app chown -R www-data:www-data storage bootstrap/cache
+```
+
+## Troubleshooting
+
+- Port conflict on `8000` or `3307`
+  Change the host port mappings in `docker-compose.yml` under the `ports` key for `webserver` or `mysql`.
+- `.env` changes not reflecting
+  Clear the config cache inside the container:
+
+  ```bash
+  docker compose exec app php artisan config:clear
+  ```
+
+- MySQL connection refused
+  Ensure the `DB_HOST` in `.env` is set to `mysql` (the Docker service name), not `127.0.0.1` or `localhost`.
+- `npm run dev` not finding the app
+  Make sure `docker compose up -d` is running before starting Vite. Vite needs the Laravel backend available at `APP_URL`.
+- Vite assets not loading in browser
+  Confirm `VITE_APP_URL` or `APP_URL` in `.env` matches the port your Nginx container exposes (default `http://localhost:8000`).
+- Permission errors on storage or cache
+  Fix file permissions inside the container:
+
+  ```bash
+  docker compose exec app chmod -R 775 storage bootstrap/cache
+  docker compose exec app chown -R www-data:www-data storage bootstrap/cache
+  ```
