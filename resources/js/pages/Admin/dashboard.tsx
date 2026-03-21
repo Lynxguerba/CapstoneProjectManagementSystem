@@ -44,11 +44,7 @@ const fallbackTrend = [24, 30, 28, 35, 39, 42, 47];
 
 const fallbackRoles: RoleDistribution[] = [];
 
-const AdminDashboard = ({
-    stats = fallbackStats,
-    approvalTrend = fallbackTrend,
-    roleDistribution = fallbackRoles,
-}: AdminDashboardProps) => {
+const AdminDashboard = ({ stats = fallbackStats, approvalTrend = fallbackTrend, roleDistribution = fallbackRoles }: AdminDashboardProps) => {
     const cards = [
         {
             label: 'Total Users',
