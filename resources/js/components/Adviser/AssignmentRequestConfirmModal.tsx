@@ -12,14 +12,7 @@ type AssignmentRequestConfirmModalProps = {
     onConfirm: () => void;
 };
 
-const AssignmentRequestConfirmModal = ({
-    open,
-    action,
-    groupName,
-    processing = false,
-    onClose,
-    onConfirm,
-}: AssignmentRequestConfirmModalProps) => {
+const AssignmentRequestConfirmModal = ({ open, action, groupName, processing = false, onClose, onConfirm }: AssignmentRequestConfirmModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
     const isDecline = action === 'decline';
     const title = isDecline ? 'Decline assignment request' : 'Remove reassignment notice';
