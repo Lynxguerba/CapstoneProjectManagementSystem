@@ -11,13 +11,7 @@ type AssignmentRequestApproveModalProps = {
     onConfirm: () => void;
 };
 
-const AssignmentRequestApproveModal = ({
-    open,
-    groupName,
-    processing = false,
-    onClose,
-    onConfirm,
-}: AssignmentRequestApproveModalProps) => {
+const AssignmentRequestApproveModal = ({ open, groupName, processing = false, onClose, onConfirm }: AssignmentRequestApproveModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
 
     React.useEffect(() => {
