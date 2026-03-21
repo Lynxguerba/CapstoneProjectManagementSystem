@@ -1,14 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import {
-    CalendarClock,
-    ChevronRight,
-    CreditCard,
-    FileText,
-    Filter,
-    Search,
-    ShieldCheck,
-} from 'lucide-react';
+import { CalendarClock, ChevronRight, CreditCard, FileText, Filter, Search, ShieldCheck } from 'lucide-react';
 import React from 'react';
 import AddRequirementModal from '../../components/Instructor/requirements/AddRequirementModal';
 import DeleteRequirementModal from '../../components/Instructor/requirements/DeleteRequirementModal';
