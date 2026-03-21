@@ -321,7 +321,9 @@ const AdviserDashboard = () => {
                                 </div>
                                 <p className="mt-1 text-xs text-slate-500">Document submissions from your assigned groups (last 6 weeks).</p>
                             </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">Last 6 weeks</span>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                                Last 6 weeks
+                            </span>
                         </div>
 
                         <Box sx={{ mt: 3 }}>
@@ -347,7 +349,9 @@ const AdviserDashboard = () => {
                                 </div>
                                 <p className="mt-1 text-xs text-slate-500">Latest submission statuses for assigned groups.</p>
                             </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">Current</span>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                                Current
+                            </span>
                         </div>
 
                         <Box sx={{ mt: 2 }}>
@@ -417,10 +421,10 @@ const AdviserDashboard = () => {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b border-slate-200 text-slate-600">
-                                        <th className="py-3 text-left text-[11px] font-semibold uppercase tracking-wide">Event</th>
-                                        <th className="py-3 text-left text-[11px] font-semibold uppercase tracking-wide">Date</th>
-                                        <th className="py-3 text-left text-[11px] font-semibold uppercase tracking-wide">Time</th>
-                                        <th className="py-3 text-left text-[11px] font-semibold uppercase tracking-wide">Room</th>
+                                        <th className="py-3 text-left text-[11px] font-semibold tracking-wide uppercase">Event</th>
+                                        <th className="py-3 text-left text-[11px] font-semibold tracking-wide uppercase">Date</th>
+                                        <th className="py-3 text-left text-[11px] font-semibold tracking-wide uppercase">Time</th>
+                                        <th className="py-3 text-left text-[11px] font-semibold tracking-wide uppercase">Room</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
