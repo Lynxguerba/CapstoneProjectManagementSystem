@@ -120,10 +120,10 @@ const AdviserConcepts = () => {
         });
     }, [bundles, query, selectedProgramSet, selectedAcademicYear]);
 
-    const selectedGroup = useMemo(() => filteredBundles.find((bundle) => bundle.group_id === selectedGroupId) ?? null, [
-        filteredBundles,
-        selectedGroupId,
-    ]);
+    const selectedGroup = useMemo(
+        () => filteredBundles.find((bundle) => bundle.group_id === selectedGroupId) ?? null,
+        [filteredBundles, selectedGroupId],
+    );
     const selectedConcept = useMemo(
         () => selectedGroup?.concepts.find((concept) => concept.id === selectedConceptId) ?? null,
         [selectedConceptId, selectedGroup],
@@ -266,26 +266,26 @@ const AdviserConcepts = () => {
                                         key={bundle.group_id}
                                         type="button"
                                         onClick={() => {
-                    setSelectedGroupId(bundle.group_id);
-                    setSelectedConceptId(null);
-                    setFeedback('');
-                }}
-                className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
-                    active ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white hover:bg-slate-50'
-                }`}
-            >
+                                            setSelectedGroupId(bundle.group_id);
+                                            setSelectedConceptId(null);
+                                            setFeedback('');
+                                        }}
+                                        className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+                                            active ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white hover:bg-slate-50'
+                                        }`}
+                                    >
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-slate-900">{bundle.group_name}</div>
-                        <div className="mt-1 text-[11px] text-slate-500">
-                            {bundle.program_set_name ?? 'Program set'}
-                            {bundle.school_year ? ` • ${bundle.school_year}` : ''}
-                        </div>
-                        <div className="mt-1 text-[11px] text-slate-500">Updated: {bundle.updated_at ?? '—'}</div>
-                    </div>
-                    <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                        {pendingCount} pending
-                    </span>
+                                                <div className="truncate text-sm font-semibold text-slate-900">{bundle.group_name}</div>
+                                                <div className="mt-1 text-[11px] text-slate-500">
+                                                    {bundle.program_set_name ?? 'Program set'}
+                                                    {bundle.school_year ? ` • ${bundle.school_year}` : ''}
+                                                </div>
+                                                <div className="mt-1 text-[11px] text-slate-500">Updated: {bundle.updated_at ?? '—'}</div>
+                                            </div>
+                                            <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                                                {pendingCount} pending
+                                            </span>
                                         </div>
                                     </button>
                                 );
@@ -339,9 +339,7 @@ const AdviserConcepts = () => {
                                                         setFeedback('');
                                                     }}
                                                     className={`rounded-xl border px-4 py-3 text-left transition-colors ${
-                                                        active
-                                                            ? 'border-emerald-200 bg-emerald-50'
-                                                            : 'border-slate-200 bg-white hover:bg-slate-50'
+                                                        active ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white hover:bg-slate-50'
                                                     }`}
                                                 >
                                                     <div className="line-clamp-2 text-sm font-semibold text-slate-900">{concept.title}</div>
