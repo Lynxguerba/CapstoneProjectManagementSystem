@@ -117,7 +117,7 @@ const GroupDetailsModal = ({ open, groupName, programSetName, schoolYear, member
                 <div className="space-y-4 p-4">
                     <div>
                         <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Members</p>
+                            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Members</p>
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                                 {orderedMembers.length} total
                             </span>
@@ -128,7 +128,7 @@ const GroupDetailsModal = ({ open, groupName, programSetName, schoolYear, member
                                 <div className="px-3 py-3 text-xs text-slate-500">No members found for this group.</div>
                             ) : (
                                 <table className="w-full text-left text-xs">
-                                    <thead className="sticky top-0 border-b border-slate-200 bg-slate-50/90 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                    <thead className="sticky top-0 border-b border-slate-200 bg-slate-50/90 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                                         <tr>
                                             <th className="px-4 py-2.5">Name</th>
                                             <th className="px-4 py-2.5">Email</th>
@@ -139,16 +139,12 @@ const GroupDetailsModal = ({ open, groupName, programSetName, schoolYear, member
                                     <tbody className="divide-y divide-slate-100">
                                         {orderedMembers.map((member) => {
                                             const roleLabel = member.is_leader ? 'Leader' : member.role ? member.role : 'Member';
-                                            const badgeClasses = member.is_leader
-                                                ? 'bg-emerald-200 text-emerald-800'
-                                                : 'bg-slate-100 text-slate-600';
+                                            const badgeClasses = member.is_leader ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-100 text-slate-600';
                                             const rowClasses = member.is_leader ? 'bg-emerald-50/60' : 'bg-white';
 
                                             return (
                                                 <tr key={member.id} className={rowClasses}>
-                                                    <td className="px-4 py-2.5 font-semibold text-slate-800">
-                                                        {member.name || 'Unnamed student'}
-                                                    </td>
+                                                    <td className="px-4 py-2.5 font-semibold text-slate-800">{member.name || 'Unnamed student'}</td>
                                                     <td className="px-4 py-2.5 text-slate-500">{member.email || 'No email on file'}</td>
                                                     <td className="px-4 py-2.5 text-slate-600">
                                                         <div className="font-semibold text-slate-700">{programSetName ?? 'Program set'}</div>
