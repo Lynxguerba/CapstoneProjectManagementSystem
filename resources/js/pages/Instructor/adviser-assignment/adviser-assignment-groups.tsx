@@ -442,19 +442,19 @@ const AdviserAssignmentGroups = ({
                             </div>
                             <div className="relative">
                                 <SlidersHorizontal className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                            <select
-                                value={statusFilter}
-                                onChange={(event) =>
-                                    setStatusFilter(event.target.value as 'all' | 'unassigned' | 'assigned' | 'reassign' | 'pending')
-                                }
-                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                            >
-                                <option value="all">All Statuses</option>
-                                <option value="unassigned">Unassigned</option>
-                                <option value="pending">Pending Approval</option>
-                                <option value="assigned">Assigned</option>
-                                <option value="reassign">Reassign</option>
-                            </select>
+                                <select
+                                    value={statusFilter}
+                                    onChange={(event) =>
+                                        setStatusFilter(event.target.value as 'all' | 'unassigned' | 'assigned' | 'reassign' | 'pending')
+                                    }
+                                    className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                                >
+                                    <option value="all">All Statuses</option>
+                                    <option value="unassigned">Unassigned</option>
+                                    <option value="pending">Pending Approval</option>
+                                    <option value="assigned">Assigned</option>
+                                    <option value="reassign">Reassign</option>
+                                </select>
                             </div>
                         </div>
 
@@ -524,10 +524,10 @@ const AdviserAssignmentGroups = ({
                                                         isPending
                                                             ? 'bg-amber-100 text-amber-700'
                                                             : isAssignedToAdviser
-                                                            ? 'bg-emerald-100 text-emerald-700'
-                                                            : group.adviser_id
-                                                              ? 'bg-amber-100 text-amber-700'
-                                                              : 'bg-slate-100 text-slate-600'
+                                                              ? 'bg-emerald-100 text-emerald-700'
+                                                              : group.adviser_id
+                                                                ? 'bg-amber-100 text-amber-700'
+                                                                : 'bg-slate-100 text-slate-600'
                                                     }`}
                                                 >
                                                     {statusLabel}
@@ -601,10 +601,10 @@ const AdviserAssignmentGroups = ({
                                         const statusClasses = isPending
                                             ? 'bg-amber-100 text-amber-700'
                                             : isAssignedToAdviser
-                                            ? 'bg-emerald-100 text-emerald-700'
-                                            : isReassign
-                                              ? 'bg-amber-100 text-amber-700'
-                                              : 'bg-slate-100 text-slate-600';
+                                              ? 'bg-emerald-100 text-emerald-700'
+                                              : isReassign
+                                                ? 'bg-amber-100 text-amber-700'
+                                                : 'bg-slate-100 text-slate-600';
 
                                         return (
                                             <tr key={group.id} className="transition-colors hover:bg-green-50/30">
