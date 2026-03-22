@@ -27,7 +27,7 @@ class AdminAuditLogController extends Controller
         $pagination = [
             'current_page' => 1,
             'last_page' => 1,
-            'per_page' => 15,
+            'per_page' => 10,
             'total' => 0,
         ];
 
@@ -57,7 +57,7 @@ class AdminAuditLogController extends Controller
                     })
                     ->orderByDesc('created_at');
 
-                $paginator = $logsQuery->paginate(15)->withQueryString();
+                $paginator = $logsQuery->paginate(10)->withQueryString();
 
                 $logs = $paginator
                     ->getCollection()

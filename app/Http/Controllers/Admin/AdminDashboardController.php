@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\DefenseRoom;
 use App\Models\DefenseSchedule;
 use App\Models\Group;
@@ -114,7 +115,7 @@ class AdminDashboardController extends Controller
             ],
             'roleDistribution' => $this->buildRoleDistribution($hasUsersTable, $hasRoleTables),
             'programDistribution' => $this->buildProgramDistribution($hasUsersTable, $hasRoleTables),
-            'activityTrend' => $this->buildActivityTrend($hasUsersTable, Schema::hasTable('groups')),
+            'activityTrend' => $this->buildActivityTrend(Schema::hasTable('audit_logs')),
         ]);
     }
 
@@ -237,51 +238,48 @@ class AdminDashboardController extends Controller
     }
 
     /**
-     * @return array{labels: array<int, string>, users: array<int, int>, groups: array<int, int>}
+     * @return array{labels: array<int, string>, info: array<int, int>, warning: array<int, int>, critical: array<int, int>}
      */
-    private function buildActivityTrend(bool $hasUsersTable, bool $hasGroupsTable): array
+    private function buildActivityTrend(bool $hasAuditLogsTable): array
     {
         $monthStarts = collect(range(5, 0))
             ->map(fn (int $offset) => now()->copy()->startOfMonth()->subMonths($offset));
         $windowStart = $monthStarts->first() ?? now()->copy()->startOfMonth()->subMonths(5);
 
-        $usersByMonth = collect();
-        if ($hasUsersTable && Schema::hasColumn('users', 'created_at')) {
-            $usersByMonth = User::query()
-                ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as total')
+        $auditCounts = collect();
+        if ($hasAuditLogsTable && Schema::hasColumn('audit_logs', 'created_at') && Schema::hasColumn('audit_logs', 'severity')) {
+            $auditCounts = AuditLog::query()
+                ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, severity, COUNT(*) as total')
                 ->whereDate('created_at', '>=', $windowStart->toDateString())
-                ->groupByRaw('YEAR(created_at), MONTH(created_at)')
+                ->groupByRaw('YEAR(created_at), MONTH(created_at), severity')
                 ->get()
-                ->mapWithKeys(fn (object $row): array => [sprintf('%04d-%02d', (int) $row->year, (int) $row->month) => (int) $row->total]);
-        }
-
-        $groupsByMonth = collect();
-        if ($hasGroupsTable && Schema::hasColumn('groups', 'created_at')) {
-            $groupsByMonth = Group::query()
-                ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as total')
-                ->whereDate('created_at', '>=', $windowStart->toDateString())
-                ->groupByRaw('YEAR(created_at), MONTH(created_at)')
-                ->get()
-                ->mapWithKeys(fn (object $row): array => [sprintf('%04d-%02d', (int) $row->year, (int) $row->month) => (int) $row->total]);
+                ->mapWithKeys(fn (object $row): array => [
+                    sprintf('%04d-%02d|%s', (int) $row->year, (int) $row->month, (string) $row->severity) => (int) $row->total,
+                ]);
         }
 
         $labels = $monthStarts
             ->map(fn ($month): string => $month->format('M'))
             ->values()
             ->all();
-        $users = $monthStarts
-            ->map(fn ($month): int => (int) $usersByMonth->get($month->format('Y-m'), 0))
+        $info = $monthStarts
+            ->map(fn ($month): int => (int) $auditCounts->get($month->format('Y-m').'|info', 0))
             ->values()
             ->all();
-        $groups = $monthStarts
-            ->map(fn ($month): int => (int) $groupsByMonth->get($month->format('Y-m'), 0))
+        $warning = $monthStarts
+            ->map(fn ($month): int => (int) $auditCounts->get($month->format('Y-m').'|warning', 0))
+            ->values()
+            ->all();
+        $critical = $monthStarts
+            ->map(fn ($month): int => (int) $auditCounts->get($month->format('Y-m').'|critical', 0))
             ->values()
             ->all();
 
         return [
             'labels' => $labels,
-            'users' => $users,
-            'groups' => $groups,
+            'info' => $info,
+            'warning' => $warning,
+            'critical' => $critical,
         ];
     }
 }

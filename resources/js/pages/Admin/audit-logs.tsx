@@ -44,7 +44,7 @@ const severityStyles: Record<AuditSeverity, string> = {
 const defaultPagination: PaginationMeta = {
     current_page: 1,
     last_page: 1,
-    per_page: 15,
+    per_page: 10,
     total: 0,
 };
 

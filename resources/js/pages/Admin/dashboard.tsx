@@ -43,8 +43,9 @@ type AdminDashboardProps = {
 
 type ActivityTrend = {
     labels: string[];
-    users: number[];
-    groups: number[];
+    info: number[];
+    warning: number[];
+    critical: number[];
 };
 
 const fallbackStats: DashboardStats = {
@@ -69,8 +70,9 @@ const fallbackProgramDistribution: ProgramDistribution[] = [
 ];
 const fallbackActivityTrend: ActivityTrend = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    users: [0, 0, 0, 0, 0, 0],
-    groups: [0, 0, 0, 0, 0, 0],
+    info: [0, 0, 0, 0, 0, 0],
+    warning: [0, 0, 0, 0, 0, 0],
+    critical: [0, 0, 0, 0, 0, 0],
 };
 
 const progressFor = (value: number, total: number): number => {
@@ -107,7 +109,10 @@ const Dashboard = () => {
     const programTotal = programDistribution.reduce((sum, item) => sum + item.value, 0);
     const hasProgramData = programTotal > 0;
     const studentProgramCoverage = progressFor(programTotal, stats.totalStudents);
-    const hasActivityData = activityTrend.users.some((value) => value > 0) || activityTrend.groups.some((value) => value > 0);
+    const hasActivityData =
+        activityTrend.info.some((value) => value > 0) ||
+        activityTrend.warning.some((value) => value > 0) ||
+        activityTrend.critical.some((value) => value > 0);
 
     const activeUserProgress = progressFor(stats.activeUsers, stats.totalUsers);
     const adviserCoverageProgress = progressFor(stats.groupsWithAdviser, stats.activeGroups);
@@ -445,11 +450,11 @@ const Dashboard = () => {
                 >
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h3 className="text-sm font-semibold text-slate-900">System Activity Trend</h3>
-                            <p className="mt-1 text-xs text-slate-500">New user accounts and new groups created over the last 6 months.</p>
+                            <h3 className="text-sm font-semibold text-slate-900">Audit Logs Trend</h3>
+                            <p className="mt-1 text-xs text-slate-500">Monthly audit-log activity by severity for the last 6 months.</p>
                         </div>
                         <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                            Last 6 Months
+                            Audit Timeline
                         </span>
                     </div>
 
@@ -460,16 +465,22 @@ const Dashboard = () => {
                                 xAxis={[{ data: activityTrend.labels, scaleType: 'point' }]}
                                 series={[
                                     {
-                                        data: activityTrend.users,
-                                        label: 'New User Accounts',
+                                        data: activityTrend.info,
+                                        label: 'Info Logs',
                                         color: '#059669',
                                         area: true,
                                         showMark: false,
                                     },
                                     {
-                                        data: activityTrend.groups,
-                                        label: 'New Groups',
+                                        data: activityTrend.warning,
+                                        label: 'Warning Logs',
                                         color: '#0f766e',
+                                        showMark: false,
+                                    },
+                                    {
+                                        data: activityTrend.critical,
+                                        label: 'Critical Logs',
+                                        color: '#dc2626',
                                         showMark: false,
                                     },
                                 ]}
@@ -480,7 +491,7 @@ const Dashboard = () => {
                         </Box>
                     ) : (
                         <div className="mt-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-xs text-slate-500">
-                            No activity trends available yet.
+                            No audit log trends available yet.
                         </div>
                     )}
                 </motion.section>
