@@ -175,9 +175,9 @@ const SignOutModal = ({ open, onClose, activeRole, assignedRoles }: SignOutModal
                                 </button>
 
                                 {showRoleTooltip ? (
-                                    <div className="absolute right-0 bottom-12 z-20 w-56 rounded-xl border border-blue-200 bg-white p-2 shadow-xl">
+                                    <div className="absolute right-0 bottom-full z-30 mb-2 w-56 rounded-xl border border-blue-200 bg-white p-2 shadow-xl">
                                         <p className="px-2 pb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">Assigned Roles</p>
-                                        <div className="space-y-1">
+                                        <div className="max-h-28 space-y-1 overflow-y-auto pr-1">
                                             {uniqueRoles.map((role) => {
                                                 const isActive = role === activeRole;
 
