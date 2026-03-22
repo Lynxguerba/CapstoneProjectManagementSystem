@@ -48,6 +48,30 @@ const defaultPagination: PaginationMeta = {
     total: 0,
 };
 
+const localTimestampFormatter = new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+    timeZoneName: 'short',
+});
+
+const formatLocalTimestamp = (value: string): string => {
+    if (value.trim() === '') {
+        return '';
+    }
+
+    const parsedDate = new Date(value);
+    if (Number.isNaN(parsedDate.getTime())) {
+        return value;
+    }
+
+    return localTimestampFormatter.format(parsedDate);
+};
+
 const AdminAuditLogs = ({ logs = [], filters, pagination = defaultPagination }: AuditLogsProps) => {
     const [query, setQuery] = React.useState(filters?.search ?? '');
     const [severity, setSeverity] = React.useState<AuditSeverity | 'all'>(filters?.severity ?? 'all');
@@ -178,7 +202,7 @@ const AdminAuditLogs = ({ logs = [], filters, pagination = defaultPagination }: 
                     <table className="w-full text-left text-xs">
                         <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                             <tr>
-                                <th className="px-4 py-3">Timestamp</th>
+                                <th className="px-4 py-3">Timestamp (Local)</th>
                                 <th className="px-4 py-3">Actor</th>
                                 <th className="px-4 py-3">Action</th>
                                 <th className="px-4 py-3">Entity</th>
@@ -188,7 +212,7 @@ const AdminAuditLogs = ({ logs = [], filters, pagination = defaultPagination }: 
                         <tbody className="divide-y divide-slate-100">
                             {logs.map((log, index) => (
                                 <tr key={log.id} className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/20'}`}>
-                                    <td className="px-4 py-3 whitespace-nowrap text-slate-600">{log.timestamp}</td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-slate-600">{formatLocalTimestamp(log.timestamp)}</td>
                                     <td className="px-4 py-3 font-semibold text-slate-800">{log.actor}</td>
                                     <td className="px-4 py-3 text-slate-700">{log.action}</td>
                                     <td className="px-4 py-3 text-slate-600">{log.entity}</td>

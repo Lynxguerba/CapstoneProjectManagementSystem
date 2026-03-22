@@ -238,48 +238,29 @@ class AdminDashboardController extends Controller
     }
 
     /**
-     * @return array{labels: array<int, string>, info: array<int, int>, warning: array<int, int>, critical: array<int, int>}
+     * @return array{events: array<int, array{occurredAt: string, severity: string}>}
      */
     private function buildActivityTrend(bool $hasAuditLogsTable): array
     {
-        $dayStarts = collect(range(6, 0))
-            ->map(fn (int $offset) => now()->copy()->startOfDay()->subDays($offset));
-        $windowStart = $dayStarts->first() ?? now()->copy()->startOfDay()->subDays(6);
+        $windowStart = now()->copy()->startOfDay()->subDays(9);
 
-        $auditCounts = collect();
+        $events = collect();
         if ($hasAuditLogsTable && Schema::hasColumn('audit_logs', 'created_at') && Schema::hasColumn('audit_logs', 'severity')) {
-            $auditCounts = AuditLog::query()
-                ->selectRaw('DATE(created_at) as logged_on, severity, COUNT(*) as total')
-                ->whereDate('created_at', '>=', $windowStart->toDateString())
-                ->groupByRaw('DATE(created_at), severity')
-                ->get()
-                ->mapWithKeys(fn (object $row): array => [
-                    (string) $row->logged_on.'|'.(string) $row->severity => (int) $row->total,
-                ]);
+            $events = AuditLog::query()
+                ->where('created_at', '>=', $windowStart)
+                ->whereIn('severity', ['info', 'warning', 'critical'])
+                ->orderBy('created_at')
+                ->get(['created_at', 'severity'])
+                ->map(fn (AuditLog $log): array => [
+                    'occurredAt' => $log->created_at?->utc()->toIso8601String() ?? '',
+                    'severity' => (string) $log->severity,
+                ])
+                ->filter(fn (array $event): bool => $event['occurredAt'] !== '')
+                ->values();
         }
 
-        $labels = $dayStarts
-            ->map(fn ($day): string => $day->format('D'))
-            ->values()
-            ->all();
-        $info = $dayStarts
-            ->map(fn ($day): int => (int) $auditCounts->get($day->toDateString().'|info', 0))
-            ->values()
-            ->all();
-        $warning = $dayStarts
-            ->map(fn ($day): int => (int) $auditCounts->get($day->toDateString().'|warning', 0))
-            ->values()
-            ->all();
-        $critical = $dayStarts
-            ->map(fn ($day): int => (int) $auditCounts->get($day->toDateString().'|critical', 0))
-            ->values()
-            ->all();
-
         return [
-            'labels' => $labels,
-            'info' => $info,
-            'warning' => $warning,
-            'critical' => $critical,
+            'events' => $events->all(),
         ];
     }
 }

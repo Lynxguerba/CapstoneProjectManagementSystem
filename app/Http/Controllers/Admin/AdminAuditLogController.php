@@ -35,6 +35,12 @@ class AdminAuditLogController extends Controller
             try {
                 $logsQuery = AuditLog::query()
                     ->with('user:id,name,first_name,last_name')
+                    ->where(function (Builder $query): void {
+                        $query
+                            ->whereNull('route_name')
+                            ->orWhere('route_name', '!=', 'switch-role');
+                    })
+                    ->where('action', 'not like', '%Switch Role%')
                     ->when($filters['search'] !== '', function (Builder $query) use ($filters): void {
                         $term = $filters['search'];
 
@@ -66,7 +72,7 @@ class AdminAuditLogController extends Controller
                         'actor' => $this->resolveActorName($log->user, $log->actor_name),
                         'action' => $log->action,
                         'entity' => $log->entity ?? 'System',
-                        'timestamp' => $log->created_at?->format('Y-m-d H:i:s') ?? '',
+                        'timestamp' => $log->created_at?->utc()->toIso8601String() ?? '',
                         'severity' => $this->normalizeSeverity($log->severity),
                         'description' => $log->description,
                     ])

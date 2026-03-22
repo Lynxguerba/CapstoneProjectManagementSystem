@@ -34,6 +34,20 @@ type ProgramDistribution = {
     color: string;
 };
 
+type ActivitySeverity = 'info' | 'warning' | 'critical';
+
+type ActivityTrendEvent = {
+    occurredAt: string;
+    severity: ActivitySeverity;
+};
+
+type ActivityTrendSeries = {
+    labels: string[];
+    info: number[];
+    warning: number[];
+    critical: number[];
+};
+
 type AdminDashboardProps = {
     stats?: DashboardStats;
     roleDistribution?: RoleDistribution[];
@@ -42,10 +56,7 @@ type AdminDashboardProps = {
 };
 
 type ActivityTrend = {
-    labels: string[];
-    info: number[];
-    warning: number[];
-    critical: number[];
+    events: ActivityTrendEvent[];
 };
 
 const fallbackStats: DashboardStats = {
@@ -69,10 +80,7 @@ const fallbackProgramDistribution: ProgramDistribution[] = [
     { label: 'BSIS', value: 0, color: '#22c55e' },
 ];
 const fallbackActivityTrend: ActivityTrend = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    info: [0, 0, 0, 0, 0, 0, 0],
-    warning: [0, 0, 0, 0, 0, 0, 0],
-    critical: [0, 0, 0, 0, 0, 0, 0],
+    events: [],
 };
 
 const progressFor = (value: number, total: number): number => {
@@ -81,6 +89,62 @@ const progressFor = (value: number, total: number): number => {
     }
 
     return Math.round((value / total) * 100);
+};
+
+const toLocalDateKey = (value: Date): string => {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+};
+
+const buildLocalActivityTrendSeries = (events: ActivityTrendEvent[]): ActivityTrendSeries => {
+    const dayStarts = Array.from({ length: 7 }, (_, index) => {
+        const dayStart = new Date();
+        dayStart.setHours(0, 0, 0, 0);
+        dayStart.setDate(dayStart.getDate() - (6 - index));
+
+        return dayStart;
+    });
+
+    const labels = dayStarts.map((dayStart) => dayStart.toLocaleDateString(undefined, { weekday: 'short' }));
+    const info = Array.from({ length: 7 }, () => 0);
+    const warning = Array.from({ length: 7 }, () => 0);
+    const critical = Array.from({ length: 7 }, () => 0);
+    const dayIndexByKey = new Map(dayStarts.map((dayStart, index): [string, number] => [toLocalDateKey(dayStart), index]));
+
+    events.forEach((event) => {
+        const parsedDate = new Date(event.occurredAt);
+
+        if (Number.isNaN(parsedDate.getTime())) {
+            return;
+        }
+
+        const dayIndex = dayIndexByKey.get(toLocalDateKey(parsedDate));
+        if (dayIndex === undefined) {
+            return;
+        }
+
+        if (event.severity === 'info') {
+            info[dayIndex] += 1;
+            return;
+        }
+
+        if (event.severity === 'warning') {
+            warning[dayIndex] += 1;
+            return;
+        }
+
+        critical[dayIndex] += 1;
+    });
+
+    return {
+        labels,
+        info,
+        warning,
+        critical,
+    };
 };
 
 const Dashboard = () => {
@@ -109,10 +173,14 @@ const Dashboard = () => {
     const programTotal = programDistribution.reduce((sum, item) => sum + item.value, 0);
     const hasProgramData = programTotal > 0;
     const studentProgramCoverage = progressFor(programTotal, stats.totalStudents);
+    const activityTrendSeries = React.useMemo(
+        () => buildLocalActivityTrendSeries(activityTrend.events),
+        [activityTrend.events],
+    );
     const hasActivityData =
-        activityTrend.info.some((value) => value > 0) ||
-        activityTrend.warning.some((value) => value > 0) ||
-        activityTrend.critical.some((value) => value > 0);
+        activityTrendSeries.info.some((value) => value > 0) ||
+        activityTrendSeries.warning.some((value) => value > 0) ||
+        activityTrendSeries.critical.some((value) => value > 0);
 
     const activeUserProgress = progressFor(stats.activeUsers, stats.totalUsers);
     const adviserCoverageProgress = progressFor(stats.groupsWithAdviser, stats.activeGroups);
@@ -451,7 +519,7 @@ const Dashboard = () => {
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h3 className="text-sm font-semibold text-slate-900">Audit Logs Trend</h3>
-                            <p className="mt-1 text-xs text-slate-500">Daily audit-log activity by severity for the last 7 days.</p>
+                            <p className="mt-1 text-xs text-slate-500">Daily audit-log activity by severity for the last 7 days (local time).</p>
                         </div>
                         <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
                             Audit Timeline
@@ -462,23 +530,23 @@ const Dashboard = () => {
                         <Box>
                             <LineChart
                                 height={260}
-                                xAxis={[{ data: activityTrend.labels, scaleType: 'point' }]}
+                                xAxis={[{ data: activityTrendSeries.labels, scaleType: 'point' }]}
                                 series={[
                                     {
-                                        data: activityTrend.info,
+                                        data: activityTrendSeries.info,
                                         label: 'Info Logs',
                                         color: '#059669',
                                         area: true,
                                         showMark: false,
                                     },
                                     {
-                                        data: activityTrend.warning,
+                                        data: activityTrendSeries.warning,
                                         label: 'Warning Logs',
                                         color: '#0f766e',
                                         showMark: false,
                                     },
                                     {
-                                        data: activityTrend.critical,
+                                        data: activityTrendSeries.critical,
                                         label: 'Critical Logs',
                                         color: '#dc2626',
                                         showMark: false,
