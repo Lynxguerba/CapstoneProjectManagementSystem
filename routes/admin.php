@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminAuditLogController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminSystemSettingsController;
 use App\Http\Controllers\Admin\AdminUserController;
@@ -640,9 +641,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     })->name('admin.monitoring.scheduling');
     Route::get('/system-settings', [AdminSystemSettingsController::class, 'edit'])->name('admin.system-settings');
     Route::put('/system-settings', [AdminSystemSettingsController::class, 'update'])->name('admin.system-settings.update');
-    Route::get('/audit-logs', function () {
-        return Inertia::render('Admin/audit-logs');
-    })->name('admin.audit-logs');
+    Route::get('/audit-logs', AdminAuditLogController::class)->name('admin.audit-logs');
 
     Route::get('/project-repository', function () {
         return Inertia::render('Admin/project-repository');
