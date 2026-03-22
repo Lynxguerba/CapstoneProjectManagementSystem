@@ -242,36 +242,36 @@ class AdminDashboardController extends Controller
      */
     private function buildActivityTrend(bool $hasAuditLogsTable): array
     {
-        $monthStarts = collect(range(5, 0))
-            ->map(fn (int $offset) => now()->copy()->startOfMonth()->subMonths($offset));
-        $windowStart = $monthStarts->first() ?? now()->copy()->startOfMonth()->subMonths(5);
+        $dayStarts = collect(range(6, 0))
+            ->map(fn (int $offset) => now()->copy()->startOfDay()->subDays($offset));
+        $windowStart = $dayStarts->first() ?? now()->copy()->startOfDay()->subDays(6);
 
         $auditCounts = collect();
         if ($hasAuditLogsTable && Schema::hasColumn('audit_logs', 'created_at') && Schema::hasColumn('audit_logs', 'severity')) {
             $auditCounts = AuditLog::query()
-                ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, severity, COUNT(*) as total')
+                ->selectRaw('DATE(created_at) as logged_on, severity, COUNT(*) as total')
                 ->whereDate('created_at', '>=', $windowStart->toDateString())
-                ->groupByRaw('YEAR(created_at), MONTH(created_at), severity')
+                ->groupByRaw('DATE(created_at), severity')
                 ->get()
                 ->mapWithKeys(fn (object $row): array => [
-                    sprintf('%04d-%02d|%s', (int) $row->year, (int) $row->month, (string) $row->severity) => (int) $row->total,
+                    (string) $row->logged_on.'|'.(string) $row->severity => (int) $row->total,
                 ]);
         }
 
-        $labels = $monthStarts
-            ->map(fn ($month): string => $month->format('M'))
+        $labels = $dayStarts
+            ->map(fn ($day): string => $day->format('D'))
             ->values()
             ->all();
-        $info = $monthStarts
-            ->map(fn ($month): int => (int) $auditCounts->get($month->format('Y-m').'|info', 0))
+        $info = $dayStarts
+            ->map(fn ($day): int => (int) $auditCounts->get($day->toDateString().'|info', 0))
             ->values()
             ->all();
-        $warning = $monthStarts
-            ->map(fn ($month): int => (int) $auditCounts->get($month->format('Y-m').'|warning', 0))
+        $warning = $dayStarts
+            ->map(fn ($day): int => (int) $auditCounts->get($day->toDateString().'|warning', 0))
             ->values()
             ->all();
-        $critical = $monthStarts
-            ->map(fn ($month): int => (int) $auditCounts->get($month->format('Y-m').'|critical', 0))
+        $critical = $dayStarts
+            ->map(fn ($day): int => (int) $auditCounts->get($day->toDateString().'|critical', 0))
             ->values()
             ->all();
 

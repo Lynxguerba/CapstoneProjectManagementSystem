@@ -69,10 +69,10 @@ const fallbackProgramDistribution: ProgramDistribution[] = [
     { label: 'BSIS', value: 0, color: '#22c55e' },
 ];
 const fallbackActivityTrend: ActivityTrend = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    info: [0, 0, 0, 0, 0, 0],
-    warning: [0, 0, 0, 0, 0, 0],
-    critical: [0, 0, 0, 0, 0, 0],
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    info: [0, 0, 0, 0, 0, 0, 0],
+    warning: [0, 0, 0, 0, 0, 0, 0],
+    critical: [0, 0, 0, 0, 0, 0, 0],
 };
 
 const progressFor = (value: number, total: number): number => {
@@ -451,7 +451,7 @@ const Dashboard = () => {
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h3 className="text-sm font-semibold text-slate-900">Audit Logs Trend</h3>
-                            <p className="mt-1 text-xs text-slate-500">Monthly audit-log activity by severity for the last 6 months.</p>
+                            <p className="mt-1 text-xs text-slate-500">Daily audit-log activity by severity for the last 7 days.</p>
                         </div>
                         <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
                             Audit Timeline
