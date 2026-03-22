@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adviser Dashboard – Adviser | Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, .85);
+            backdrop-filter: blur(12px);
+        }
+
+        .hover-lift {
+            transition: transform .2s, box-shadow .2s;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+        }
+
+        .badge {
+            padding: .2rem .65rem;
+            border-radius: 9999px;
+            font-size: .72rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+        }
+
+        .badge-green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-amber {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .badge-red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-slate {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .nav-active {
+            background: linear-gradient(135deg, #059669, #10b981) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, .3);
+        }
+
+        .nav-active i,
+        .nav-active span {
+            color: white !important;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .65);
+            backdrop-filter: blur(6px);
+            z-index: 400;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+            animation: fadeIn .18s ease;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 1.25rem;
+            box-shadow: 0 32px 80px rgba(0, 0, 0, .28);
+            width: 100%;
+            max-width: 580px;
+        }
+
+        .modal-lg {
+            max-width: 780px;
+        }
+
+        .modal-xl {
+            max-width: 1020px;
+        }
+
+        .modal-header {
+            padding: 1.1rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-body {
+            padding: 1.4rem 1.5rem;
+            max-height: 72vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: .9rem 1.5rem;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: flex-end;
+            gap: .65rem;
+            background: #fafafa;
+            border-radius: 0 0 1.25rem 1.25rem;
+        }
+
+        .form-label {
+            font-size: .72rem;
+            font-weight: 700;
+            color: #374151;
+            display: block;
+            margin-bottom: .3rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .form-input {
+            width: 100%;
+            border: 1.5px solid #e2e8f0;
+            border-radius: .6rem;
+            padding: .55rem .8rem;
+            font-size: .83rem;
+            color: #1e293b;
+            outline: none;
+            transition: border .2s;
+        }
+
+        .form-input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, .12);
+        }
+
+        .section-div {
+            font-size: .68rem;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin: 1rem 0 .6rem;
+            padding-bottom: .4rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .btn {
+            padding: .5rem 1.1rem;
+            border-radius: .65rem;
+            font-size: .82rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            transition: all .2s;
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: white;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, .35);
+        }
+
+        .btn-green:hover {
+            opacity: .9;
+        }
+
+        .btn-red {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+        }
+
+        .btn-red:hover {
+            opacity: .9;
+        }
+
+        .btn-ghost {
+            background: white;
+            color: #475569;
+            border: 1.5px solid #e2e8f0;
+        }
+
+        .btn-ghost:hover {
+            background: #f0fdf4;
+            border-color: #10b981;
+            color: #059669;
+        }
+
+        .tbl {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .82rem;
+        }
+
+        .tbl thead tr {
+            background: #f8fafc;
+        }
+
+        .tbl th {
+            padding: .8rem 1.1rem;
+            text-align: left;
+            font-weight: 700;
+            color: #64748b;
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            white-space: nowrap;
+        }
+
+        .tbl td {
+            padding: .85rem 1.1rem;
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        .tbl tbody tr {
+            border-top: 1px solid #f1f5f9;
+            transition: background .12s;
+        }
+
+        .tbl tbody tr:hover {
+            background: #f0fdf4;
+        }
+
+        .tab-btn {
+            padding: .55rem 1.1rem;
+            font-size: .82rem;
+            font-weight: 500;
+            color: #64748b;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            transition: all .2s;
+        }
+
+        .tab-btn.on {
+            color: #059669;
+            border-bottom-color: #10b981;
+            font-weight: 700;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.on {
+            display: block;
+            animation: fadeIn .2s ease;
+        }
+
+        .prog {
+            height: .45rem;
+            border-radius: 9999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .prog-fill {
+            height: 100%;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, #059669, #10b981);
+        }
+
+        .comment-highlight {
+            background: #bbf7d0;
+            border-bottom: 2px solid #10b981;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        .inline-comment {
+            background: #f0fdf4;
+            border-left: 3px solid #10b981;
+            padding: .4rem .75rem;
+            border-radius: 0 .5rem .5rem 0;
+            margin: .4rem 0;
+            font-size: .78rem;
+            color: #065f46;
+        }
+
+        .activity-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: .65rem;
+            padding: .6rem 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1
+            }
+        }
+
+        .slide-up {
+            animation: slideUp .3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex text-slate-700">
+    <aside
+        class="w-64 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl z-50">
+        <div class="p-4 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-3">
+                <div
+                    class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-user-tie text-lg text-white"></i></div>
+                <div>
+                    <h1
+                        class="text-base font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-[10px] text-slate-400">Adviser Portal</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+                <div class="bg-slate-700/50 rounded-lg p-1.5 text-center">
+                    <p class="text-[9px] text-slate-400">AY 2024-2025</p>
+                    <p class="text-[11px] font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-1.5 text-center">
+                    <p class="text-[9px] text-slate-400">Groups</p>
+                    <p class="text-[11px] font-semibold text-emerald-400">5 Assigned</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 p-3 overflow-y-auto space-y-0.5 text-[13px]">
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5">Main</p><a
+                href="adviser-dashboard.html"
+                class="nav-active flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i
+                    class="fas fa-tachometer-alt w-4 text-[11px]"></i><span class="flex-1">Dashboard</span></a>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 mt-1">My Groups</p><a
+                href="adviser-my-groups.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i
+                    class="fas fa-users w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span
+                    class="flex-1">Assigned Groups</span><span
+                    class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">5</span></a><a
+                href="adviser-submissions.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i
+                    class="fas fa-file-alt w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span
+                    class="flex-1">Submissions</span><span
+                    class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">3</span></a><a
+                href="adviser-feedback.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i
+                    class="fas fa-comments w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span
+                    class="flex-1">Feedback & Comments</span></a>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 mt-1">Capstone Phases</p>
+            <a href="adviser-phase1.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-lightbulb text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 1</span><span
+                        class="block text-[9px] text-slate-500">Concept Review</span></div><span
+                    class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">2</span>
+            </a><a href="adviser-phase2.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-list-alt text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 2</span><span
+                        class="block text-[9px] text-slate-500">Outline & Chap. 1</span></div>
+            </a><a href="adviser-phase3.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-flask text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 3</span><span
+                        class="block text-[9px] text-slate-500">Pre-Deployment</span></div>
+            </a><a href="adviser-phase4.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-rocket text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 4</span><span
+                        class="block text-[9px] text-slate-500">Deployment</span></div>
+            </a><a href="adviser-phase5.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-flag-checkered text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 5</span><span
+                        class="block text-[9px] text-slate-500">Final Defense</span></div>
+            </a>
+        </nav>
+        <div class="p-3 border-t border-slate-700/50">
+            <div class="flex items-center gap-2.5">
+                <div
+                    class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-xs shadow">
+                    AR</div>
+                <div class="flex-1">
+                    <p class="font-semibold text-xs">Prof. A. Reyes</p>
+                    <p class="text-[10px] text-slate-400">Capstone Adviser</p>
+                </div><a href="instructor-dashboard-clean.html" title="Switch View"
+                    class="w-7 h-7 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"><i
+                        class="fas fa-exchange-alt text-slate-400 text-[10px]"></i></a>
+            </div>
+        </div>
+    </aside>
+    <main class="flex-1 ml-64">
+        <div
+            class="glass border-b border-slate-200/60 px-7 py-3.5 flex justify-between items-center sticky top-0 z-40 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                        class="fas fa-tachometer-alt text-emerald-600"></i></div>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Dashboard</h2>
+                    <p class="text-[11px] text-slate-400">AY 2024-2025 · 1st Semester · Prof. A. Reyes</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2"><a href="adviser-submissions.html"
+                    class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-xs text-emerald-700 hover:bg-emerald-100 transition"><i
+                        class="fas fa-hourglass-half text-emerald-500"></i><span><strong>3</strong> awaiting
+                        review</span></a>
+                <div class="relative"><button
+                        class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition"><i
+                            class="fas fa-bell text-slate-600 text-sm"></i></button>
+                    <div class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 space-y-5 pb-12">
+
+            <!-- Payment Alert Banner -->
+            <div class="bg-red-50 border border-red-200 rounded-2xl px-5 py-3 flex items-center gap-3">
+                <div class="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-lock text-red-600 text-sm"></i></div>
+                <div class="flex-1">
+                    <p class="text-sm font-semibold text-red-700"><i class="fas fa-exclamation-circle mr-1"></i> Payment
+                        Alert — Group Delta is <span class="underline">Unpaid</span></p>
+                    <p class="text-[11px] text-red-500 mt-0.5">Defense schedule access is system-locked until payment is
+                        verified by the Coordinator. No action needed from you.</p>
+                </div>
+                <a href="adviser-my-groups.html"
+                    class="text-[11px] bg-red-100 hover:bg-red-200 text-red-700 font-semibold px-3 py-1.5 rounded-lg transition flex-shrink-0">View
+                    Group</a>
+            </div>
+
+            <!-- Stat Cards -->
+            <div class="grid grid-cols-4 gap-4">
+                <a href="adviser-my-groups.html"
+                    class="bg-white rounded-2xl border border-slate-100 p-5 hover-lift shadow-sm block group">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                                class="fas fa-users text-emerald-600"></i></div><i
+                            class="fas fa-arrow-right text-xs text-slate-300 group-hover:text-emerald-400 transition"></i>
+                    </div>
+                    <p class="text-3xl font-bold text-slate-800">5</p>
+                    <p class="text-sm text-slate-500 mt-1">Assigned Groups</p>
+                    <p class="text-[10px] text-emerald-600 mt-2 flex items-center gap-1"><i
+                            class="fas fa-shield-alt"></i> Group-isolated · Data private</p>
+                </a>
+                <a href="adviser-submissions.html"
+                    class="bg-white rounded-2xl border border-slate-100 p-5 hover-lift shadow-sm block group">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                                class="fas fa-hourglass-half text-emerald-600"></i></div><span
+                            class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">Urgent</span>
+                    </div>
+                    <p class="text-3xl font-bold text-emerald-600">3</p>
+                    <p class="text-sm text-slate-500 mt-1">Pending Reviews</p>
+                    <p class="text-[10px] text-slate-400 mt-2 flex items-center gap-1"><i class="fas fa-pen-nib"></i>
+                        Digital affirmation required</p>
+                </a>
+                <a href="adviser-submissions.html"
+                    class="bg-white rounded-2xl border border-slate-100 p-5 hover-lift shadow-sm block group">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                                class="fas fa-check-circle text-emerald-600"></i></div><i
+                            class="fas fa-arrow-right text-xs text-slate-300 group-hover:text-emerald-400 transition"></i>
+                    </div>
+                    <p class="text-3xl font-bold text-emerald-600">2</p>
+                    <p class="text-sm text-slate-500 mt-1">Approved</p>
+                    <p class="text-[10px] text-emerald-600 mt-2 flex items-center gap-1"><i class="fas fa-file-pdf"></i>
+                        PDF Approval Sheets auto-generated</p>
+                </a>
+                <a href="adviser-submissions.html"
+                    class="bg-white rounded-2xl border border-slate-100 p-5 hover-lift shadow-sm block group">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                                class="fas fa-redo text-emerald-600"></i></div><i
+                            class="fas fa-arrow-right text-xs text-slate-300 group-hover:text-emerald-400 transition"></i>
+                    </div>
+                    <p class="text-3xl font-bold text-slate-600">1</p>
+                    <p class="text-sm text-slate-500 mt-1">For Resubmission</p>
+                    <p class="text-[10px] text-red-400 mt-2 flex items-center gap-1"><i
+                            class="fas fa-exclamation-triangle"></i> Original deadline still applies</p>
+                </a>
+            </div>
+            <!-- Charts + Activity -->
+            <div class="grid grid-cols-3 gap-5">
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col">
+                    <p class="font-semibold text-slate-800 text-sm flex items-center gap-2 mb-0.5"><i
+                            class="fas fa-chart-pie text-emerald-500"></i> Group Status</p>
+                    <p class="text-xs text-slate-400 mb-4">Current semester overview</p>
+                    <div class="flex-1 relative" style="min-height:170px"><canvas id="groupStatusChart"></canvas></div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col">
+                    <div class="flex items-center justify-between mb-0.5">
+                        <p class="font-semibold text-slate-800 text-sm flex items-center gap-2"><i
+                                class="fas fa-chart-line text-emerald-500"></i> Weekly Submissions</p><span
+                            class="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-medium">Mar
+                            9–15</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">Submissions received this week</p>
+                    <div class="flex-1 relative" style="min-height:170px"><canvas id="submissionLineChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col">
+                    <p class="font-semibold text-slate-800 text-sm flex items-center gap-2 mb-0.5"><i
+                            class="fas fa-bolt text-emerald-500"></i> Recent Activity</p>
+                    <p class="text-xs text-slate-400 mb-4">Latest actions</p>
+                    <div class="flex-1 space-y-0 overflow-y-auto">
+                        <div class="activity-item">
+                            <div class="activity-dot bg-emerald-400 flex-shrink-0"></div>
+                            <div>
+                                <p class="text-xs font-medium text-slate-700">Group Alpha submitted concept titles</p>
+                                <p class="text-[10px] text-slate-400">10 mins ago</p>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot bg-emerald-500 flex-shrink-0"></div>
+                            <div>
+                                <p class="text-xs font-medium text-slate-700">Group Beta resubmitted revised concept</p>
+                                <p class="text-[10px] text-slate-400">1 hour ago</p>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot bg-green-500 flex-shrink-0"></div>
+                            <div>
+                                <p class="text-xs font-medium text-slate-700">You approved Group Gamma's concept</p>
+                                <p class="text-[10px] text-slate-400">Yesterday</p>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot bg-red-400 flex-shrink-0"></div>
+                            <div>
+                                <p class="text-xs font-medium text-slate-700">Returned Group Delta for resubmission</p>
+                                <p class="text-[10px] text-slate-400">Yesterday</p>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot bg-emerald-600 flex-shrink-0"></div>
+                            <div>
+                                <p class="text-xs font-medium text-slate-700">Defense scheduled: Group Epsilon</p>
+                                <p class="text-[10px] text-slate-400">Mar 11, 2026</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Defenses + Deadlines -->
+            <div class="grid grid-cols-2 gap-5">
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                    <p class="font-semibold text-slate-800 text-sm flex items-center gap-2 mb-0.5"><i
+                            class="fas fa-calendar-check text-emerald-500"></i> Upcoming Defenses</p>
+                    <p class="text-xs text-slate-400 mb-4">Next scheduled presentations</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="flex items-start gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                            <div
+                                class="w-10 h-10 bg-emerald-100 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
+                                <span class="text-xs font-bold text-emerald-700 leading-none">15</span><span
+                                    class="text-[9px] text-emerald-500 leading-none">MAR</span></div>
+                            <div>
+                                <p class="font-medium text-sm text-slate-800">Group Gamma</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Phase 2 · Room 201</p>
+                                <p class="text-xs text-emerald-600 mt-0.5 font-medium">9:00–10:30 AM</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                            <div
+                                class="w-10 h-10 bg-emerald-100 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
+                                <span class="text-xs font-bold text-emerald-700 leading-none">18</span><span
+                                    class="text-[9px] text-emerald-500 leading-none">MAR</span></div>
+                            <div>
+                                <p class="font-medium text-sm text-slate-800">Group Epsilon</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Phase 1 · Room 202</p>
+                                <p class="text-xs text-emerald-600 mt-0.5 font-medium">1:00–2:30 PM</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                    <div class="flex items-center justify-between mb-0.5">
+                        <p class="font-semibold text-slate-800 text-sm flex items-center gap-2"><i
+                                class="fas fa-exclamation-triangle text-emerald-500"></i> Deadlines</p>
+                        <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium"><i
+                                class="fas fa-bell mr-1"></i>Auto-alerts sent 3 days before</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">System sends dashboard notifications to groups 3 days before
+                        each deadline</p>
+                    <div class="space-y-2.5">
+                        <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-200">
+                            <div class="flex items-center gap-2.5"><i
+                                    class="fas fa-file-alt text-red-500 text-sm flex-shrink-0"></i>
+                                <div>
+                                    <p class="text-xs font-semibold text-slate-700">Concept Approval Deadline</p>
+                                    <p class="text-[10px] text-slate-400">Phase 1 · All Groups</p>
+                                </div>
+                            </div>
+                            <div class="text-right flex-shrink-0 ml-2">
+                                <p class="text-xs font-bold text-red-600">Mar 15</p>
+                                <p class="text-[10px] text-red-400 font-semibold">TODAY ⚡</p>
+                            </div>
+                        </div>
+                        <div
+                            class="flex items-center justify-between p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                            <div class="flex items-center gap-2.5"><i
+                                    class="fas fa-book text-emerald-500 text-sm flex-shrink-0"></i>
+                                <div>
+                                    <p class="text-xs font-semibold text-slate-700">Chapter 1 Submission</p>
+                                    <p class="text-[10px] text-slate-400">Phase 2 · Approved groups</p>
+                                </div>
+                            </div>
+                            <div class="text-right flex-shrink-0 ml-2">
+                                <p class="text-xs font-bold text-slate-600">Apr 5</p>
+                                <p class="text-[10px] text-slate-400">21 days</p>
+                            </div>
+                        </div>
+                        <div
+                            class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <div class="flex items-center gap-2.5"><i
+                                    class="fas fa-flask text-slate-400 text-sm flex-shrink-0"></i>
+                                <div>
+                                    <p class="text-xs font-semibold text-slate-700">Prototype Submission</p>
+                                    <p class="text-[10px] text-slate-400">Phase 3 · Group Gamma</p>
+                                </div>
+                            </div>
+                            <div class="text-right flex-shrink-0 ml-2">
+                                <p class="text-xs font-bold text-slate-600">May 10</p>
+                                <p class="text-[10px] text-slate-400">56 days</p>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-emerald-50 border border-emerald-100 rounded-xl p-2.5 flex items-start gap-2 text-[10px] text-emerald-700">
+                            <i class="fas fa-info-circle mt-0.5 flex-shrink-0"></i>
+                            <span>Deadline extensions can only be set by the Instructor/Coordinator through the system.
+                                You cannot override deadlines.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <div id="modal-add-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-add-comment')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-comment text-emerald-600"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800">Add Comment</p>
+                        <p class="text-[11px] text-slate-400" id="add-comment-subtitle">Leave feedback for a group</p>
+                    </div>
+                </div><button onclick="closeModal('modal-add-comment')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-3">
+                <div><label class="form-label">Group *</label><select class="form-input">
+                        <option value="">Select…</option>
+                        <option>Group Alpha</option>
+                        <option>Group Beta</option>
+                        <option>Group Gamma</option>
+                        <option>Group Delta</option>
+                        <option>Group Epsilon</option>
+                    </select></div>
+                <div><label class="form-label">Type</label><select class="form-input">
+                        <option>General Feedback</option>
+                        <option>Recommendation</option>
+                        <option>Revision Request</option>
+                        <option>Commendation</option>
+                    </select></div>
+                <div><label class="form-label">Comment *</label><textarea class="form-input" rows="5"
+                        placeholder="Write your feedback…"></textarea></div>
+                <div><label class="form-label">Visibility</label><select class="form-input">
+                        <option>Visible to Group</option>
+                        <option>Private (Adviser only)</option>
+                    </select></div>
+            </div>
+            <div class="modal-footer"><button onclick="closeModal('modal-add-comment')"
+                    class="btn btn-ghost text-xs">Cancel</button><button onclick="submitComment('modal-add-comment')"
+                    class="btn btn-green text-xs"><i class="fas fa-paper-plane"></i> Post</button></div>
+        </div>
+    </div>
+    <div id="modal-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-comment')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-comment text-emerald-600"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800" id="cm-title">Add Comment</p>
+                    </div>
+                </div><button onclick="closeModal('modal-comment')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-3">
+                <div><label class="form-label">Type</label><select class="form-input">
+                        <option>General Feedback</option>
+                        <option>Recommendation</option>
+                        <option>Revision Request</option>
+                        <option>Commendation</option>
+                    </select></div>
+                <div><label class="form-label">Comment *</label><textarea class="form-input" rows="5"
+                        placeholder="Write…"></textarea></div>
+            </div>
+            <div class="modal-footer"><button onclick="closeModal('modal-comment')"
+                    class="btn btn-ghost text-xs">Cancel</button><button onclick="submitComment('modal-comment')"
+                    class="btn btn-green text-xs"><i class="fas fa-paper-plane"></i> Post</button></div>
+        </div>
+    </div>
+    <div id="modal-edit-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-edit-comment')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-edit text-emerald-600"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800" id="ec-title">Edit Comment</p>
+                    </div>
+                </div><button onclick="closeModal('modal-edit-comment')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-3">
+                <div><label class="form-label">Comment</label><textarea class="form-input" rows="5"
+                        id="ec-body"></textarea></div>
+            </div>
+            <div class="modal-footer"><button onclick="closeModal('modal-edit-comment')"
+                    class="btn btn-ghost text-xs">Cancel</button><button onclick="submitEdit()"
+                    class="btn btn-green text-xs"><i class="fas fa-save"></i> Save</button></div>
+        </div>
+    </div>
+    <div id="modal-delete" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-delete')">
+        <div class="modal" style="max-width:400px">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-trash text-red-600"></i></div>
+                    <p class="font-bold text-slate-800">Confirm Delete</p>
+                </div><button onclick="closeModal('modal-delete')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-sm text-slate-600">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer"><button onclick="closeModal('modal-delete')"
+                    class="btn btn-ghost text-xs">Cancel</button><button onclick="deleteItem()"
+                    class="btn btn-red text-xs"><i class="fas fa-trash"></i> Delete</button></div>
+        </div>
+    </div>
+    <div id="toast" class="fixed bottom-5 right-5 z-[500] hidden">
+        <div class="bg-slate-800 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 slide-up text-sm"><i
+                id="toast-icon" class="fas fa-check-circle text-emerald-400"></i><span id="toast-msg">Done.</span></div>
+    </div>
+    <script>
+        function openModal(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow = 'hidden'; }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
+        function closeOnBackdrop(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop.open').forEach(m => { m.classList.remove('open'); document.body.style.overflow = ''; }); });
+        function switchTab(n, el) { document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('on')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on')); document.getElementById('tab-' + n).classList.add('on'); el.classList.add('on'); }
+        function submitComment(id) { closeModal(id); showToast('Comment posted.', 'success'); }
+        function submitEdit() { closeModal('modal-edit-comment'); showToast('Updated.', 'success'); }
+        function deleteItem() { closeModal('modal-delete'); showToast('Deleted.', 'error'); }
+        function showToast(msg, type = 'success') { const t = document.getElementById('toast'), i = document.getElementById('toast-icon'); document.getElementById('toast-msg').textContent = msg; i.className = type === 'success' ? 'fas fa-check-circle text-emerald-400' : type === 'error' ? 'fas fa-exclamation-circle text-red-400' : 'fas fa-info-circle text-amber-400'; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3500); }
+        new Chart(document.getElementById('groupStatusChart'), { type: 'doughnut', data: { labels: ['Approved', 'Submitted', 'Resubmit'], datasets: [{ data: [2, 2, 1], backgroundColor: ['#10b981', '#34d399', '#ef4444'], borderWidth: 0, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 9, padding: 10, color: '#334155', font: { size: 10 } } }, tooltip: { backgroundColor: '#1e293b', titleColor: '#f1f5f9', bodyColor: '#cbd5e1' } } } });
+        new Chart(document.getElementById('submissionLineChart'), { type: 'line', data: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], datasets: [{ label: 'Submissions', data: [1, 0, 2, 1, 3, 1, 0], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)', borderWidth: 2.5, pointBackgroundColor: '#10b981', pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6, tension: 0.4, fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e293b', titleColor: '#f1f5f9', bodyColor: '#cbd5e1' } }, scales: { y: { beginAtZero: true, max: 5, grid: { color: '#f1f5f9' }, border: { display: false }, ticks: { stepSize: 1, color: '#94a3b8', font: { size: 10 } } }, x: { grid: { display: false }, border: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } } } } });
+    </script>
+</body>
+
+</html>

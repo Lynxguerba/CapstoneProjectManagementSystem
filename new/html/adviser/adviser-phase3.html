@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 3: Pre-Deployment – Adviser | Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, .88);
+            backdrop-filter: blur(14px);
+        }
+
+        .hover-lift {
+            transition: transform .2s, box-shadow .2s;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .07);
+        }
+
+        /* Badges - green theme only */
+        .badge {
+            padding: .2rem .65rem;
+            border-radius: 9999px;
+            font-size: .72rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+        }
+
+        .badge-green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-lime {
+            background: #ecfccb;
+            color: #365314;
+        }
+
+        .badge-amber {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .badge-red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-slate {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .badge-teal {
+            background: #ccfbf1;
+            color: #134e4a;
+        }
+
+        /* Nav */
+        .nav-active {
+            background: linear-gradient(135deg, #059669, #10b981) !important;
+            color: white !important;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, .35);
+        }
+
+        .nav-active i,
+        .nav-active span,
+        .nav-active p {
+            color: white !important;
+        }
+
+        /* Modals */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .65);
+            backdrop-filter: blur(6px);
+            z-index: 400;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+            animation: fadeIn .18s ease;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 1.25rem;
+            box-shadow: 0 32px 80px rgba(0, 0, 0, .26);
+            width: 100%;
+            max-width: 580px;
+        }
+
+        .modal-lg {
+            max-width: 800px;
+        }
+
+        .modal-xl {
+            max-width: 1060px;
+        }
+
+        .modal-header {
+            padding: 1.1rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-body {
+            padding: 1.4rem 1.5rem;
+            max-height: 72vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: .9rem 1.5rem;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: flex-end;
+            gap: .65rem;
+            background: #fafafa;
+            border-radius: 0 0 1.25rem 1.25rem;
+        }
+
+        /* Forms */
+        .form-label {
+            font-size: .7rem;
+            font-weight: 700;
+            color: #374151;
+            display: block;
+            margin-bottom: .3rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .form-input {
+            width: 100%;
+            border: 1.5px solid #e2e8f0;
+            border-radius: .6rem;
+            padding: .55rem .8rem;
+            font-size: .83rem;
+            color: #1e293b;
+            outline: none;
+            transition: border .2s;
+        }
+
+        .form-input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, .12);
+        }
+
+        .section-div {
+            font-size: .68rem;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin: 1rem 0 .55rem;
+            padding-bottom: .35rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: .5rem 1.1rem;
+            border-radius: .65rem;
+            font-size: .82rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            transition: all .2s;
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: white;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, .3);
+        }
+
+        .btn-green:hover {
+            opacity: .9;
+        }
+
+        .btn-red {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, .25);
+        }
+
+        .btn-red:hover {
+            opacity: .9;
+        }
+
+        .btn-ghost {
+            background: white;
+            color: #475569;
+            border: 1.5px solid #e2e8f0;
+        }
+
+        .btn-ghost:hover {
+            background: #f0fdf4;
+            border-color: #10b981;
+            color: #059669;
+        }
+
+        /* Table */
+        .tbl {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .82rem;
+        }
+
+        .tbl thead tr {
+            background: #f8fafc;
+        }
+
+        .tbl th {
+            padding: .75rem 1rem;
+            text-align: left;
+            font-weight: 700;
+            color: #64748b;
+            font-size: .68rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            white-space: nowrap;
+        }
+
+        .tbl td {
+            padding: .8rem 1rem;
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        .tbl tbody tr {
+            border-top: 1px solid #f1f5f9;
+            transition: background .12s;
+        }
+
+        .tbl tbody tr:hover {
+            background: #f0fdf4;
+        }
+
+        /* Tabs */
+        .tab-btn {
+            padding: .55rem 1.1rem;
+            font-size: .82rem;
+            font-weight: 500;
+            color: #64748b;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            transition: all .2s;
+        }
+
+        .tab-btn.on {
+            color: #059669;
+            border-bottom-color: #10b981;
+            font-weight: 700;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.on {
+            display: block;
+            animation: fadeIn .2s ease;
+        }
+
+        /* Progress */
+        .prog {
+            height: .4rem;
+            border-radius: 9999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .prog-fill {
+            height: 100%;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, #059669, #10b981);
+        }
+
+        /* Document Viewer */
+        .doc-viewer-bg {
+            background: #e8f5e9;
+            border-radius: .75rem;
+            overflow: hidden;
+        }
+
+        .doc-toolbar {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: .5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            flex-wrap: wrap;
+        }
+
+        .doc-body {
+            padding: 1rem;
+            overflow-y: auto;
+            max-height: 430px;
+        }
+
+        .doc-page {
+            background: white;
+            border-radius: .5rem;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+            padding: 2rem 2.5rem;
+            font-size: .85rem;
+            line-height: 1.9;
+            color: #1e293b;
+            min-height: 360px;
+            position: relative;
+            font-family: 'Georgia', serif;
+        }
+
+        .doc-page h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: .5rem;
+        }
+
+        .doc-page h2 {
+            font-size: .95rem;
+            font-weight: 600;
+            margin: 1rem 0 .4rem;
+        }
+
+        .doc-comment-pin {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            font-size: .65rem;
+            font-weight: 700;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            line-height: 16px;
+            text-align: center;
+            cursor: pointer;
+            margin-left: 2px;
+            vertical-align: middle;
+        }
+
+        .comment-sidebar {
+            border-left: 3px solid #10b981;
+            background: #f0fdf4;
+            border-radius: 0 .5rem .5rem 0;
+            padding: .5rem .75rem;
+            margin: .35rem 0;
+            font-size: .78rem;
+            color: #065f46;
+        }
+
+        .comment-sidebar .cs-author {
+            font-weight: 700;
+            font-size: .72rem;
+            margin-bottom: .15rem;
+        }
+
+        /* Toast */
+        .toast-wrap {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 600;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #10b981;
+            border-radius: 4px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1
+            }
+        }
+
+        .slide-up {
+            animation: slideUp .3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex text-slate-700">
+    <aside
+        class="w-64 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl z-50">
+        <div class="p-4 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-3">
+                <div
+                    class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-user-tie text-lg text-white"></i></div>
+                <div>
+                    <h1
+                        class="text-sm font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-[10px] text-slate-400">Adviser Portal</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+                <div class="bg-slate-700/50 rounded-lg p-1.5 text-center">
+                    <p class="text-[9px] text-slate-400">AY 2024-2025</p>
+                    <p class="text-[11px] font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-1.5 text-center">
+                    <p class="text-[9px] text-slate-400">Groups</p>
+                    <p class="text-[11px] font-semibold text-emerald-400">5 Assigned</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 p-3 overflow-y-auto space-y-0.5 text-[13px]">
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5">Main</p>
+            <a href="adviser-dashboard.html"
+                class=" flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-700/50 transition-all group"><i
+                    class="fas fa-tachometer-alt w-4 text-slate-400 group-hover:text-emerald-400 text-xs"></i><span>Dashboard</span></a>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 mt-1">My Groups</p>
+            <a href="adviser-my-groups.html"
+                class=" flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-700/50 transition-all group"><i
+                    class="fas fa-users w-4 text-slate-400 group-hover:text-emerald-400 text-xs"></i><span
+                    class="flex-1">Assigned Groups</span><span
+                    class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">5</span></a>
+            <a href="adviser-submissions.html"
+                class=" flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-700/50 transition-all group"><i
+                    class="fas fa-file-alt w-4 text-slate-400 group-hover:text-emerald-400 text-xs"></i><span
+                    class="flex-1">Submissions</span><span
+                    class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">3</span></a>
+            <a href="adviser-feedback.html"
+                class=" flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-700/50 transition-all group"><i
+                    class="fas fa-comments w-4 text-slate-400 group-hover:text-emerald-400 text-xs"></i><span>Feedback &
+                    Comments</span></a>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 mt-1">Capstone Phases</p>
+            <a href="adviser-phase1.html"
+                class=" flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-lightbulb text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 1</span><span
+                        class="block text-[9px] text-slate-500 group-hover:text-slate-400">Concept Review</span></div>
+                <span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">2</span>
+            </a>
+            <a href="adviser-phase2.html"
+                class=" flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-list-alt text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 2</span><span
+                        class="block text-[9px] text-slate-500 group-hover:text-slate-400">Outline Review</span></div>
+            </a>
+            <a href="adviser-phase3.html"
+                class="nav-active flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-flask text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 3</span><span
+                        class="block text-[9px] text-slate-500 group-hover:text-slate-400">Pre-Deployment</span></div>
+            </a>
+            <a href="adviser-phase4.html"
+                class=" flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-rocket text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 4</span><span
+                        class="block text-[9px] text-slate-500 group-hover:text-slate-400">Deployment</span></div>
+            </a>
+            <a href="adviser-phase5.html"
+                class=" flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-700/50 transition-all group">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-flag-checkered text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 5</span><span
+                        class="block text-[9px] text-slate-500 group-hover:text-slate-400">Final Defense</span></div>
+            </a>
+        </nav>
+        <div class="p-3 border-t border-slate-700/50">
+            <div class="flex items-center gap-2.5">
+                <div
+                    class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-xs shadow">
+                    AR</div>
+                <div class="flex-1">
+                    <p class="font-semibold text-xs">Prof. A. Reyes</p>
+                    <p class="text-[10px] text-slate-400">Capstone Adviser</p>
+                </div>
+                <a href="instructor-dashboard-clean.html" title="Switch View"
+                    class="w-7 h-7 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"><i
+                        class="fas fa-exchange-alt text-slate-400 text-[10px]"></i></a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 ml-64">
+        <div
+            class="glass border-b border-slate-200/60 px-7 py-3.5 flex justify-between items-center sticky top-0 z-40 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                        class="fas fa-flask text-emerald-600"></i></div>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Phase 3 — Pre-Deployment</h2>
+                    <p class="text-[11px] text-slate-400">Review system prototypes, testing docs & pre-deployment
+                        reports · May 2026</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="openModal('modal-comment')" class="btn btn-ghost text-xs"><i
+                        class="fas fa-comment-alt"></i> Add Comment</button>
+                <div class="relative"><button
+                        class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-emerald-50 flex items-center justify-center transition"><i
+                            class="fas fa-bell text-slate-600 text-sm"></i></button>
+                    <div class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border border-white">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 space-y-5 pb-12">
+            <div class="grid grid-cols-5 gap-4">
+                <div
+                    class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3 hover-lift">
+                    <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0"><i
+                            class="fas fa-cog text-emerald-600 text-sm"></i></div>
+                    <div>
+                        <p class="text-2xl font-bold text-emerald-600">1</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">In Progress</p>
+                    </div>
+                </div>
+                <div
+                    class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3 hover-lift">
+                    <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0"><i
+                            class="fas fa-check-circle text-green-600 text-sm"></i></div>
+                    <div>
+                        <p class="text-2xl font-bold text-green-600">0</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Approved</p>
+                    </div>
+                </div>
+                <div
+                    class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3 hover-lift">
+                    <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0"><i
+                            class="fas fa-minus-circle text-slate-400 text-sm"></i></div>
+                    <div>
+                        <p class="text-2xl font-bold text-slate-500">4</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Not Yet Started</p>
+                    </div>
+                </div>
+                <div
+                    class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3 hover-lift">
+                    <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0"><i
+                            class="fas fa-calendar-check text-emerald-600 text-sm"></i></div>
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">May 20</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Next Defense</p>
+                    </div>
+                </div>
+                <div
+                    class="bg-emerald-50 border border-emerald-200 rounded-2xl shadow-sm p-4 flex items-center gap-3 hover-lift">
+                    <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0"><i
+                            class="fas fa-clock text-emerald-600 text-sm"></i></div>
+                    <div>
+                        <p class="text-sm font-bold text-emerald-700">May 10</p>
+                        <p class="text-[11px] text-emerald-600 mt-0.5">Prototype Deadline</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="border-b border-slate-100 px-5 flex gap-0.5">
+                    <button class="tab-btn on" onclick="switchTab('p3-proto',this)"><i
+                            class="fas fa-laptop-code mr-1.5 text-xs"></i>Prototypes & Testing</button>
+                    <button class="tab-btn" onclick="switchTab('p3-feedback',this)"><i
+                            class="fas fa-comments mr-1.5 text-xs"></i>My Feedback</button>
+                    <button class="tab-btn" onclick="switchTab('p3-defense',this)"><i
+                            class="fas fa-calendar-alt mr-1.5 text-xs"></i>Defense Schedule <span
+                            class="ml-1 text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">1</span></button>
+                </div>
+                <div id="tab-p3-proto" class="tab-pane on">
+                    <table class="tbl">
+                        <thead>
+                            <tr>
+                                <th>Group</th>
+                                <th>System</th>
+                                <th>Prototype</th>
+                                <th>UAT / Testing</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold">
+                                            G</div>
+                                        <div>
+                                            <p class="font-semibold text-sm">Group Gamma</p>
+                                            <p class="text-[10px] text-slate-400">Phase 2 done</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <p class="font-medium text-sm">School Library Management System</p>
+                                </td>
+                                <td><span class="badge badge-green text-[10px]"><i class="fas fa-check text-[9px]"></i>
+                                        Uploaded</span></td>
+                                <td><span class="badge badge-amber text-[10px]"><i
+                                            class="fas fa-spinner text-[9px]"></i> In Progress</span></td>
+                                <td><span class="badge badge-amber text-[10px]"><i class="fas fa-cog text-[9px]"></i> In
+                                        Progress</span></td>
+                                <td>
+                                    <div class="flex gap-1.5">
+                                        <button
+                                            onclick="openDocViewer('Group Gamma','Library System – Prototype Report','Phase 3')"
+                                            class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i
+                                                class="fas fa-file-alt"></i> View Doc</button>
+                                        <button
+                                            onclick="openReviewModal('Group Gamma','Library System – Prototype','Phase 3')"
+                                            class="btn btn-green text-[11px] py-1.5 px-2.5"><i
+                                                class="fas fa-microscope"></i> Assess</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="6" class="text-center py-6 text-slate-400 text-sm">Groups Alpha, Beta,
+                                    Delta, Epsilon have not yet reached Phase 3.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="tab-p3-feedback" class="tab-pane p-5 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <p class="text-sm font-semibold text-slate-700">My Phase 3 Comments</p><button
+                            onclick="openModal('modal-comment')" class="btn btn-green text-xs"><i
+                                class="fas fa-plus"></i> New Comment</button>
+                    </div>
+                    <p class="text-center text-sm text-slate-400 py-4">No comments for Phase 3 yet. Only Group Gamma has
+                        reached this phase.</p>
+                </div>
+
+                <div id="tab-p3-defense" class="tab-pane p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-semibold text-slate-800 text-sm">Defense Schedule</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Set by Coordinator · No double-booking policy
+                                applies</p>
+                        </div><span class="badge badge-green text-[10px]">1 Upcoming</span>
+                    </div>
+                    <div
+                        class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-2 text-xs text-emerald-700">
+                        <i class="fas fa-info-circle mt-0.5 flex-shrink-0"></i><span>You may view and add private notes.
+                            Defense scheduling is managed by the Instructor/Coordinator.</span></div>
+                    <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm hover-lift">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-11 h-11 bg-emerald-100 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
+                                    <span class="text-xs font-bold text-emerald-700 leading-none">20</span><span
+                                        class="text-[9px] text-emerald-500 leading-none">MAY</span></div>
+                                <div>
+                                    <p class="font-bold text-slate-800">Group Gamma — Defense · Pre-Deployment
+                                        Presentation</p>
+                                    <p class="text-xs text-slate-400 mt-0.5">2026 · 2:00 PM – 4:00 PM · Room 301</p>
+                                </div>
+                            </div>
+                            <span class="badge badge-green text-[10px]"><i class="fas fa-calendar-check text-[9px]"></i>
+                                Scheduled</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 mb-3 text-xs">
+                            <div class="bg-slate-50 rounded-xl p-2 text-center">
+                                <p class="text-slate-400 mb-0.5">Group</p>
+                                <p class="font-semibold text-slate-700">Group Gamma</p>
+                            </div>
+                            <div class="bg-slate-50 rounded-xl p-2 text-center">
+                                <p class="text-slate-400 mb-0.5">Panelists</p>
+                                <p class="font-semibold text-slate-700">3 Panel</p>
+                            </div>
+                            <div class="bg-slate-50 rounded-xl p-2 text-center">
+                                <p class="text-slate-400 mb-0.5">Venue</p>
+                                <p class="font-semibold text-slate-700">Room 301</p>
+                            </div>
+                        </div>
+                        <button onclick="openModal('modal-note')" class="btn btn-green text-xs py-1.5 px-3"><i
+                                class="fas fa-sticky-note"></i> Add Note</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-doc" class="modal-backdrop" onclick="closeOnBd(event,'modal-doc')">
+        <div class="modal modal-xl">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center"><i
+                            class="fas fa-file-alt text-emerald-600 text-sm"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800" id="doc-title">Document Viewer</p>
+                        <p class="text-[11px] text-slate-400" id="doc-group">—</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-doc')"
+                    class="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times text-sm"></i></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="flex" style="height:72vh">
+                    <div class="flex-1 flex flex-col overflow-hidden">
+                        <div class="doc-toolbar">
+                            <button class="btn btn-ghost text-xs py-1.5 px-3"><i
+                                    class="fas fa-search-plus mr-1"></i>Zoom In</button>
+                            <button class="btn btn-ghost text-xs py-1.5 px-3"><i
+                                    class="fas fa-search-minus mr-1"></i>Zoom Out</button>
+                            <span class="text-slate-300 mx-1">|</span>
+                            <button class="btn btn-ghost text-xs py-1.5 px-3"><i
+                                    class="fas fa-download mr-1"></i>Download</button>
+                            <button class="btn btn-ghost text-xs py-1.5 px-3"><i
+                                    class="fas fa-print mr-1"></i>Print</button>
+                            <span class="ml-auto text-xs text-emerald-600 font-medium flex items-center gap-1.5"><i
+                                    class="fas fa-info-circle"></i> Use the comment panel to annotate</span>
+                        </div>
+                        <div class="doc-viewer-bg flex-1 overflow-y-auto p-3">
+                            <div class="doc-page" id="doc-content">
+                                <h1 id="doc-h1" style="text-align:center">CONCEPT PAPER</h1>
+                                <p style="text-align:center;font-size:.78rem;color:#64748b;margin-bottom:1.5rem"
+                                    id="doc-subtitle">—</p>
+                                <h2>I. Introduction</h2>
+                                <p>The proposed system addresses the growing need for efficient data management in
+                                    academic institutions. With increasing volumes of student records and administrative
+                                    processes, a digital solution is imperative. <span class="doc-comment-pin"
+                                        onclick="toast('Pinned comment: Specify target department clearly.','success')"
+                                        title="Click to view comment">1</span></p>
+                                <p>This project is developed as part of the BSIT Capstone Program under the supervision
+                                    of a qualified faculty adviser. It seeks to design, develop, and deploy a working
+                                    software system within the academic calendar, adhering to the scope approved during
+                                    pre-defense evaluation.</p>
+                                <h2>II. Statement of the Problem</h2>
+                                <p>Current manual processes in the institution lead to delays, data inconsistency, and
+                                    inefficiency. The proposed system addresses:<br>1. Lack of centralized record
+                                    management<br>2. Manual tracking of submissions<br>3. Absence of real-time
+                                    monitoring tools</p>
+                                <h2>III. Objectives</h2>
+                                <p><strong>General:</strong> To develop a web-based system that automates and
+                                    centralizes data management processes for the target institution.</p>
+                                <p><strong>Specific:</strong><br>1. Design a database schema for efficient data
+                                    storage<br>2. Develop a user-friendly interface for authorized users<br>3. Implement
+                                    real-time notification and deadline alert features</p>
+                                <h2>IV. Scope and Limitations</h2>
+                                <p>The system covers core modules outlined in functional requirements. Development is
+                                    limited to the current semester timeline. Mobile responsiveness is included; native
+                                    mobile apps are out of scope.</p>
+                                <h2>V. Significance of the Study</h2>
+                                <p>This project benefits students, faculty, and administrative staff by providing a
+                                    streamlined digital workflow, reducing paperwork, and improving processing times
+                                    across the institution.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="w-64 border-l border-slate-100 flex flex-col bg-slate-50">
+                        <div class="p-3 border-b border-slate-100">
+                            <p class="font-semibold text-sm text-slate-700 flex items-center gap-2"><i
+                                    class="fas fa-comments text-emerald-500 text-xs"></i> Adviser Comments</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Comments visible to group members</p>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-3" id="doc-comment-list"></div>
+                        <div class="p-3 border-t border-slate-100 bg-white">
+                            <label class="form-label">Add Comment</label>
+                            <textarea id="doc-comment-input" class="form-input text-xs" rows="3"
+                                placeholder="Write your comment..."></textarea>
+                            <button onclick="addDocComment()"
+                                class="btn btn-green w-full mt-2 text-xs justify-center"><i
+                                    class="fas fa-paper-plane"></i> Post Comment</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-review" class="modal-backdrop" onclick="closeOnBd(event,'modal-review')">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center"><i
+                            class="fas fa-clipboard-check text-emerald-600 text-sm"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800" id="rv-title">Review Submission</p>
+                        <p class="text-[11px] text-slate-400" id="rv-sub">Concept Paper</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-review')"
+                    class="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times text-sm"></i></button>
+            </div>
+            <div class="modal-body space-y-4">
+                <p class="section-div">Adviser Feedback</p>
+                <div><label class="form-label">Comments & Recommendations <span
+                            class="text-red-400">*</span></label><textarea class="form-input text-sm" rows="4"
+                        placeholder="Write your review comments and recommendations..."></textarea></div>
+                <p class="section-div">System Workflow</p>
+                <div class="space-y-2 text-xs">
+                    <div class="flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100"><i
+                            class="fas fa-pen-nib text-emerald-500 w-4 flex-shrink-0"></i><span
+                            class="text-slate-600"><strong>Your digital signature</strong> will be auto-attached upon
+                            approval via your stored system profile.</span></div>
+                    <div class="flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100"><i
+                            class="fas fa-share-alt text-emerald-500 w-4 flex-shrink-0"></i><span
+                            class="text-slate-600">If approved, forwarded to the <strong>Faculty Panel</strong> for
+                            routing. Students wait for your decision.</span></div>
+                    <div class="flex items-center gap-2.5 p-2.5 bg-red-50 rounded-xl border border-red-100"><i
+                            class="fas fa-exclamation-triangle text-red-400 w-4 flex-shrink-0"></i><span
+                            class="text-slate-600">If returned: status becomes <strong>Resubmit</strong>. The original
+                            deadline still applies — no automatic extension.</span></div>
+                    <div class="flex items-center gap-2.5 p-2.5 bg-emerald-50 rounded-xl border border-emerald-100"><i
+                            class="fas fa-file-pdf text-emerald-500 w-4 flex-shrink-0"></i><span
+                            class="text-slate-600">Upon approval, a <strong>PDF Approval Sheet</strong> is
+                            auto-generated with all member, adviser, panelist, and dean details.</span></div>
+                </div>
+                <p class="section-div">Decision</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="setVerdict('approve','rv-approve','rv-resubmit','rv-verdict')" id="rv-approve"
+                        class="py-3 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold text-sm flex flex-col items-center justify-center gap-1 hover:bg-emerald-100 transition"><span
+                            class="flex items-center gap-1.5"><i class="fas fa-check-circle"></i> Approve &
+                            Forward</span><span class="text-[10px] font-normal text-emerald-600">Digital signature
+                            attached · PDF generated</span></button>
+                    <button onclick="setVerdict('resubmit','rv-approve','rv-resubmit','rv-verdict')" id="rv-resubmit"
+                        class="py-3 rounded-xl border-2 border-red-200 bg-red-50 text-red-700 font-semibold text-sm flex flex-col items-center justify-center gap-1 hover:bg-red-100 transition"><span
+                            class="flex items-center gap-1.5"><i class="fas fa-redo"></i> Return for
+                            Resubmission</span><span class="text-[10px] font-normal text-red-500">Deadline still applies
+                            · Status: Resubmit</span></button>
+                </div>
+                <input type="hidden" id="rv-verdict" value="">
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('modal-review')" class="btn btn-ghost text-sm">Cancel</button>
+                <button onclick="submitReview()" class="btn btn-green text-sm"><i class="fas fa-paper-plane"></i> Submit
+                    Decision</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-comment" class="modal-backdrop" onclick="closeOnBd(event,'modal-comment')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center"><i
+                            class="fas fa-comment text-emerald-600 text-sm"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800" id="cm-title">Add Comment</p>
+                        <p class="text-[11px] text-slate-400" id="cm-sub">Leave feedback for this group</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-comment')"
+                    class="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times text-sm"></i></button>
+            </div>
+            <div class="modal-body space-y-3">
+                <div><label class="form-label">Group</label>
+                    <p class="text-sm font-semibold text-slate-700 mt-1" id="cm-group-name">—</p>
+                </div>
+                <div><label class="form-label">Comment Type</label><select class="form-input text-sm">
+                        <option>General Feedback</option>
+                        <option>Recommendation</option>
+                        <option>Revision Request</option>
+                        <option>Commendation</option>
+                    </select></div>
+                <div><label class="form-label">Comment <span class="text-red-400">*</span></label><textarea
+                        class="form-input text-sm" rows="5"
+                        placeholder="Write your feedback or recommendation..."></textarea></div>
+                <div><label class="form-label">Visibility</label><select class="form-input text-sm">
+                        <option>Visible to Group</option>
+                        <option>Private (Adviser only)</option>
+                    </select></div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('modal-comment')" class="btn btn-ghost text-sm">Cancel</button>
+                <button onclick="submitComment()" class="btn btn-green text-sm"><i class="fas fa-paper-plane"></i> Post
+                    Comment</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-endorse" class="modal-backdrop" onclick="closeOnBd(event,'modal-endorse')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center"><i
+                            class="fas fa-stamp text-emerald-600 text-sm"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800">Endorse Group</p>
+                        <p class="text-[11px] text-slate-400">Issue formal endorsement for final defense</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-endorse')"
+                    class="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times text-sm"></i></button>
+            </div>
+            <div class="modal-body space-y-4">
+                <div
+                    class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-xs text-emerald-700 flex items-start gap-2">
+                    <i class="fas fa-info-circle mt-0.5 flex-shrink-0"></i><span>By endorsing this group, you confirm
+                        they have completed all requirements. A PDF Approval Sheet with your digital signature will be
+                        auto-generated.</span></div>
+                <div>
+                    <p class="text-sm font-semibold text-slate-700">Group: <span id="en-group"
+                            class="text-emerald-600">—</span></p>
+                </div>
+                <div><label class="form-label">Endorsement Remarks</label><textarea class="form-input text-sm" rows="4"
+                        placeholder="Write your formal endorsement statement..."></textarea></div>
+                <div><label class="form-label">Date</label><input type="date" class="form-input text-sm"
+                        value="2026-06-05"></div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('modal-endorse')" class="btn btn-ghost text-sm">Cancel</button>
+                <button onclick="submitEndorse()" class="btn btn-green text-sm"><i class="fas fa-stamp"></i> Issue
+                    Endorsement</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-[600] flex flex-col items-end gap-2"></div>
+
+    <div id="modal-note" class="modal-backdrop" onclick="closeOnBd(event,'modal-note')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center"><i
+                            class="fas fa-sticky-note text-emerald-600 text-sm"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800">Add Private Note</p>
+                        <p class="text-[11px] text-slate-400">Visible only to you</p>
+                    </div>
+                </div><button onclick="closeModal('modal-note')"
+                    class="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times text-sm"></i></button>
+            </div>
+            <div class="modal-body space-y-3">
+                <div><label class="form-label">Note</label><textarea class="form-input text-sm" rows="5"
+                        placeholder="Write a private note for this defense..."></textarea></div>
+                <div
+                    class="bg-emerald-50 border border-emerald-100 rounded-xl p-2 text-[10px] text-emerald-700 flex items-center gap-2">
+                    <i class="fas fa-lock"></i> This note is private.</div>
+            </div>
+            <div class="modal-footer"><button onclick="closeModal('modal-note')"
+                    class="btn btn-ghost text-sm">Cancel</button><button
+                    onclick="closeModal('modal-note');toast('Note saved.','success')" class="btn btn-green text-sm"><i
+                        class="fas fa-save"></i> Save Note</button></div>
+        </div>
+    </div>
+    <div id="modal-edit-comment" class="modal-backdrop" onclick="closeOnBd(event,'modal-edit-comment')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center"><i
+                            class="fas fa-edit text-emerald-600 text-sm"></i></div>
+                    <p class="font-bold text-slate-800">Edit Comment</p>
+                </div><button onclick="closeModal('modal-edit-comment')"
+                    class="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times text-sm"></i></button>
+            </div>
+            <div class="modal-body space-y-3">
+                <div><label class="form-label">Comment Type</label><select class="form-input text-sm">
+                        <option>Recommendation</option>
+                        <option>General Feedback</option>
+                        <option>Revision Request</option>
+                        <option>Commendation</option>
+                    </select></div>
+                <div><label class="form-label">Comment</label><textarea class="form-input text-sm"
+                        rows="5">Chapter 1 is well-written. Approved...</textarea></div>
+            </div>
+            <div class="modal-footer"><button onclick="closeModal('modal-edit-comment')"
+                    class="btn btn-ghost text-sm">Cancel</button><button onclick="saveEdit()"
+                    class="btn btn-green text-sm"><i class="fas fa-save"></i> Save</button></div>
+        </div>
+    </div>
+    <script>
+        function openModal(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow = 'hidden'; }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
+        function closeOnBd(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop.open').forEach(m => { m.classList.remove('open'); document.body.style.overflow = ''; }); });
+        function switchTab(name, el) { const c = el.closest('.bg-white'); c.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('on')); c.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on')); document.getElementById('tab-' + name).classList.add('on'); el.classList.add('on'); }
+        function toast(msg, type = 'success') { const col = { success: 'bg-emerald-600', error: 'bg-red-600', warn: 'bg-amber-500' }; const ic = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warn: 'fa-exclamation-triangle' }; const el = document.createElement('div'); el.className = col[type] + ' text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-sm mb-2'; el.innerHTML = `<i class="fas ${ic[type]}"></i><span>${msg}</span>`; document.getElementById('toast-container').appendChild(el); setTimeout(() => el.remove(), 3500); }
+        function setVerdict(v, aId, rId, hId) { document.getElementById(hId).value = v; const a = document.getElementById(aId), r = document.getElementById(rId); a.classList.toggle('ring-2', v === 'approve'); a.classList.toggle('ring-emerald-400', v === 'approve'); r.classList.toggle('ring-2', v === 'resubmit'); r.classList.toggle('ring-red-400', v === 'resubmit'); }
+        function submitReview() { const v = document.getElementById('rv-verdict').value; if (!v) { toast('Please select a decision first.', 'warn'); return; } closeModal('modal-review'); toast(v === 'approve' ? 'Approved & forwarded to panel. Digital affirmation recorded.' : 'Returned for resubmission. Status updated to Resubmit.', v === 'approve' ? 'success' : 'error'); }
+        function submitComment() { closeModal('modal-comment'); toast('Comment posted successfully.', 'success'); }
+        function openReviewModal(group, title, phase) { document.getElementById('rv-title').textContent = 'Review — ' + group; document.getElementById('rv-sub').textContent = (phase || 'Phase 1') + ' · Concept Paper'; document.getElementById('rv-title1').textContent = title; document.getElementById('rv-verdict').value = ''; document.getElementById('rv-approve').classList.remove('ring-2', 'ring-emerald-400'); document.getElementById('rv-resubmit').classList.remove('ring-2', 'ring-red-400'); openModal('modal-review'); }
+        function openCommentModal(group, phase) { document.getElementById('cm-title').textContent = 'Add Comment — ' + group; document.getElementById('cm-sub').textContent = (phase || 'General feedback'); document.getElementById('cm-group-name').textContent = group; openModal('modal-comment'); }
+        let docComments = [{ id: 0, text: 'Good introduction. Consider specifying the target department more clearly.', author: 'Prof. A. Reyes', time: 'Mar 13' }];
+        function openDocViewer(group, title, phase) { document.getElementById('doc-title').textContent = title; document.getElementById('doc-group').textContent = group + (phase ? ' · ' + phase : ''); document.getElementById('doc-h1').textContent = title.toUpperCase(); document.getElementById('doc-subtitle').textContent = 'Concept Paper — ' + group + ' | BSIT-3A AY 2024-2025'; renderDocComments(); openModal('modal-doc'); }
+        function addDocComment() { const txt = document.getElementById('doc-comment-input').value.trim(); if (!txt) return; docComments.push({ id: Date.now(), text: txt, author: 'Prof. A. Reyes', time: 'Just now' }); renderDocComments(); document.getElementById('doc-comment-input').value = ''; toast('Comment added to document.', 'success'); }
+        function renderDocComments() { const list = document.getElementById('doc-comment-list'); if (!list) return; list.innerHTML = docComments.map(c => `<div class="comment-sidebar mb-2"><div class="cs-author flex items-center justify-between"><span><i class="fas fa-user-circle text-emerald-500 mr-1"></i>${c.author}</span><span class="text-[10px] text-slate-400 font-normal">${c.time}</span></div><p class="mt-0.5">${c.text}</p><button onclick="removeDocComment(${c.id})" class="text-[10px] text-red-400 hover:text-red-600 mt-0.5"><i class="fas fa-trash-alt mr-0.5"></i>Remove</button></div>`).join(''); }
+        function removeDocComment(id) { docComments = docComments.filter(c => c.id !== id); renderDocComments(); }
+        function openEndorseModal(group) { document.getElementById('en-group').textContent = group; openModal('modal-endorse'); }
+        function submitEndorse() { closeModal('modal-endorse'); toast('Group endorsed. PDF Approval Sheet with digital signature generated.', 'success'); }
+        function setVerdictFinal(v, aId, rId, hId) { document.getElementById(hId).value = v; const a = document.getElementById(aId), r = document.getElementById(rId); a.classList.toggle('ring-2', v === 'passed'); a.classList.toggle('ring-emerald-400', v === 'passed'); r.classList.toggle('ring-2', v === 'redefense'); r.classList.toggle('ring-red-400', v === 'redefense'); }
+        function submitFinalDefense() { const v = document.getElementById('fd-verdict').value; if (!v) { toast('Please select a verdict first.', 'warn'); return; } closeModal('modal-final-defense'); toast(v === 'passed' ? 'Group marked as PASSED. Congratulations! Completion certificate queued.' : 'Group marked for Re-defense. Schedule will be updated.', v === 'passed' ? 'success' : 'error'); }
+    </script>
+</body>
+
+</html>

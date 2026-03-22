@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Submissions – Adviser | Capstone MS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+*{font-family:'Inter',sans-serif;box-sizing:border-box;}
+body{overflow:hidden;}
+main{height:100vh;overflow-y:auto;overflow-x:hidden;}
+.glass{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);}
+.hover-lift{transition:transform .2s,box-shadow .2s;}
+.hover-lift:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08);}
+.badge{padding:.2rem .65rem;border-radius:9999px;font-size:.72rem;font-weight:600;display:inline-flex;align-items:center;gap:.3rem;}
+.badge-green{background:#dcfce7;color:#166534;}
+.badge-amber{background:#fef9c3;color:#854d0e;}
+.badge-red{background:#fee2e2;color:#991b1b;}
+.badge-slate{background:#f1f5f9;color:#475569;}
+.nav-active{background:linear-gradient(135deg,#059669,#10b981)!important;color:white!important;box-shadow:0 4px 12px rgba(16,185,129,.3);}
+.nav-active i,.nav-active span{color:white!important;}
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.65);backdrop-filter:blur(6px);z-index:400;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-backdrop.open{display:flex;animation:fadeIn .18s ease;}
+.modal{background:white;border-radius:1.25rem;box-shadow:0 32px 80px rgba(0,0,0,.28);width:100%;max-width:580px;}
+.modal-lg{max-width:780px;}
+.modal-xl{max-width:1020px;}
+.modal-header{padding:1.1rem 1.5rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;}
+.modal-body{padding:1.4rem 1.5rem;max-height:72vh;overflow-y:auto;}
+.modal-footer{padding:.9rem 1.5rem;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:.65rem;background:#fafafa;border-radius:0 0 1.25rem 1.25rem;}
+.form-label{font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em;}
+.form-input{width:100%;border:1.5px solid #e2e8f0;border-radius:.6rem;padding:.55rem .8rem;font-size:.83rem;color:#1e293b;outline:none;transition:border .2s;}
+.form-input:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+.section-div{font-size:.68rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin:1rem 0 .6rem;padding-bottom:.4rem;border-bottom:1px solid #f1f5f9;}
+.btn{padding:.5rem 1.1rem;border-radius:.65rem;font-size:.82rem;font-weight:600;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:all .2s;}
+.btn-green{background:linear-gradient(135deg,#059669,#10b981);color:white;box-shadow:0 2px 8px rgba(16,185,129,.35);}
+.btn-green:hover{opacity:.9;}
+.btn-red{background:linear-gradient(135deg,#dc2626,#ef4444);color:white;}
+.btn-red:hover{opacity:.9;}
+.btn-ghost{background:white;color:#475569;border:1.5px solid #e2e8f0;}
+.btn-ghost:hover{background:#f0fdf4;border-color:#10b981;color:#059669;}
+.tbl{width:100%;border-collapse:collapse;font-size:.82rem;}
+.tbl thead tr{background:#f8fafc;}
+.tbl th{padding:.8rem 1.1rem;text-align:left;font-weight:700;color:#64748b;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;}
+.tbl td{padding:.85rem 1.1rem;color:#334155;vertical-align:middle;}
+.tbl tbody tr{border-top:1px solid #f1f5f9;transition:background .12s;}
+.tbl tbody tr:hover{background:#f0fdf4;}
+.tab-btn{padding:.55rem 1.1rem;font-size:.82rem;font-weight:500;color:#64748b;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;transition:all .2s;}
+.tab-btn.on{color:#059669;border-bottom-color:#10b981;font-weight:700;}
+.tab-pane{display:none;}
+.tab-pane.on{display:block;animation:fadeIn .2s ease;}
+.prog{height:.45rem;border-radius:9999px;background:#e2e8f0;overflow:hidden;}
+.prog-fill{height:100%;border-radius:9999px;background:linear-gradient(90deg,#059669,#10b981);}
+.comment-highlight{background:#bbf7d0;border-bottom:2px solid #10b981;cursor:pointer;border-radius:2px;}
+.inline-comment{background:#f0fdf4;border-left:3px solid #10b981;padding:.4rem .75rem;border-radius:0 .5rem .5rem 0;margin:.4rem 0;font-size:.78rem;color:#065f46;}
+.activity-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.activity-item{display:flex;gap:.65rem;padding:.6rem 0;border-bottom:1px solid #f1f5f9;}
+.activity-item:last-child{border-bottom:none;}
+::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:#f1f5f9;} ::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:4px;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.slide-up{animation:slideUp .3s ease-out;}
+</style>
+</head>
+<body class="bg-slate-50 flex text-slate-700"><aside class="w-64 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl z-50">
+    <div class="p-4 border-b border-slate-700/50"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg"><i class="fas fa-user-tie text-lg text-white"></i></div><div><h1 class="text-base font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">Capstone MS</h1><p class="text-[10px] text-slate-400">Adviser Portal</p></div></div><div class="grid grid-cols-2 gap-1.5"><div class="bg-slate-700/50 rounded-lg p-1.5 text-center"><p class="text-[9px] text-slate-400">AY 2024-2025</p><p class="text-[11px] font-semibold text-white">1st Sem</p></div><div class="bg-slate-700/50 rounded-lg p-1.5 text-center"><p class="text-[9px] text-slate-400">Groups</p><p class="text-[11px] font-semibold text-emerald-400">5 Assigned</p></div></div></div>
+    <nav class="flex-1 p-3 overflow-y-auto space-y-0.5 text-[13px]"><p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5">Main</p><a href="adviser-dashboard.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i class="fas fa-tachometer-alt w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span class="flex-1">Dashboard</span></a><p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 mt-1">My Groups</p><a href="adviser-my-groups.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i class="fas fa-users w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span class="flex-1">Assigned Groups</span><span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">5</span></a><a href="adviser-submissions.html" class="nav-active flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i class="fas fa-file-alt w-4 text-[11px]"></i><span class="flex-1">Submissions</span><span class="text-[9px] bg-white/20 px-1.5 py-0.5 rounded-full">3</span></a><a href="adviser-feedback.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i class="fas fa-comments w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span class="flex-1">Feedback & Comments</span></a><p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 mt-1">Capstone Phases</p><a href="adviser-phase1.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+            <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i class="fas fa-lightbulb text-emerald-400 text-[9px]"></i></div>
+            <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 1</span><span class="block text-[9px] text-slate-500">Concept Review</span></div><span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">2</span></a><a href="adviser-phase2.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+            <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i class="fas fa-list-alt text-emerald-400 text-[9px]"></i></div>
+            <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 2</span><span class="block text-[9px] text-slate-500">Outline & Chap. 1</span></div></a><a href="adviser-phase3.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+            <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i class="fas fa-flask text-emerald-400 text-[9px]"></i></div>
+            <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 3</span><span class="block text-[9px] text-slate-500">Pre-Deployment</span></div></a><a href="adviser-phase4.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+            <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i class="fas fa-rocket text-emerald-400 text-[9px]"></i></div>
+            <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 4</span><span class="block text-[9px] text-slate-500">Deployment</span></div></a><a href="adviser-phase5.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+            <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i class="fas fa-flag-checkered text-emerald-400 text-[9px]"></i></div>
+            <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 5</span><span class="block text-[9px] text-slate-500">Final Defense</span></div></a></nav>
+    <div class="p-3 border-t border-slate-700/50"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-xs shadow">AR</div><div class="flex-1"><p class="font-semibold text-xs">Prof. A. Reyes</p><p class="text-[10px] text-slate-400">Capstone Adviser</p></div><a href="instructor-dashboard-clean.html" title="Switch View" class="w-7 h-7 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"><i class="fas fa-exchange-alt text-slate-400 text-[10px]"></i></a></div></div>
+</aside>
+<main class="flex-1 ml-64">
+    <div class="glass border-b border-slate-200/60 px-7 py-3.5 flex justify-between items-center sticky top-0 z-40 shadow-sm">
+        <div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-file-alt text-emerald-600"></i></div><div><h2 class="text-lg font-bold text-slate-800">Submissions</h2><p class="text-[11px] text-slate-400">Review and manage all submissions from your assigned groups</p></div></div>
+        <div class="flex items-center gap-2"><a href="adviser-submissions.html" class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 text-xs text-emerald-700"><i class="fas fa-hourglass-half text-emerald-500"></i><strong>3</strong> awaiting review</a><div class="relative"><button class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition"><i class="fas fa-bell text-slate-600 text-sm"></i></button><div class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border border-white"></div></div></div>
+    </div>
+    <div class="p-6 space-y-5 pb-12">
+
+        <!-- System Policy Info Row -->
+        <div class="grid grid-cols-3 gap-4">
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5">
+                <i class="fas fa-share-alt text-emerald-600 mt-0.5 flex-shrink-0 text-sm"></i>
+                <div><p class="text-xs font-bold text-emerald-800 mb-0.5">Feedback Loop</p><p class="text-[10px] text-emerald-700">Students must wait for your approval before submissions are forwarded to the Faculty Panel. Your decision controls the routing.</p></div>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5">
+                <i class="fas fa-pen-nib text-emerald-600 mt-0.5 flex-shrink-0 text-sm"></i>
+                <div><p class="text-xs font-bold text-emerald-800 mb-0.5">Digital Affirmation</p><p class="text-[10px] text-emerald-700">Your digital signature is auto-attached from your system profile when you approve. No paper signing required.</p></div>
+            </div>
+            <div class="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2.5">
+                <i class="fas fa-exclamation-triangle text-red-500 mt-0.5 flex-shrink-0 text-sm"></i>
+                <div><p class="text-xs font-bold text-red-700 mb-0.5">Resubmit Deadline Rule</p><p class="text-[10px] text-red-600">If you return a submission, the group is marked <strong>Resubmit</strong> but must still meet the original deadline. No automatic extension is granted.</p></div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="border-b border-slate-100 px-5 flex gap-0.5">
+                <button class="tab-btn on" onclick="switchTab('pending',this)"><i class="fas fa-hourglass-half mr-1.5 text-xs"></i>Pending Review <span class="ml-1 text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">3</span></button>
+                <button class="tab-btn" onclick="switchTab('approved',this)"><i class="fas fa-check-circle mr-1.5 text-xs"></i>Approved <span class="ml-1 text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">2</span></button>
+                <button class="tab-btn" onclick="switchTab('resubmit',this)"><i class="fas fa-redo mr-1.5 text-xs"></i>For Resubmission <span class="ml-1 text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-bold">1</span></button>
+            </div>
+            <div id="tab-pending" class="tab-pane on"><table class="tbl"><thead><tr><th>Group</th><th>Project Title</th><th>Phase</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead><tbody><tr>
+            <td><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold">A</div><div><p class="font-semibold text-sm">Group Alpha</p><p class="text-[10px] text-slate-400">BSIT-3A</p></div></div></td>
+            <td><p class="font-medium text-sm">Smart Attendance System using RFID</p></td>
+            <td><span class="badge badge-green text-[10px]">Phase 1</span></td>
+            <td class="text-[11px] text-slate-500">Mar 13 · 10 mins ago</td>
+            <td><span class="badge badge-green">Submitted</span></td>
+            <td><div class="flex gap-1.5"><button onclick="openDocViewer('Group Alpha','Smart Attendance System using RFID','Concept Paper')" class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i class="fas fa-file-alt"></i> View Doc</button>
+                   <button onclick="openReviewModal('Group Alpha','Smart Attendance System using RFID')" class="btn btn-green text-[11px] py-1.5 px-2.5"><i class="fas fa-eye"></i> Review</button></div></td></tr><tr>
+            <td><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-emerald-700 flex items-center justify-center text-white text-xs font-bold">B</div><div><p class="font-semibold text-sm">Group Beta</p><p class="text-[10px] text-slate-400">BSIT-3A</p></div></div></td>
+            <td><p class="font-medium text-sm">Online Enrollment Management System</p></td>
+            <td><span class="badge badge-green text-[10px]">Phase 1</span></td>
+            <td class="text-[11px] text-slate-500">Mar 13 · 1 hr ago</td>
+            <td><span class="badge badge-green">Submitted</span></td>
+            <td><div class="flex gap-1.5"><button onclick="openDocViewer('Group Beta','Online Enrollment Management System','Concept Paper')" class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i class="fas fa-file-alt"></i> View Doc</button>
+                   <button onclick="openReviewModal('Group Beta','Online Enrollment Management System')" class="btn btn-green text-[11px] py-1.5 px-2.5"><i class="fas fa-eye"></i> Review</button></div></td></tr><tr>
+            <td><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-xs font-bold">E</div><div><p class="font-semibold text-sm">Group Epsilon</p><p class="text-[10px] text-slate-400">BSIT-3A</p></div></div></td>
+            <td><p class="font-medium text-sm">Barangay Document Request System</p></td>
+            <td><span class="badge badge-green text-[10px]">Phase 1</span></td>
+            <td class="text-[11px] text-slate-500">Mar 12 · Yesterday</td>
+            <td><span class="badge badge-green">Submitted</span></td>
+            <td><div class="flex gap-1.5"><button onclick="openDocViewer('Group Epsilon','Barangay Document Request System','Concept Paper')" class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i class="fas fa-file-alt"></i> View Doc</button>
+                   <button onclick="openReviewModal('Group Epsilon','Barangay Document Request System')" class="btn btn-green text-[11px] py-1.5 px-2.5"><i class="fas fa-eye"></i> Review</button></div></td></tr></tbody></table></div>
+            <div id="tab-approved" class="tab-pane"><table class="tbl"><thead><tr><th>Group</th><th>Project Title</th><th>Phase</th><th>Approved</th><th>Status</th><th>Actions</th></tr></thead><tbody><tr>
+            <td><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-bold">G</div><div><p class="font-semibold text-sm">Group Gamma</p><p class="text-[10px] text-slate-400">BSIT-3A</p></div></div></td>
+            <td><p class="font-medium text-sm">School Library Management System</p></td>
+            <td><span class="badge badge-green text-[10px]">Phase 1</span></td>
+            <td class="text-[11px] text-slate-500">Mar 11, 2026</td>
+            <td><span class="badge badge-green">Approved</span></td>
+            <td><div class="flex gap-1.5"><button onclick="openDocViewer('Group Gamma','School Library Management System','Concept Paper')" class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i class="fas fa-file-alt"></i> View</button></div></td></tr><tr>
+            <td><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-bold">G</div><div><p class="font-semibold text-sm">Group Gamma</p><p class="text-[10px] text-slate-400">BSIT-3A</p></div></div></td>
+            <td><p class="font-medium text-sm">Library System – Chapter 1 Draft</p></td>
+            <td><span class="badge badge-green text-[10px]">Phase 2</span></td>
+            <td class="text-[11px] text-slate-500">Mar 10, 2026</td>
+            <td><span class="badge badge-green">Approved</span></td>
+            <td><div class="flex gap-1.5"><button onclick="openDocViewer('Group Gamma','Library System – Chapter 1 Draft','Concept Paper')" class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i class="fas fa-file-alt"></i> View</button></div></td></tr></tbody></table></div>
+            <div id="tab-resubmit" class="tab-pane"><table class="tbl"><thead><tr><th>Group</th><th>Project Title</th><th>Phase</th><th>Returned</th><th>Status</th><th>Payment</th><th>Actions</th></tr></thead><tbody><tr>
+            <td><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-emerald-800 flex items-center justify-center text-white text-xs font-bold">D</div><div><p class="font-semibold text-sm">Group Delta</p><p class="text-[10px] text-slate-400">BSIT-3A</p></div></div></td>
+            <td><p class="font-medium text-sm">HR Payroll Management System</p><p class="text-[9px] text-slate-400 mt-0.5">Deadline still applies — original date stands</p></td>
+            <td><span class="badge badge-green text-[10px]">Phase 1</span></td>
+            <td class="text-[11px] text-slate-500">Mar 10, 2026</td>
+            <td><span class="badge badge-red">Resubmit</span></td>
+            <td><span class="text-[9px] bg-red-100 text-red-700 px-2 py-1 rounded-full font-bold flex items-center gap-1 w-fit"><i class="fas fa-lock text-[8px]"></i> Unpaid</span></td>
+            <td><div class="flex gap-1.5"><button onclick="openDocViewer('Group Delta','HR Payroll Management System','Concept Paper')" class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i class="fas fa-file-alt"></i> View Doc</button>
+                   <button onclick="openReviewModal('Group Delta','HR Payroll Management System')" class="btn btn-green text-[11px] py-1.5 px-2.5"><i class="fas fa-eye"></i> Review</button></div></td></tr></tbody></table></div>
+        </div>
+    </div>
+</main>
+<div id="modal-doc" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-doc')">
+    <div class="modal modal-xl" style="max-height:92vh;display:flex;flex-direction:column;">
+        <div class="modal-header flex-shrink-0"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-file-alt text-emerald-600"></i></div><div><p class="font-bold text-slate-800" id="doc-title">Document</p><p class="text-[11px] text-slate-400" id="doc-group">—</p></div></div><div class="flex items-center gap-2"><button onclick="openModal('modal-inline-comment')" class="btn btn-ghost text-xs py-1.5 px-3"><i class="fas fa-comment-medical text-emerald-600"></i> Annotate</button><button onclick="closeModal('modal-doc')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div></div>
+        <div class="flex items-center gap-2 px-4 py-2 border-b border-slate-100 bg-slate-50 flex-shrink-0"><button class="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 hover:bg-emerald-50 hover:border-emerald-300 transition"><i class="fas fa-search-plus text-slate-500 mr-1"></i>Zoom In</button><button class="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 hover:bg-emerald-50 hover:border-emerald-300 transition"><i class="fas fa-search-minus text-slate-500 mr-1"></i>Zoom Out</button><div class="h-4 w-px bg-slate-200 mx-1"></div><span class="text-xs text-slate-400">Page 1 of 4</span><div class="h-4 w-px bg-slate-200 mx-1"></div><span class="text-xs text-emerald-600 font-medium"><i class="fas fa-circle text-[7px] mr-1"></i>Select text to annotate</span><div class="flex-1"></div><span class="badge badge-green text-[10px]" id="dv-doc-type">Document</span></div>
+        <div class="flex flex-1 overflow-hidden">
+            <div class="flex-1 overflow-y-auto bg-slate-100 p-4"><div class="bg-white rounded-lg shadow-md p-8 mx-auto max-w-2xl font-serif text-sm leading-relaxed" id="doc-content" onclick="handleDocClick(event)">
+                <p class="text-center font-bold text-base mb-1">CAPSTONE DOCUMENT</p>
+                <p class="text-center text-xs text-slate-500 mb-6" id="doc-subtitle">Loading…</p>
+                <p class="font-bold mb-2">I. Introduction</p><p class="mb-4 text-slate-700">The proposed system aims to address existing institutional challenges through modern information technology. This document presents the conceptual framework, objectives, and scope of the proposed capstone project for AY 2024-2025.</p>
+                <p class="font-bold mb-2">II. Background of the Study</p><p class="mb-4 text-slate-700"><span class="comment-highlight" onclick="showHC(event,'Scope should be more specific — limit to one department for feasibility.')">Current institutional processes rely on manual methods that are time-consuming and error-prone. The increasing volume of transactions necessitates an automated, reliable digital solution.</span></p>
+                <p class="font-bold mb-2">III. Statement of the Problem</p><p class="mb-4 text-slate-700">The institution currently faces: (1) inefficiency in manual record-keeping; (2) lack of real-time data visibility; (3) high transcription errors; and (4) absence of a centralized information system accessible to all stakeholders.</p>
+                <p class="font-bold mb-2">IV. Objectives</p><p class="mb-4 text-slate-700">General objective: design, develop, and deploy a web-based management system. Specifically: (1) eliminate manual processes; (2) provide real-time reporting; (3) ensure data integrity; and (4) improve operational efficiency by at least 40%.</p>
+                <div class="inline-comment mt-3" id="highlight-comment" style="display:none"><div class="flex items-start gap-2"><div class="w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">AR</div><div><p class="text-[10px] font-bold text-emerald-800 mb-0.5">Prof. A. Reyes · Annotation</p><p id="highlight-comment-text" class="text-[11px] text-emerald-700"></p></div></div></div>
+            </div></div>
+            <div class="w-64 flex-shrink-0 border-l border-slate-100 bg-white flex flex-col"><div class="p-3 border-b border-slate-100 flex items-center justify-between"><p class="text-xs font-bold text-slate-700">Comments <span class="text-emerald-600" id="comment-count">(2)</span></p><button onclick="openModal('modal-inline-comment')" class="text-[10px] text-emerald-600 hover:underline font-semibold">+ Add</button></div>
+            <div class="flex-1 overflow-y-auto p-3 space-y-3" id="comments-list">
+                <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3"><div class="flex items-center gap-1.5 mb-1.5"><div class="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[9px] font-bold">AR</div><p class="text-[10px] font-bold text-emerald-800">Prof. A. Reyes</p></div><p class="text-[10px] text-slate-600 mb-1.5">"Scope should be limited to one department to ensure feasibility."</p><p class="text-[9px] text-slate-400">Page 1 · Para. 2</p></div>
+                <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3"><div class="flex items-center gap-1.5 mb-1.5"><div class="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[9px] font-bold">AR</div><p class="text-[10px] font-bold text-emerald-800">Prof. A. Reyes</p></div><p class="text-[10px] text-slate-600 mb-1.5">"Good problem statement. Clarify real-time notification scope."</p><p class="text-[9px] text-slate-400">Page 1 · Para. 3</p></div>
+            </div></div>
+        </div>
+        <div class="modal-footer flex-shrink-0"><button onclick="closeModal('modal-doc')" class="btn btn-ghost text-xs">Close</button></div>
+    </div>
+</div>
+<div id="modal-inline-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-inline-comment')">
+    <div class="modal" style="max-width:420px;"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-comment-medical text-emerald-600"></i></div><div><p class="font-bold text-slate-800">Annotate Text</p><p class="text-[11px] text-slate-400">Comment on selected text</p></div></div><button onclick="closeModal('modal-inline-comment')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body space-y-3"><div><label class="form-label">Selected Text</label><div class="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5 text-xs text-emerald-800 italic" id="selected-preview">"...select text from the document..."</div></div><div><label class="form-label">Your Comment</label><textarea class="form-input" rows="4" placeholder="Write your annotation…"></textarea></div><div><label class="form-label">Type</label><select class="form-input"><option>General Comment</option><option>Suggestion</option><option>Revision Needed</option><option>Commendation</option></select></div></div>
+        <div class="modal-footer"><button onclick="closeModal('modal-inline-comment')" class="btn btn-ghost text-xs">Cancel</button><button onclick="submitIC()" class="btn btn-green text-xs"><i class="fas fa-paper-plane"></i> Post</button></div>
+    </div>
+</div><div id="modal-add-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-add-comment')">
+    <div class="modal"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-comment text-emerald-600"></i></div><div><p class="font-bold text-slate-800">Add Comment</p><p class="text-[11px] text-slate-400" id="add-comment-subtitle">Leave feedback for a group</p></div></div><button onclick="closeModal('modal-add-comment')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body space-y-3"><div><label class="form-label">Group *</label><select class="form-input"><option value="">Select…</option><option>Group Alpha</option><option>Group Beta</option><option>Group Gamma</option><option>Group Delta</option><option>Group Epsilon</option></select></div><div><label class="form-label">Type</label><select class="form-input"><option>General Feedback</option><option>Recommendation</option><option>Revision Request</option><option>Commendation</option></select></div><div><label class="form-label">Comment *</label><textarea class="form-input" rows="5" placeholder="Write your feedback…"></textarea></div><div><label class="form-label">Visibility</label><select class="form-input"><option>Visible to Group</option><option>Private (Adviser only)</option></select></div></div>
+        <div class="modal-footer"><button onclick="closeModal('modal-add-comment')" class="btn btn-ghost text-xs">Cancel</button><button onclick="submitComment('modal-add-comment')" class="btn btn-green text-xs"><i class="fas fa-paper-plane"></i> Post</button></div>
+    </div>
+</div>
+<div id="modal-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-comment')">
+    <div class="modal"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-comment text-emerald-600"></i></div><div><p class="font-bold text-slate-800" id="cm-title">Add Comment</p></div></div><button onclick="closeModal('modal-comment')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body space-y-3"><div><label class="form-label">Type</label><select class="form-input"><option>General Feedback</option><option>Recommendation</option><option>Revision Request</option><option>Commendation</option></select></div><div><label class="form-label">Comment *</label><textarea class="form-input" rows="5" placeholder="Write…"></textarea></div></div>
+        <div class="modal-footer"><button onclick="closeModal('modal-comment')" class="btn btn-ghost text-xs">Cancel</button><button onclick="submitComment('modal-comment')" class="btn btn-green text-xs"><i class="fas fa-paper-plane"></i> Post</button></div>
+    </div>
+</div>
+<div id="modal-edit-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-edit-comment')">
+    <div class="modal"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-edit text-emerald-600"></i></div><div><p class="font-bold text-slate-800" id="ec-title">Edit Comment</p></div></div><button onclick="closeModal('modal-edit-comment')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body space-y-3"><div><label class="form-label">Comment</label><textarea class="form-input" rows="5" id="ec-body"></textarea></div></div>
+        <div class="modal-footer"><button onclick="closeModal('modal-edit-comment')" class="btn btn-ghost text-xs">Cancel</button><button onclick="submitEdit()" class="btn btn-green text-xs"><i class="fas fa-save"></i> Save</button></div>
+    </div>
+</div>
+<div id="modal-delete" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-delete')">
+    <div class="modal" style="max-width:400px"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center"><i class="fas fa-trash text-red-600"></i></div><p class="font-bold text-slate-800">Confirm Delete</p></div><button onclick="closeModal('modal-delete')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body"><p class="text-sm text-slate-600">This action cannot be undone.</p></div>
+        <div class="modal-footer"><button onclick="closeModal('modal-delete')" class="btn btn-ghost text-xs">Cancel</button><button onclick="deleteItem()" class="btn btn-red text-xs"><i class="fas fa-trash"></i> Delete</button></div>
+    </div>
+</div>
+<div id="toast" class="fixed bottom-5 right-5 z-[500] hidden"><div class="bg-slate-800 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 slide-up text-sm"><i id="toast-icon" class="fas fa-check-circle text-emerald-400"></i><span id="toast-msg">Done.</span></div></div><div id="modal-review" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-review')">
+    <div class="modal modal-lg"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-clipboard-check text-emerald-600"></i></div><div><p class="font-bold text-slate-800" id="rv-title">Review Submission</p><p class="text-[11px] text-slate-400">Phase 1 · Concept Paper</p></div></div><button onclick="closeModal('modal-review')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body space-y-4">
+            <p class="section-div">Anti-Duplication Check</p>
+            <div class="space-y-2">
+                <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200"><span class="w-6 h-6 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</span><div class="flex-1"><p class="text-sm font-medium" id="rv-t1">—</p><p class="text-[10px] text-slate-400 mt-0.5">Primary title</p></div><span class="badge badge-green text-[10px]">✓ Unique</span></div>
+                <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200"><span class="w-6 h-6 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span><div class="flex-1"><p class="text-sm font-medium">Automated School Monitoring System</p><p class="text-[10px] text-slate-400 mt-0.5">Alternative</p></div><span class="badge badge-green text-[10px]">✓ Unique</span></div>
+                <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200"><span class="w-6 h-6 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</span><div class="flex-1"><p class="text-sm font-medium">Student Record Digitization System</p><p class="text-[10px] text-slate-400 mt-0.5">Alternative</p></div><span class="badge badge-green text-[10px]">✓ Unique</span></div>
+            </div>
+            <p class="section-div">Adviser Feedback</p>
+            <div><label class="form-label">Comments & Recommendations *</label><textarea class="form-input" rows="4" placeholder="e.g. Title is feasible. Suggest narrowing scope…"></textarea></div>
+            <p class="section-div">Digital Affirmation</p>
+            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-2.5"><i class="fas fa-signature text-emerald-600 mt-0.5 flex-shrink-0"></i><p class="text-xs text-emerald-700">By submitting, your digital affirmation as adviser will be attached to this record.</p></div>
+            <p class="section-div">Decision</p>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="setVerdict('approve')" id="btn-approve" class="py-3 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-emerald-100 transition"><i class="fas fa-check-circle"></i> Approve & Forward</button>
+                <button onclick="setVerdict('resubmit')" id="btn-resubmit" class="py-3 rounded-xl border-2 border-red-200 bg-red-50 text-red-700 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-red-100 transition"><i class="fas fa-redo"></i> Return for Resubmission</button>
+            </div><input type="hidden" id="verdictValue" value="">
+        </div>
+        <div class="modal-footer"><button onclick="closeModal('modal-review')" class="btn btn-ghost text-xs">Cancel</button><button onclick="submitVerdict()" class="btn btn-green text-xs"><i class="fas fa-paper-plane"></i> Submit Decision</button></div>
+    </div>
+</div>
+<script>
+function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+function closeOnBackdrop(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-backdrop.open').forEach(m=>{m.classList.remove('open');document.body.style.overflow='';});});
+function switchTab(name,el){document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));document.getElementById('tab-'+name).classList.add('on');el.classList.add('on');}
+function openCommentModal(g){document.getElementById('cm-title').textContent='Comment — '+g;openModal('modal-comment');}
+function openReviewModal(group,title){document.getElementById('rv-title').textContent='Review — '+group;document.getElementById('rv-t1').textContent=title;document.getElementById('verdictValue').value='';document.getElementById('btn-approve').classList.remove('ring-2','ring-emerald-400');document.getElementById('btn-resubmit').classList.remove('ring-2','ring-red-400');openModal('modal-review');}
+function setVerdict(v){document.getElementById('verdictValue').value=v;document.getElementById('btn-approve').classList.toggle('ring-2',v==='approve');document.getElementById('btn-approve').classList.toggle('ring-emerald-400',v==='approve');document.getElementById('btn-resubmit').classList.toggle('ring-2',v==='resubmit');document.getElementById('btn-resubmit').classList.toggle('ring-red-400',v==='resubmit');}
+function submitVerdict(){const v=document.getElementById('verdictValue').value;if(!v){showToast('Select a decision first.','warn');return;}closeModal('modal-review');showToast(v==='approve'?'Approved and forwarded.':'Returned for resubmission.',v==='approve'?'success':'error');}
+function submitComment(id){closeModal(id);showToast('Comment posted.','success');}
+function submitEdit(){closeModal('modal-edit-comment');showToast('Updated.','success');}
+function deleteItem(){closeModal('modal-delete');showToast('Deleted.','error');}
+function showToast(msg,type='success'){const t=document.getElementById('toast'),i=document.getElementById('toast-icon');document.getElementById('toast-msg').textContent=msg;i.className=type==='success'?'fas fa-check-circle text-emerald-400':type==='error'?'fas fa-exclamation-circle text-red-400':'fas fa-info-circle text-amber-400';t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),3500);}
+function openDocViewer(group,title,docType){if(document.getElementById('doc-title'))document.getElementById('doc-title').textContent=(docType||'Document')+' — '+group;if(document.getElementById('doc-group'))document.getElementById('doc-group').textContent=group;if(document.getElementById('doc-subtitle'))document.getElementById('doc-subtitle').textContent=title;if(document.getElementById('dv-doc-type'))document.getElementById('dv-doc-type').textContent=docType||'Document';openModal('modal-doc');}
+function handleDocClick(e){const sel=window.getSelection();if(sel&&sel.toString().trim().length>5){if(document.getElementById('selected-preview'))document.getElementById('selected-preview').textContent='"'+sel.toString().substring(0,100)+'..."';openModal('modal-inline-comment');}}
+function showHC(e,text){e.stopPropagation();const el=document.getElementById('highlight-comment');if(el){document.getElementById('highlight-comment-text').textContent=text;el.style.display='block';setTimeout(()=>el.style.display='none',5000);}}
+function submitIC(){closeModal('modal-inline-comment');const el=document.getElementById('comment-count');if(el){const c=parseInt(el.textContent.replace(/[()]/g,''));el.textContent='('+(c+1)+')';}const list=document.getElementById('comments-list');if(list){const div=document.createElement('div');div.className='bg-emerald-50 border border-emerald-100 rounded-xl p-3';div.innerHTML=`<div class="flex items-center gap-1.5 mb-1.5"><div class="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[9px] font-bold">AR</div><p class="text-[10px] font-bold text-emerald-800">Prof. A. Reyes</p></div><p class="text-[10px] text-slate-600 mb-1.5">"Annotation added."</p><p class="text-[9px] text-slate-400">Just now</p>`;list.prepend(div);}showToast('Annotation added.','success');}
+</script></body></html>

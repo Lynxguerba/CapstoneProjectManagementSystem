@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback & Comments – Adviser | Capstone MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        main {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, .85);
+            backdrop-filter: blur(12px);
+        }
+
+        .hover-lift {
+            transition: transform .2s, box-shadow .2s;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+        }
+
+        .badge {
+            padding: .2rem .65rem;
+            border-radius: 9999px;
+            font-size: .72rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+        }
+
+        .badge-green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-amber {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .badge-red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-slate {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .nav-active {
+            background: linear-gradient(135deg, #059669, #10b981) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, .3);
+        }
+
+        .nav-active i,
+        .nav-active span {
+            color: white !important;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .65);
+            backdrop-filter: blur(6px);
+            z-index: 400;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-backdrop.open {
+            display: flex;
+            animation: fadeIn .18s ease;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 1.25rem;
+            box-shadow: 0 32px 80px rgba(0, 0, 0, .28);
+            width: 100%;
+            max-width: 580px;
+        }
+
+        .modal-lg {
+            max-width: 780px;
+        }
+
+        .modal-xl {
+            max-width: 1020px;
+        }
+
+        .modal-header {
+            padding: 1.1rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-body {
+            padding: 1.4rem 1.5rem;
+            max-height: 72vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: .9rem 1.5rem;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: flex-end;
+            gap: .65rem;
+            background: #fafafa;
+            border-radius: 0 0 1.25rem 1.25rem;
+        }
+
+        .form-label {
+            font-size: .72rem;
+            font-weight: 700;
+            color: #374151;
+            display: block;
+            margin-bottom: .3rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .form-input {
+            width: 100%;
+            border: 1.5px solid #e2e8f0;
+            border-radius: .6rem;
+            padding: .55rem .8rem;
+            font-size: .83rem;
+            color: #1e293b;
+            outline: none;
+            transition: border .2s;
+        }
+
+        .form-input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, .12);
+        }
+
+        .section-div {
+            font-size: .68rem;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin: 1rem 0 .6rem;
+            padding-bottom: .4rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .btn {
+            padding: .5rem 1.1rem;
+            border-radius: .65rem;
+            font-size: .82rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            transition: all .2s;
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: white;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, .35);
+        }
+
+        .btn-green:hover {
+            opacity: .9;
+        }
+
+        .btn-red {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+        }
+
+        .btn-red:hover {
+            opacity: .9;
+        }
+
+        .btn-ghost {
+            background: white;
+            color: #475569;
+            border: 1.5px solid #e2e8f0;
+        }
+
+        .btn-ghost:hover {
+            background: #f0fdf4;
+            border-color: #10b981;
+            color: #059669;
+        }
+
+        .tbl {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .82rem;
+        }
+
+        .tbl thead tr {
+            background: #f8fafc;
+        }
+
+        .tbl th {
+            padding: .8rem 1.1rem;
+            text-align: left;
+            font-weight: 700;
+            color: #64748b;
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            white-space: nowrap;
+        }
+
+        .tbl td {
+            padding: .85rem 1.1rem;
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        .tbl tbody tr {
+            border-top: 1px solid #f1f5f9;
+            transition: background .12s;
+        }
+
+        .tbl tbody tr:hover {
+            background: #f0fdf4;
+        }
+
+        .tab-btn {
+            padding: .55rem 1.1rem;
+            font-size: .82rem;
+            font-weight: 500;
+            color: #64748b;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            transition: all .2s;
+        }
+
+        .tab-btn.on {
+            color: #059669;
+            border-bottom-color: #10b981;
+            font-weight: 700;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.on {
+            display: block;
+            animation: fadeIn .2s ease;
+        }
+
+        .prog {
+            height: .45rem;
+            border-radius: 9999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .prog-fill {
+            height: 100%;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, #059669, #10b981);
+        }
+
+        .comment-highlight {
+            background: #bbf7d0;
+            border-bottom: 2px solid #10b981;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        .inline-comment {
+            background: #f0fdf4;
+            border-left: 3px solid #10b981;
+            padding: .4rem .75rem;
+            border-radius: 0 .5rem .5rem 0;
+            margin: .4rem 0;
+            font-size: .78rem;
+            color: #065f46;
+        }
+
+        .activity-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: .65rem;
+            padding: .6rem 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1
+            }
+        }
+
+        .slide-up {
+            animation: slideUp .3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex text-slate-700">
+    <aside
+        class="w-64 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl z-50">
+        <div class="p-4 border-b border-slate-700/50">
+            <div class="flex items-center gap-3 mb-3">
+                <div
+                    class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-user-tie text-lg text-white"></i></div>
+                <div>
+                    <h1
+                        class="text-base font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                        Capstone MS</h1>
+                    <p class="text-[10px] text-slate-400">Adviser Portal</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+                <div class="bg-slate-700/50 rounded-lg p-1.5 text-center">
+                    <p class="text-[9px] text-slate-400">AY 2024-2025</p>
+                    <p class="text-[11px] font-semibold text-white">1st Sem</p>
+                </div>
+                <div class="bg-slate-700/50 rounded-lg p-1.5 text-center">
+                    <p class="text-[9px] text-slate-400">Groups</p>
+                    <p class="text-[11px] font-semibold text-emerald-400">5 Assigned</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 p-3 overflow-y-auto space-y-0.5 text-[13px]">
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5">Main</p><a
+                href="adviser-dashboard.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i
+                    class="fas fa-tachometer-alt w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span
+                    class="flex-1">Dashboard</span></a>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 mt-1">My Groups</p><a
+                href="adviser-my-groups.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i
+                    class="fas fa-users w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span
+                    class="flex-1">Assigned Groups</span><span
+                    class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">5</span></a><a
+                href="adviser-submissions.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i
+                    class="fas fa-file-alt w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span
+                    class="flex-1">Submissions</span><span
+                    class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">3</span></a><a
+                href="adviser-feedback.html"
+                class="nav-active flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i
+                    class="fas fa-comments w-4 text-[11px]"></i><span class="flex-1">Feedback & Comments</span></a>
+            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 mt-1">Capstone Phases</p>
+            <a href="adviser-phase1.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-lightbulb text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 1</span><span
+                        class="block text-[9px] text-slate-500">Concept Review</span></div><span
+                    class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">2</span>
+            </a><a href="adviser-phase2.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-list-alt text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 2</span><span
+                        class="block text-[9px] text-slate-500">Outline & Chap. 1</span></div>
+            </a><a href="adviser-phase3.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-flask text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 3</span><span
+                        class="block text-[9px] text-slate-500">Pre-Deployment</span></div>
+            </a><a href="adviser-phase4.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-rocket text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 4</span><span
+                        class="block text-[9px] text-slate-500">Deployment</span></div>
+            </a><a href="adviser-phase5.html"
+                class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+                <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i
+                        class="fas fa-flag-checkered text-emerald-400 text-[9px]"></i></div>
+                <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 5</span><span
+                        class="block text-[9px] text-slate-500">Final Defense</span></div>
+            </a>
+        </nav>
+        <div class="p-3 border-t border-slate-700/50">
+            <div class="flex items-center gap-2.5">
+                <div
+                    class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-xs shadow">
+                    AR</div>
+                <div class="flex-1">
+                    <p class="font-semibold text-xs">Prof. A. Reyes</p>
+                    <p class="text-[10px] text-slate-400">Capstone Adviser</p>
+                </div><a href="instructor-dashboard-clean.html" title="Switch View"
+                    class="w-7 h-7 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"><i
+                        class="fas fa-exchange-alt text-slate-400 text-[10px]"></i></a>
+            </div>
+        </div>
+    </aside>
+    <main class="flex-1 ml-64">
+        <div
+            class="glass border-b border-slate-200/60 px-7 py-3.5 flex justify-between items-center sticky top-0 z-40 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                        class="fas fa-comments text-emerald-600"></i></div>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Feedback & Comments</h2>
+                    <p class="text-[11px] text-slate-400">All your comments and annotations across all groups and phases
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2"><button onclick="openModal('modal-add-comment')"
+                    class="btn btn-green text-xs"><i class="fas fa-plus"></i> New Comment</button>
+                <div class="relative"><button
+                        class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition"><i
+                            class="fas fa-bell text-slate-600 text-sm"></i></button>
+                    <div class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 space-y-5 pb-12">
+
+            <!-- Data Policy Notice -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5 text-xs">
+                    <i class="fas fa-shield-alt text-emerald-600 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="font-bold text-emerald-800 mb-0.5">Group Data Isolation</p>
+                        <p class="text-emerald-700">Comments you post are only visible to the group they belong to.
+                            Group A cannot see Group B's feedback. Each group has its own isolated repository.</p>
+                    </div>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5 text-xs">
+                    <i class="fas fa-university text-emerald-600 mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <p class="font-bold text-emerald-800 mb-0.5">Cross-Program Scope</p>
+                        <p class="text-emerald-700">This system covers both IT and ISPED (Information Systems) programs.
+                            Feedback applies based on your assigned groups only. Instructor/Dean sees all groups across
+                            sections.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mb-2">
+                <div class="relative flex-1"><i
+                        class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-sm"></i><input type="text"
+                        placeholder="Search comments…"
+                        class="w-full pl-9 pr-4 py-2 border-1.5 border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white border">
+                </div>
+                <select
+                    class="bg-white border border-slate-200 rounded-xl px-4 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                    <option>All Groups</option>
+                    <option>Group Alpha</option>
+                    <option>Group Beta</option>
+                    <option>Group Gamma</option>
+                    <option>Group Delta</option>
+                    <option>Group Epsilon</option>
+                </select>
+                <select
+                    class="bg-white border border-slate-200 rounded-xl px-4 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                    <option>All Types</option>
+                    <option>General Feedback</option>
+                    <option>Recommendation</option>
+                    <option>Revision Request</option>
+                    <option>Commendation</option>
+                </select>
+            </div>
+            <div class="space-y-4">
+                <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover-lift">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-semibold text-sm">
+                                AR</div>
+                            <div>
+                                <p class="font-semibold text-slate-800 text-sm">Prof. A. Reyes</p>
+                                <p class="text-[10px] text-slate-400">Mar 13, 2026 · 10:30 AM</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2"><span class="badge badge-green text-[10px]">Group
+                                Alpha</span><span class="badge badge-amber text-[10px]">Recommendation</span></div>
+                    </div>
+                    <p class="text-sm text-slate-700 leading-relaxed mb-4">Proposed title is feasible. Recommend
+                        narrowing scope to one department for the initial prototype phase.</p>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5 text-xs text-slate-400"><i class="fas fa-eye"></i> Visible
+                            to Group</div>
+                        <div class="flex gap-2">
+                            <button
+                                onclick="openEditComment('Group Alpha','Proposed title is feasible. Recommend na...')"
+                                class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i class="fas fa-edit"></i>
+                                Edit</button>
+                            <button onclick="openModal('modal-delete')"
+                                class="btn text-[11px] py-1.5 px-2.5 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100"><i
+                                    class="fas fa-trash"></i> Delete</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover-lift">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-semibold text-sm">
+                                AR</div>
+                            <div>
+                                <p class="font-semibold text-slate-800 text-sm">Prof. A. Reyes</p>
+                                <p class="text-[10px] text-slate-400">Mar 10, 2026 · 3:00 PM</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2"><span class="badge badge-green text-[10px]">Group
+                                Delta</span><span class="badge badge-red text-[10px]">Revision Request</span></div>
+                    </div>
+                    <p class="text-sm text-slate-700 leading-relaxed mb-4">Title is too broad. Resubmit with a clearer
+                        system boundary and narrowed scope. Focus on one functional area only.</p>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5 text-xs text-slate-400"><i class="fas fa-eye"></i> Visible
+                            to Group</div>
+                        <div class="flex gap-2">
+                            <button
+                                onclick="openEditComment('Group Delta','Title is too broad. Resubmit with a clea...')"
+                                class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i class="fas fa-edit"></i>
+                                Edit</button>
+                            <button onclick="openModal('modal-delete')"
+                                class="btn text-[11px] py-1.5 px-2.5 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100"><i
+                                    class="fas fa-trash"></i> Delete</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover-lift">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-semibold text-sm">
+                                AR</div>
+                            <div>
+                                <p class="font-semibold text-slate-800 text-sm">Prof. A. Reyes</p>
+                                <p class="text-[10px] text-slate-400">Mar 11, 2026 · 9:00 AM</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2"><span class="badge badge-green text-[10px]">Group
+                                Gamma</span><span class="badge badge-green text-[10px]">Commendation</span></div>
+                    </div>
+                    <p class="text-sm text-slate-700 leading-relaxed mb-4">Excellent concept paper. Well-scoped and
+                        realistic given the timeline. Approved and forwarded to panel for evaluation.</p>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5 text-xs text-slate-400"><i class="fas fa-eye"></i> Visible
+                            to Group</div>
+                        <div class="flex gap-2">
+                            <button
+                                onclick="openEditComment('Group Gamma','Excellent concept paper. Well-scoped and...')"
+                                class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i class="fas fa-edit"></i>
+                                Edit</button>
+                            <button onclick="openModal('modal-delete')"
+                                class="btn text-[11px] py-1.5 px-2.5 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100"><i
+                                    class="fas fa-trash"></i> Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <div id="modal-add-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-add-comment')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-comment text-emerald-600"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800">Add Comment</p>
+                        <p class="text-[11px] text-slate-400" id="add-comment-subtitle">Leave feedback for a group</p>
+                    </div>
+                </div><button onclick="closeModal('modal-add-comment')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-3">
+                <div><label class="form-label">Group *</label><select class="form-input">
+                        <option value="">Select…</option>
+                        <option>Group Alpha</option>
+                        <option>Group Beta</option>
+                        <option>Group Gamma</option>
+                        <option>Group Delta</option>
+                        <option>Group Epsilon</option>
+                    </select></div>
+                <div><label class="form-label">Type</label><select class="form-input">
+                        <option>General Feedback</option>
+                        <option>Recommendation</option>
+                        <option>Revision Request</option>
+                        <option>Commendation</option>
+                    </select></div>
+                <div><label class="form-label">Comment *</label><textarea class="form-input" rows="5"
+                        placeholder="Write your feedback…"></textarea></div>
+                <div><label class="form-label">Visibility</label><select class="form-input">
+                        <option>Visible to Group</option>
+                        <option>Private (Adviser only)</option>
+                    </select></div>
+            </div>
+            <div class="modal-footer"><button onclick="closeModal('modal-add-comment')"
+                    class="btn btn-ghost text-xs">Cancel</button><button onclick="submitComment('modal-add-comment')"
+                    class="btn btn-green text-xs"><i class="fas fa-paper-plane"></i> Post</button></div>
+        </div>
+    </div>
+    <div id="modal-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-comment')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-comment text-emerald-600"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800" id="cm-title">Add Comment</p>
+                    </div>
+                </div><button onclick="closeModal('modal-comment')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-3">
+                <div><label class="form-label">Type</label><select class="form-input">
+                        <option>General Feedback</option>
+                        <option>Recommendation</option>
+                        <option>Revision Request</option>
+                        <option>Commendation</option>
+                    </select></div>
+                <div><label class="form-label">Comment *</label><textarea class="form-input" rows="5"
+                        placeholder="Write…"></textarea></div>
+            </div>
+            <div class="modal-footer"><button onclick="closeModal('modal-comment')"
+                    class="btn btn-ghost text-xs">Cancel</button><button onclick="submitComment('modal-comment')"
+                    class="btn btn-green text-xs"><i class="fas fa-paper-plane"></i> Post</button></div>
+        </div>
+    </div>
+    <div id="modal-edit-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-edit-comment')">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-edit text-emerald-600"></i></div>
+                    <div>
+                        <p class="font-bold text-slate-800" id="ec-title">Edit Comment</p>
+                    </div>
+                </div><button onclick="closeModal('modal-edit-comment')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body space-y-3">
+                <div><label class="form-label">Comment</label><textarea class="form-input" rows="5"
+                        id="ec-body"></textarea></div>
+            </div>
+            <div class="modal-footer"><button onclick="closeModal('modal-edit-comment')"
+                    class="btn btn-ghost text-xs">Cancel</button><button onclick="submitEdit()"
+                    class="btn btn-green text-xs"><i class="fas fa-save"></i> Save</button></div>
+        </div>
+    </div>
+    <div id="modal-delete" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-delete')">
+        <div class="modal" style="max-width:400px">
+            <div class="modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center"><i
+                            class="fas fa-trash text-red-600"></i></div>
+                    <p class="font-bold text-slate-800">Confirm Delete</p>
+                </div><button onclick="closeModal('modal-delete')"
+                    class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-sm text-slate-600">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer"><button onclick="closeModal('modal-delete')"
+                    class="btn btn-ghost text-xs">Cancel</button><button onclick="deleteItem()"
+                    class="btn btn-red text-xs"><i class="fas fa-trash"></i> Delete</button></div>
+        </div>
+    </div>
+    <div id="toast" class="fixed bottom-5 right-5 z-[500] hidden">
+        <div class="bg-slate-800 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 slide-up text-sm"><i
+                id="toast-icon" class="fas fa-check-circle text-emerald-400"></i><span id="toast-msg">Done.</span></div>
+    </div>
+    <script>
+        function openModal(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow = 'hidden'; }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
+        function closeOnBackdrop(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop.open').forEach(m => { m.classList.remove('open'); document.body.style.overflow = ''; }); });
+        function openCommentModal(g) { document.getElementById('cm-title').textContent = 'Comment — ' + g; openModal('modal-comment'); }
+        function openEditComment(group, body) { document.getElementById('ec-title').textContent = 'Edit — ' + group; document.getElementById('ec-body').value = body; openModal('modal-edit-comment'); }
+        function submitComment(id) { closeModal(id); showToast('Comment posted.', 'success'); }
+        function submitEdit() { closeModal('modal-edit-comment'); showToast('Updated.', 'success'); }
+        function deleteItem() { closeModal('modal-delete'); showToast('Deleted.', 'error'); }
+        function showToast(msg, type = 'success') { const t = document.getElementById('toast'), i = document.getElementById('toast-icon'); document.getElementById('toast-msg').textContent = msg; i.className = type === 'success' ? 'fas fa-check-circle text-emerald-400' : type === 'error' ? 'fas fa-exclamation-circle text-red-400' : 'fas fa-info-circle text-amber-400'; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 3500); }
+    </script>
+</body>
+
+</html>

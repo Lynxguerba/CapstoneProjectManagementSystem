@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 5: Final Defense – Adviser | Capstone MS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+*{font-family:'Inter',sans-serif;box-sizing:border-box;}
+body{overflow:hidden;}
+main{height:100vh;overflow-y:auto;overflow-x:hidden;}
+.glass{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);}
+.hover-lift{transition:transform .2s,box-shadow .2s;}
+.hover-lift:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08);}
+.badge{padding:.2rem .65rem;border-radius:9999px;font-size:.72rem;font-weight:600;display:inline-flex;align-items:center;gap:.3rem;}
+.badge-green{background:#dcfce7;color:#166534;}
+.badge-amber{background:#fef9c3;color:#854d0e;}
+.badge-red{background:#fee2e2;color:#991b1b;}
+.badge-slate{background:#f1f5f9;color:#475569;}
+.nav-active{background:linear-gradient(135deg,#059669,#10b981)!important;color:white!important;box-shadow:0 4px 12px rgba(16,185,129,.3);}
+.nav-active i,.nav-active span{color:white!important;}
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.65);backdrop-filter:blur(6px);z-index:400;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-backdrop.open{display:flex;animation:fadeIn .18s ease;}
+.modal{background:white;border-radius:1.25rem;box-shadow:0 32px 80px rgba(0,0,0,.28);width:100%;max-width:580px;}
+.modal-lg{max-width:780px;}
+.modal-xl{max-width:1020px;}
+.modal-header{padding:1.1rem 1.5rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;}
+.modal-body{padding:1.4rem 1.5rem;max-height:72vh;overflow-y:auto;}
+.modal-footer{padding:.9rem 1.5rem;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;gap:.65rem;background:#fafafa;border-radius:0 0 1.25rem 1.25rem;}
+.form-label{font-size:.72rem;font-weight:700;color:#374151;display:block;margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em;}
+.form-input{width:100%;border:1.5px solid #e2e8f0;border-radius:.6rem;padding:.55rem .8rem;font-size:.83rem;color:#1e293b;outline:none;transition:border .2s;}
+.form-input:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+.section-div{font-size:.68rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin:1rem 0 .6rem;padding-bottom:.4rem;border-bottom:1px solid #f1f5f9;}
+.btn{padding:.5rem 1.1rem;border-radius:.65rem;font-size:.82rem;font-weight:600;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:all .2s;}
+.btn-green{background:linear-gradient(135deg,#059669,#10b981);color:white;box-shadow:0 2px 8px rgba(16,185,129,.35);}
+.btn-green:hover{opacity:.9;}
+.btn-red{background:linear-gradient(135deg,#dc2626,#ef4444);color:white;}
+.btn-red:hover{opacity:.9;}
+.btn-ghost{background:white;color:#475569;border:1.5px solid #e2e8f0;}
+.btn-ghost:hover{background:#f0fdf4;border-color:#10b981;color:#059669;}
+.tbl{width:100%;border-collapse:collapse;font-size:.82rem;}
+.tbl thead tr{background:#f8fafc;}
+.tbl th{padding:.8rem 1.1rem;text-align:left;font-weight:700;color:#64748b;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;}
+.tbl td{padding:.85rem 1.1rem;color:#334155;vertical-align:middle;}
+.tbl tbody tr{border-top:1px solid #f1f5f9;transition:background .12s;}
+.tbl tbody tr:hover{background:#f0fdf4;}
+.tab-btn{padding:.55rem 1.1rem;font-size:.82rem;font-weight:500;color:#64748b;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;transition:all .2s;}
+.tab-btn.on{color:#059669;border-bottom-color:#10b981;font-weight:700;}
+.tab-pane{display:none;}
+.tab-pane.on{display:block;animation:fadeIn .2s ease;}
+.prog{height:.45rem;border-radius:9999px;background:#e2e8f0;overflow:hidden;}
+.prog-fill{height:100%;border-radius:9999px;background:linear-gradient(90deg,#059669,#10b981);}
+.comment-highlight{background:#bbf7d0;border-bottom:2px solid #10b981;cursor:pointer;border-radius:2px;}
+.inline-comment{background:#f0fdf4;border-left:3px solid #10b981;padding:.4rem .75rem;border-radius:0 .5rem .5rem 0;margin:.4rem 0;font-size:.78rem;color:#065f46;}
+.activity-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.activity-item{display:flex;gap:.65rem;padding:.6rem 0;border-bottom:1px solid #f1f5f9;}
+.activity-item:last-child{border-bottom:none;}
+::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:#f1f5f9;} ::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:4px;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.slide-up{animation:slideUp .3s ease-out;}
+</style>
+</head>
+<body class="bg-slate-50 flex text-slate-700">
+<aside class="w-64 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 flex flex-col fixed h-screen shadow-2xl z-50">
+    <div class="p-4 border-b border-slate-700/50">
+        <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg"><i class="fas fa-user-tie text-lg text-white"></i></div><div><h1 class="text-base font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">Capstone MS</h1><p class="text-[10px] text-slate-400">Adviser Portal</p></div></div>
+        <div class="grid grid-cols-2 gap-1.5"><div class="bg-slate-700/50 rounded-lg p-1.5 text-center"><p class="text-[9px] text-slate-400">AY 2024-2025</p><p class="text-[11px] font-semibold text-white">1st Sem</p></div><div class="bg-slate-700/50 rounded-lg p-1.5 text-center"><p class="text-[9px] text-slate-400">Groups</p><p class="text-[11px] font-semibold text-emerald-400">5 Assigned</p></div></div>
+    </div>
+    <nav class="flex-1 p-3 overflow-y-auto space-y-0.5 text-[13px]">
+        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5">Main</p>
+        <a href="adviser-dashboard.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i class="fas fa-tachometer-alt w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span class="flex-1">Dashboard</span></a><p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 mt-1">My Groups</p><a href="adviser-my-groups.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i class="fas fa-users w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span class="flex-1">Assigned Groups</span><span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">5</span></a><a href="adviser-submissions.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i class="fas fa-file-alt w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span class="flex-1">Submissions</span><span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">3</span></a><a href="adviser-feedback.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"><i class="fas fa-comments w-4 text-[11px] text-slate-400 group-hover:text-emerald-400"></i><span class="flex-1">Feedback & Comments</span></a>
+        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider px-2 py-1.5 mt-1">Capstone Phases</p>
+        <a href="adviser-phase1.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+            <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i class="fas fa-lightbulb text-emerald-400 text-[9px]"></i></div>
+            <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 1</span><span class="block text-[9px] text-slate-500">Concept Review</span></div><span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">2</span></a><a href="adviser-phase2.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+            <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i class="fas fa-list-alt text-emerald-400 text-[9px]"></i></div>
+            <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 2</span><span class="block text-[9px] text-slate-500">Outline & Chap. 1</span></div></a><a href="adviser-phase3.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+            <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i class="fas fa-flask text-emerald-400 text-[9px]"></i></div>
+            <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 3</span><span class="block text-[9px] text-slate-500">Pre-Deployment</span></div></a><a href="adviser-phase4.html" class="hover:bg-slate-700/50 group flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+            <div class="w-5 h-5 rounded bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i class="fas fa-rocket text-emerald-400 text-[9px]"></i></div>
+            <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 4</span><span class="block text-[9px] text-slate-500">Deployment</span></div></a><a href="adviser-phase5.html" class="nav-active flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all">
+            <div class="w-5 h-5 rounded bg-white/20 flex items-center justify-center flex-shrink-0"><i class="fas fa-flag-checkered text-white text-[9px]"></i></div>
+            <div class="flex-1"><span class="block text-[11px] font-semibold">Phase 5</span><span class="block text-[9px] opacity-70">Final Defense</span></div></a>
+    </nav>
+    <div class="p-3 border-t border-slate-700/50"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-xs shadow">AR</div><div class="flex-1"><p class="font-semibold text-xs">Prof. A. Reyes</p><p class="text-[10px] text-slate-400">Capstone Adviser</p></div><a href="instructor-dashboard-clean.html" title="Switch View" class="w-7 h-7 rounded-lg hover:bg-slate-700 flex items-center justify-center transition"><i class="fas fa-exchange-alt text-slate-400 text-[10px]"></i></a></div></div>
+</aside>
+<main class="flex-1 ml-64">
+    <div class="glass border-b border-slate-200/60 px-7 py-3.5 flex justify-between items-center sticky top-0 z-40 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-flag-checkered text-emerald-600"></i></div>
+            <div><h2 class="text-lg font-bold text-slate-800">Phase 5 — Final Defense</h2><p class="text-[11px] text-slate-400">Monitor final defense schedules, view endorsed groups, and record defense outcome notes</p></div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="openModal('modal-add-comment')" class="btn btn-ghost text-xs"><i class="fas fa-comment-alt"></i> Add Comment</button>
+            <div class="relative"><button class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition"><i class="fas fa-bell text-slate-600 text-sm"></i></button><div class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border border-white"></div></div>
+        </div>
+    </div>
+    <div class="p-6 space-y-5 pb-12">
+        <div class="grid grid-cols-5 gap-4"><div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3 hover-lift ">
+            <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fas fa-stamp text-emerald-600 text-sm"></i></div>
+            <div><p class="text-2xl font-bold text-emerald-600">1</p><p class="text-[11px] text-slate-500 mt-0.5">Endorsed</p></div>
+        </div><div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3 hover-lift ">
+            <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fas fa-calendar-check text-green-600 text-sm"></i></div>
+            <div><p class="text-2xl font-bold text-green-600">1</p><p class="text-[11px] text-slate-500 mt-0.5">Scheduled</p></div>
+        </div><div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3 hover-lift ">
+            <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fas fa-trophy text-slate-600 text-sm"></i></div>
+            <div><p class="text-2xl font-bold text-slate-500">0</p><p class="text-[11px] text-slate-500 mt-0.5">Completed</p></div>
+        </div><div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3 hover-lift ">
+            <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fas fa-users text-emerald-600 text-sm"></i></div>
+            <div><p class="text-2xl font-bold text-emerald-600">Jun 15</p><p class="text-[11px] text-slate-500 mt-0.5">Next Defense</p></div>
+        </div><div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3 hover-lift ">
+            <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fas fa-hourglass-half text-slate-600 text-sm"></i></div>
+            <div><p class="text-2xl font-bold text-slate-500">4</p><p class="text-[11px] text-slate-500 mt-0.5">Awaiting Ph.4</p></div>
+        </div></div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
+            <i class="fas fa-info-circle text-emerald-600 text-lg flex-shrink-0 mt-0.5"></i>
+            <div>
+                <p class="font-semibold text-emerald-800 text-sm">About Phase 5 — Final Defense</p>
+                <p class="text-xs text-emerald-700 mt-1">This is the last phase of the capstone program. Groups endorsed in Phase 4 will defend their final capstone project before a panel. As adviser, you may attend to support your group, view defense details, and record personal notes about the outcome. The official panel verdict is recorded by the Instructor/Coordinator.</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="border-b border-slate-100 px-5 flex gap-0.5">
+                <button class="tab-btn on" onclick="switchTab('groups',this)"><i class="fas fa-users mr-1.5 text-xs"></i>Groups & Schedule</button>
+                <button class="tab-btn" onclick="switchTab('feedback',this)"><i class="fas fa-comments mr-1.5 text-xs"></i>My Feedback</button>
+                <button class="tab-btn" onclick="switchTab('defense',this)"><i class="fas fa-calendar-alt mr-1.5 text-xs"></i>Defense Schedule <span class="ml-1 text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">1</span></button>
+            </div>
+            <div id="tab-groups" class="tab-pane on">
+                <table class="tbl"><thead><tr><th>Group</th><th>Project Title</th><th>Endorsement</th><th>Defense Date</th><th>Time & Room</th><th>Status</th><th>Actions</th></tr></thead><tbody><tr>
+            <td><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold">A</div><div><p class="font-semibold text-sm">Group Alpha</p><p class="text-[10px] text-slate-400">3 members</p></div></div></td>
+            <td class="text-sm">Smart Attendance System using RFID</td>
+            <td><span class="badge badge-green">Endorsed</span></td>
+            <td class="text-xs text-slate-600">Jun 15, 2026</td>
+            <td class="text-xs text-slate-600">9:00 AM · Auditorium</td>
+            <td><span class="badge badge-green">Scheduled</span></td>
+            <td><div class="flex gap-1.5"><button onclick="openDocViewer('Group Alpha','Smart Attendance System using RFID','Final Thesis')" class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i class="fas fa-file-alt"></i> View Doc</button>
+                       <button onclick="openDefenseModal('Group Alpha','Jun 15, 2026','9:00 AM','Auditorium','Final Defense')" class="btn btn-green text-[11px] py-1.5 px-2.5"><i class="fas fa-calendar-check"></i> Defense Info</button>
+                       <button onclick="openResultModal('Group Alpha')" class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i class="fas fa-trophy"></i> Record Result</button></div></td></tr><tr>
+            <td><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-emerald-700 flex items-center justify-center text-white text-xs font-bold">B</div><div><p class="font-semibold text-sm">Group Beta</p><p class="text-[10px] text-slate-400">4 members</p></div></div></td>
+            <td class="text-sm">Online Enrollment Management System</td>
+            <td><span class="badge badge-slate">Not Yet</span></td>
+            <td class="text-xs text-slate-600">—</td>
+            <td class="text-xs text-slate-600">— · —</td>
+            <td><span class="badge badge-slate">Pending</span></td>
+            <td><div class="flex gap-1.5"><span class="text-xs text-slate-400">Awaiting Phase 4</span></div></td></tr><tr>
+            <td><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-bold">G</div><div><p class="font-semibold text-sm">Group Gamma</p><p class="text-[10px] text-slate-400">3 members</p></div></div></td>
+            <td class="text-sm">School Library Management System</td>
+            <td><span class="badge badge-slate">Not Yet</span></td>
+            <td class="text-xs text-slate-600">—</td>
+            <td class="text-xs text-slate-600">— · —</td>
+            <td><span class="badge badge-slate">Pending</span></td>
+            <td><div class="flex gap-1.5"><span class="text-xs text-slate-400">Awaiting Phase 4</span></div></td></tr><tr>
+            <td><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-emerald-800 flex items-center justify-center text-white text-xs font-bold">D</div><div><p class="font-semibold text-sm">Group Delta</p><p class="text-[10px] text-slate-400">4 members</p></div></div></td>
+            <td class="text-sm">HR Payroll Management System</td>
+            <td><span class="badge badge-slate">Not Yet</span></td>
+            <td class="text-xs text-slate-600">—</td>
+            <td class="text-xs text-slate-600">— · —</td>
+            <td><span class="badge badge-slate">Pending</span></td>
+            <td><div class="flex gap-1.5"><span class="text-xs text-slate-400">Awaiting Phase 4</span></div></td></tr><tr>
+            <td><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-xs font-bold">E</div><div><p class="font-semibold text-sm">Group Epsilon</p><p class="text-[10px] text-slate-400">4 members</p></div></div></td>
+            <td class="text-sm">Barangay Document Request System</td>
+            <td><span class="badge badge-slate">Not Yet</span></td>
+            <td class="text-xs text-slate-600">—</td>
+            <td class="text-xs text-slate-600">— · —</td>
+            <td><span class="badge badge-slate">Pending</span></td>
+            <td><div class="flex gap-1.5"><span class="text-xs text-slate-400">Awaiting Phase 4</span></div></td></tr></tbody></table>
+            </div>
+            <div id="tab-feedback" class="tab-pane p-5 space-y-4">
+                <div class="flex justify-between items-center"><p class="text-sm font-semibold text-slate-700">Your comments for this phase</p><button onclick="openModal('modal-add-comment')" class="btn btn-green text-xs py-2"><i class="fas fa-plus"></i> New Comment</button></div>
+                <div class="space-y-3"><div class="bg-white border border-slate-100 rounded-xl p-4 shadow-sm">
+                        <div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2"><span class="badge badge-green text-[10px]">Group Gamma</span><span class="badge badge-slate text-[10px]">Final Comments</span></div><span class="text-[10px] text-slate-400">Jun 15, 2026</span></div>
+                        <p class="text-sm text-slate-700 mb-3">Excellent defense presentation. The panel was impressed with the system demo. Highly recommend for highest honors consideration.</p>
+                        <div class="flex gap-2">
+                            <button onclick="openEditComment('Group Gamma','Excellent defense presentation...')" class="btn btn-ghost text-[11px] py-1.5 px-2.5"><i class="fas fa-edit"></i> Edit</button>
+                            <button onclick="openModal('modal-delete')" class="btn text-[11px] py-1.5 px-2.5 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100"><i class="fas fa-trash"></i> Delete</button>
+                        </div>
+                    </div></div>
+            </div>
+            <div id="tab-defense" class="tab-pane p-5 space-y-4">
+                <div class="flex items-center justify-between"><div><p class="font-semibold text-slate-800">Defense Schedule</p><p class="text-[11px] text-slate-400 mt-0.5">Scheduled defenses for your assigned groups</p></div><span class="badge badge-green">1 Upcoming</span></div>
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-3"><i class="fas fa-info-circle text-emerald-600 mt-0.5 flex-shrink-0 text-sm"></i><p class="text-xs text-emerald-700">Defense schedules are set by the Instructor/Coordinator. You may view details and add private notes to support your group.</p></div>
+                <div class="space-y-3"><div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover-lift">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-emerald-100 rounded-xl flex flex-col items-center justify-center flex-shrink-0"><p class="text-[9px] text-emerald-600 font-bold uppercase">JUN</p><p class="text-xl font-bold text-emerald-700 leading-none">15</p></div>
+                                <div><p class="font-bold text-slate-800">Group Gamma — Final Defense</p><p class="text-xs text-slate-400 mt-0.5">9:00 AM – 12:00 PM · Auditorium</p></div>
+                            </div>
+                            <span class="badge badge-green"><i class="fas fa-calendar-check text-[9px]"></i> Scheduled</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="openDefenseModal('Group Gamma','JUN 15, 2026','9:00 AM – 12:00 PM','Auditorium','Final Defense')" class="btn btn-green text-[11px] py-2"><i class="fas fa-eye"></i> View Details</button>
+                            <button onclick="openNoteModal('Group Gamma')" class="btn btn-ghost text-[11px] py-2"><i class="fas fa-sticky-note"></i> Add Note</button>
+                        </div>
+                    </div></div>
+            </div>
+        </div>
+    </div>
+</main>
+<div id="modal-doc" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-doc')">
+    <div class="modal modal-xl" style="max-height:92vh;display:flex;flex-direction:column;">
+        <div class="modal-header flex-shrink-0">
+            <div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-file-alt text-emerald-600"></i></div><div><p class="font-bold text-slate-800" id="doc-title">Document</p><p class="text-[11px] text-slate-400" id="doc-group">—</p></div></div>
+            <div class="flex items-center gap-2"><button onclick="openInlineComment()" class="btn btn-ghost text-xs py-1.5 px-3"><i class="fas fa-comment-medical text-emerald-600"></i> Annotate</button><button onclick="closeModal('modal-doc')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+            <button class="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 hover:bg-emerald-50 hover:border-emerald-300 transition"><i class="fas fa-search-plus text-slate-500 mr-1"></i>Zoom In</button>
+            <button class="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 hover:bg-emerald-50 hover:border-emerald-300 transition"><i class="fas fa-search-minus text-slate-500 mr-1"></i>Zoom Out</button>
+            <div class="h-4 w-px bg-slate-200 mx-1"></div>
+            <span class="text-xs text-slate-400">Page 1 of 4</span>
+            <div class="h-4 w-px bg-slate-200 mx-1"></div>
+            <span class="text-xs text-emerald-600 font-medium"><i class="fas fa-circle text-[7px] mr-1"></i>Select text to annotate</span>
+            <div class="flex-1"></div>
+            <span class="badge badge-green text-[10px]" id="dv-doc-type">Document</span>
+        </div>
+        <div class="flex flex-1 overflow-hidden">
+            <div class="flex-1 overflow-y-auto bg-slate-100 p-4">
+                <div class="bg-white rounded-lg shadow-md p-8 mx-auto max-w-2xl font-serif text-sm leading-relaxed" id="doc-content" onclick="handleDocClick(event)">
+                    <p class="text-center font-bold text-base mb-1">CAPSTONE DOCUMENT</p>
+                    <p class="text-center text-xs text-slate-500 mb-6" id="doc-subtitle">Loading…</p>
+                    <p class="font-bold mb-2">I. Introduction</p>
+                    <p class="mb-4 text-slate-700">The proposed system aims to address existing institutional challenges through the application of modern information technology. This document presents the conceptual framework, objectives, and scope of the proposed capstone project for AY 2024-2025.</p>
+                    <p class="font-bold mb-2">II. Background of the Study</p>
+                    <p class="mb-4 text-slate-700"><span class="comment-highlight" onclick="showHighlightComment(event,'Scope should be more specific — limit to one department or function only for feasibility.')">Current institutional processes rely on manual methods that are time-consuming and error-prone. The increasing volume of transactions necessitates an automated, reliable digital solution.</span></p>
+                    <p class="font-bold mb-2">III. Statement of the Problem</p>
+                    <p class="mb-4 text-slate-700">The institution currently faces: (1) inefficiency in manual record-keeping; (2) lack of real-time data visibility; (3) high transcription errors; and (4) absence of a centralized information system accessible to all stakeholders.</p>
+                    <p class="font-bold mb-2">IV. Objectives</p>
+                    <p class="mb-4 text-slate-700">The general objective is to design, develop, and deploy a web-based management system. Specifically: (1) eliminate manual processes; (2) provide real-time reporting; (3) ensure data integrity and security; and (4) improve operational efficiency by at least 40%.</p>
+                    <p class="font-bold mb-2">V. Scope and Delimitation</p>
+                    <p class="mb-4 text-slate-700">The system covers core functional modules as identified during requirements analysis. It is limited to institutional operations and does not include external agency integrations in this version.</p>
+                    <div class="inline-comment mt-3" id="highlight-comment" style="display:none"><div class="flex items-start gap-2"><div class="w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">AR</div><div><p class="text-[10px] font-bold text-emerald-800 mb-0.5">Prof. A. Reyes · Annotation</p><p id="highlight-comment-text" class="text-[11px] text-emerald-700"></p></div></div></div>
+                </div>
+            </div>
+            <div class="w-64 flex-shrink-0 border-l border-slate-100 bg-white flex flex-col">
+                <div class="p-3 border-b border-slate-100 flex items-center justify-between"><p class="text-xs font-bold text-slate-700">Comments <span class="text-emerald-600" id="comment-count">(2)</span></p><button onclick="openInlineComment()" class="text-[10px] text-emerald-600 hover:underline font-semibold">+ Add</button></div>
+                <div class="flex-1 overflow-y-auto p-3 space-y-3" id="comments-list">
+                    <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3"><div class="flex items-center gap-1.5 mb-1.5"><div class="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[9px] font-bold">AR</div><p class="text-[10px] font-bold text-emerald-800">Prof. A. Reyes</p></div><p class="text-[10px] text-slate-600 mb-1.5">"Scope should be limited to one department only to ensure feasibility."</p><p class="text-[9px] text-slate-400">Page 1 · Para. 2</p></div>
+                    <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3"><div class="flex items-center gap-1.5 mb-1.5"><div class="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[9px] font-bold">AR</div><p class="text-[10px] font-bold text-emerald-800">Prof. A. Reyes</p></div><p class="text-[10px] text-slate-600 mb-1.5">"Good problem statement. Please clarify the scope of real-time notifications."</p><p class="text-[9px] text-slate-400">Page 1 · Para. 3</p></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer flex-shrink-0"><button onclick="closeModal('modal-doc')" class="btn btn-ghost text-xs">Close</button><button onclick="closeModal('modal-doc')" class="btn btn-green text-xs"><i class="fas fa-clipboard-check"></i> Proceed to Review</button></div>
+    </div>
+</div>
+<div id="modal-inline-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-inline-comment')">
+    <div class="modal" style="max-width:420px;"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-comment-medical text-emerald-600"></i></div><div><p class="font-bold text-slate-800">Annotate Text</p><p class="text-[11px] text-slate-400">Comment on selected text</p></div></div><button onclick="closeModal('modal-inline-comment')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body space-y-3"><div><label class="form-label">Selected Text</label><div class="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5 text-xs text-emerald-800 italic" id="selected-preview">"...select text from the document..."</div></div><div><label class="form-label">Your Comment</label><textarea class="form-input" rows="4" placeholder="Write your annotation…"></textarea></div><div><label class="form-label">Type</label><select class="form-input"><option>General Comment</option><option>Suggestion</option><option>Revision Needed</option><option>Commendation</option></select></div></div>
+        <div class="modal-footer"><button onclick="closeModal('modal-inline-comment')" class="btn btn-ghost text-xs">Cancel</button><button onclick="submitInlineComment()" class="btn btn-green text-xs"><i class="fas fa-paper-plane"></i> Post</button></div>
+    </div>
+</div>
+<div id="modal-add-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-add-comment')">
+    <div class="modal"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-comment text-emerald-600"></i></div><div><p class="font-bold text-slate-800">Add Comment</p><p class="text-[11px] text-slate-400" id="add-comment-subtitle">Leave feedback for a group</p></div></div><button onclick="closeModal('modal-add-comment')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body space-y-3"><div><label class="form-label">Group *</label><select class="form-input"><option value="">Select…</option><option>Group Alpha</option><option>Group Beta</option><option>Group Gamma</option><option>Group Delta</option><option>Group Epsilon</option></select></div><div><label class="form-label">Type</label><select class="form-input"><option>General Feedback</option><option>Recommendation</option><option>Revision Request</option><option>Commendation</option></select></div><div><label class="form-label">Comment *</label><textarea class="form-input" rows="5" placeholder="Write your feedback…"></textarea></div><div><label class="form-label">Visibility</label><select class="form-input"><option>Visible to Group</option><option>Private (Adviser only)</option></select></div></div>
+        <div class="modal-footer"><button onclick="closeModal('modal-add-comment')" class="btn btn-ghost text-xs">Cancel</button><button onclick="submitComment('modal-add-comment')" class="btn btn-green text-xs"><i class="fas fa-paper-plane"></i> Post</button></div>
+    </div>
+</div>
+<div id="modal-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-comment')">
+    <div class="modal"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-comment text-emerald-600"></i></div><div><p class="font-bold text-slate-800" id="cm-title">Add Comment</p></div></div><button onclick="closeModal('modal-comment')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body space-y-3"><div><label class="form-label">Type</label><select class="form-input"><option>General Feedback</option><option>Recommendation</option><option>Revision Request</option><option>Commendation</option></select></div><div><label class="form-label">Comment *</label><textarea class="form-input" rows="5" placeholder="Write…"></textarea></div></div>
+        <div class="modal-footer"><button onclick="closeModal('modal-comment')" class="btn btn-ghost text-xs">Cancel</button><button onclick="submitComment('modal-comment')" class="btn btn-green text-xs"><i class="fas fa-paper-plane"></i> Post</button></div>
+    </div>
+</div>
+<div id="modal-edit-comment" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-edit-comment')">
+    <div class="modal"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-edit text-emerald-600"></i></div><div><p class="font-bold text-slate-800" id="ec-title">Edit Comment</p></div></div><button onclick="closeModal('modal-edit-comment')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body space-y-3"><div><label class="form-label">Comment</label><textarea class="form-input" rows="5" id="ec-body"></textarea></div></div>
+        <div class="modal-footer"><button onclick="closeModal('modal-edit-comment')" class="btn btn-ghost text-xs">Cancel</button><button onclick="submitEdit()" class="btn btn-green text-xs"><i class="fas fa-save"></i> Save</button></div>
+    </div>
+</div>
+<div id="modal-delete" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-delete')">
+    <div class="modal" style="max-width:400px"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center"><i class="fas fa-trash text-red-600"></i></div><p class="font-bold text-slate-800">Confirm Delete</p></div><button onclick="closeModal('modal-delete')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body"><p class="text-sm text-slate-600">This action cannot be undone.</p></div>
+        <div class="modal-footer"><button onclick="closeModal('modal-delete')" class="btn btn-ghost text-xs">Cancel</button><button onclick="deleteItem()" class="btn btn-red text-xs"><i class="fas fa-trash"></i> Delete</button></div>
+    </div>
+</div>
+<div id="modal-defense" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-defense')">
+    <div class="modal"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-calendar-check text-emerald-600"></i></div><div><p class="font-bold text-slate-800" id="def-title">Defense Details</p><p class="text-[11px] text-slate-400" id="def-phase-label">Defense</p></div></div><button onclick="closeModal('modal-defense')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body space-y-4">
+            <div class="grid grid-cols-2 gap-3"><div class="bg-slate-50 rounded-xl p-3"><p class="text-[10px] text-slate-400 mb-1">Date</p><p class="font-semibold text-sm" id="def-date">—</p></div><div class="bg-slate-50 rounded-xl p-3"><p class="text-[10px] text-slate-400 mb-1">Time</p><p class="font-semibold text-sm" id="def-time">—</p></div><div class="bg-slate-50 rounded-xl p-3"><p class="text-[10px] text-slate-400 mb-1">Room</p><p class="font-semibold text-sm" id="def-room">—</p></div><div class="bg-slate-50 rounded-xl p-3"><p class="text-[10px] text-slate-400 mb-1">Group</p><p class="font-semibold text-sm" id="def-group">—</p></div></div>
+            <p class="section-div">Panel Members</p>
+            <div class="space-y-2"><div class="flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-xl"><div class="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[10px] font-bold">DR</div><div><p class="text-sm font-medium">Dr. Reyes</p><p class="text-[10px] text-slate-400">Panel Chair</p></div></div><div class="flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-xl"><div class="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold">PS</div><div><p class="text-sm font-medium">Prof. Santos</p><p class="text-[10px] text-slate-400">Panelist</p></div></div><div class="flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-xl"><div class="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center text-white text-[10px] font-bold">PL</div><div><p class="text-sm font-medium">Prof. Lim</p><p class="text-[10px] text-slate-400">Panelist</p></div></div></div>
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3"><p class="text-xs text-emerald-700"><i class="fas fa-info-circle mr-1"></i>As adviser, you may attend to support your group. You are not a panelist in this defense.</p></div>
+        </div>
+        <div class="modal-footer"><button onclick="closeModal('modal-defense')" class="btn btn-ghost text-xs">Close</button></div>
+    </div>
+</div>
+<div id="modal-note" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-note')">
+    <div class="modal"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-sticky-note text-emerald-600"></i></div><div><p class="font-bold text-slate-800" id="nt-title">Add Private Note</p><p class="text-[11px] text-slate-400">Only visible to you</p></div></div><button onclick="closeModal('modal-note')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body space-y-3"><div><label class="form-label">Note</label><textarea class="form-input" rows="5" placeholder="Remind group to prepare materials…"></textarea></div></div>
+        <div class="modal-footer"><button onclick="closeModal('modal-note')" class="btn btn-ghost text-xs">Cancel</button><button onclick="submitNote()" class="btn btn-green text-xs"><i class="fas fa-save"></i> Save Note</button></div>
+    </div>
+</div>
+<div id="toast" class="fixed bottom-5 right-5 z-[500] hidden"><div class="bg-slate-800 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 slide-up text-sm"><i id="toast-icon" class="fas fa-check-circle text-emerald-400"></i><span id="toast-msg">Done.</span></div></div>
+<div id="modal-result" class="modal-backdrop" onclick="closeOnBackdrop(event,'modal-result')">
+    <div class="modal modal-lg"><div class="modal-header"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-trophy text-emerald-600"></i></div><div><p class="font-bold text-slate-800" id="res-title">Record Defense Result</p><p class="text-[11px] text-slate-400">Phase 5 · Final Defense Outcome</p></div></div><button onclick="closeModal('modal-result')" class="w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400"><i class="fas fa-times"></i></button></div>
+        <div class="modal-body space-y-4">
+
+            <!-- System Automation Notice -->
+            <div class="grid grid-cols-2 gap-3 text-xs">
+                <div class="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                    <i class="fas fa-file-alt text-emerald-500 mt-0.5 flex-shrink-0"></i>
+                    <div><p class="font-bold text-emerald-800 mb-0.5">Auto-Generated Minutes</p><p class="text-emerald-700">The system auto-generates official Minutes of the Meeting from live panel comments, including automatic attendance of panelists.</p></div>
+                </div>
+                <div class="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                    <i class="fas fa-signature text-emerald-500 mt-0.5 flex-shrink-0"></i>
+                    <div><p class="font-bold text-emerald-800 mb-0.5">Digital Signatures</p><p class="text-emerald-700">Panel Chair, Dean, and your digital signatures are auto-attached from system profiles when final verdict is recorded.</p></div>
+                </div>
+            </div>
+
+            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-xs text-emerald-700"><i class="fas fa-info-circle mr-1"></i>Final panel verdict is recorded by the Instructor/Coordinator (Panel Chair inputs the official verdict). As adviser, you record your personal observation notes here.</div>
+            <div><label class="form-label">Panel Verdict (as observed)</label>
+            <select class="form-input">
+                <option>Passed</option>
+                <option>Passed with Minor Revisions</option>
+                <option>Passed with Major Revisions</option>
+                <option>Failed — Redefense Required</option>
+            </select></div>
+            <div><label class="form-label">Adviser Recommendation & Final Notes</label><textarea class="form-input" rows="4" placeholder="Write your final recommendation, commendation, or notes about the defense performance…"></textarea></div>
+
+            <div class="space-y-2 text-xs">
+                <div class="flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <i class="fas fa-file-pdf text-emerald-500 w-4 flex-shrink-0"></i>
+                    <span class="text-slate-600">A <strong>PDF Approval Sheet</strong> with complete member, adviser, panelist, and dean details is auto-generated upon final passing.</span>
+                </div>
+                <div class="flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <i class="fas fa-lock text-slate-400 w-4 flex-shrink-0"></i>
+                    <span class="text-slate-600"><strong>Unpaid groups</strong> are system-locked from this process until payment is verified by the Coordinator.</span>
+                </div>
+            </div>
+
+            <div><label class="form-label">Defense Date</label><input type="date" class="form-input" value="2026-06-15"></div>
+        </div>
+        <div class="modal-footer"><button onclick="closeModal('modal-result')" class="btn btn-ghost text-xs">Cancel</button><button onclick="submitResult()" class="btn btn-green text-xs"><i class="fas fa-save"></i> Save Notes</button></div>
+    </div>
+</div>
+<script>
+function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+function closeOnBackdrop(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-backdrop.open').forEach(m=>{m.classList.remove('open');document.body.style.overflow='';}); });
+function switchTab(name,el){document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));document.getElementById('tab-'+name).classList.add('on');el.classList.add('on');}
+function openCommentModal(group){document.getElementById('cm-title').textContent='Comment — '+group;openModal('modal-comment');}
+function openEditComment(group,body){document.getElementById('ec-title').textContent='Edit — '+group;document.getElementById('ec-body').value=body;openModal('modal-edit-comment');}
+function openDefenseModal(group,date,time,room,phase){document.getElementById('def-title').textContent=group+' — Defense';document.getElementById('def-date').textContent=date;document.getElementById('def-time').textContent=time;document.getElementById('def-room').textContent=room;document.getElementById('def-group').textContent=group;if(document.getElementById('def-phase-label'))document.getElementById('def-phase-label').textContent=phase||'Defense';openModal('modal-defense');}
+function openNoteModal(group){document.getElementById('nt-title').textContent='Note — '+group;openModal('modal-note');}
+function openInlineComment(){openModal('modal-inline-comment');}
+function submitComment(id){closeModal(id);showToast('Comment posted.','success');}
+function submitEdit(){closeModal('modal-edit-comment');showToast('Comment updated.','success');}
+function deleteItem(){closeModal('modal-delete');showToast('Deleted.','error');}
+function submitNote(){closeModal('modal-note');showToast('Note saved.','success');}
+function submitInlineComment(){
+    closeModal('modal-inline-comment');
+    const el=document.getElementById('comment-count');
+    if(el){const c=parseInt(el.textContent.replace(/[()]/g,''));el.textContent='('+(c+1)+')';}
+    const list=document.getElementById('comments-list');
+    if(list){const div=document.createElement('div');div.className='bg-emerald-50 border border-emerald-100 rounded-xl p-3';div.innerHTML=`<div class="flex items-center gap-1.5 mb-1.5"><div class="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[9px] font-bold">AR</div><p class="text-[10px] font-bold text-emerald-800">Prof. A. Reyes</p></div><p class="text-[10px] text-slate-600 mb-1.5">"Inline annotation added."</p><p class="text-[9px] text-slate-400">Just now</p>`;list.prepend(div);}
+    showToast('Annotation added.','success');
+}
+function openDocViewer(group,title,docType){
+    if(document.getElementById('doc-title'))document.getElementById('doc-title').textContent=(docType||'Document')+' — '+group;
+    if(document.getElementById('doc-group'))document.getElementById('doc-group').textContent=group;
+    if(document.getElementById('doc-subtitle'))document.getElementById('doc-subtitle').textContent=title;
+    if(document.getElementById('dv-doc-type'))document.getElementById('dv-doc-type').textContent=docType||'Document';
+    openModal('modal-doc');
+}
+function handleDocClick(e){const sel=window.getSelection();if(sel&&sel.toString().trim().length>5){if(document.getElementById('selected-preview'))document.getElementById('selected-preview').textContent='"'+sel.toString().substring(0,100)+'..."';openInlineComment();}}
+function showHighlightComment(e,text){e.stopPropagation();const el=document.getElementById('highlight-comment');if(el){document.getElementById('highlight-comment-text').textContent=text;el.style.display='block';setTimeout(()=>el.style.display='none',5000);}}
+function showToast(msg,type='success'){const t=document.getElementById('toast'),i=document.getElementById('toast-icon');document.getElementById('toast-msg').textContent=msg;i.className=type==='success'?'fas fa-check-circle text-emerald-400':type==='error'?'fas fa-exclamation-circle text-red-400':'fas fa-info-circle text-amber-400';t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),3500);}
+function openResultModal(group){document.getElementById('res-title').textContent='Record Result — '+group;openModal('modal-result');}
+function submitResult(){closeModal('modal-result');showToast('Defense result notes saved.','success');}
+</script>
+</body></html>
