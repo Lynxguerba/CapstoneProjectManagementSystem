@@ -1193,8 +1193,20 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
         try {
             if (Schema::hasTable('users')) {
+                $hasRoleTables = Schema::hasTable('roles') && Schema::hasTable('role_user');
+
                 $advisersQuery = User::query()
-                    ->where('role', 'like', '%adviser%')
+                    ->where(function (Builder $query) use ($hasRoleTables) {
+                        if ($hasRoleTables) {
+                            $query
+                                ->whereHas('roles', fn (Builder $roleQuery) => $roleQuery->where('slug', 'adviser'))
+                                ->orWhere('role', 'like', '%adviser%');
+
+                            return;
+                        }
+
+                        $query->where('role', 'like', '%adviser%');
+                    })
                     ->orderBy('last_name')
                     ->get(['id', 'name', 'first_name', 'last_name', 'email']);
 
