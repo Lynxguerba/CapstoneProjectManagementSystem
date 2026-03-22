@@ -20,13 +20,18 @@ class RecordAdminAuditLog
     {
         $response = $next($request);
 
-        $shouldRecord = in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true);
+        $routeName = $request->route()?->getName();
+        $user = $request->user();
+        $writeMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+        $excludedRoutes = ['login.store', 'logout'];
+        $shouldRecord = $user instanceof User
+            && in_array($request->method(), $writeMethods, true)
+            && ! in_array((string) $routeName, $excludedRoutes, true);
+
         if (! $shouldRecord || ! Schema::hasTable('audit_logs')) {
             return $response;
         }
 
-        $user = $request->user();
-        $routeName = $request->route()?->getName();
         $statusCode = $response->getStatusCode();
 
         try {
