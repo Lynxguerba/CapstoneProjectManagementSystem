@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -78,6 +80,7 @@ class LoginController extends Controller
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
         $request->session()->put('active_role', $requestedRole);
+        $this->recordLoginAudit($user, $request, $requestedRole);
         Inertia::clearHistory();
 
         return redirect()->route(self::ROLE_DASHBOARD_ROUTES[$requestedRole]);
@@ -85,6 +88,11 @@ class LoginController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        $user = Auth::guard('web')->user();
+        if ($user instanceof User) {
+            $this->recordLogoutAudit($user, $request);
+        }
+
         Auth::logout();
 
         // Destroy ALL session data including active_role
@@ -172,5 +180,75 @@ class LoginController extends Controller
         ])->save();
 
         return true;
+    }
+
+    private function recordLoginAudit(User $user, Request $request, string $requestedRole): void
+    {
+        if (! Schema::hasTable('audit_logs')) {
+            return;
+        }
+
+        $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+        $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+        $actorName = $firstName !== '' || $lastName !== ''
+            ? trim($firstName.' '.$lastName)
+            : (is_string($user->name) ? trim($user->name) : 'User');
+
+        try {
+            AuditLog::query()->create([
+                'user_id' => $user->id,
+                'actor_name' => $actorName !== '' ? $actorName : 'User',
+                'action' => 'User Login',
+                'entity' => 'Authentication',
+                'severity' => 'info',
+                'route_name' => $request->route()?->getName(),
+                'http_method' => $request->method(),
+                'status_code' => 302,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'description' => 'User logged in successfully.',
+                'metadata' => [
+                    'active_role' => $requestedRole,
+                    'assigned_roles' => $user->roleSlugs(),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return;
+        }
+    }
+
+    private function recordLogoutAudit(User $user, Request $request): void
+    {
+        if (! Schema::hasTable('audit_logs')) {
+            return;
+        }
+
+        $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+        $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+        $actorName = $firstName !== '' || $lastName !== ''
+            ? trim($firstName.' '.$lastName)
+            : (is_string($user->name) ? trim($user->name) : 'User');
+
+        try {
+            AuditLog::query()->create([
+                'user_id' => $user->id,
+                'actor_name' => $actorName !== '' ? $actorName : 'User',
+                'action' => 'User Logout',
+                'entity' => 'Authentication',
+                'severity' => 'info',
+                'route_name' => $request->route()?->getName(),
+                'http_method' => $request->method(),
+                'status_code' => 302,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'description' => 'User logged out successfully.',
+                'metadata' => [
+                    'active_role' => $request->session()->get('active_role'),
+                    'assigned_roles' => $user->roleSlugs(),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return;
+        }
     }
 }
