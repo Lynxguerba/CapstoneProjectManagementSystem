@@ -1,7 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { BookOpen, ChevronRight, Filter, Search } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import StudentLayout from './_layout';
 
 type TitleItem = {
@@ -28,6 +28,9 @@ const StudentTitles = () => {
     const [query, setQuery] = useState('');
     const [status, setStatus] = useState<'all' | TitleItem['status']>('all');
     const [category, setCategory] = useState<'all' | string>('all');
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const itemsPerPage = 8;
 
     const categories = useMemo(() => {
         const options = props.categories ?? [];
@@ -52,6 +55,30 @@ const StudentTitles = () => {
 
         return matchesQuery && matchesStatus && matchesCategory;
     });
+
+    const totalPages = Math.max(1, Math.ceil(filteredTitles.length / itemsPerPage));
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [query, status, category]);
+
+    useEffect(() => {
+        setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
+    }, [totalPages]);
+
+    const paginatedTitles = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+
+        return filteredTitles.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredTitles, currentPage]);
+
+    const pages = useMemo(() => {
+        const maxVisiblePages = 5;
+        const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - (maxVisiblePages - 1)));
+        const endPage = Math.min(totalPages, startPage + (maxVisiblePages - 1));
+
+        return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+    }, [currentPage, totalPages]);
 
     const statusPill = (value: TitleItem['status']): string => {
         return value === 'Approved'
@@ -151,7 +178,7 @@ const StudentTitles = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredTitles.map((title) => (
+                                {paginatedTitles.map((title) => (
                                     <tr key={title.id} className="transition-colors hover:bg-emerald-50/40">
                                         <td className="min-w-[280px] py-2.5 font-medium text-slate-900">{title.title}</td>
                                         <td className="py-2.5 whitespace-nowrap text-slate-600">{title.academicYear}</td>
@@ -172,7 +199,49 @@ const StudentTitles = () => {
                         <div className="mt-4 rounded-lg border border-slate-200 bg-emerald-50/40 p-3 text-xs text-slate-600">
                             No title repository records match your current filters for {studentProgram}.
                         </div>
-                    ) : null}
+                    ) : (
+                        <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-[11px] text-slate-500">
+                                Showing {(currentPage - 1) * itemsPerPage + 1}-
+                                {Math.min(currentPage * itemsPerPage, filteredTitles.length)} of {filteredTitles.length}
+                            </p>
+
+                            <div className="flex items-center gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                                    disabled={currentPage === 1}
+                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    <ChevronRight size={16} className="rotate-180" />
+                                </button>
+
+                                {pages.map((pageNumber) => (
+                                    <button
+                                        key={pageNumber}
+                                        type="button"
+                                        onClick={() => setCurrentPage(pageNumber)}
+                                        className={`h-8 min-w-[32px] rounded-lg text-xs font-bold transition-all ${
+                                            pageNumber === currentPage
+                                                ? 'bg-green-700 text-white shadow-md shadow-green-700/20'
+                                                : 'text-slate-600 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        {pageNumber}
+                                    </button>
+                                ))}
+
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    <ChevronRight size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </motion.section>
         </StudentLayout>
