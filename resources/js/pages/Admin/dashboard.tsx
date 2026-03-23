@@ -290,7 +290,7 @@ const Dashboard = () => {
                             <p className="text-[11px] font-semibold tracking-[0.24em] text-emerald-200 uppercase">Admin Workspace</p>
                             <h3 className="mt-3 text-2xl font-semibold text-white md:text-[2rem] md:leading-[1.1]">System Operations Snapshot</h3>
                             <p className="mt-3 max-w-xl text-sm leading-relaxed text-emerald-100 md:text-base">
-                                Monitor user health, assignment coverage, and audit activity from one administrative view.
+                                Monitor users, assignment coverage, and audit activity from one administrative view.
                             </p>
 
                             <div className="mt-6 flex flex-wrap gap-3">

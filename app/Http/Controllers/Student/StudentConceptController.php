@@ -81,6 +81,7 @@ class StudentConceptController extends Controller
                     'mimeType' => $submission->mime_type,
                     'fileSizeLabel' => $this->formatFileSize($submission->file_size),
                     'fileUrl' => $submission->file_path !== null ? Storage::disk('public')->url($submission->file_path) : null,
+                    'viewUrl' => route('student.concepts.submissions.show', $submission),
                 ])
                 ->values()
                 ->all(),

@@ -27,11 +27,11 @@ class StoreStudentConceptSubmissionController extends Controller
             ]);
         }
 
-        $requirement = $this->resolveRequirement($group, (int) $validated['document_requirement_id']);
+        $requirement = $this->resolveActiveRequirement($group);
 
         if (! $requirement instanceof DocumentRequirement) {
             throw ValidationException::withMessages([
-                'document_requirement_id' => 'Selected requirement is not available for your group.',
+                'concept_file' => 'No active concept requirement is available for your group yet.',
             ]);
         }
 
@@ -86,20 +86,29 @@ class StoreStudentConceptSubmissionController extends Controller
         return $query->first(['id', 'program_set_id', 'leader_id']);
     }
 
-    private function resolveRequirement(Group $group, int $requirementId): ?DocumentRequirement
+    private function resolveActiveRequirement(Group $group): ?DocumentRequirement
     {
         if (! Schema::hasTable('document_requirements')) {
             return null;
         }
 
         $query = DocumentRequirement::query()
-            ->whereKey($requirementId)
-            ->where('stage', 'Concept');
+            ->where('stage', 'Concept')
+            ->orderBy('due_date')
+            ->orderByDesc('id');
 
         $academicYearId = $group->programSet?->academic_year_id;
 
         if (is_int($academicYearId)) {
             $query->where('academic_year_id', $academicYearId);
+        }
+
+        $keywordMatched = (clone $query)
+            ->whereRaw('LOWER(requirement_type) like ?', ['%concept%'])
+            ->first(['id', 'requirement_type', 'academic_year_id', 'stage']);
+
+        if ($keywordMatched instanceof DocumentRequirement) {
+            return $keywordMatched;
         }
 
         return $query->first(['id', 'requirement_type', 'academic_year_id', 'stage']);

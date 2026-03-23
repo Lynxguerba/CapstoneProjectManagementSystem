@@ -1,10 +1,13 @@
 <?php
 
+use App\Http\Controllers\Student\DestroyStudentConceptSubmissionController;
+use App\Http\Controllers\Student\ShowStudentConceptSubmissionController;
 use App\Http\Controllers\Student\StoreStudentConceptSubmissionController;
 use App\Http\Controllers\Student\StudentConceptController;
 use App\Http\Controllers\Student\StudentDashboardController;
 use App\Http\Controllers\Student\StudentGroupController;
 use App\Http\Controllers\Student\StudentTitleRepositoryController;
+use App\Http\Controllers\Student\UpdateStudentConceptSubmissionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -14,6 +17,9 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
     Route::get('/titles', StudentTitleRepositoryController::class)->name('student.titles');
     Route::get('/concepts', StudentConceptController::class)->name('student.concepts');
     Route::post('/concepts/submissions', StoreStudentConceptSubmissionController::class)->name('student.concepts.submissions.store');
+    Route::get('/concepts/submissions/{submission}', ShowStudentConceptSubmissionController::class)->name('student.concepts.submissions.show');
+    Route::patch('/concepts/submissions/{submission}', UpdateStudentConceptSubmissionController::class)->name('student.concepts.submissions.update');
+    Route::delete('/concepts/submissions/{submission}', DestroyStudentConceptSubmissionController::class)->name('student.concepts.submissions.destroy');
     Route::get('/documents', function () {
         return Inertia::render('Student/documents');
     })->name('student.documents');
