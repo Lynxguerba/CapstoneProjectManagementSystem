@@ -1,148 +1,201 @@
+import { usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { BadgeCheck, CreditCard, Crown, Mail, Shield, UserPlus, Users } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import { BadgeCheck, Crown, Mail, Shield, UserCheck, Users } from 'lucide-react';
+import React from 'react';
 import StudentLayout from './_layout';
 
-type GroupMember = {
+type GroupSummary = {
+    id: number;
     name: string;
-    role: 'Project Manager / Analyst' | 'Programmer' | 'Documentarian';
-    email: string;
+    programSet?: string | null;
+    academicYear?: string | null;
+    currentStage: string;
 };
 
-type PanelMember = {
+type GroupMember = {
+    id: number;
     name: string;
-    area: string;
+    role: string;
+    email?: string | null;
+    isLeader: boolean;
+};
+
+type GroupAdviser = {
+    name: string;
+    email?: string | null;
+    assignedAt?: string | null;
+};
+
+type GroupPanelist = {
+    id: number;
+    name: string;
+    role: string;
+    slot: number;
+    email?: string | null;
+};
+
+type ProgressStep = {
+    label: string;
+    done: boolean;
+    current: boolean;
+};
+
+type StudentGroupPageProps = {
+    group?: GroupSummary | null;
+    members?: GroupMember[];
+    adviser?: GroupAdviser | null;
+    panelists?: GroupPanelist[];
+    progress?: ProgressStep[];
+};
+
+const defaultProgress: ProgressStep[] = [
+    { label: 'Concept', done: false, current: true },
+    { label: 'Outline', done: false, current: false },
+    { label: 'Pre-Deployment', done: false, current: false },
+    { label: 'Deployment', done: false, current: false },
+    { label: 'Final', done: false, current: false },
+];
+
+const formatDateLabel = (value?: string | null): string => {
+    if (!value) {
+        return 'Not assigned yet';
+    }
+
+    const [year, month, day] = value.split('-').map(Number);
+
+    if (!year || !month || !day) {
+        return value;
+    }
+
+    return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
 };
 
 const StudentGroup = () => {
-    const [inviteEmail, setInviteEmail] = useState('');
+    const { props } = usePage<StudentGroupPageProps>();
 
-    const group = {
-        name: 'Lynx Tech Innovators',
-        section: 'BSIT 4A',
-        adviser: 'Prof. Maria Cruz',
-        paymentStatus: 'Verified',
-    };
+    const group = props.group ?? null;
+    const members = props.members ?? [];
+    const adviser = props.adviser ?? null;
+    const panelists = props.panelists ?? [];
+    const progressSteps = props.progress && props.progress.length > 0 ? props.progress : defaultProgress;
 
-    const members: GroupMember[] = [
-        { name: 'Juan Dela Cruz', role: 'Project Manager / Analyst', email: 'juan@student.edu' },
-        { name: 'Ana Santos', role: 'Programmer', email: 'ana@student.edu' },
-        { name: 'Carlo Reyes', role: 'Programmer', email: 'carlo@student.edu' },
-        { name: 'Mia Lopez', role: 'Documentarian', email: 'mia@student.edu' },
-    ];
+    const sectionLabel = [group?.programSet, group?.academicYear].filter(Boolean).join(' • ');
 
-    const panel: PanelMember[] = [
-        { name: 'Prof. L. Aquino', area: 'Systems Analysis' },
-        { name: 'Prof. R. Tan', area: 'Software Engineering' },
-        { name: 'Prof. J. Garcia', area: 'Database' },
-    ];
+    const resolveRoleMeta = (member: GroupMember): { icon: React.ComponentType<{ size?: number; className?: string }>; tone: string } => {
+        if (member.isLeader) {
+            return { icon: Crown, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+        }
 
-    const progress = useMemo(() => {
-        return [
-            { label: 'Concept', done: true },
-            { label: 'Outline Defense', done: false },
-            { label: 'Pre-Deployment', done: false },
-            { label: 'Deployment', done: false },
-            { label: 'Finals', done: false },
-        ];
-    }, []);
+        const normalizedRole = member.role.toLowerCase();
 
-    const roleMeta: Record<GroupMember['role'], { icon: React.ComponentType<{ size?: number; className?: string }>; tone: string }> = {
-        'Project Manager / Analyst': { icon: Crown, tone: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-        Programmer: { icon: Shield, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-        Documentarian: { icon: BadgeCheck, tone: 'bg-amber-50 text-amber-700 border-amber-200' },
+        if (normalizedRole.includes('programmer') || normalizedRole.includes('developer')) {
+            return { icon: Shield, tone: 'bg-teal-50 text-teal-700 border-teal-200' };
+        }
+
+        if (normalizedRole.includes('document')) {
+            return { icon: BadgeCheck, tone: 'bg-green-50 text-green-700 border-green-200' };
+        }
+
+        return { icon: Users, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
     };
 
     return (
-        <StudentLayout title="My Capstone Group" subtitle="Group details, members, and progress">
-            <div className="space-y-6">
-
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <StudentLayout title="My Capstone Group" subtitle="Live group profile, adviser handle, and progress">
+            <div className="space-y-5">
+                <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
                     <motion.section
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.05 }}
-                        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2"
+                        transition={{ delay: 0.04 }}
+                        className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2"
                     >
-                        <div className="flex items-center justify-between gap-3">
-                            <h3 className="text-lg font-semibold text-slate-900">Members</h3>
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-sm font-semibold text-slate-900">Members</h3>
+                                <p className="mt-1 text-xs text-slate-500">{group ? `Group ${group.name}${sectionLabel ? ` • ${sectionLabel}` : ''}` : 'No active group assigned yet.'}</p>
+                            </div>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
                                 {members.length} total
                             </span>
                         </div>
 
-                        <div className="mt-5 space-y-3">
-                            {members.map((m) => {
-                                const meta = roleMeta[m.role];
-                                const Icon = meta.icon;
+                        <div className="mt-4 space-y-2.5">
+                            {members.length > 0 ? (
+                                members.map((member) => {
+                                    const meta = resolveRoleMeta(member);
+                                    const Icon = meta.icon;
 
-                                return (
-                                    <div key={m.email} className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                            <div className="min-w-0">
-                                                <div className="truncate text-sm font-semibold text-slate-900">{m.name}</div>
-                                                <div className="mt-1 inline-flex items-center gap-2 text-sm text-slate-600">
-                                                    <Mail size={14} />
-                                                    <span className="truncate">{m.email}</span>
+                                    return (
+                                        <div key={member.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                                <div className="min-w-0">
+                                                    <div className="truncate text-sm font-semibold text-slate-900">{member.name}</div>
+                                                    <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-slate-600">
+                                                        <Mail size={12} />
+                                                        <span className="truncate">{member.email ?? 'No email available'}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
 
-                                            <span
-                                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${meta.tone}`}
-                                            >
-                                                <Icon size={14} />
-                                                {m.role}
-                                            </span>
+                                                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${meta.tone}`}>
+                                                    <Icon size={12} />
+                                                    {member.role}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            ) : (
+                                <div className="rounded-xl border border-slate-200 bg-emerald-50/40 p-3 text-xs text-slate-600">
+                                    Your account is not yet linked to an active capstone group.
+                                </div>
+                            )}
                         </div>
                     </motion.section>
 
                     <motion.section
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.08 }}
-                        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+                        className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                     >
-                        <h3 className="text-lg font-semibold text-slate-900">Invite / Join (UI only)</h3>
-                        <p className="mt-1 text-sm text-slate-500">Send an invitation link to a classmate.</p>
+                        <div className="flex items-center gap-2">
+                            <UserCheck className="h-4 w-4 text-emerald-600" />
+                            <h3 className="text-sm font-semibold text-slate-900">Adviser Handle</h3>
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">Assigned adviser for your current group.</p>
 
-                        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                            <input
-                                value={inviteEmail}
-                                onChange={(e) => setInviteEmail(e.target.value)}
-                                placeholder="student@email.com"
-                                className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    alert(`UI only: invite sent to ${inviteEmail || '(empty email)'}`);
-                                    setInviteEmail('');
-                                }}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
-                            >
-                                <UserPlus size={16} />
-                                Invite
-                            </button>
+                        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                            {adviser ? (
+                                <div className="space-y-1.5">
+                                    <div className="text-sm font-semibold text-slate-900">{adviser.name}</div>
+                                    <div className="text-xs text-slate-600">{adviser.email ?? 'No email available'}</div>
+                                    <div className="text-[11px] text-slate-500">Assigned on {formatDateLabel(adviser.assignedAt)}</div>
+                                </div>
+                            ) : (
+                                <div className="text-xs text-slate-600">No adviser assigned yet.</div>
+                            )}
                         </div>
 
-                        <div className="mt-6 border-t border-slate-200 pt-5">
-                            <h4 className="text-sm font-semibold text-slate-800">Group Progress</h4>
+                        <div className="mt-4 border-t border-slate-200 pt-4">
+                            <h4 className="text-xs font-semibold tracking-wide text-slate-700 uppercase">Group Progress</h4>
                             <div className="mt-3 space-y-2">
-                                {progress.map((p) => (
-                                    <div key={p.label} className="flex items-center justify-between gap-3">
-                                        <div className="text-sm text-slate-700">{p.label}</div>
+                                {progressSteps.map((step) => (
+                                    <div key={step.label} className="flex items-center justify-between gap-3">
+                                        <div className="text-xs font-medium text-slate-700">{step.label}</div>
                                         <span
-                                            className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                                                p.done
+                                            className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
+                                                step.done
                                                     ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                                    : 'border-slate-200 bg-slate-50 text-slate-700'
+                                                    : step.current
+                                                      ? 'border-teal-200 bg-teal-50 text-teal-700'
+                                                      : 'border-slate-200 bg-slate-50 text-slate-600'
                                             }`}
                                         >
-                                            {p.done ? 'Done' : 'Next'}
+                                            {step.done ? 'Done' : step.current ? 'Current' : 'Next'}
                                         </span>
                                     </div>
                                 ))}
@@ -152,21 +205,42 @@ const StudentGroup = () => {
                 </div>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.12 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+                    className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
-                    <h3 className="text-lg font-semibold text-slate-900">Panel Members (once assigned)</h3>
-                    <p className="mt-1 text-sm text-slate-500">Displayed for transparency. View-only.</p>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h3 className="text-sm font-semibold text-slate-900">Panel Members</h3>
+                            <p className="mt-1 text-xs text-slate-500">Assigned panelists for defense evaluation.</p>
+                        </div>
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                            {panelists.length} assigned
+                        </span>
+                    </div>
 
-                    <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
-                        {panel.map((p) => (
-                            <div key={p.name} className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-                                <div className="text-sm font-semibold text-slate-900">{p.name}</div>
-                                <div className="mt-1 text-sm text-slate-600">{p.area}</div>
+                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                        {panelists.length > 0 ? (
+                            panelists.map((panelist) => (
+                                <div key={panelist.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                                    <div className="text-sm font-semibold text-slate-900">{panelist.name}</div>
+                                    <div className="mt-1 text-xs text-slate-600">{panelist.email ?? 'No email available'}</div>
+                                    <div className="mt-2 inline-flex items-center gap-2">
+                                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                                            Slot {panelist.slot}
+                                        </span>
+                                        <span className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-teal-700">
+                                            {panelist.role}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="rounded-xl border border-slate-200 bg-emerald-50/40 p-3 text-xs text-slate-600 md:col-span-3">
+                                No panelists have been assigned to your group yet.
                             </div>
-                        ))}
+                        )}
                     </div>
                 </motion.section>
             </div>
