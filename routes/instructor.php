@@ -1007,13 +1007,38 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
         try {
             $hasStudentProgramTable = Schema::hasTable('student_program');
+            $hasGroupsTable = Schema::hasTable('groups');
+            $hasGroupMembersTable = Schema::hasTable('group_members');
+            $assignedStudentLookup = collect();
+
+            if ($hasGroupsTable) {
+                $assignedStudentIds = Group::query()
+                    ->where('program_set_id', $programSetModel->id)
+                    ->whereNotNull('leader_id')
+                    ->pluck('leader_id');
+
+                if ($hasGroupMembersTable) {
+                    $groupMemberIds = DB::table('group_members as gm')
+                        ->join('groups as g', 'g.id', '=', 'gm.group_id')
+                        ->where('g.program_set_id', $programSetModel->id)
+                        ->pluck('gm.student_id');
+
+                    $assignedStudentIds = $assignedStudentIds->merge($groupMemberIds);
+                }
+
+                $assignedStudentLookup = $assignedStudentIds
+                    ->filter(fn ($studentId) => $studentId !== null)
+                    ->map(fn ($studentId): int => (int) $studentId)
+                    ->unique()
+                    ->flip();
+            }
 
             $enrolledStudents = $programSetModel
                 ->students()
                 ->with($hasStudentProgramTable ? ['studentProgram:id,student_id,program'] : [])
                 ->orderBy('last_name')
                 ->get(['users.id', 'users.name', 'users.first_name', 'users.last_name', 'users.email', 'users.status', 'users.created_at'])
-                ->map(function (User $student) use ($hasStudentProgramTable): array {
+                ->map(function (User $student) use ($hasStudentProgramTable, $assignedStudentLookup): array {
                     $firstName = is_string($student->first_name) ? trim($student->first_name) : '';
                     $lastName = is_string($student->last_name) ? trim($student->last_name) : '';
                     $fullName = $firstName !== '' || $lastName !== ''
@@ -1021,6 +1046,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         : (is_string($student->name) ? $student->name : '');
                     $status = is_string($student->status) && $student->status !== '' ? $student->status : 'active';
                     $program = $hasStudentProgramTable ? $student->studentProgram?->program : null;
+                    $isAssignedToGroup = $assignedStudentLookup->has((int) $student->id);
 
                     return [
                         'id' => $student->id,
@@ -1031,6 +1057,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         'program' => $program,
                         'status' => $status,
                         'createdAt' => $student->created_at?->format('Y-m-d') ?? '',
+                        'isAssignedToGroup' => $isAssignedToGroup,
                     ];
                 })
                 ->values();

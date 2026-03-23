@@ -36,6 +36,7 @@ type InstructorStudentsManageProps = {
         program?: string | null;
         status: StudentStatus;
         createdAt: string;
+        isAssignedToGroup?: boolean;
     }[];
 };
 const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolledStudents = [] }: InstructorStudentsManageProps) => {
@@ -201,6 +202,7 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
                                 <th className="px-6 py-4">Fullname</th>
                                 <th className="px-6 py-4">Email</th>
                                 <th className="px-6 py-4">Program</th>
+                                <th className="px-6 py-4">Group Assignment</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Created</th>
                                 <th className="px-6 py-4 text-right">Action</th>
@@ -220,6 +222,15 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
                                                 {user.program ?? 'Unassigned'}
                                             </span>
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-3.5">
+                                        <span
+                                            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${
+                                                user.isAssignedToGroup === true ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                            }`}
+                                        >
+                                            {user.isAssignedToGroup === true ? 'Assigned' : 'Unassigned'}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-3.5">
                                         <span
