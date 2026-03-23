@@ -276,7 +276,6 @@ const StudentDashboard = () => {
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.16 }}
-                        whileHover={{ y: -3 }}
                         className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                     >
                         <div className="mb-3 flex items-center justify-between">
@@ -297,6 +296,8 @@ const StudentDashboard = () => {
                                             outerRadius: 76,
                                             cornerRadius: 4,
                                             paddingAngle: 2,
+                                            highlightScope: { faded: 'global', highlighted: 'item' },
+                                            faded: { innerRadius: 48, additionalRadius: -4, color: 'gray' },
                                         },
                                     ]}
                                     slotProps={{ legend: { hidden: true } }}
@@ -320,7 +321,6 @@ const StudentDashboard = () => {
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        whileHover={{ y: -3 }}
                         className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                     >
                         <div className="mb-3 flex items-center justify-between">
@@ -341,6 +341,8 @@ const StudentDashboard = () => {
                                             outerRadius: 76,
                                             cornerRadius: 4,
                                             paddingAngle: 2,
+                                            highlightScope: { faded: 'global', highlighted: 'item' },
+                                            faded: { innerRadius: 48, additionalRadius: -4, color: 'gray' },
                                         },
                                     ]}
                                     slotProps={{ legend: { hidden: true } }}
