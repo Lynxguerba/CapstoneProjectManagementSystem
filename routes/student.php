@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Student\StoreStudentConceptSubmissionController;
+use App\Http\Controllers\Student\StudentConceptController;
 use App\Http\Controllers\Student\StudentDashboardController;
 use App\Http\Controllers\Student\StudentGroupController;
 use App\Http\Controllers\Student\StudentTitleRepositoryController;
@@ -10,9 +12,8 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
     Route::get('/dashboard', StudentDashboardController::class)->name('student.dashboard');
     Route::get('/group', StudentGroupController::class)->name('student.group');
     Route::get('/titles', StudentTitleRepositoryController::class)->name('student.titles');
-    Route::get('/concepts', function () {
-        return Inertia::render('Student/concepts');
-    })->name('student.concepts');
+    Route::get('/concepts', StudentConceptController::class)->name('student.concepts');
+    Route::post('/concepts/submissions', StoreStudentConceptSubmissionController::class)->name('student.concepts.submissions.store');
     Route::get('/documents', function () {
         return Inertia::render('Student/documents');
     })->name('student.documents');

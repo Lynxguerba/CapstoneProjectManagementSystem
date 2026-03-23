@@ -1,261 +1,428 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, MessageSquareText, Upload, X } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import { Link, useForm, usePage } from '@inertiajs/react';
+import { motion } from 'framer-motion';
+import { AlertTriangle, BellRing, CheckCircle2, Clock3, FileText, FolderOpen, UploadCloud } from 'lucide-react';
+import React from 'react';
 import StudentLayout from './_layout';
 
-type ConceptStatus = 'Pending' | 'Approved' | 'Rejected' | 'Resubmit Required';
-
-type Concept = {
-    id: string;
-    title: string;
-    status: ConceptStatus;
-    updatedAt: string;
+type ConceptRequirement = {
+    id: number;
+    type: string;
+    deadlineDate?: string | null;
+    deadlineLabel?: string | null;
 };
 
-type SubmissionHistoryItem = {
-    id: string;
-    date: string;
-    action: string;
-    note: string;
+type ConceptSubmission = {
+    id: number;
+    title: string;
+    status: 'Submitted' | 'Approved' | 'Revision Required' | string;
+    submittedAt?: string | null;
+    requirementType: string;
+    mimeType?: string | null;
+    fileSizeLabel?: string | null;
+    fileUrl?: string | null;
+};
+
+type StudentConceptProps = {
+    group: {
+        id: number;
+        name: string;
+        programSetName?: string | null;
+        academicYear?: string | null;
+    } | null;
+    readiness: {
+        isReady: boolean;
+        message: string;
+    };
+    activeRequirement: {
+        id: number;
+        type: string;
+        deadlineDate?: string | null;
+        deadlineLabel?: string | null;
+    } | null;
+    requirements: ConceptRequirement[];
+    submissions: ConceptSubmission[];
+    notifications: {
+        deadline?: string | null;
+        approvedTitlesUrl: string;
+    };
+    flash?: {
+        success?: string;
+    };
+};
+
+type ConceptSubmissionForm = {
+    title: string;
+    document_requirement_id: string;
+    concept_file: File | null;
+};
+
+const statusPillClass = (status: ConceptSubmission['status']): string => {
+    if (status === 'Approved') {
+        return 'border-emerald-300 bg-emerald-100 text-emerald-800';
+    }
+
+    if (status === 'Revision Required') {
+        return 'border-slate-200 bg-slate-100 text-slate-700';
+    }
+
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
 };
 
 const StudentConcepts = () => {
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [description, setDescription] = useState('');
+    const { props } = usePage<StudentConceptProps>();
+    const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
-    const concepts: Concept[] = [
-        { id: 'c1', title: 'Capstone Project Management System', status: 'Approved', updatedAt: '2026-03-10' },
-        { id: 'c2', title: 'Smart Queue System for Campus Clinic', status: 'Resubmit Required', updatedAt: '2026-03-12' },
-        { id: 'c3', title: 'Thesis Repository with Similarity Search', status: 'Pending', updatedAt: '2026-03-14' },
-    ];
+    const group = props.group;
+    const readiness = props.readiness;
+    const activeRequirement = props.activeRequirement;
+    const requirements = props.requirements ?? [];
+    const submissions = props.submissions ?? [];
+    const notifications = props.notifications;
+    const successMessage = props.flash?.success ?? '';
 
-    const selected = useMemo(() => concepts.find((c) => c.id === selectedId) ?? null, [concepts, selectedId]);
+    const defaultRequirementId =
+        activeRequirement !== null ? String(activeRequirement.id) : requirements.length > 0 ? String(requirements[0].id) : '';
 
-    const history: SubmissionHistoryItem[] = [
-        { id: 'h1', date: '2026-03-01', action: 'Submitted Concept v1', note: 'Initial submission' },
-        { id: 'h2', date: '2026-03-05', action: 'Adviser Comment', note: 'Please refine objectives and scope.' },
-        { id: 'h3', date: '2026-03-12', action: 'Marked as Resubmit Required', note: 'Update methodology section.' },
-    ];
+    const form = useForm<ConceptSubmissionForm>({
+        title: '',
+        document_requirement_id: defaultRequirementId,
+        concept_file: null,
+    });
 
-    const statusPill = (s: ConceptStatus): string => {
-        if (s === 'Approved') {
-            return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    React.useEffect(() => {
+        if (form.data.document_requirement_id !== '' || defaultRequirementId === '') {
+            return;
         }
 
-        if (s === 'Rejected') {
-            return 'bg-rose-50 text-rose-700 border-rose-200';
+        form.setData('document_requirement_id', defaultRequirementId);
+    }, [defaultRequirementId, form]);
+
+    const selectedRequirement = requirements.find((requirement) => String(requirement.id) === form.data.document_requirement_id) ?? activeRequirement;
+
+    const handleChooseFile = () => {
+        if (form.processing) {
+            return;
         }
 
-        if (s === 'Resubmit Required') {
-            return 'bg-amber-50 text-amber-700 border-amber-200';
-        }
-
-        return 'bg-slate-50 text-slate-700 border-slate-200';
+        fileInputRef.current?.click();
     };
 
-    const canResubmit = selected?.status === 'Rejected' || selected?.status === 'Resubmit Required';
-    const isLocked = selected?.status === 'Approved';
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0] ?? null;
+        form.setData('concept_file', file);
+    };
+
+    const resetFileInput = () => {
+        form.setData('concept_file', null);
+        if (fileInputRef.current !== null) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!readiness.isReady || group === null) {
+            return;
+        }
+
+        form.post('/student/concepts/submissions', {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                form.reset('title', 'concept_file');
+                resetFileInput();
+            },
+        });
+    };
 
     return (
-        <StudentLayout title="Concept Submission" subtitle="Submit up to 3 concepts (UI only)">
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-1"
-                >
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                            <FileText size={18} className="text-slate-700" />
-                            <h3 className="text-lg font-semibold text-slate-900">Concept List</h3>
-                        </div>
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">Max 3</span>
-                    </div>
+        <StudentLayout title="Concept Submission" subtitle="Submit and track your concept paper requirements">
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+                <div className="space-y-5">
+                    <motion.section
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
+                    >
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="flex items-start gap-3">
+                                <div className="rounded-xl bg-emerald-100 p-2 text-emerald-700">
+                                    <FileText className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-900">Concept Paper Workspace</h3>
+                                    <p className="mt-1 text-xs text-slate-600">
+                                        {group
+                                            ? `${group.name}${group.programSetName ? ` · ${group.programSetName}` : ''}`
+                                            : 'No active group assignment yet.'}
+                                    </p>
+                                </div>
+                            </div>
 
-                    <div className="mt-5 space-y-3">
-                        {concepts.map((c) => (
-                            <button
-                                key={c.id}
-                                type="button"
-                                onClick={() => {
-                                    setSelectedId(c.id);
-                                    setDescription('');
-                                }}
-                                className={`w-full rounded-2xl border p-4 text-left transition-colors ${
-                                    selectedId === c.id ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white hover:bg-slate-50'
+                            <span
+                                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                                    readiness.isReady
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                        : 'border-slate-200 bg-slate-50 text-slate-700'
                                 }`}
                             >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0">
-                                        <div className="truncate text-sm font-semibold text-slate-900">{c.title}</div>
-                                        <div className="mt-1 text-xs text-slate-500">Updated: {c.updatedAt}</div>
-                                    </div>
-                                    <span
-                                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusPill(c.status)}`}
-                                    >
-                                        {c.status}
-                                    </span>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="mt-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-                        <div className="text-sm font-semibold text-slate-900">Auto duplication checker</div>
-                        <div className="mt-1 text-sm text-slate-600">Runs when you submit a concept title (dummy behavior).</div>
-                    </div>
-                </motion.section>
-
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2"
-                >
-                    {!selected ? (
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
-                            <div className="text-lg font-semibold text-slate-900">Select a concept</div>
-                            <div className="mt-2 text-sm text-slate-600">Choose an item on the left to view details.</div>
+                                {readiness.isReady ? 'Ready for Submission' : 'Waiting for Requirement'}
+                            </span>
                         </div>
-                    ) : (
-                        <>
-                            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                                <div>
-                                    <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Concept Detail</div>
-                                    <h3 className="mt-1 text-xl font-bold text-slate-900">{selected.title}</h3>
-                                    <div className="mt-2 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
-                                        Status: {selected.status}
-                                    </div>
-                                </div>
 
-                                <div className="flex flex-wrap gap-3">
-                                    <button
-                                        type="button"
-                                        disabled={!canResubmit}
-                                        onClick={() => alert('UI only: resubmit concept')}
-                                        className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        Resubmit
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => alert('UI only: view submission history')}
-                                        className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                                    >
-                                        View history
-                                    </button>
-                                </div>
+                        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-700">
+                            {readiness.message}
+                        </div>
+
+                        {successMessage !== '' && (
+                            <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-medium text-emerald-700">
+                                {successMessage}
+                            </div>
+                        )}
+                    </motion.section>
+
+                    <motion.section
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.03 }}
+                        className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
+                    >
+                        <div className="flex items-center justify-between gap-3">
+                            <h3 className="text-sm font-semibold text-slate-900">Submit New Concept / Revision</h3>
+                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                                PDF only
+                            </span>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
+                            <div>
+                                <label className="text-xs font-semibold tracking-wide text-slate-700 uppercase">Concept Title</label>
+                                <input
+                                    type="text"
+                                    value={form.data.title}
+                                    onChange={(event) => form.setData('title', event.target.value)}
+                                    placeholder="Enter your concept title"
+                                    disabled={!readiness.isReady || form.processing}
+                                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50"
+                                />
+                                {form.errors.title && <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.title}</p>}
                             </div>
 
-                            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                                <div className="rounded-2xl border border-slate-200 p-5">
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-sm font-semibold text-slate-900">Description (UI only)</div>
-                                        <span
-                                            className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                                                isLocked
-                                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                                    : 'border-slate-200 bg-slate-50 text-slate-700'
-                                            }`}
-                                        >
-                                            {isLocked ? 'Locked' : 'Editable'}
-                                        </span>
-                                    </div>
-                                    <textarea
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                        placeholder="Write your concept summary here..."
-                                        disabled={isLocked}
-                                        className="mt-3 h-44 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-50"
-                                    />
-                                </div>
+                            <div>
+                                <label className="text-xs font-semibold tracking-wide text-slate-700 uppercase">Requirement Type</label>
+                                <select
+                                    value={form.data.document_requirement_id}
+                                    onChange={(event) => form.setData('document_requirement_id', event.target.value)}
+                                    disabled={!readiness.isReady || form.processing || requirements.length === 0}
+                                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50"
+                                >
+                                    <option value="" disabled>
+                                        Select requirement
+                                    </option>
+                                    {requirements.map((requirement) => (
+                                        <option key={requirement.id} value={String(requirement.id)}>
+                                            {requirement.type}
+                                        </option>
+                                    ))}
+                                </select>
+                                {form.errors.document_requirement_id && (
+                                    <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.document_requirement_id}</p>
+                                )}
+                            </div>
 
-                                <div className="rounded-2xl border border-slate-200 p-5">
-                                    <div className="text-sm font-semibold text-slate-900">File Upload</div>
-                                    <div className="mt-1 text-sm text-slate-600">PDF/DOC (dummy upload)</div>
+                            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                                <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden" onChange={handleFileChange} />
 
-                                    <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6">
-                                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                            <Upload size={16} />
-                                            Drag & drop or browse
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div>
+                                        <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-slate-800 uppercase">
+                                            <UploadCloud className="h-3.5 w-3.5 text-emerald-600" />
+                                            Upload Concept PDF
                                         </div>
-                                        <div className="mt-2 text-xs text-slate-500">Validation happens in backend later.</div>
+                                        <p className="mt-1 text-xs text-slate-500">Max file size: 50MB</p>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
                                         <button
                                             type="button"
-                                            onClick={() => alert('UI only: pick file')}
-                                            className="mt-4 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+                                            onClick={handleChooseFile}
+                                            disabled={!readiness.isReady || form.processing}
+                                            className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
-                                            Choose file
+                                            Choose PDF
                                         </button>
-                                    </div>
-
-                                    <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-                                        <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Adviser Comments</div>
-                                        <div className="mt-2 flex items-start gap-3">
-                                            <MessageSquareText size={18} className="mt-0.5 text-indigo-600" />
-                                            <div className="text-sm text-slate-700">
-                                                Please improve your methodology and specify your target users.
-                                            </div>
-                                        </div>
+                                        {form.data.concept_file !== null && (
+                                            <button
+                                                type="button"
+                                                onClick={resetFileInput}
+                                                disabled={form.processing}
+                                                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
+
+                                <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                                    {form.data.concept_file !== null ? form.data.concept_file.name : 'No file selected'}
+                                </div>
+                                {form.errors.concept_file && <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.concept_file}</p>}
                             </div>
 
-                            <div className="mt-6 rounded-2xl border border-slate-200 p-5">
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className="text-sm font-semibold text-slate-900">Submission History</div>
-                                    <button
-                                        type="button"
-                                        onClick={() => alert('UI only: export history')}
-                                        className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                                    >
-                                        Export
-                                    </button>
-                                </div>
-
-                                <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                                    {history.map((h) => (
-                                        <div key={h.id} className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-                                            <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{h.date}</div>
-                                            <div className="mt-1 text-sm font-semibold text-slate-900">{h.action}</div>
-                                            <div className="mt-1 text-sm text-slate-600">{h.note}</div>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-700">
+                                Anti-duplication reminder: verify your title against the Final Approved Titles Repository before submission.
                             </div>
-                        </>
-                    )}
-                </motion.section>
 
-                <AnimatePresence>
-                    {selectedId && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-50 bg-black/60 p-4 backdrop-blur-sm xl:hidden"
-                            onClick={() => setSelectedId(null)}
-                        >
-                            <motion.div
-                                initial={{ y: 18, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: 18, opacity: 0 }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl"
-                            >
-                                <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                                    <div className="text-sm font-semibold text-slate-900">Concept Detail</div>
-                                    <button type="button" onClick={() => setSelectedId(null)} className="text-slate-600 hover:text-slate-900">
-                                        <X size={18} />
-                                    </button>
-                                </div>
-                                <div className="p-5">
-                                    <div className="text-sm text-slate-700">On mobile, use the desktop view for full detail layout.</div>
-                                </div>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                                <p className="text-xs text-slate-500">
+                                    {selectedRequirement?.deadlineLabel
+                                        ? `Deadline: ${selectedRequirement.deadlineLabel}`
+                                        : 'No deadline declared yet.'}
+                                </p>
+                                <button
+                                    type="submit"
+                                    disabled={!readiness.isReady || group === null || form.processing}
+                                    className="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {form.processing ? 'Submitting...' : 'Submit Concept'}
+                                </button>
+                            </div>
+                        </form>
+                    </motion.section>
+
+                    <motion.section
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.06 }}
+                        className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
+                    >
+                        <div className="flex items-center gap-2">
+                            <FolderOpen className="h-3.5 w-3.5 text-slate-700" />
+                            <h3 className="text-sm font-semibold text-slate-900">Your Submitted Concepts</h3>
+                        </div>
+
+                        <div className="mt-4 overflow-x-auto">
+                            <table className="w-full min-w-[640px] text-left text-xs">
+                                <thead className="border-b border-slate-200 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                    <tr>
+                                        <th className="px-2 py-3">Title</th>
+                                        <th className="px-2 py-3">Requirement</th>
+                                        <th className="px-2 py-3">Submitted</th>
+                                        <th className="px-2 py-3">Status</th>
+                                        <th className="px-2 py-3">File</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {submissions.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-2 py-8 text-center text-xs text-slate-500">
+                                                No concept submissions yet.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        submissions.map((submission) => (
+                                            <tr key={submission.id} className="hover:bg-slate-50/80">
+                                                <td className="px-2 py-3 font-semibold text-slate-900">{submission.title}</td>
+                                                <td className="px-2 py-3 text-slate-600">{submission.requirementType}</td>
+                                                <td className="px-2 py-3 text-slate-600">{submission.submittedAt ?? '—'}</td>
+                                                <td className="px-2 py-3">
+                                                    <span
+                                                        className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusPillClass(submission.status)}`}
+                                                    >
+                                                        {submission.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-2 py-3 text-xs text-slate-600">
+                                                    {submission.fileUrl ? (
+                                                        <a
+                                                            href={submission.fileUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="font-semibold text-emerald-700 hover:underline"
+                                                        >
+                                                            Open PDF
+                                                        </a>
+                                                    ) : (
+                                                        '—'
+                                                    )}
+                                                    {submission.fileSizeLabel ? (
+                                                        <div className="mt-0.5 text-slate-500">{submission.fileSizeLabel}</div>
+                                                    ) : null}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </motion.section>
+                </div>
+
+                <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
+                    <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm"
+                    >
+                        <div className="flex items-start gap-3">
+                            <Clock3 className="mt-0.5 h-4 w-4 text-emerald-600" />
+                            <div>
+                                <p className="text-xs font-semibold tracking-wide text-emerald-800 uppercase">Deadline</p>
+                                <p className="mt-1 text-xs text-emerald-700">{notifications.deadline ?? 'No concept deadline set yet.'}</p>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.03 }}
+                        className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm"
+                    >
+                        <div className="flex items-start gap-3">
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
+                            <div>
+                                <p className="text-xs font-semibold tracking-wide text-emerald-800 uppercase">Final Approved Titles Repository</p>
+                                <p className="mt-1 text-xs text-emerald-700">Review approved titles before finalizing your concept title.</p>
+                                <Link
+                                    href={notifications.approvedTitlesUrl}
+                                    className="mt-2 inline-flex items-center rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800"
+                                >
+                                    Open Repository
+                                </Link>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.06 }}
+                        className={`rounded-xl border p-4 shadow-sm ${
+                            readiness.isReady ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50'
+                        }`}
+                    >
+                        <div className="flex items-start gap-3">
+                            {readiness.isReady ? (
+                                <BellRing className="mt-0.5 h-4 w-4 text-emerald-600" />
+                            ) : (
+                                <AlertTriangle className="mt-0.5 h-4 w-4 text-slate-600" />
+                            )}
+                            <div>
+                                <p
+                                    className={`text-xs font-semibold tracking-wide uppercase ${
+                                        readiness.isReady ? 'text-emerald-800' : 'text-slate-800'
+                                    }`}
+                                >
+                                    Concept Notification
+                                </p>
+                                <p className={`mt-1 text-xs ${readiness.isReady ? 'text-emerald-700' : 'text-slate-600'}`}>{readiness.message}</p>
+                            </div>
+                        </div>
+                    </motion.div>
+                </aside>
             </div>
         </StudentLayout>
     );

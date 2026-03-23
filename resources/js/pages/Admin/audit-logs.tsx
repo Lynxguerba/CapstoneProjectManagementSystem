@@ -2,7 +2,7 @@ import { router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ChevronRight, Filter, Search } from 'lucide-react';
 import React from 'react';
-import adminRoutes from '../../routes/admin';
+import adminRoutes from '../../routes/admin/index';
 import AdminLayout from './_layout';
 
 type AuditSeverity = 'info' | 'warning' | 'critical';
