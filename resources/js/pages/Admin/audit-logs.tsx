@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ChevronRight, Filter, Search } from 'lucide-react';
 import React from 'react';
@@ -161,10 +161,21 @@ const AdminAuditLogs = ({ logs = [], filters, pagination = defaultPagination }: 
 
     return (
         <AdminLayout title="Audit Logs" subtitle="Track sensitive system activity and data integrity events">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+                    <Link href="/admin/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <span className="font-semibold text-slate-800" aria-current="page">
+                        Audti Logs
+                    </span>
+                </nav>
+            </motion.div>
             <motion.section
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                className="mt-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
             >
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>

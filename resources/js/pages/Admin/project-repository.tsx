@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import { Search, Filter, FolderArchive, ExternalLink, FileText, Users, Calendar } from 'lucide-react';
-import React from 'react';
+import { Search, Filter, FolderArchive, ExternalLink, FileText, Users, Calendar, ChevronRight } from 'lucide-react';
+import { Link } from '@inertiajs/react';
 import AdminLayout from './_layout';
 
 // Mock Type for UI Consistency
@@ -40,6 +40,16 @@ const AdminProjectRepository = () => {
     return (
         <AdminLayout title="Project Repository" subtitle="Centralized archive of finalized capstone project records">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
+                <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+                    <Link href="/admin/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <span className="font-semibold text-slate-800" aria-current="page">
+                        Project Repository
+                    </span>
+                </nav>
+
                 {/* Action Bar - Matching Faculty.tsx design scale */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex flex-wrap items-center gap-2">

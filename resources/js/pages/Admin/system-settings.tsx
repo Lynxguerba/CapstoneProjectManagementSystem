@@ -1,7 +1,7 @@
-import { useForm } from '@inertiajs/react';
+import { useForm, Link } from '@inertiajs/react';
 import type { Variants } from 'framer-motion';
 import { motion } from 'framer-motion';
-import { Bell, GraduationCap, ShieldCheck, Users } from 'lucide-react';
+import { Bell, GraduationCap, ShieldCheck, Users, ChevronRight } from 'lucide-react';
 import React from 'react';
 import SaveAcademicYearModal from '@/components/Admin/SaveAcademicYearModal';
 import SaveNotificationModal from '@/components/Admin/SaveNotificationModal';
@@ -165,6 +165,17 @@ const AdminSystemSettings = ({ adminUsers }: AdminSystemSettingsProps) => {
     return (
         <AdminLayout title="System Settings" subtitle="Configure global capstone lifecycle settings">
             <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-5">
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                    <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+                        <Link href="/admin/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                            Dashboard
+                        </Link>
+                        <ChevronRight className="h-3 w-3 text-slate-400" />
+                        <span className="font-semibold text-slate-800" aria-current="page">
+                            System Settings
+                        </span>
+                    </nav>
+                </motion.div>
                 <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
                     {/* ── Academic Cycle & Site-wide Notification ── */}
                     <motion.section

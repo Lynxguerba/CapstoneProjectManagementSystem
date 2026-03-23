@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ChevronRight, Filter, Search, Settings, Upload } from 'lucide-react';
 import React from 'react';
@@ -100,6 +101,16 @@ const AdminFaculty = ({ faculties = [], filters }: AdminFacultyProps) => {
     return (
         <AdminLayout title="Faculty Management" subtitle="Manage faculty records and account details">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
+                <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+                    <Link href="/admin/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <span className="font-semibold text-slate-800" aria-current="page">
+                        Faculties
+                    </span>
+                </nav>
+
                 {/* Action Bar */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex flex-wrap items-center gap-2">

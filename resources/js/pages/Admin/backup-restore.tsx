@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import { Database, Download, Upload, History, ShieldCheck, RefreshCcw, AlertCircle, HardDrive } from 'lucide-react';
-import React from 'react';
+import { Database, Download, Upload, History, ShieldCheck, RefreshCcw, AlertCircle, HardDrive, ChevronRight } from 'lucide-react';
+import { Link } from '@inertiajs/react';
 import AdminLayout from './_layout';
 
 // Mock Data for UI consistency
@@ -14,6 +14,16 @@ export default function BackupRestore() {
     return (
         <AdminLayout title="Backup & Restore" subtitle="Ensure system safety and data integrity">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
+                <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+                    <Link href="/admin/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <span className="font-semibold text-slate-800" aria-current="page">
+                        Backup & Restore
+                    </span>
+                </nav>
+                
                 {/* System Status Cards - Specific to Safety Objectives */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
