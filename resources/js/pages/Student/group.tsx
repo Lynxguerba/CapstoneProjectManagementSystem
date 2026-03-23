@@ -39,11 +39,11 @@ const StudentGroup = () => {
 
     const progress = useMemo(() => {
         return [
-            { label: 'Concept Submitted', done: true },
-            { label: 'Concept Approved', done: true },
+            { label: 'Concept', done: true },
             { label: 'Outline Defense', done: false },
             { label: 'Pre-Deployment', done: false },
             { label: 'Deployment', done: false },
+            { label: 'Finals', done: false },
         ];
     }, []);
 
@@ -56,38 +56,6 @@ const StudentGroup = () => {
     return (
         <StudentLayout title="My Capstone Group" subtitle="Group details, members, and progress">
             <div className="space-y-6">
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-                >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="flex items-start gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm">
-                                <Users size={18} className="text-white" />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-900">{group.name}</h3>
-                                <div className="mt-1 text-sm text-slate-600">Section: {group.section}</div>
-                                <div className="mt-1 text-sm text-slate-600">Adviser: {group.adviser}</div>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-3 sm:flex-row">
-                            <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
-                                <CreditCard size={16} className="text-slate-600" />
-                                <div className="text-sm font-semibold text-slate-800">Payment: {group.paymentStatus}</div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => alert('UI only: open invite/join settings')}
-                                className="rounded-xl bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:shadow-lg"
-                            >
-                                Manage group
-                            </button>
-                        </div>
-                    </div>
-                </motion.section>
 
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
                     <motion.section

@@ -1,12 +1,11 @@
 <?php
 
+use App\Http\Controllers\Student\StudentDashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::middleware(['auth', 'role:student'])->prefix('student')->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Student/dashboard');
-    })->name('student.dashboard');
+    Route::get('/dashboard', StudentDashboardController::class)->name('student.dashboard');
     Route::get('/group', function () {
         return Inertia::render('Student/group');
     })->name('student.group');
