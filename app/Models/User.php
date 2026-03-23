@@ -92,6 +92,16 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function createdTitleRepositories(): HasMany
+    {
+        return $this->hasMany(TitleRepository::class, 'created_by');
+    }
+
+    public function advisedTitleRepositories(): HasMany
+    {
+        return $this->hasMany(TitleRepository::class, 'adviser_id');
+    }
+
     public function hasRole(string $role): bool
     {
         $normalizedRole = Role::normalizeRole($role);

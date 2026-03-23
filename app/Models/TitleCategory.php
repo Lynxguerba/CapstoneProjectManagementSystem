@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class AcademicYear extends Model
+class TitleCategory extends Model
 {
     use HasFactory;
 
@@ -14,23 +14,10 @@ class AcademicYear extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'start_year',
-        'end_year',
-        'label',
-        'is_current',
+        'program',
+        'name',
+        'description',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'start_year' => 'integer',
-            'end_year' => 'integer',
-            'is_current' => 'boolean',
-        ];
-    }
 
     public function titleRepositories(): HasMany
     {

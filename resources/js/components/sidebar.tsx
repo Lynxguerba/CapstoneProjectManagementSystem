@@ -140,6 +140,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { label: 'Main', isSection: true },
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/student/dashboard' },
                     { icon: Users, label: 'Capstone Team', href: '/student/group' },
+                    { label: 'Project', isSection: true },
                     { icon: BookOpen, label: 'Title Repository', href: '/student/titles' },
                     { icon: FileText, label: 'Concept Submission', href: '/student/concepts' },
                     { icon: FolderOpen, label: 'Documents & Uploads', href: '/student/documents' },

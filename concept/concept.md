@@ -106,3 +106,32 @@ PROJECT OVERVIEW
     documents. Ultimately, this analysis identifies potential bottlenecks in the
     manual process and provides a structured digital solution for efficient
     capstone management.
+
+
+## To help you categorize the projects within your Capstone Project Management System, I have broken down the typical focus areas for Bachelor of Science in Information Technology (BSIT) and Bachelor of Science in Information Systems (BSIS). While BSIT focuses more on the "how" (technology and infrastructure), BSIS focuses on the "why" and "what" (business processes and data-driven decision making).
+
+    ## BSIT Project Categories
+    Focus: Technical implementation, hardware-software integration, and advanced computing.
+    
+        1. Software Development: Web-based applications, cross-platform mobile development, and Progressive Web Apps (PWAs).
+
+        2. Intelligent Systems: AI-driven learning platforms, Machine Learning (ML) for predictive analysis, and Natural Language Processing (NLP).
+
+        3. Emerging Technologies: Blockchain for secure transactions, Internet of Things (IoT) with hardware integration, and Augmented/Virtual Reality (AR/VR).
+
+        4. Network & Security: Network monitoring systems, penetration testing tools, and cybersecurity framework implementations.
+        
+        5. Game Development: Educational games or simulation-based training software.
+
+    ## BSIS Project Categories
+    Focus: Business-technology alignment, data management, and organizational efficiency.
+
+        1. Enterprise Resource Planning (ERP): Systems that integrate core business processes like inventory, HR, and finance.
+
+        2. Decision Support Systems (DSS): Data analytics dashboards and Business Intelligence (BI) tools to help management make informed choices.
+
+        3. E-Commerce & Digital Markets: Platforms focusing on supply chain management, customer relationship management (CRM), and online marketplaces.
+
+        4. Information Management & Archiving: Digital transformation of manual records, automated retrieval systems, and secure document routing.
+
+        5. Health or Government Informatics: Specialized systems like Electronic Medical Records (EMR) or E-Governance portals for local municipalities.

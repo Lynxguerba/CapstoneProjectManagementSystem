@@ -2,15 +2,14 @@
 
 use App\Http\Controllers\Student\StudentDashboardController;
 use App\Http\Controllers\Student\StudentGroupController;
+use App\Http\Controllers\Student\StudentTitleRepositoryController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::middleware(['auth', 'role:student'])->prefix('student')->group(function () {
     Route::get('/dashboard', StudentDashboardController::class)->name('student.dashboard');
     Route::get('/group', StudentGroupController::class)->name('student.group');
-    Route::get('/titles', function () {
-        return Inertia::render('Student/titles');
-    })->name('student.titles');
+    Route::get('/titles', StudentTitleRepositoryController::class)->name('student.titles');
     Route::get('/concepts', function () {
         return Inertia::render('Student/concepts');
     })->name('student.concepts');
