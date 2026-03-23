@@ -1,9 +1,10 @@
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { Box } from '@mui/material';
 import { LineChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
 import { CalendarCheck, FolderKanban, GraduationCap, Layers3, ShieldCheck, UserCheck, Users } from 'lucide-react';
 import React from 'react';
+import adminRoutes from '../../routes/admin';
 import AdminLayout from './_layout';
 
 type DashboardStats = {
@@ -186,45 +187,6 @@ const Dashboard = () => {
     const adviserCoverageProgress = progressFor(stats.groupsWithAdviser, stats.activeGroups);
     const facultyProgress = progressFor(stats.totalFaculty, stats.totalUsers);
 
-    const quickStats = [
-        {
-            label: 'Total Users',
-            value: stats.totalUsers,
-            change: `${stats.activeUsers} active · ${stats.inactiveUsers} inactive`,
-            progress: activeUserProgress,
-            icon: Users,
-            tone: 'from-emerald-700 to-emerald-500',
-            pill: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-        },
-        {
-            label: 'Active Groups',
-            value: stats.activeGroups,
-            change: stats.groupsWithoutAdviser > 0 ? `${stats.groupsWithoutAdviser} missing adviser` : 'All groups have advisers',
-            progress: adviserCoverageProgress,
-            icon: FolderKanban,
-            tone: 'from-emerald-600 to-teal-500',
-            pill: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-        },
-        {
-            label: 'Student Accounts',
-            value: stats.totalStudents,
-            change: `${programTotal} with BSIT/BSIS profile`,
-            progress: studentProgramCoverage,
-            icon: GraduationCap,
-            tone: 'from-green-600 to-emerald-500',
-            pill: 'border-green-200 bg-green-50 text-green-700',
-        },
-        {
-            label: 'Faculty Accounts',
-            value: stats.totalFaculty,
-            change: `${stats.pendingAdviserRequests} pending adviser requests`,
-            progress: facultyProgress,
-            icon: UserCheck,
-            tone: 'from-teal-600 to-emerald-500',
-            pill: 'border-teal-200 bg-teal-50 text-teal-700',
-        },
-    ] as const;
-
     const operationTiles = [
         {
             label: 'Program Sets',
@@ -278,39 +240,93 @@ const Dashboard = () => {
         },
     ] as const;
 
+    const dashboardHighlights = [
+        {
+            label: 'Total Users',
+            value: stats.totalUsers,
+            icon: Users,
+        },
+        {
+            label: 'Active Groups',
+            value: stats.activeGroups,
+            icon: FolderKanban,
+        },
+        {
+            label: 'Pending Requests',
+            value: stats.pendingAdviserRequests,
+            icon: UserCheck,
+        },
+        {
+            label: 'Active Rooms',
+            value: stats.defenseRoomsActive,
+            icon: ShieldCheck,
+        },
+    ] as const;
+
+
+    const workloadIntensity = progressFor(
+        stats.inactiveUsers + stats.groupsWithoutAdviser + stats.pendingAdviserRequests,
+        Math.max(1, stats.totalUsers + stats.activeGroups),
+    );
+
+    const metricCardClassName =
+        'group relative overflow-hidden rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg';
+    const panelClassName = 'rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm';
+
     return (
         <AdminLayout title="Dashboard" subtitle="Admin Dashboard">
-            <div className="space-y-6">
+            <div className="space-y-8">
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4"
+                    initial={{ opacity: 0, y: 14, scale: 0.99 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.45 }}
+                    className="relative overflow-hidden rounded-3xl border border-emerald-300/70 bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-800 p-6 shadow-xl shadow-emerald-950/20 md:p-8"
                 >
-                    {quickStats.map((stat, idx) => (
-                        <motion.div
-                            key={stat.label}
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.06 * idx }}
-                            className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg"
-                        >
-                            <div className="flex items-start justify-between gap-4">
-                                <div>
-                                    <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">{stat.label}</p>
-                                    <p className="mt-2 text-2xl font-bold text-slate-900">{stat.value.toLocaleString()}</p>
-                                    <span className={`mt-3 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${stat.pill}`}>
-                                        {stat.change}
-                                    </span>
-                                </div>
-                                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.tone} shadow-sm`}>
-                                    <stat.icon className="h-5 w-5 text-white" />
-                                </div>
+                    <div className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-emerald-300/20 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-24 left-16 h-64 w-64 rounded-full bg-lime-200/15 blur-3xl" />
+
+                    <div className="relative grid gap-8 xl:grid-cols-[1.25fr_1fr]">
+                        <div>
+                            <p className="text-[11px] font-semibold tracking-[0.24em] text-emerald-200 uppercase">Admin Workspace</p>
+                            <h3 className="mt-3 text-2xl font-semibold text-white md:text-[2rem] md:leading-[1.1]">System Operations Snapshot</h3>
+                            <p className="mt-3 max-w-xl text-sm leading-relaxed text-emerald-100 md:text-base">
+                                Monitor user health, assignment coverage, and audit activity from one administrative view.
+                            </p>
+
+                            <div className="mt-6 flex flex-wrap gap-3">
+                                <Link
+                                    href={adminRoutes.users.students.url()}
+                                    className="inline-flex items-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-900 transition hover:-translate-y-0.5 hover:shadow-lg"
+                                >
+                                    Open User Management
+                                </Link>
+                                <Link
+                                    href={adminRoutes.auditLogs.url()}
+                                    className="inline-flex items-center rounded-xl border border-emerald-200/60 bg-white/10 px-4 py-2.5 text-sm font-semibold text-emerald-50 transition hover:bg-white/20"
+                                >
+                                    Open Audit Logs
+                                </Link>
                             </div>
-                            <div className="mt-4 h-1.5 w-full rounded-full bg-emerald-100/60">
-                                <div className={`h-1.5 rounded-full bg-gradient-to-r ${stat.tone}`} style={{ width: `${stat.progress}%` }} />
-                            </div>
-                        </motion.div>
-                    ))}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                            {dashboardHighlights.map((highlight, index) => (
+                                <motion.div
+                                    key={highlight.label}
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.08 + index * 0.06 }}
+                                    className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm"
+                                >
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-[11px] font-semibold tracking-wide text-emerald-100 uppercase">{highlight.label}</span>
+                                        <highlight.icon className="h-4 w-4 text-emerald-100" />
+                                    </div>
+                                    <div className="mt-2 text-2xl font-semibold text-white">{highlight.value.toLocaleString()}</div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
                 </motion.section>
 
                 <motion.section
@@ -319,23 +335,23 @@ const Dashboard = () => {
                     transition={{ delay: 0.12 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-2"
                 >
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className={panelClassName}>
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <Layers3 className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Admin Operations Snapshot</h3>
+                                    <Layers3 className="h-5 w-5 text-emerald-700" />
+                                    <h3 className="text-lg font-semibold text-slate-900">Admin Operations Snapshot</h3>
                                 </div>
-                                <p className="mt-1 text-xs text-slate-500">Live totals from users, groups, and scheduling tables.</p>
+                                <p className="mt-1 text-sm text-slate-600">Live totals from users, groups, and scheduling tables.</p>
                             </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                                 Core Controls
                             </span>
                         </div>
 
                         <div className="mt-4 grid gap-3 sm:grid-cols-2">
                             {operationTiles.map((tile) => (
-                                <div key={tile.label} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                                <div key={tile.label} className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
                                             <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">{tile.label}</p>
@@ -351,13 +367,13 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className={panelClassName}>
                         <div className="mb-2 flex items-center justify-between gap-3">
                             <div>
-                                <h3 className="text-sm font-semibold text-slate-900">Role Distribution</h3>
-                                <p className="mt-1 text-xs text-slate-500">Breakdown of user accounts by role assignment.</p>
+                                <h3 className="text-lg font-semibold text-slate-900">Role Distribution</h3>
+                                <p className="mt-1 text-sm text-slate-600">Breakdown of user accounts by role assignment.</p>
                             </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                                 {roleTotal.toLocaleString()} assignments
                             </span>
                         </div>
@@ -386,20 +402,20 @@ const Dashboard = () => {
 
                                 <div className="overflow-x-auto pb-1">
                                     <div className="mx-auto flex w-max items-center justify-center gap-2">
-                                    {roleDistribution.map((role) => (
-                                        <div key={role.label} className="min-w-[105px] rounded-lg border border-slate-100 px-2.5 py-2 text-center text-xs text-slate-700">
-                                            <div className="flex items-center justify-center gap-1.5">
-                                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: role.color }} />
-                                                <span className="font-medium">{role.label}</span>
+                                        {roleDistribution.map((role) => (
+                                            <div key={role.label} className="min-w-[105px] rounded-lg border border-emerald-100 px-2.5 py-2 text-center text-xs text-slate-700">
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: role.color }} />
+                                                    <span className="font-medium">{role.label}</span>
+                                                </div>
+                                                <p className="mt-1 font-semibold text-slate-900 tabular-nums">{role.value.toLocaleString()}</p>
                                             </div>
-                                            <p className="mt-1 font-semibold text-slate-900 tabular-nums">{role.value.toLocaleString()}</p>
-                                        </div>
-                                    ))}
+                                        ))}
                                     </div>
                                 </div>
                             </>
                         ) : (
-                            <div className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
+                            <div className="mt-6 rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-6 text-center text-xs text-slate-500">
                                 No role assignment records available yet.
                             </div>
                         )}
@@ -412,16 +428,16 @@ const Dashboard = () => {
                     transition={{ delay: 0.18 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-2"
                 >
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className={panelClassName}>
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <GraduationCap className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Program Distribution</h3>
+                                    <GraduationCap className="h-5 w-5 text-emerald-700" />
+                                    <h3 className="text-lg font-semibold text-slate-900">Program Distribution</h3>
                                 </div>
-                                <p className="mt-1 text-xs text-slate-500">Student totals under BSIT and BSIS programs.</p>
+                                <p className="mt-1 text-sm text-slate-600">Student totals under BSIT and BSIS programs.</p>
                             </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                                 {programTotal.toLocaleString()} students
                             </span>
                         </div>
@@ -455,7 +471,7 @@ const Dashboard = () => {
                                             const barTone = programToneStyles[program.label] ?? 'from-emerald-600 to-emerald-500';
 
                                             return (
-                                                <div key={program.label} className="min-w-[105px] rounded-lg border border-slate-100 px-2.5 py-2 text-center text-xs text-slate-700">
+                                                <div key={program.label} className="min-w-[105px] rounded-lg border border-emerald-100 px-2.5 py-2 text-center text-xs text-slate-700">
                                                     <div className="mb-1 flex items-center justify-center gap-1.5">
                                                         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: program.color }} />
                                                         <span className="font-medium">{program.label}</span>
@@ -471,29 +487,29 @@ const Dashboard = () => {
                                 </div>
                             </>
                         ) : (
-                            <div className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">
+                            <div className="mt-6 rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-6 text-center text-xs text-slate-500">
                                 No BSIT/BSIS program records found yet.
                             </div>
                         )}
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className={panelClassName}>
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Account Status</h3>
+                                    <ShieldCheck className="h-5 w-5 text-emerald-700" />
+                                    <h3 className="text-lg font-semibold text-slate-900">Account Status</h3>
                                 </div>
-                                <p className="mt-1 text-xs text-slate-500">Active and inactive user account distribution.</p>
+                                <p className="mt-1 text-sm text-slate-600">Active and inactive user account distribution.</p>
                             </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                                 {stats.totalUsers.toLocaleString()} users
                             </span>
                         </div>
 
                         <div className="mt-4 space-y-3">
                             {accountStatus.map((status) => (
-                                <div key={status.label} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                                <div key={status.label} className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${status.pill}`}>
                                             {status.label}
@@ -514,14 +530,14 @@ const Dashboard = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.24 }}
-                    className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
+                    className={panelClassName}
                 >
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h3 className="text-sm font-semibold text-slate-900">Audit Logs Trend</h3>
-                            <p className="mt-1 text-xs text-slate-500">Daily audit-log activity by severity for the last 7 days (local time).</p>
+                            <h3 className="text-lg font-semibold text-slate-900">Audit Logs Trend</h3>
+                            <p className="mt-1 text-sm text-slate-600">Daily audit-log activity by severity for the last 7 days (local time).</p>
                         </div>
-                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                             Audit Timeline
                         </span>
                     </div>
@@ -558,7 +574,7 @@ const Dashboard = () => {
                             />
                         </Box>
                     ) : (
-                        <div className="mt-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-xs text-slate-500">
+                        <div className="mt-2 rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-8 text-center text-xs text-slate-500">
                             No audit log trends available yet.
                         </div>
                     )}

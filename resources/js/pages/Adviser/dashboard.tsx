@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { Box, Typography } from '@mui/material';
 import { LineChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
@@ -64,10 +64,12 @@ const fallbackTrend: TrendSeries = {
 };
 
 const fallbackReviewBreakdown: ReviewBreakdownItem[] = [
-    { label: 'Approved', value: 0, color: '#10b981' },
-    { label: 'Pending', value: 0, color: '#22c55e' },
+    { label: 'Approved', value: 0, color: '#065f46' },
+    { label: 'Pending', value: 0, color: '#059669' },
     { label: 'For Revision', value: 0, color: '#34d399' },
 ];
+
+const reviewPalette = ['#065f46', '#047857', '#059669', '#10b981', '#34d399'];
 
 const progressFor = (value: number, total: number): number => {
     if (total <= 0) {
@@ -163,6 +165,7 @@ const AdviserDashboard = () => {
         (item, index) => ({
             ...item,
             id: index,
+            color: reviewPalette[index % reviewPalette.length],
         }),
     );
     const reviewTotal = reviewBreakdownItems.reduce((total, item) => total + item.value, 0);
@@ -185,152 +188,122 @@ const AdviserDashboard = () => {
     });
 
     const notifications = props.notifications ?? [];
+    const totalPendingReviews = stats.pendingConceptReviews + stats.pendingDocumentReviews;
+    const actionableNotifications = notifications.filter((notice) => notice.tone === 'warning' || notice.tone === 'danger').length;
 
-    const statsCards = [
+
+    const dashboardHighlights = [
         {
             label: 'Assigned Groups',
             value: stats.assignedGroups,
             icon: Users,
-            tone: 'from-emerald-600 to-emerald-700',
-            pill: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-            caption: 'Active assignments',
-            progress: stats.assignedGroups > 0 ? 100 : 0,
         },
         {
-            label: 'Pending Concept Reviews',
-            value: stats.pendingConceptReviews,
-            icon: FileText,
-            tone: 'from-green-500 to-emerald-600',
-            pill: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-            caption: 'Concept queue',
-            progress: progressFor(stats.pendingConceptReviews, Math.max(1, stats.assignedGroups)),
-        },
-        {
-            label: 'Pending Document Reviews',
-            value: stats.pendingDocumentReviews,
-            icon: FolderOpen,
-            tone: 'from-emerald-500 to-green-600',
-            pill: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-            caption: 'Document queue',
-            progress: progressFor(stats.pendingDocumentReviews, Math.max(1, stats.assignedGroups)),
+            label: 'Pending Reviews',
+            value: totalPendingReviews,
+            icon: ClipboardCheck,
         },
         {
             label: 'Upcoming Defenses',
             value: stats.upcomingDefenses,
             icon: CalendarClock,
-            tone: 'from-emerald-400 to-green-500',
-            pill: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-            caption: 'Scheduled ahead',
-            progress: progressFor(stats.upcomingDefenses, Math.max(1, stats.assignedGroups)),
+        },
+        {
+            label: 'Attention Needed',
+            value: actionableNotifications,
+            icon: Scale,
         },
     ] as const;
 
     const toneStyles: Record<DashboardNotification['tone'], string> = {
-        info: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-        success: 'bg-emerald-100 border-emerald-200 text-emerald-800',
-        warning: 'bg-green-50 border-green-200 text-green-700',
-        danger: 'bg-emerald-50 border-emerald-300 text-emerald-700',
+        info: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+        success: 'border-green-200 bg-green-50 text-green-800',
+        warning: 'border-lime-200 bg-lime-50 text-lime-800',
+        danger: 'border-rose-200 bg-rose-50 text-rose-800',
     };
 
     return (
         <AdviserLayout title="Dashboard" subtitle="Overview of assigned groups, submissions, and schedules">
-            <div className="space-y-6">
+            <div className="space-y-8">
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4"
+                    initial={{ opacity: 0, y: 14, scale: 0.99 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.45 }}
+                    className="relative overflow-hidden rounded-3xl border border-emerald-300/70 bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-800 p-6 shadow-xl shadow-emerald-950/20 md:p-8"
                 >
-                    {statsCards.map((card, idx) => (
-                        <motion.div
-                            key={card.label}
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.06 * idx }}
-                            className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg"
-                        >
-                            <div className="flex items-start justify-between gap-4">
-                                <div>
-                                    <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">{card.label}</p>
-                                    <p className="mt-2 text-2xl font-bold text-slate-900">{card.value.toLocaleString()}</p>
-                                    <span className={`mt-3 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${card.pill}`}>
-                                        {card.caption}
-                                    </span>
-                                </div>
-                                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${card.tone} shadow-sm`}>
-                                    <card.icon className="h-5 w-5 text-white" />
-                                </div>
-                            </div>
-                            <div className="mt-4 h-1.5 w-full rounded-full bg-emerald-100/60">
-                                <div className={`h-1.5 rounded-full bg-gradient-to-r ${card.tone}`} style={{ width: `${card.progress}%` }} />
-                            </div>
-                        </motion.div>
-                    ))}
-                </motion.section>
+                    <div className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-emerald-300/20 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-24 left-16 h-64 w-64 rounded-full bg-lime-200/15 blur-3xl" />
 
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.08 }}
-                    className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
-                >
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="relative grid gap-8 xl:grid-cols-[1.25fr_1fr]">
                         <div>
-                            <h3 className="text-sm font-semibold text-slate-900">Quick Actions</h3>
-                            <p className="mt-1 text-xs text-slate-500">Jump to adviser tools for reviews and monitoring.</p>
+                            <p className="text-[11px] font-semibold tracking-[0.24em] text-emerald-200 uppercase">Adviser Workspace</p>
+                            <h3 className="mt-3 text-2xl font-semibold text-white md:text-[2rem] md:leading-[1.1]">Daily Monitoring Snapshot</h3>
+                            <p className="mt-3 max-w-xl text-sm leading-relaxed text-emerald-100 md:text-base">
+                                Follow review queues, defense schedules, and priority alerts without leaving your dashboard.
+                            </p>
+
+                            <div className="mt-6 flex flex-wrap gap-3">
+                                <Link
+                                    href="/adviser/groups"
+                                    className="inline-flex items-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-900 transition hover:-translate-y-0.5 hover:shadow-lg"
+                                >
+                                    Open Group Monitoring
+                                </Link>
+                                <Link
+                                    href="/adviser/schedule"
+                                    className="inline-flex items-center rounded-xl border border-emerald-200/60 bg-white/10 px-4 py-2.5 text-sm font-semibold text-emerald-50 transition hover:bg-white/20"
+                                >
+                                    View Defense Schedule
+                                </Link>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                            {dashboardHighlights.map((highlight, index) => (
+                                <motion.div
+                                    key={highlight.label}
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.08 + index * 0.06 }}
+                                    className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm"
+                                >
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-[11px] font-semibold tracking-wide text-emerald-100 uppercase">{highlight.label}</span>
+                                        <highlight.icon className="h-4 w-4 text-emerald-100" />
+                                    </div>
+                                    <div className="mt-2 text-2xl font-semibold text-white">{highlight.value.toLocaleString()}</div>
+                                </motion.div>
+                            ))}
                         </div>
                     </div>
-
-                    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        {[
-                            { label: 'Review Concepts', href: '/adviser/concepts', icon: FileText, tone: 'from-emerald-500 to-green-600' },
-                            { label: 'Review Documents', href: '/adviser/documents', icon: FolderOpen, tone: 'from-green-500 to-emerald-600' },
-                            { label: 'Group Monitoring', href: '/adviser/groups', icon: Users, tone: 'from-emerald-600 to-emerald-700' },
-                            { label: 'Verdict & Remarks', href: '/adviser/verdict', icon: Scale, tone: 'from-emerald-400 to-green-500' },
-                        ].map((action) => (
-                            <a
-                                key={action.label}
-                                href={action.href}
-                                className="group rounded-xl border border-slate-200 bg-white p-4 transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-md"
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-sm font-semibold text-slate-900">{action.label}</div>
-                                        <div className="mt-1 text-xs text-slate-500">Open page</div>
-                                    </div>
-                                    <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${action.tone} shadow-sm`}>
-                                        <action.icon size={16} className="text-white" />
-                                    </div>
-                                </div>
-                            </a>
-                        ))}
-                    </div>
                 </motion.section>
+
 
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.12 }}
+                    transition={{ delay: 0.13 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-2"
                 >
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <LayoutDashboard className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Submission Activity</h3>
+                                    <LayoutDashboard className="h-5 w-5 text-emerald-700" />
+                                    <h3 className="text-lg font-semibold text-slate-900">Submission Activity</h3>
                                 </div>
-                                <p className="mt-1 text-xs text-slate-500">Document submissions from your assigned groups (last 6 weeks).</p>
+                                <p className="mt-1 text-sm text-slate-600">Document submissions from your assigned groups over the last 6 weeks.</p>
                             </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                                Last 6 weeks
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                Last 6 Weeks
                             </span>
                         </div>
 
                         <Box sx={{ mt: 3 }}>
                             <LineChart
-                                height={260}
+                                height={280}
                                 xAxis={[{ data: trendLabels, scaleType: 'point' }]}
-                                series={[{ data: trendValues, label: 'Submissions / Week', color: '#10b981', area: true }]}
+                                series={[{ data: trendValues, label: 'Submissions / Week', color: '#059669', area: true }]}
                                 margin={{ top: 20, right: 20, bottom: 40, left: 40 }}
                                 grid={{ vertical: true, horizontal: true }}
                             />
@@ -340,16 +313,16 @@ const AdviserDashboard = () => {
                         </Box>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm">
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <ClipboardCheck className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Review Breakdown</h3>
+                                    <ClipboardCheck className="h-5 w-5 text-emerald-700" />
+                                    <h3 className="text-lg font-semibold text-slate-900">Review Breakdown</h3>
                                 </div>
-                                <p className="mt-1 text-xs text-slate-500">Latest submission statuses for assigned groups.</p>
+                                <p className="mt-1 text-sm text-slate-600">Current distribution of review outcomes from assigned submissions.</p>
                             </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                                 Current
                             </span>
                         </div>
@@ -359,32 +332,30 @@ const AdviserDashboard = () => {
                                 <div className="flex flex-1 justify-center">
                                     {reviewTotal > 0 ? (
                                         <PieChart
-                                            height={260}
+                                            height={270}
                                             series={[
                                                 {
                                                     data: [...reviewBreakdownItems],
-                                                    innerRadius: 60,
-                                                    outerRadius: 100,
+                                                    innerRadius: 64,
+                                                    outerRadius: 104,
                                                     paddingAngle: 3,
                                                     cornerRadius: 6,
                                                     highlightScope: { faded: 'global', highlighted: 'item' },
-                                                    faded: { innerRadius: 60, additionalRadius: -4, color: 'gray' },
+                                                    faded: { innerRadius: 64, additionalRadius: -4, color: 'gray' },
                                                 },
                                             ]}
                                             slotProps={{ legend: { hidden: true } }}
                                         />
                                     ) : (
-                                        <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-xs text-slate-500">
-                                            No submissions yet.
-                                        </div>
+                                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-sm text-slate-500">No submissions yet.</div>
                                     )}
                                 </div>
 
-                                <div className="lg:w-44">
-                                    <div className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Legend</div>
+                                <div className="lg:w-48">
+                                    <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Legend</div>
                                     <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 lg:grid-cols-1">
                                         {reviewBreakdownItems.map((item) => (
-                                            <div key={item.id} className="flex items-center gap-2 text-xs text-slate-700">
+                                            <div key={item.id} className="flex items-center gap-2 text-sm text-slate-700">
                                                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                                                 <span className="truncate font-medium">{item.label}</span>
                                                 <span className="ml-auto text-slate-500 tabular-nums">{item.value}</span>
@@ -403,43 +374,43 @@ const AdviserDashboard = () => {
                     transition={{ delay: 0.16 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-3"
                 >
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md xl:col-span-2">
+                    <div className="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm xl:col-span-2">
                         <div className="flex items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-sm font-semibold text-slate-900">Upcoming Schedule</h3>
-                                <p className="mt-1 text-xs text-slate-500">Defense schedules for your assigned groups.</p>
+                                <h3 className="text-lg font-semibold text-slate-900">Upcoming Schedule</h3>
+                                <p className="mt-1 text-sm text-slate-600">Defense schedules for your assigned groups.</p>
                             </div>
-                            <a
+                            <Link
                                 href="/adviser/schedule"
-                                className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
                             >
                                 Open schedule
-                            </a>
+                            </Link>
                         </div>
 
-                        <div className="mt-4 overflow-x-auto">
+                        <div className="mt-5 overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
-                                    <tr className="border-b border-slate-200 text-slate-600">
-                                        <th className="py-3 text-left text-[11px] font-semibold tracking-wide uppercase">Event</th>
-                                        <th className="py-3 text-left text-[11px] font-semibold tracking-wide uppercase">Date</th>
-                                        <th className="py-3 text-left text-[11px] font-semibold tracking-wide uppercase">Time</th>
-                                        <th className="py-3 text-left text-[11px] font-semibold tracking-wide uppercase">Room</th>
+                                    <tr className="border-b border-emerald-100 text-slate-600">
+                                        <th className="py-3 text-left text-xs font-semibold tracking-wide uppercase">Event</th>
+                                        <th className="py-3 text-left text-xs font-semibold tracking-wide uppercase">Date</th>
+                                        <th className="py-3 text-left text-xs font-semibold tracking-wide uppercase">Time</th>
+                                        <th className="py-3 text-left text-xs font-semibold tracking-wide uppercase">Room</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-emerald-50">
                                     {scheduleRows.length > 0 ? (
                                         scheduleRows.map((row) => (
-                                            <tr key={row.id} className="hover:bg-emerald-50/60">
-                                                <td className="py-3 text-sm font-medium text-slate-900">{row.title}</td>
-                                                <td className="py-3 text-xs text-slate-600">{row.date}</td>
-                                                <td className="py-3 text-xs text-slate-600">{row.time}</td>
-                                                <td className="py-3 text-xs text-slate-600">{row.room}</td>
+                                            <tr key={row.id} className="transition hover:bg-emerald-50/60">
+                                                <td className="py-3.5 text-sm font-medium text-slate-900">{row.title}</td>
+                                                <td className="py-3.5 text-sm text-slate-600">{row.date}</td>
+                                                <td className="py-3.5 text-sm text-slate-600">{row.time}</td>
+                                                <td className="py-3.5 text-sm text-slate-600">{row.room}</td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={4} className="py-6 text-center text-xs text-slate-500">
+                                            <td colSpan={4} className="py-8 text-center text-sm text-slate-500">
                                                 No upcoming schedules yet.
                                             </td>
                                         </tr>
@@ -449,27 +420,27 @@ const AdviserDashboard = () => {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
-                            <a href="/adviser/notifications" className="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
+                            <h3 className="text-lg font-semibold text-slate-900">Notifications</h3>
+                            <Link href="/adviser/notifications" className="text-sm font-semibold text-emerald-700 hover:text-emerald-800">
                                 View all
-                            </a>
+                            </Link>
                         </div>
 
-                        <div className="mt-4 space-y-3">
+                        <div className="mt-5 space-y-3">
                             {notifications.length > 0 ? (
                                 notifications.map((notice) => (
-                                    <div key={notice.id} className={`rounded-xl border p-4 ${toneStyles[notice.tone]} bg-white`}>
+                                    <div key={notice.id} className={`rounded-2xl border p-4 ${toneStyles[notice.tone]}`}>
                                         <div className="flex items-center justify-between gap-3">
-                                            <div className="text-xs font-semibold">{notice.title}</div>
-                                            <div className="text-[11px] whitespace-nowrap opacity-80">{formatDateTimeLabel(notice.date)}</div>
+                                            <div className="text-sm font-semibold">{notice.title}</div>
+                                            <div className="text-xs whitespace-nowrap opacity-80">{formatDateTimeLabel(notice.date)}</div>
                                         </div>
-                                        <div className="mt-1 text-xs text-slate-700">{notice.message}</div>
+                                        <div className="mt-1.5 text-sm text-slate-700">{notice.message}</div>
                                     </div>
                                 ))
                             ) : (
-                                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-center text-xs text-slate-500">
+                                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5 text-center text-sm text-slate-500">
                                     No notifications yet.
                                 </div>
                             )}

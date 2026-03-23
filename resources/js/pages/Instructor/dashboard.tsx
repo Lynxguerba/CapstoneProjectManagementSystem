@@ -195,7 +195,7 @@ const Dashboard = () => {
     const { props } = usePage<InstructorDashboardProps>();
     const stats = props.stats ?? fallbackStats;
     const statusRecords = props.statusRecords ?? [];
-    const statusRecordsByYear = props.statusRecordsByYear ?? [];
+    const statusRecordsByYear = React.useMemo(() => props.statusRecordsByYear ?? [], [props.statusRecordsByYear]);
     const stageScale = props.stageScale ?? [];
     const programSets = props.programSets ?? [];
     const programDistribution = props.programDistribution ?? [];
@@ -366,56 +366,144 @@ const Dashboard = () => {
         danger: 'border-teal-200 bg-teal-50 text-teal-700',
     };
 
+    const dashboardHighlights = [
+        {
+            label: 'Total Groups',
+            value: stats.totalGroups,
+            icon: Users,
+        },
+        {
+            label: 'Students',
+            value: stats.students,
+            icon: GraduationCap,
+        },
+        {
+            label: 'Open Panel Slots',
+            value: stats.panelSlotsOpen,
+            icon: Layers3,
+        },
+        {
+            label: 'Upcoming Defenses',
+            value: stats.upcomingDefenses,
+            icon: CalendarCheck,
+        },
+    ] as const;
+
+    const quickActions = [
+        {
+            label: 'Adviser Assignment',
+            description: 'Assign or rebalance advisers per group.',
+            href: '/instructor/adviser-assignment',
+            icon: GraduationCap,
+            tone: 'from-emerald-700 to-emerald-500',
+        },
+        {
+            label: 'Panelist Assignment',
+            description: 'Fill panel slots and monitor panel load.',
+            href: '/instructor/panelist-assignment',
+            icon: UserCheck,
+            tone: 'from-green-700 to-emerald-500',
+        },
+        {
+            label: 'Scheduling',
+            description: 'Manage defense calendar, rooms, and timing.',
+            href: '/instructor/scheduling',
+            icon: CalendarCheck,
+            tone: 'from-emerald-800 to-green-600',
+        },
+        {
+            label: 'Group Monitoring',
+            description: 'Track group status and completion stages.',
+            href: '/instructor/groups',
+            icon: Scale,
+            tone: 'from-emerald-600 to-lime-500',
+        },
+    ] as const;
+
+    const workloadIntensity = progressFor(
+        stats.adviserUnassigned + stats.panelSlotsOpen + stats.panelGroupsNeeding,
+        Math.max(1, stats.totalGroups * 3),
+    );
+
+    const metricCardClassName =
+        'group relative overflow-hidden rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg';
+    const panelClassName =
+        'rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm';
+
     return (
         <InstructorLayout title="Dashboard" subtitle="Instructor Dashboard">
-            <div className="space-y-6">
+            <div className="space-y-8">
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4"
+                    initial={{ opacity: 0, y: 14, scale: 0.99 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.45 }}
+                    className="relative overflow-hidden rounded-3xl border border-emerald-300/70 bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-800 p-6 shadow-xl shadow-emerald-950/20 md:p-8"
                 >
-                    {quickStats.map((stat, idx) => (
-                        <motion.div
-                            key={stat.label}
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.06 * idx }}
-                            className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg"
-                        >
-                            <div className="flex items-start justify-between gap-4">
-                                <div>
-                                    <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">{stat.label}</p>
-                                    <p className="mt-2 text-2xl font-bold text-slate-900">{stat.value.toLocaleString()}</p>
-                                    <span className={`mt-3 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${stat.pill}`}>
-                                        {stat.change}
-                                    </span>
-                                </div>
-                                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.tone} shadow-sm`}>
-                                    <stat.icon className="h-5 w-5 text-white" />
-                                </div>
+                    <div className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-emerald-300/20 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-24 left-16 h-64 w-64 rounded-full bg-lime-200/15 blur-3xl" />
+
+                    <div className="relative grid gap-8 xl:grid-cols-[1.25fr_1fr]">
+                        <div>
+                            <p className="text-[11px] font-semibold tracking-[0.24em] text-emerald-200 uppercase">Instructor Workspace</p>
+                            <h3 className="mt-3 text-2xl font-semibold text-white md:text-[2rem] md:leading-[1.1]">
+                                Program Set Monitoring Snapshot
+                            </h3>
+                            <p className="mt-3 max-w-xl text-sm leading-relaxed text-emerald-100 md:text-base">
+                                Monitor assignments, scheduling, and capstone stage progress from one dashboard view.
+                            </p>
+
+                            <div className="mt-6 flex flex-wrap gap-3">
+                                <Link
+                                    href="/instructor/groups"
+                                    className="inline-flex items-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-900 transition hover:-translate-y-0.5 hover:shadow-lg"
+                                >
+                                    Open Group Monitoring
+                                </Link>
+                                <Link
+                                    href="/instructor/scheduling"
+                                    className="inline-flex items-center rounded-xl border border-emerald-200/60 bg-white/10 px-4 py-2.5 text-sm font-semibold text-emerald-50 transition hover:bg-white/20"
+                                >
+                                    Open Scheduling
+                                </Link>
                             </div>
-                            <div className="mt-4 h-1.5 w-full rounded-full bg-emerald-100/60">
-                                <div className={`h-1.5 rounded-full bg-gradient-to-r ${stat.tone}`} style={{ width: `${stat.progress}%` }} />
-                            </div>
-                        </motion.div>
-                    ))}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                            {dashboardHighlights.map((highlight, index) => (
+                                <motion.div
+                                    key={highlight.label}
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.08 + index * 0.06 }}
+                                    className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm"
+                                >
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-[11px] font-semibold tracking-wide text-emerald-100 uppercase">{highlight.label}</span>
+                                        <highlight.icon className="h-4 w-4 text-emerald-100" />
+                                    </div>
+                                    <div className="mt-2 text-2xl font-semibold text-white">{highlight.value.toLocaleString()}</div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
                 </motion.section>
+
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.12 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-2"
                 >
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className={panelClassName}>
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <Layers3 className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Program Set Group Scale</h3>
+                                    <Layers3 className="h-5 w-5 text-emerald-700" />
+                                    <h3 className="text-lg font-semibold text-slate-900">Program Set Group Scale</h3>
                                 </div>
-                                <p className="mt-1 text-xs text-slate-500">Group counts for each program set you handle.</p>
+                                <p className="mt-1 text-sm text-slate-600">Group counts for each program set you handle.</p>
                             </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                                 {programSetSnapshots.length} program set{programSetSnapshots.length === 1 ? '' : 's'}
                             </span>
                         </div>
@@ -437,21 +525,21 @@ const Dashboard = () => {
                         </Box>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className={panelClassName}>
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Status Distribution</h3>
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-700" />
+                                    <h3 className="text-lg font-semibold text-slate-900">Status Distribution</h3>
                                 </div>
-                                <p className="mt-1 text-xs text-slate-500">Scheduled vs pending outcomes by academic year.</p>
+                                <p className="mt-1 text-sm text-slate-600">Scheduled vs pending outcomes by academic year.</p>
                             </div>
-                            <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                            <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                                 <span>A.Y</span>
                                 <select
                                     value={selectedAcademicYear}
                                     onChange={(event) => setSelectedAcademicYear(event.target.value)}
-                                    className="bg-transparent text-[11px] font-semibold text-emerald-700 focus:outline-none"
+                                    className="bg-transparent text-xs font-semibold text-emerald-700 focus:outline-none"
                                 >
                                     {statusAcademicYearOptions.map((year) => {
                                         if (year === 'All') {
@@ -533,15 +621,15 @@ const Dashboard = () => {
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.08 }}
+                    transition={{ delay: 0.14 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-3"
                 >
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className={panelClassName}>
                         <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-emerald-600" />
-                            <h3 className="text-sm font-semibold text-slate-900">Program Distribution</h3>
+                            <Users className="h-5 w-5 text-emerald-700" />
+                            <h3 className="text-lg font-semibold text-slate-900">Program Distribution</h3>
                         </div>
-                        <p className="mt-1 text-xs text-slate-500">Students handled per BSIS and BSIT program set.</p>
+                        <p className="mt-1 text-sm text-slate-600">Students handled per BSIS and BSIT program set.</p>
 
                         <Box sx={{ mt: 2 }}>
                             {hasProgramDistribution ? (
@@ -587,19 +675,19 @@ const Dashboard = () => {
                                     </div>
                                 </motion.div>
                             ) : (
-                                <div className="rounded-xl border border-slate-200 bg-emerald-50/50 p-4 text-xs text-slate-500">
+                                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-xs text-slate-500">
                                     No students assigned to BSIS or BSIT yet.
                                 </div>
                             )}
                         </Box>
                     </div>
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md xl:col-span-2">
+                    <div className={`${panelClassName} xl:col-span-2`}>
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-sm font-semibold text-slate-900">Panelist Assignments</h3>
-                                <p className="mt-1 text-xs text-slate-500">Panelists assigned across your program set groups.</p>
+                                <h3 className="text-lg font-semibold text-slate-900">Panelist Assignments</h3>
+                                <p className="mt-1 text-sm text-slate-600">Panelists assigned across your program set groups.</p>
                             </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                                 {panelistHighlights.length} panelist{panelistHighlights.length === 1 ? '' : 's'}
                             </span>
                         </div>
@@ -609,7 +697,7 @@ const Dashboard = () => {
                                 <Link
                                     key={panelist.id}
                                     href={panelistAssignment.manage.url({ panelist: panelist.id })}
-                                    className="group rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50 hover:shadow-md"
+                                    className="group rounded-xl border border-emerald-100 bg-gradient-to-br from-white via-emerald-50/40 to-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md hover:shadow-emerald-100/50"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
@@ -635,7 +723,7 @@ const Dashboard = () => {
                                 </Link>
                             ))}
                             {panelistHighlights.length === 0 ? (
-                                <div className="rounded-xl border border-slate-200 bg-emerald-50/50 p-4 text-xs text-slate-500">
+                                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-xs text-slate-500">
                                     No panelists assigned to your groups yet.
                                 </div>
                             ) : null}
@@ -649,15 +737,15 @@ const Dashboard = () => {
                     transition={{ delay: 0.16 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-3"
                 >
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md xl:col-span-2">
+                    <div className={`${panelClassName} xl:col-span-2`}>
                         <div className="flex items-center justify-between gap-3">
                             <div>
-                                <h3 className="text-sm font-semibold text-slate-900">Active Groups</h3>
-                                <p className="mt-1 text-xs text-slate-500">Latest schedule status per group.</p>
+                                <h3 className="text-lg font-semibold text-slate-900">Active Groups</h3>
+                                <p className="mt-1 text-sm text-slate-600">Latest schedule status per group.</p>
                             </div>
                             <Link
                                 href="/instructor/groups"
-                                className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-emerald-800 hover:shadow-md active:scale-95"
+                                className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
                             >
                                 View groups
                             </Link>
@@ -666,7 +754,7 @@ const Dashboard = () => {
                         <div className="mt-5 overflow-x-auto">
                             <table className="w-full text-xs">
                                 <thead>
-                                    <tr className="border-b border-slate-200 text-emerald-700">
+                                    <tr className="border-b border-emerald-100 text-emerald-700">
                                         <th className="py-3 text-left font-semibold">Group</th>
                                         <th className="py-3 text-left font-semibold">Members</th>
                                         <th className="py-3 text-left font-semibold">Adviser</th>
@@ -674,7 +762,7 @@ const Dashboard = () => {
                                         <th className="py-3 text-left font-semibold">Progress</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-emerald-50">
                                     {groups.map((group) => {
                                         const extraMembers = Math.max(0, group.members_count - group.members.length);
                                         const statusTone = statusPillStyles[group.status] ?? statusPillStyles.Unscheduled;
@@ -735,12 +823,12 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className={panelClassName}>
                         <div className="flex items-center gap-2">
-                            <Scale className="h-4 w-4 text-emerald-600" />
-                            <h3 className="text-sm font-semibold text-slate-900">Capstone Scale</h3>
+                            <Scale className="h-5 w-5 text-emerald-700" />
+                            <h3 className="text-lg font-semibold text-slate-900">Capstone Scale</h3>
                         </div>
-                        <p className="mt-1 text-xs text-slate-500">Latest stage completion across groups.</p>
+                        <p className="mt-1 text-sm text-slate-600">Latest stage completion across groups.</p>
 
                         <div className="mt-5 space-y-4">
                             {stageScale.map((phase) => {
@@ -763,7 +851,7 @@ const Dashboard = () => {
                                 );
                             })}
                             {stageScale.length === 0 ? (
-                                <div className="rounded-xl border border-slate-200 bg-emerald-50/50 p-4 text-xs text-slate-500">
+                                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-xs text-slate-500">
                                     No stage records yet.
                                 </div>
                             ) : null}
@@ -777,12 +865,12 @@ const Dashboard = () => {
                     transition={{ delay: 0.2 }}
                     className="grid grid-cols-1 gap-6 lg:grid-cols-2"
                 >
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className={panelClassName}>
                         <div className="mb-4 flex items-center justify-between">
-                            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                                <CalendarCheck className="h-4 w-4 text-emerald-600" /> Upcoming Defense Schedules
+                            <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                                <CalendarCheck className="h-5 w-5 text-emerald-700" /> Upcoming Defense Schedules
                             </h2>
-                            <Link href="/instructor/scheduling" className="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
+                            <Link href="/instructor/scheduling" className="text-sm font-semibold text-emerald-700 hover:text-emerald-800">
                                 View calendar
                             </Link>
                         </div>
@@ -791,7 +879,7 @@ const Dashboard = () => {
                             {upcomingSchedules.map((schedule) => (
                                 <div
                                     key={schedule.id}
-                                    className="rounded-xl border border-slate-200 bg-emerald-50/40 p-4 transition-colors hover:border-emerald-200 hover:bg-emerald-50/70"
+                                    className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-4 transition-colors hover:border-emerald-200 hover:bg-emerald-50/80"
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
@@ -819,19 +907,19 @@ const Dashboard = () => {
                                 </div>
                             ))}
                             {upcomingSchedules.length === 0 ? (
-                                <div className="rounded-xl border border-slate-200 bg-emerald-50/50 p-4 text-xs text-slate-500">
+                                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-xs text-slate-500">
                                     No upcoming defense schedules yet.
                                 </div>
                             ) : null}
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+                    <div className={panelClassName}>
                         <div className="mb-4 flex items-center justify-between">
-                            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                                <TriangleAlert className="h-4 w-4 text-emerald-600" /> Attention Required
+                            <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                                <TriangleAlert className="h-5 w-5 text-emerald-700" /> Attention Required
                             </h2>
-                            <Link href="/instructor/adviser-assignment" className="text-xs font-semibold text-emerald-700 hover:text-emerald-800">
+                            <Link href="/instructor/adviser-assignment" className="text-sm font-semibold text-emerald-700 hover:text-emerald-800">
                                 Review assignments
                             </Link>
                         </div>
@@ -847,7 +935,7 @@ const Dashboard = () => {
                                 </div>
                             ))}
                             {attentionItems.length === 0 ? (
-                                <div className="rounded-xl border border-slate-200 bg-emerald-50/50 p-4 text-xs text-slate-500">
+                                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-xs text-slate-500">
                                     No outstanding assignment issues for your groups.
                                 </div>
                             ) : null}
