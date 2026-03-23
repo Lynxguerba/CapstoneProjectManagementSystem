@@ -128,8 +128,9 @@ const AdminAuditLogs = ({ logs = [], filters, pagination = defaultPagination }: 
     const currentPage = Math.min(Math.max(1, pagination.current_page || 1), totalPages);
 
     const pages = React.useMemo(() => {
-        const maxVisiblePages = 5;
-        const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - (maxVisiblePages - 1)));
+        const maxVisiblePages = 3;
+        const halfWindow = Math.floor(maxVisiblePages / 2);
+        const startPage = Math.max(1, Math.min(currentPage - halfWindow, totalPages - (maxVisiblePages - 1)));
         const endPage = Math.min(totalPages, startPage + (maxVisiblePages - 1));
 
         return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
@@ -211,7 +212,10 @@ const AdminAuditLogs = ({ logs = [], filters, pagination = defaultPagination }: 
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {logs.map((log, index) => (
-                                <tr key={log.id} className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/20'}`}>
+                                <tr
+                                    key={log.id}
+                                    className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/20'}`}
+                                >
                                     <td className="px-4 py-3 whitespace-nowrap text-slate-600">{formatLocalTimestamp(log.timestamp)}</td>
                                     <td className="px-4 py-3 font-semibold text-slate-800">{log.actor}</td>
                                     <td className="px-4 py-3 text-slate-700">{log.action}</td>
