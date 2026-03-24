@@ -41,6 +41,12 @@ class StoreStudentConceptSubmissionController extends Controller
             ]);
         }
 
+        if (! Schema::hasColumn('document_submissions', 'title_category_id')) {
+            throw ValidationException::withMessages([
+                'title_category_id' => 'Concept categories are not available yet. Please run the latest migrations first.',
+            ]);
+        }
+
         $conceptFile = $request->file('concept_file');
 
         $slug = Str::slug((string) $validated['title']);
@@ -52,6 +58,7 @@ class StoreStudentConceptSubmissionController extends Controller
         DocumentSubmission::query()->create([
             'group_id' => $group->id,
             'document_requirement_id' => $requirement->id,
+            'title_category_id' => (int) $validated['title_category_id'],
             'file_name' => trim((string) $validated['title']),
             'file_path' => $storedPath,
             'mime_type' => $conceptFile->getClientMimeType(),

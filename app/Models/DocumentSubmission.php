@@ -16,6 +16,7 @@ class DocumentSubmission extends Model
     protected $fillable = [
         'group_id',
         'document_requirement_id',
+        'title_category_id',
         'file_name',
         'file_path',
         'mime_type',
@@ -42,6 +43,11 @@ class DocumentSubmission extends Model
     public function requirement(): BelongsTo
     {
         return $this->belongsTo(DocumentRequirement::class, 'document_requirement_id');
+    }
+
+    public function titleCategory(): BelongsTo
+    {
+        return $this->belongsTo(TitleCategory::class, 'title_category_id');
     }
 
     public function submitter(): BelongsTo

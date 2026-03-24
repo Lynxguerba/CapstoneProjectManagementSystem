@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
+use App\Models\TitleCategory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -24,8 +25,9 @@ class ShowStudentConceptSubmissionController extends Controller
         $submission->loadMissing([
             'requirement:id,requirement_type,stage,due_date',
             'group:id,name,program_set_id',
-            'group.programSet:id,name,academic_year_id',
+            'group.programSet:id,name,program,academic_year_id',
             'group.programSet.academicYear:id,label',
+            'titleCategory:id,name,program,description',
         ]);
 
         abort_unless(
@@ -35,6 +37,10 @@ class ShowStudentConceptSubmissionController extends Controller
             403,
         );
 
+        $studentProgram = in_array($submission->group->programSet?->program, ['BSIT', 'BSIS'], true)
+            ? (string) $submission->group->programSet?->program
+            : 'BSIT';
+
         return Inertia::render('Student/concepts/show', [
             'group' => [
                 'id' => $submission->group->id,
@@ -42,9 +48,21 @@ class ShowStudentConceptSubmissionController extends Controller
                 'programSetName' => $submission->group->programSet?->name,
                 'academicYear' => $submission->group->programSet?->academicYear?->label,
             ],
+            'studentProgram' => $studentProgram,
+            'categoryOptions' => $this->resolveConceptCategories($studentProgram)
+                ->map(fn (TitleCategory $category): array => [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'description' => $category->description,
+                ])
+                ->values()
+                ->all(),
             'submission' => [
                 'id' => $submission->id,
                 'title' => (string) $submission->file_name,
+                'titleCategoryId' => $submission->title_category_id,
+                'category' => $submission->titleCategory?->name,
+                'categoryDescription' => $submission->titleCategory?->description,
                 'status' => (string) ($submission->status ?? 'Submitted'),
                 'submittedAt' => $submission->created_at?->format('Y-m-d H:i'),
                 'requirementType' => (string) ($submission->requirement?->requirement_type ?? 'Concept Paper'),
@@ -54,6 +72,21 @@ class ShowStudentConceptSubmissionController extends Controller
                 'fileUrl' => $submission->file_path !== null ? Storage::disk('public')->url($submission->file_path) : null,
             ],
         ]);
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, TitleCategory>
+     */
+    private function resolveConceptCategories(string $studentProgram): \Illuminate\Support\Collection
+    {
+        if (! Schema::hasTable('title_categories')) {
+            return collect();
+        }
+
+        return TitleCategory::query()
+            ->where('program', $studentProgram)
+            ->orderBy('name')
+            ->get(['id', 'name', 'program', 'description']);
     }
 
     private function resolveStudentGroup(?int $studentId): ?Group

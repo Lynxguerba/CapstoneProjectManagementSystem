@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
+use App\Models\StudentProgram;
+use App\Models\TitleCategory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -22,8 +24,10 @@ class StudentConceptController extends Controller
         /** @var User|null $student */
         $student = Auth::guard('web')->user();
         $group = $this->resolveStudentGroup($student?->id);
+        $studentProgram = $this->resolveStudentProgram($student?->id, $group);
         $academicYearId = $group?->programSet?->academic_year_id;
         $conceptRequirements = $this->resolveConceptRequirements($academicYearId);
+        $categoryOptions = $this->resolveConceptCategories($studentProgram);
 
         /** @var DocumentRequirement|null $activeRequirement */
         $activeRequirement = $conceptRequirements
@@ -52,6 +56,15 @@ class StudentConceptController extends Controller
                 'programSetName' => $group->programSet?->name,
                 'academicYear' => $group->programSet?->academicYear?->label,
             ] : null,
+            'studentProgram' => $studentProgram,
+            'categoryOptions' => $categoryOptions
+                ->map(fn (TitleCategory $category): array => [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'description' => $category->description,
+                ])
+                ->values()
+                ->all(),
             'readiness' => [
                 'isReady' => $isReadyToSubmit,
                 'message' => $readinessMessage,
@@ -75,6 +88,8 @@ class StudentConceptController extends Controller
                 ->map(fn (DocumentSubmission $submission): array => [
                     'id' => $submission->id,
                     'title' => (string) $submission->file_name,
+                    'titleCategoryId' => $submission->title_category_id,
+                    'category' => $submission->titleCategory?->name,
                     'status' => (string) ($submission->status ?? 'Submitted'),
                     'submittedAt' => $submission->created_at?->format('Y-m-d H:i'),
                     'requirementType' => (string) ($submission->requirement?->requirement_type ?? 'Concept Paper'),
@@ -105,7 +120,7 @@ class StudentConceptController extends Controller
         $query = Group::query();
 
         if ($hasProgramSetsTable) {
-            $query->with('programSet:id,name,academic_year_id');
+            $query->with('programSet:id,name,program,academic_year_id');
 
             if ($hasAcademicYearsTable) {
                 $query->with('programSet.academicYear:id,label');
@@ -123,6 +138,27 @@ class StudentConceptController extends Controller
         });
 
         return $query->first(['id', 'name', 'program_set_id', 'leader_id']);
+    }
+
+    private function resolveStudentProgram(?int $studentId, ?Group $group = null): string
+    {
+        if ($studentId !== null && Schema::hasTable('student_program')) {
+            $program = StudentProgram::query()
+                ->where('student_id', $studentId)
+                ->value('program');
+
+            if (in_array($program, ['BSIT', 'BSIS'], true)) {
+                return (string) $program;
+            }
+        }
+
+        $program = $group?->programSet?->program;
+
+        if (in_array($program, ['BSIT', 'BSIS'], true)) {
+            return (string) $program;
+        }
+
+        return 'BSIT';
     }
 
     /**
@@ -166,7 +202,10 @@ class StudentConceptController extends Controller
         }
 
         return DocumentSubmission::query()
-            ->with('requirement:id,requirement_type')
+            ->with([
+                'requirement:id,requirement_type',
+                'titleCategory:id,name,program',
+            ])
             ->where('group_id', $groupId)
             ->whereIn('document_requirement_id', $requirementIds->all())
             ->orderByDesc('created_at')
@@ -174,6 +213,7 @@ class StudentConceptController extends Controller
                 'id',
                 'group_id',
                 'document_requirement_id',
+                'title_category_id',
                 'file_name',
                 'file_path',
                 'mime_type',
@@ -181,6 +221,21 @@ class StudentConceptController extends Controller
                 'status',
                 'created_at',
             ]);
+    }
+
+    /**
+     * @return Collection<int, TitleCategory>
+     */
+    private function resolveConceptCategories(string $studentProgram): Collection
+    {
+        if (! Schema::hasTable('title_categories')) {
+            return collect();
+        }
+
+        return TitleCategory::query()
+            ->where('program', $studentProgram)
+            ->orderBy('name')
+            ->get(['id', 'program', 'name', 'description']);
     }
 
     private function formatFileSize(?int $size): ?string

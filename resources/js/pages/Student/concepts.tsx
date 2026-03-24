@@ -15,6 +15,8 @@ type ConceptRequirement = {
 type ConceptSubmission = {
     id: number;
     title: string;
+    titleCategoryId?: number | null;
+    category?: string | null;
     status: 'Submitted' | 'Approved' | 'Revision Required' | string;
     submittedAt?: string | null;
     requirementType: string;
@@ -24,6 +26,12 @@ type ConceptSubmission = {
     viewUrl?: string | null;
 };
 
+type CategoryOption = {
+    id: number;
+    name: string;
+    description?: string | null;
+};
+
 type StudentConceptProps = {
     group: {
         id: number;
@@ -31,6 +39,8 @@ type StudentConceptProps = {
         programSetName?: string | null;
         academicYear?: string | null;
     } | null;
+    studentProgram: 'BSIT' | 'BSIS' | string;
+    categoryOptions: CategoryOption[];
     readiness: {
         isReady: boolean;
         message: string;
@@ -48,6 +58,7 @@ type StudentConceptProps = {
 
 type ConceptSubmissionForm = {
     title: string;
+    title_category_id: string;
     concept_file: File | null;
 };
 
@@ -75,16 +86,27 @@ const StudentConcepts = () => {
     const readiness = props.readiness;
     const activeRequirement = props.activeRequirement;
     const submissions = props.submissions ?? [];
+    const studentProgram = props.studentProgram ?? 'BSIT';
+    const categoryOptions = props.categoryOptions ?? [];
     const notifications = props.notifications;
     const successMessage = props.flash?.success ?? '';
 
     const form = useForm<ConceptSubmissionForm>({
         title: '',
+        title_category_id: '',
         concept_file: null,
     });
 
     const requirementLabel = activeRequirement?.type ?? 'Concept Paper';
     const deadlineLabel = activeRequirement?.deadlineLabel ?? notifications.deadline ?? 'No deadline declared yet.';
+    const selectedCategory = categoryOptions.find((category) => String(category.id) === form.data.title_category_id) ?? null;
+    const canSubmit =
+        readiness.isReady &&
+        group !== null &&
+        !form.processing &&
+        form.data.concept_file !== null &&
+        form.data.title.trim() !== '' &&
+        form.data.title_category_id !== '';
 
     const resetFileInput = () => {
         form.setData('concept_file', null);
@@ -120,7 +142,7 @@ const StudentConcepts = () => {
     const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        if (!readiness.isReady || group === null || form.processing || form.data.concept_file === null || form.data.title.trim() === '') {
+        if (!canSubmit) {
             return;
         }
 
@@ -253,6 +275,33 @@ const StudentConcepts = () => {
                                 {form.errors.title ? <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.title}</p> : null}
                             </div>
 
+                            <div>
+                                <div className="flex items-center justify-between gap-2">
+                                    <label className="text-xs font-semibold tracking-wide text-slate-700 uppercase">Category</label>
+                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                        {studentProgram}
+                                    </span>
+                                </div>
+                                <select
+                                    value={form.data.title_category_id}
+                                    onChange={(event) => form.setData('title_category_id', event.target.value)}
+                                    disabled={!readiness.isReady || form.processing || categoryOptions.length === 0}
+                                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50"
+                                >
+                                    <option value="">Select {studentProgram} category</option>
+                                    {categoryOptions.map((category) => (
+                                        <option key={category.id} value={category.id}>
+                                            {category.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {selectedCategory?.description ? <p className="mt-1 text-xs text-slate-500">{selectedCategory.description}</p> : null}
+                                {categoryOptions.length === 0 ? (
+                                    <p className="mt-1 text-xs text-amber-700">No category options are configured yet for {studentProgram}.</p>
+                                ) : null}
+                                {form.errors.title_category_id ? <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.title_category_id}</p> : null}
+                            </div>
+
                             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
                                 <p className="font-semibold tracking-wide text-slate-700 uppercase">Active Requirement</p>
                                 <p className="mt-1 text-sm font-medium text-slate-900">{requirementLabel}</p>
@@ -324,11 +373,7 @@ const StudentConcepts = () => {
                                 <button
                                     type="submit"
                                     disabled={
-                                        !readiness.isReady ||
-                                        group === null ||
-                                        form.processing ||
-                                        form.data.concept_file === null ||
-                                        form.data.title.trim() === ''
+                                        !canSubmit
                                     }
                                     className="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
@@ -435,6 +480,7 @@ const StudentConcepts = () => {
                                 <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                                     <tr>
                                         <th className="px-3 py-3">Title</th>
+                                        <th className="px-3 py-3">Category</th>
                                         <th className="px-3 py-3">Requirement</th>
                                         <th className="px-3 py-3">Submitted</th>
                                         <th className="px-3 py-3">Status</th>
@@ -444,7 +490,7 @@ const StudentConcepts = () => {
                                 <tbody className="divide-y divide-slate-100">
                                     {submissions.length === 0 ? (
                                         <tr>
-                                            <td colSpan={5} className="px-3 py-8 text-center text-xs text-slate-500">
+                                            <td colSpan={6} className="px-3 py-8 text-center text-xs text-slate-500">
                                                 No concept submissions yet.
                                             </td>
                                         </tr>
@@ -452,6 +498,7 @@ const StudentConcepts = () => {
                                         submissions.map((submission) => (
                                             <tr key={submission.id} className="hover:bg-slate-50/80">
                                                 <td className="px-3 py-3 font-semibold text-slate-900">{submission.title}</td>
+                                                <td className="px-3 py-3 text-slate-600">{submission.category ?? 'Uncategorized'}</td>
                                                 <td className="px-3 py-3 text-slate-600">{submission.requirementType}</td>
                                                 <td className="px-3 py-3 text-slate-600">{submission.submittedAt ?? '—'}</td>
                                                 <td className="px-3 py-3">
@@ -488,6 +535,7 @@ const StudentConcepts = () => {
             <ConceptSubmitConfirmationModal
                 open={isSubmitConfirmationOpen}
                 title={form.data.title.trim()}
+                categoryName={selectedCategory?.name ?? 'No category selected'}
                 fileName={form.data.concept_file?.name ?? 'No file selected'}
                 requirementLabel={requirementLabel}
                 deadlineLabel={deadlineLabel}

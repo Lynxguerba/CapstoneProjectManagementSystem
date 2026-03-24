@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
+use App\Models\TitleCategory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -33,6 +34,7 @@ class DocumentSubmissionFactory extends Factory
         return [
             'group_id' => Group::factory(),
             'document_requirement_id' => DocumentRequirement::factory(),
+            'title_category_id' => TitleCategory::factory(),
             'file_name' => $fileName,
             'file_path' => 'documents/'.fake()->uuid().'-'.$fileName,
             'mime_type' => 'application/pdf',

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 type ConceptSubmitConfirmationModalProps = {
     open: boolean;
     title: string;
+    categoryName: string;
     fileName: string;
     requirementLabel: string;
     deadlineLabel?: string | null;
@@ -17,6 +18,7 @@ type ConceptSubmitConfirmationModalProps = {
 const ConceptSubmitConfirmationModal = ({
     open,
     title,
+    categoryName,
     fileName,
     requirementLabel,
     deadlineLabel,
@@ -123,6 +125,10 @@ const ConceptSubmitConfirmationModal = ({
                             </div>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                                <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Category</p>
+                                <p className="mt-1 text-sm text-slate-700">{categoryName}</p>
+                            </div>
                             <div>
                                 <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Selected File</p>
                                 <p className="mt-1 break-all text-sm text-slate-700">{fileName}</p>
