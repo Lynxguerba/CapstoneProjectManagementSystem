@@ -1,25 +1,21 @@
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Calendar, CheckCircle2, ChevronRight, FileText, GraduationCap, MessageSquareText, Search, XCircle } from 'lucide-react';
+import { Calendar, ChevronRight, ChevronsLeft, FileText, GraduationCap, PanelRightOpen, Search } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
-import ConceptApproveModal from '../../components/Adviser/ConceptApproveModal';
-import ConceptRejectModal from '../../components/Adviser/ConceptRejectModal';
-import ConceptRevisionModal from '../../components/Adviser/ConceptRevisionModal';
 import adviserRoutes from '../../routes/adviser';
 import AdviserLayout from './_layout';
-
-type ConceptDecision = 'Pending' | 'Approved' | 'Rejected' | 'For Revision';
 
 type Concept = {
     id: number;
     title: string;
-    decision: ConceptDecision;
     submitted_at?: string | null;
+    file_url?: string | null;
 };
 
 type GroupConceptBundle = {
     group_id: number;
     group_name: string;
+    leader_name?: string | null;
     program_set_id?: number | null;
     program_set_name?: string | null;
     school_year?: string | null;
@@ -38,8 +34,7 @@ const AdviserConcepts = () => {
     const [selectedAcademicYear, setSelectedAcademicYear] = useState('All');
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
     const [selectedConceptId, setSelectedConceptId] = useState<number | null>(null);
-    const [feedback, setFeedback] = useState('');
-    const [activeModal, setActiveModal] = useState<'approve' | 'revision' | 'reject' | null>(null);
+    const [isSubmissionsPaneCollapsed, setIsSubmissionsPaneCollapsed] = useState(false);
     const [bundles, setBundles] = useState<GroupConceptBundle[]>(() => props.groups ?? []);
 
     useEffect(() => {
@@ -141,49 +136,16 @@ const AdviserConcepts = () => {
         }
     }, [filteredBundles, selectedGroupId]);
 
-    const decisionPill = (d: ConceptDecision): string => {
-        if (d === 'Approved') {
-            return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-        }
-
-        if (d === 'Rejected') {
-            return 'bg-rose-50 text-rose-700 border-rose-200';
-        }
-
-        if (d === 'For Revision') {
-            return 'bg-amber-50 text-amber-700 border-amber-200';
-        }
-
-        return 'bg-slate-50 text-slate-700 border-slate-200';
-    };
-
-    const setDecision = (decision: ConceptDecision) => {
-        if (!selectedGroup || !selectedConcept) {
+    useEffect(() => {
+        if (selectedConceptId === null || !selectedGroup) {
             return;
         }
 
-        setBundles((previous) =>
-            previous.map((bundle) => {
-                if (bundle.group_id !== selectedGroup.group_id) {
-                    return bundle;
-                }
-
-                return {
-                    ...bundle,
-                    concepts: bundle.concepts.map((concept) =>
-                        concept.id === selectedConcept.id
-                            ? {
-                                  ...concept,
-                                  decision,
-                              }
-                            : concept,
-                    ),
-                };
-            }),
-        );
-    };
-
-    const closeModal = () => setActiveModal(null);
+        const stillAvailable = selectedGroup.concepts.some((concept) => concept.id === selectedConceptId);
+        if (!stillAvailable) {
+            setSelectedConceptId(null);
+        }
+    }, [selectedConceptId, selectedGroup]);
 
     return (
         <AdviserLayout title="Concepts" subtitle="Review concept submissions from your groups">
@@ -198,68 +160,81 @@ const AdviserConcepts = () => {
                     </span>
                 </nav>
 
-                <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+                <div className={`grid grid-cols-1 gap-5 ${isSubmissionsPaneCollapsed ? 'xl:grid-cols-[88px_minmax(0,1fr)]' : 'xl:grid-cols-3'}`}>
                     <motion.section
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-1"
+                        className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                     >
-                        <div className="flex items-center gap-2">
-                            <FileText size={16} className="text-emerald-700" />
-                            <div>
-                                <div className="text-sm font-semibold text-slate-900">Submissions</div>
-                                <div className="text-xs text-slate-500">Select a group to review.</div>
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                                <FileText size={16} className="text-emerald-700" />
+                                <div className={isSubmissionsPaneCollapsed ? 'hidden' : ''}>
+                                    <div className="text-sm font-semibold text-slate-900">Submissions</div>
+                                    <div className="text-xs text-slate-500">Select a group to review.</div>
+                                </div>
                             </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setIsSubmissionsPaneCollapsed((current) => !current)}
+                                className="inline-flex rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                aria-label={isSubmissionsPaneCollapsed ? 'Expand submissions pane' : 'Collapse submissions pane'}
+                            >
+                                {isSubmissionsPaneCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+                            </button>
                         </div>
 
-                        <div className="mt-4 space-y-2">
-                            <div className="relative">
-                                <Search size={14} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" />
-                                <input
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    placeholder="Search group or title..."
-                                    className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-8 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                                />
-                            </div>
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {isSubmissionsPaneCollapsed ? null : (
+                            <div className="mt-4 space-y-2">
                                 <div className="relative">
-                                    <GraduationCap className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                                    <select
-                                        value={selectedProgramSet}
-                                        onChange={(event) => setSelectedProgramSet(event.target.value)}
-                                        className="w-full appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                                    >
-                                        <option value="All">All Program Sets</option>
-                                        {programSetOptions.map((option) => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <Search size={14} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        value={query}
+                                        onChange={(e) => setQuery(e.target.value)}
+                                        placeholder="Search group or title..."
+                                        className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-8 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                    />
                                 </div>
-                                <div className="relative">
-                                    <Calendar className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                                    <select
-                                        value={selectedAcademicYear}
-                                        onChange={(event) => setSelectedAcademicYear(event.target.value)}
-                                        className="w-full appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                                    >
-                                        <option value="All">All A.Y.</option>
-                                        {academicYearOptions.map((option) => (
-                                            <option key={option} value={option}>
-                                                {option}
-                                            </option>
-                                        ))}
-                                    </select>
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <div className="relative">
+                                        <GraduationCap className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                        <select
+                                            value={selectedProgramSet}
+                                            onChange={(event) => setSelectedProgramSet(event.target.value)}
+                                            className="w-full appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                        >
+                                            <option value="All">All Program Sets</option>
+                                            {programSetOptions.map((option) => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="relative">
+                                        <Calendar className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                        <select
+                                            value={selectedAcademicYear}
+                                            onChange={(event) => setSelectedAcademicYear(event.target.value)}
+                                            className="w-full appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                        >
+                                            <option value="All">All A.Y.</option>
+                                            {academicYearOptions.map((option) => (
+                                                <option key={option} value={option}>
+                                                    {option}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="mt-4 space-y-2">
                             {filteredBundles.map((bundle) => {
                                 const active = bundle.group_id === selectedGroupId;
-                                const pendingCount = bundle.concepts.filter((concept) => concept.decision === 'Pending').length;
+                                const firstLetter = bundle.group_name.trim().charAt(0).toUpperCase() || '?';
 
                                 return (
                                     <button
@@ -268,25 +243,33 @@ const AdviserConcepts = () => {
                                         onClick={() => {
                                             setSelectedGroupId(bundle.group_id);
                                             setSelectedConceptId(null);
-                                            setFeedback('');
                                         }}
-                                        className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+                                        className={`w-full rounded-xl border text-left transition-colors ${
                                             active ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white hover:bg-slate-50'
                                         }`}
                                     >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <div className="truncate text-sm font-semibold text-slate-900">{bundle.group_name}</div>
-                                                <div className="mt-1 text-[11px] text-slate-500">
-                                                    {bundle.program_set_name ?? 'Program set'}
-                                                    {bundle.school_year ? ` • ${bundle.school_year}` : ''}
+                                        {isSubmissionsPaneCollapsed ? (
+                                            <div className="flex items-center justify-center px-2 py-3">
+                                                <div
+                                                    className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-semibold ${
+                                                        active ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'
+                                                    }`}
+                                                >
+                                                    {firstLetter}
                                                 </div>
-                                                <div className="mt-1 text-[11px] text-slate-500">Updated: {bundle.updated_at ?? '—'}</div>
                                             </div>
-                                            <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                                                {pendingCount} pending
-                                            </span>
-                                        </div>
+                                        ) : (
+                                            <div className="flex items-start justify-between gap-3 px-4 py-3">
+                                                <div className="min-w-0">
+                                                    <div className="truncate text-sm font-semibold text-slate-900">{bundle.group_name}</div>
+                                                    <div className="mt-1 text-[11px] text-slate-500">
+                                                        {bundle.program_set_name ?? 'Program set'}
+                                                        {bundle.school_year ? ` • ${bundle.school_year}` : ''}
+                                                    </div>
+                                                    <div className="mt-1 text-[11px] text-slate-500">Updated: {bundle.updated_at ?? '—'}</div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </button>
                                 );
                             })}
@@ -303,7 +286,7 @@ const AdviserConcepts = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.05 }}
-                        className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2"
+                        className={`rounded-xl border border-slate-200 bg-white p-5 shadow-sm ${isSubmissionsPaneCollapsed ? '' : 'xl:col-span-2'}`}
                     >
                         {!selectedGroup ? (
                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
@@ -312,177 +295,94 @@ const AdviserConcepts = () => {
                             </div>
                         ) : (
                             <div className="space-y-5">
-                                <div className="flex flex-col gap-2">
-                                    <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Group</div>
-                                    <div className="text-xl font-bold text-slate-900">{selectedGroup.group_name}</div>
-                                    <div className="text-xs text-slate-600">
+                                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                    <span className="font-semibold text-slate-900">Group</span>
+                                    <span className="font-semibold text-slate-900">{selectedGroup.group_name}</span>
+                                    <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
+                                        Leader {selectedGroup.leader_name ?? 'N/A'}
+                                    </span>
+                                    <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
                                         {selectedGroup.program_set_name ?? 'Program set'}
-                                        {selectedGroup.school_year ? ` • ${selectedGroup.school_year}` : ''}
-                                    </div>
+                                    </span>
                                 </div>
 
-                                {selectedGroup.concepts.length === 0 ? (
-                                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center">
-                                        <div className="text-sm font-semibold text-slate-900">No concept submissions yet</div>
-                                        <div className="mt-1 text-xs text-slate-600">Waiting for the group to submit their concept files.</div>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                        {selectedGroup.concepts.map((concept) => {
-                                            const active = concept.id === selectedConceptId;
-                                            return (
-                                                <button
-                                                    key={concept.id}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setSelectedConceptId(concept.id);
-                                                        setFeedback('');
-                                                    }}
-                                                    className={`rounded-xl border px-4 py-3 text-left transition-colors ${
-                                                        active ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white hover:bg-slate-50'
-                                                    }`}
-                                                >
-                                                    <div className="line-clamp-2 text-sm font-semibold text-slate-900">{concept.title}</div>
-                                                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-                                                        <span
-                                                            className={`inline-flex items-center rounded-full border px-2 py-0.5 font-semibold ${decisionPill(
-                                                                concept.decision,
-                                                            )}`}
-                                                        >
-                                                            {concept.decision}
-                                                        </span>
-                                                        <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 font-semibold text-slate-600">
-                                                            Submitted: {concept.submitted_at ?? '—'}
-                                                        </span>
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                )}
+                                <div className="space-y-5">
+                                    <div className="overflow-hidden rounded-xl border border-slate-200">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full min-w-[360px] text-left text-xs">
+                                                <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
+                                                    <tr>
+                                                        <th className="px-4 py-3 font-semibold">Title</th>
+                                                        <th className="px-4 py-3 font-semibold">Submitted Time</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {selectedGroup.concepts.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={2} className="px-4 py-8 text-center text-slate-500">
+                                                                No concept submissions yet.
+                                                            </td>
+                                                        </tr>
+                                                    ) : (
+                                                        selectedGroup.concepts.map((concept) => {
+                                                            const active = concept.id === selectedConceptId;
 
-                                {!selectedConcept ? (
-                                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center">
-                                        <div className="text-sm font-semibold text-slate-900">Select a submission</div>
-                                        <div className="mt-1 text-xs text-slate-600">Pick a submission to review and decide.</div>
+                                                            return (
+                                                                <tr
+                                                                    key={concept.id}
+                                                                    onClick={() => {
+                                                                        setSelectedConceptId(concept.id);
+                                                                    }}
+                                                                    className={`cursor-pointer transition-colors ${active ? 'bg-emerald-50' : 'hover:bg-slate-50'}`}
+                                                                >
+                                                                    <td className="px-4 py-3">
+                                                                        <div className="font-semibold text-slate-900">{concept.title}</div>
+                                                                    </td>
+                                                                    <td className="px-4 py-3 whitespace-nowrap text-slate-600">
+                                                                        {concept.submitted_at ?? '—'}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                                            <div className="text-sm font-semibold text-slate-900">Submission Detail</div>
-                                            <div className="mt-2 text-sm font-semibold text-slate-700">{selectedConcept.title}</div>
-                                            <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-                                                <span
-                                                    className={`inline-flex items-center rounded-full border px-2 py-0.5 font-semibold ${decisionPill(
-                                                        selectedConcept.decision,
-                                                    )}`}
-                                                >
-                                                    {selectedConcept.decision}
-                                                </span>
-                                                <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 font-semibold text-slate-700">
-                                                    Submitted: {selectedConcept.submitted_at ?? '—'}
-                                                </span>
-                                            </div>
 
-                                            <div className="mt-4">
-                                                <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Preview</div>
-                                                <div className="mt-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5">
-                                                    <div className="text-sm font-semibold text-slate-800">Concept preview area</div>
-                                                    <div className="mt-1 text-xs text-slate-600">UI placeholder only.</div>
-                                                    <button
-                                                        type="button"
-                                                        className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
-                                                    >
-                                                        Open preview
-                                                    </button>
-                                                </div>
+                                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                                        <div className="border-b border-slate-200 bg-white px-4 py-3">
+                                            <div className="text-sm font-semibold text-slate-900">PDF Viewer</div>
+                                            <div className="mt-1 text-xs text-slate-500">
+                                                {selectedConcept ? selectedConcept.title : 'Select a concept paper row to preview the PDF.'}
                                             </div>
                                         </div>
 
-                                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                                            <div className="flex items-center gap-2">
-                                                <MessageSquareText size={16} className="text-emerald-700" />
-                                                <div className="text-sm font-semibold text-slate-900">Feedback</div>
+                                        {!selectedConcept ? (
+                                            <div className="flex min-h-[18rem] items-center justify-center p-6 text-center text-sm text-slate-500">
+                                                Select a concept paper from the table to load the PDF viewer.
                                             </div>
-
-                                            <textarea
-                                                value={feedback}
-                                                onChange={(e) => setFeedback(e.target.value)}
-                                                placeholder="Add adviser feedback comment..."
-                                                className="mt-3 h-28 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                                            />
-
-                                            <div className="mt-3 flex flex-wrap gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveModal('approve')}
-                                                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
-                                                >
-                                                    <CheckCircle2 size={14} />
-                                                    Approve
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveModal('revision')}
-                                                    className="rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600"
-                                                >
-                                                    Request revision
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveModal('reject')}
-                                                    className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-700"
-                                                >
-                                                    <XCircle size={14} />
-                                                    Reject
-                                                </button>
+                                        ) : selectedConcept.file_url ? (
+                                            <div className="bg-slate-100 p-4 lg:p-5">
+                                                <iframe
+                                                    key={selectedConcept.file_url}
+                                                    src={`${selectedConcept.file_url}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+                                                    title={selectedConcept.title}
+                                                    className="h-[72vh] w-full rounded-2xl border border-slate-200 bg-white"
+                                                />
                                             </div>
-
-                                            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                                                <div className="text-xs font-semibold text-emerald-900">Reminder</div>
-                                                <div className="mt-1 text-xs text-emerald-700">
-                                                    Only one submission can be approved per group (enforced later in backend).
-                                                </div>
+                                        ) : (
+                                            <div className="flex min-h-[18rem] items-center justify-center p-6 text-center text-sm text-slate-500">
+                                                PDF preview is not available for the selected submission.
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
-                                )}
+                                </div>
                             </div>
                         )}
                     </motion.section>
                 </div>
             </motion.section>
-
-            <ConceptApproveModal
-                open={activeModal === 'approve' && Boolean(selectedConcept)}
-                groupName={selectedGroup?.group_name}
-                conceptTitle={selectedConcept?.title}
-                onClose={closeModal}
-                onConfirm={() => {
-                    setDecision('Approved');
-                    closeModal();
-                }}
-            />
-            <ConceptRevisionModal
-                open={activeModal === 'revision' && Boolean(selectedConcept)}
-                groupName={selectedGroup?.group_name}
-                conceptTitle={selectedConcept?.title}
-                onClose={closeModal}
-                onConfirm={() => {
-                    setDecision('For Revision');
-                    closeModal();
-                }}
-            />
-            <ConceptRejectModal
-                open={activeModal === 'reject' && Boolean(selectedConcept)}
-                groupName={selectedGroup?.group_name}
-                conceptTitle={selectedConcept?.title}
-                onClose={closeModal}
-                onConfirm={() => {
-                    setDecision('Rejected');
-                    closeModal();
-                }}
-            />
         </AdviserLayout>
     );
 };

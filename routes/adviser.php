@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function () {
@@ -439,10 +440,10 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
             $userId = Auth::guard('web')->id();
             if ($userId !== null && class_exists(Group::class) && Schema::hasTable('groups')) {
                 $groupsQuery = Group::query()
-                    ->with(['programSet.academicYear'])
+                    ->with(['programSet.academicYear', 'leader:id,name,first_name,last_name'])
                     ->whereHas('adviserAssignment', fn ($query) => $query->where('adviser_id', $userId))
                     ->orderByDesc('updated_at')
-                    ->get(['id', 'name', 'program_set_id', 'updated_at']);
+                    ->get(['id', 'name', 'program_set_id', 'leader_id', 'updated_at']);
 
                 $groupIds = $groupsQuery->pluck('id');
                 $conceptSubmissionsByGroup = collect();
@@ -464,8 +465,20 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
                 $groups = $groupsQuery
                     ->map(function (Group $group) use ($conceptSubmissionsByGroup): array {
                         $programSet = $group->programSet;
+                        $leader = $group->leader;
                         $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
                         $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+                        $leaderName = trim(
+                            implode(' ', array_filter([
+                                is_string($leader?->first_name) ? trim($leader->first_name) : '',
+                                is_string($leader?->last_name) ? trim($leader->last_name) : '',
+                            ])),
+                        );
+
+                        if ($leaderName === '') {
+                            $leaderName = is_string($leader?->name) && trim($leader->name) !== '' ? trim($leader->name) : 'N/A';
+                        }
+
                         $concepts = $conceptSubmissionsByGroup
                             ->get($group->id, collect())
                             ->map(function (DocumentSubmission $submission): array {
@@ -477,9 +490,10 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
 
                                 return [
                                     'id' => $submission->id,
-                                    'title' => $submission->requirement?->requirement_type ?? $submission->file_name,
+                                    'title' => $submission->file_name,
                                     'decision' => $decision,
-                                    'submitted_at' => $submission->created_at?->format('Y-m-d'),
+                                    'submitted_at' => $submission->created_at?->format('Y-m-d H:i'),
+                                    'file_url' => $submission->file_path !== null ? Storage::disk('public')->url($submission->file_path) : null,
                                 ];
                             })
                             ->values()
@@ -491,6 +505,7 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
                         return [
                             'group_id' => $group->id,
                             'group_name' => $group->name,
+                            'leader_name' => $leaderName,
                             'program_set_id' => $programSet?->id,
                             'program_set_name' => $programSet?->name ?: $fallbackName,
                             'school_year' => $schoolYear,
