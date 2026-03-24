@@ -101,9 +101,9 @@ const StudentConceptSubmissionShow = () => {
                     transition={{ duration: 0.3 }}
                     className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="min-w-0 flex-1 space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-slate-700 uppercase">
                                     <FileText className="h-3.5 w-3.5" />
                                     Concept File Viewer
@@ -117,21 +117,14 @@ const StudentConceptSubmissionShow = () => {
                                     </span>
                                 ) : null}
                             </div>
-                            <div>
-                                <h3 className="text-lg font-semibold text-slate-900">{submission.title}</h3>
+
+                            <div className="min-w-0">
+                                <h3 className="max-w-3xl break-words text-lg leading-snug font-semibold text-slate-900">{submission.title}</h3>
                                 <p className="mt-1 text-xs text-slate-500">{groupLabel}</p>
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setIsSidebarCollapsed((current) => !current)}
-                                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                            >
-                                {isSidebarCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
-                                {isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-                            </button>
+                        <div className="flex shrink-0 flex-row items-center justify-end gap-2">
                             <button
                                 type="button"
                                 onClick={() => setIsEditModalOpen(true)}
@@ -140,6 +133,7 @@ const StudentConceptSubmissionShow = () => {
                                 <FilePenLine className="h-4 w-4" />
                                 Edit Details
                             </button>
+
                             <button
                                 type="button"
                                 onClick={() => setIsDeleteConfirmationOpen(true)}
@@ -173,7 +167,9 @@ const StudentConceptSubmissionShow = () => {
                             <div className="flex h-full flex-col">
                                 <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                                     <div className={`min-w-0 ${isSidebarCollapsed ? 'hidden lg:block' : ''}`}>
-                                        <p className={`text-xs font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}>
+                                        <p
+                                            className={`text-xs font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}
+                                        >
                                             Submission Details
                                         </p>
                                         <p className={`mt-1 text-sm font-semibold text-slate-900 ${isSidebarCollapsed ? 'lg:hidden' : ''}`}>
@@ -192,10 +188,14 @@ const StudentConceptSubmissionShow = () => {
 
                                 <div className="space-y-4 p-4">
                                     <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                                        <p className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}>
+                                        <p
+                                            className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}
+                                        >
                                             Title
                                         </p>
-                                        <p className={`mt-1 text-sm font-medium text-slate-900 ${isSidebarCollapsed ? 'hidden lg:block lg:text-center' : ''}`}>
+                                        <p
+                                            className={`mt-1 text-sm font-medium text-slate-900 ${isSidebarCollapsed ? 'hidden lg:block lg:text-center' : ''}`}
+                                        >
                                             {isSidebarCollapsed ? 'PDF' : submission.title}
                                         </p>
                                         {!isSidebarCollapsed ? null : <FileText className="mx-auto hidden h-6 w-6 text-emerald-600 lg:block" />}
@@ -204,13 +204,19 @@ const StudentConceptSubmissionShow = () => {
                                     <div className="rounded-2xl border border-slate-200 bg-white p-4">
                                         <div className="space-y-3 text-sm text-slate-600">
                                             <div>
-                                                <p className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}>
+                                                <p
+                                                    className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}
+                                                >
                                                     Program
                                                 </p>
-                                                <p className={`${isSidebarCollapsed ? 'hidden lg:block lg:text-center' : 'mt-1 text-slate-900'}`}>{studentProgram}</p>
+                                                <p className={`${isSidebarCollapsed ? 'hidden lg:block lg:text-center' : 'mt-1 text-slate-900'}`}>
+                                                    {studentProgram}
+                                                </p>
                                             </div>
                                             <div>
-                                                <p className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}>
+                                                <p
+                                                    className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}
+                                                >
                                                     Category
                                                 </p>
                                                 <p className={`${isSidebarCollapsed ? 'hidden lg:block lg:text-center' : 'mt-1 text-slate-900'}`}>
@@ -221,15 +227,19 @@ const StudentConceptSubmissionShow = () => {
                                                 ) : null}
                                             </div>
                                             <div>
-                                                <p className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}>
+                                                <p
+                                                    className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}
+                                                >
                                                     Submitted
                                                 </p>
                                                 <p className={`${isSidebarCollapsed ? 'hidden lg:block lg:text-center' : 'mt-1 text-slate-900'}`}>
-                                                    {isSidebarCollapsed ? submission.submittedAt ?? '—' : submission.submittedAt ?? '—'}
+                                                    {isSidebarCollapsed ? (submission.submittedAt ?? '—') : (submission.submittedAt ?? '—')}
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}>
+                                                <p
+                                                    className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}
+                                                >
                                                     Deadline
                                                 </p>
                                                 <p className={`${isSidebarCollapsed ? 'hidden lg:block lg:text-center' : 'mt-1 text-slate-900'}`}>
@@ -237,7 +247,9 @@ const StudentConceptSubmissionShow = () => {
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}>
+                                                <p
+                                                    className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}
+                                                >
                                                     File Size
                                                 </p>
                                                 <p className={`${isSidebarCollapsed ? 'hidden lg:block lg:text-center' : 'mt-1 text-slate-900'}`}>
@@ -245,10 +257,14 @@ const StudentConceptSubmissionShow = () => {
                                                 </p>
                                             </div>
                                             <div>
-                                                <p className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}>
+                                                <p
+                                                    className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}
+                                                >
                                                     Mime Type
                                                 </p>
-                                                <p className={`${isSidebarCollapsed ? 'hidden lg:block lg:text-center' : 'mt-1 break-all text-slate-900'}`}>
+                                                <p
+                                                    className={`${isSidebarCollapsed ? 'hidden lg:block lg:text-center' : 'mt-1 break-all text-slate-900'}`}
+                                                >
                                                     {submission.mimeType ?? 'application/pdf'}
                                                 </p>
                                             </div>
