@@ -389,7 +389,8 @@ const StudentDashboard = () => {
                             {teamMembers.length > 0 ? (
                                 teamMembers.map((member, index) => {
                                     const avatarTone = avatarToneByIndex[index % avatarToneByIndex.length] ?? avatarToneByIndex[0];
-                                    const badgeTone = member.access === 'Full Access' ? 'bg-emerald-100 text-emerald-700' : 'bg-teal-100 text-teal-700';
+                                    const badgeTone =
+                                        member.access === 'Full Access' ? 'bg-emerald-100 text-emerald-700' : 'bg-teal-100 text-teal-700';
 
                                     return (
                                         <motion.div
@@ -399,7 +400,9 @@ const StudentDashboard = () => {
                                             transition={{ delay: 0.28 + index * 0.04 }}
                                             className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3"
                                         >
-                                            <div className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white ${avatarTone}`}>
+                                            <div
+                                                className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white ${avatarTone}`}
+                                            >
                                                 {member.initials}
                                             </div>
                                             <div className="min-w-0 flex-1">
@@ -411,7 +414,9 @@ const StudentDashboard = () => {
                                     );
                                 })
                             ) : (
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">No group members found.</div>
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                                    No group members found.
+                                </div>
                             )}
                         </div>
                     </motion.div>

@@ -174,10 +174,7 @@ const Dashboard = () => {
     const programTotal = programDistribution.reduce((sum, item) => sum + item.value, 0);
     const hasProgramData = programTotal > 0;
     const studentProgramCoverage = progressFor(programTotal, stats.totalStudents);
-    const activityTrendSeries = React.useMemo(
-        () => buildLocalActivityTrendSeries(activityTrend.events),
-        [activityTrend.events],
-    );
+    const activityTrendSeries = React.useMemo(() => buildLocalActivityTrendSeries(activityTrend.events), [activityTrend.events]);
     const hasActivityData =
         activityTrendSeries.info.some((value) => value > 0) ||
         activityTrendSeries.warning.some((value) => value > 0) ||
@@ -262,7 +259,6 @@ const Dashboard = () => {
             icon: ShieldCheck,
         },
     ] as const;
-
 
     const workloadIntensity = progressFor(
         stats.inactiveUsers + stats.groupsWithoutAdviser + stats.pendingAdviserRequests,
@@ -403,7 +399,10 @@ const Dashboard = () => {
                                 <div className="overflow-x-auto pb-1">
                                     <div className="mx-auto flex w-max items-center justify-center gap-2">
                                         {roleDistribution.map((role) => (
-                                            <div key={role.label} className="min-w-[105px] rounded-lg border border-emerald-100 px-2.5 py-2 text-center text-xs text-slate-700">
+                                            <div
+                                                key={role.label}
+                                                className="min-w-[105px] rounded-lg border border-emerald-100 px-2.5 py-2 text-center text-xs text-slate-700"
+                                            >
                                                 <div className="flex items-center justify-center gap-1.5">
                                                     <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: role.color }} />
                                                     <span className="font-medium">{role.label}</span>
@@ -471,14 +470,20 @@ const Dashboard = () => {
                                             const barTone = programToneStyles[program.label] ?? 'from-emerald-600 to-emerald-500';
 
                                             return (
-                                                <div key={program.label} className="min-w-[105px] rounded-lg border border-emerald-100 px-2.5 py-2 text-center text-xs text-slate-700">
+                                                <div
+                                                    key={program.label}
+                                                    className="min-w-[105px] rounded-lg border border-emerald-100 px-2.5 py-2 text-center text-xs text-slate-700"
+                                                >
                                                     <div className="mb-1 flex items-center justify-center gap-1.5">
                                                         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: program.color }} />
                                                         <span className="font-medium">{program.label}</span>
                                                     </div>
                                                     <p className="font-semibold text-slate-900 tabular-nums">{program.value.toLocaleString()}</p>
                                                     <div className="mt-1.5 h-1.5 w-full rounded-full bg-emerald-100/70">
-                                                        <div className={`h-1.5 rounded-full bg-gradient-to-r ${barTone}`} style={{ width: `${share}%` }} />
+                                                        <div
+                                                            className={`h-1.5 rounded-full bg-gradient-to-r ${barTone}`}
+                                                            style={{ width: `${share}%` }}
+                                                        />
                                                     </div>
                                                 </div>
                                             );

@@ -191,7 +191,6 @@ const AdviserDashboard = () => {
     const totalPendingReviews = stats.pendingConceptReviews + stats.pendingDocumentReviews;
     const actionableNotifications = notifications.filter((notice) => notice.tone === 'warning' || notice.tone === 'danger').length;
 
-
     const dashboardHighlights = [
         {
             label: 'Assigned Groups',
@@ -278,7 +277,6 @@ const AdviserDashboard = () => {
                     </div>
                 </motion.section>
 
-
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -347,7 +345,9 @@ const AdviserDashboard = () => {
                                             slotProps={{ legend: { hidden: true } }}
                                         />
                                     ) : (
-                                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-sm text-slate-500">No submissions yet.</div>
+                                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-sm text-slate-500">
+                                            No submissions yet.
+                                        </div>
                                     )}
                                 </div>
 

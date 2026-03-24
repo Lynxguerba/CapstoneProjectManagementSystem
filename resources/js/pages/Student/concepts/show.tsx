@@ -119,7 +119,7 @@ const StudentConceptSubmissionShow = () => {
                             </div>
 
                             <div className="min-w-0">
-                                <h3 className="max-w-3xl break-words text-lg leading-snug font-semibold text-slate-900">{submission.title}</h3>
+                                <h3 className="max-w-3xl text-lg leading-snug font-semibold break-words text-slate-900">{submission.title}</h3>
                                 <p className="mt-1 text-xs text-slate-500">{groupLabel}</p>
                             </div>
                         </div>

@@ -67,8 +67,7 @@ const ConfirmConceptSubmissionActionModal = ({
     }
 
     const accentPanelClass = tone === 'danger' ? 'border-rose-200 bg-rose-50' : 'border-emerald-200 bg-emerald-50';
-    const accentIconClass =
-        tone === 'danger' ? 'bg-gradient-to-br from-rose-500 to-rose-600' : 'bg-gradient-to-br from-emerald-500 to-emerald-600';
+    const accentIconClass = tone === 'danger' ? 'bg-gradient-to-br from-rose-500 to-rose-600' : 'bg-gradient-to-br from-emerald-500 to-emerald-600';
     const accentTitleClass = tone === 'danger' ? 'text-rose-900' : 'text-emerald-900';
     const accentTextClass = tone === 'danger' ? 'text-rose-800' : 'text-emerald-800';
     const confirmButtonClass = tone === 'danger' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700';

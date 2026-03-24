@@ -81,9 +81,7 @@ const StudentTitles = () => {
     }, [currentPage, totalPages]);
 
     const statusPill = (value: TitleItem['status']): string => {
-        return value === 'Approved'
-            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-            : 'border-slate-200 bg-slate-50 text-slate-700';
+        return value === 'Approved' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-700';
     };
 
     return (
@@ -127,7 +125,7 @@ const StudentTitles = () => {
                                     value={query}
                                     onChange={(e) => setQuery(e.target.value)}
                                     placeholder="Search title, adviser, or A.Y"
-                                    className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-xs outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                    className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-xs transition-all outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                                 />
                             </div>
                         </div>
@@ -139,7 +137,7 @@ const StudentTitles = () => {
                                 <select
                                     value={status}
                                     onChange={(e) => setStatus(e.target.value as typeof status)}
-                                    className="w-full appearance-none rounded-lg border border-slate-300 bg-white py-2.5 pr-3 pl-8 text-xs outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                    className="w-full appearance-none rounded-lg border border-slate-300 bg-white py-2.5 pr-3 pl-8 text-xs transition-all outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="all">All statuses</option>
                                     <option value="Approved">Approved</option>
@@ -153,7 +151,7 @@ const StudentTitles = () => {
                             <select
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
-                                className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-xs outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-xs transition-all outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                             >
                                 {categories.map((categoryOption) => (
                                     <option key={categoryOption} value={categoryOption}>
@@ -185,7 +183,9 @@ const StudentTitles = () => {
                                         <td className="py-2.5 whitespace-nowrap text-slate-600">{title.adviser}</td>
                                         <td className="py-2.5 whitespace-nowrap text-slate-600">{title.category}</td>
                                         <td className="py-2.5">
-                                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusPill(title.status)}`}>
+                                            <span
+                                                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusPill(title.status)}`}
+                                            >
                                                 {title.status}
                                             </span>
                                         </td>
@@ -202,8 +202,8 @@ const StudentTitles = () => {
                     ) : (
                         <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-[11px] text-slate-500">
-                                Showing {(currentPage - 1) * itemsPerPage + 1}-
-                                {Math.min(currentPage * itemsPerPage, filteredTitles.length)} of {filteredTitles.length}
+                                Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredTitles.length)} of{' '}
+                                {filteredTitles.length}
                             </p>
 
                             <div className="flex items-center gap-1">

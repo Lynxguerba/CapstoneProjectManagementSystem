@@ -75,7 +75,11 @@ const statusPillClass = (status: ConceptSubmission['status']): string => {
 };
 
 const deriveTitleFromFileName = (fileName: string): string => {
-    return fileName.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return fileName
+        .replace(/\.pdf$/i, '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 };
 
 const StudentConcepts = () => {
@@ -270,7 +274,7 @@ const StudentConcepts = () => {
                                     onChange={(event) => form.setData('title', event.target.value)}
                                     placeholder="Auto-filled from the uploaded PDF file name"
                                     disabled={!readiness.isReady || form.processing}
-                                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50"
+                                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50"
                                 />
                                 {form.errors.title ? <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.title}</p> : null}
                             </div>
@@ -286,7 +290,7 @@ const StudentConcepts = () => {
                                     value={form.data.title_category_id}
                                     onChange={(event) => form.setData('title_category_id', event.target.value)}
                                     disabled={!readiness.isReady || form.processing || categoryOptions.length === 0}
-                                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50"
+                                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50"
                                 >
                                     <option value="">Select {studentProgram} category</option>
                                     {categoryOptions.map((category) => (
@@ -299,7 +303,9 @@ const StudentConcepts = () => {
                                 {categoryOptions.length === 0 ? (
                                     <p className="mt-1 text-xs text-amber-700">No category options are configured yet for {studentProgram}.</p>
                                 ) : null}
-                                {form.errors.title_category_id ? <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.title_category_id}</p> : null}
+                                {form.errors.title_category_id ? (
+                                    <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.title_category_id}</p>
+                                ) : null}
                             </div>
 
                             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
@@ -361,7 +367,9 @@ const StudentConcepts = () => {
                                     </div>
                                 ) : null}
 
-                                {form.errors.concept_file ? <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.concept_file}</p> : null}
+                                {form.errors.concept_file ? (
+                                    <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.concept_file}</p>
+                                ) : null}
                             </div>
 
                             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-700">
@@ -372,9 +380,7 @@ const StudentConcepts = () => {
                                 <p className="text-xs text-slate-500">Deadline: {deadlineLabel}</p>
                                 <button
                                     type="submit"
-                                    disabled={
-                                        !canSubmit
-                                    }
+                                    disabled={!canSubmit}
                                     className="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {form.processing ? 'Submitting...' : 'Submit Concept'}
@@ -520,7 +526,9 @@ const StudentConcepts = () => {
                                                     >
                                                         Open File
                                                     </Link>
-                                                    {submission.fileSizeLabel ? <div className="mt-1 text-slate-500">{submission.fileSizeLabel}</div> : null}
+                                                    {submission.fileSizeLabel ? (
+                                                        <div className="mt-1 text-slate-500">{submission.fileSizeLabel}</div>
+                                                    ) : null}
                                                 </td>
                                             </tr>
                                         ))

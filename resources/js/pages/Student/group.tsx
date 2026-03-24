@@ -116,7 +116,9 @@ const StudentGroup = () => {
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <h3 className="text-sm font-semibold text-slate-900">Members</h3>
-                                <p className="mt-1 text-xs text-slate-500">{group ? `Group ${group.name}${sectionLabel ? ` • ${sectionLabel}` : ''}` : 'No active group assigned yet.'}</p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                    {group ? `Group ${group.name}${sectionLabel ? ` • ${sectionLabel}` : ''}` : 'No active group assigned yet.'}
+                                </p>
                             </div>
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
                                 {members.length} total
@@ -140,7 +142,9 @@ const StudentGroup = () => {
                                                     </div>
                                                 </div>
 
-                                                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${meta.tone}`}>
+                                                <span
+                                                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${meta.tone}`}
+                                                >
                                                     <Icon size={12} />
                                                     {member.role}
                                                 </span>

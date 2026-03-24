@@ -131,7 +131,7 @@ const ConceptSubmitConfirmationModal = ({
                             </div>
                             <div>
                                 <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Selected File</p>
-                                <p className="mt-1 break-all text-sm text-slate-700">{fileName}</p>
+                                <p className="mt-1 text-sm break-all text-slate-700">{fileName}</p>
                             </div>
                             <div>
                                 <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Requirement</p>
@@ -165,23 +165,23 @@ const ConceptSubmitConfirmationModal = ({
 
                 <div className="border-t border-gray-200 bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3">
                     <div className="flex justify-end gap-2">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={processing}
-                        className="rounded-lg border-2 border-slate-300 px-5 py-2 font-medium text-slate-700 transition-all duration-200 hover:bg-slate-100 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onConfirm}
-                        disabled={processing}
-                        className="group relative z-10 flex transform items-center gap-2 overflow-hidden rounded-lg bg-emerald-600 px-5 py-2 font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        <span className="pointer-events-none absolute inset-0 z-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 group-hover:translate-x-[100%]" />
-                        {processing ? 'Uploading...' : 'Confirm Submission'}
-                    </button>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={processing}
+                            className="rounded-lg border-2 border-slate-300 px-5 py-2 font-medium text-slate-700 transition-all duration-200 hover:bg-slate-100 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onConfirm}
+                            disabled={processing}
+                            className="group relative z-10 flex transform items-center gap-2 overflow-hidden rounded-lg bg-emerald-600 px-5 py-2 font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <span className="pointer-events-none absolute inset-0 z-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 group-hover:translate-x-[100%]" />
+                            {processing ? 'Uploading...' : 'Confirm Submission'}
+                        </button>
                     </div>
                 </div>
             </div>
