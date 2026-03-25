@@ -112,16 +112,21 @@ class LoginController extends Controller
             ]);
         }
 
-        $user = User::query()->create([
+        $userAttributes = [
             'name' => $this->buildDisplayName($validated['first_name'], $validated['last_name']),
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
             'email' => $validated['email'],
             'role' => $requestedRole,
             'status' => 'pending',
-            'program' => $this->normalizeProgramCode($validated['program'] ?? null),
             'password' => $validated['password'],
-        ]);
+        ];
+
+        if ($this->hasUsersProgramColumn()) {
+            $userAttributes['program'] = $this->normalizeProgramCode($validated['program'] ?? null);
+        }
+
+        $user = User::query()->create($userAttributes);
 
         $user->syncRoles([$requestedRole]);
         $this->syncStudentProfile($user, $validated['program'] ?? null, $requestedRole === 'student');
@@ -311,6 +316,11 @@ class LoginController extends Controller
             ['student_id' => $user->id],
             ['program' => $resolvedProgram]
         );
+    }
+
+    private function hasUsersProgramColumn(): bool
+    {
+        return Schema::hasTable('users') && Schema::hasColumn('users', 'program');
     }
 
     private function recordLoginAudit(User $user, Request $request, string $requestedRole): void

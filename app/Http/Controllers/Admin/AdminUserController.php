@@ -226,7 +226,8 @@ class AdminUserController extends Controller
     {
         $roles = $user->roleSlugs();
         $isStudent = $user->hasRole('student') || Role::normalizeRole((string) $user->role) === 'student';
-        $programCode = $user->studentProgram?->program ?? $user->program;
+        $storedProgram = $this->hasUsersProgramColumn() ? $user->program : null;
+        $programCode = $user->studentProgram?->program ?? $storedProgram;
 
         if ($isStudent && $this->normalizeProgramCode($programCode) === null) {
             return $this->redirectToListing($request, 'Assign a valid program before approving this student account.', true);
@@ -385,15 +386,16 @@ class AdminUserController extends Controller
         $students = $studentsQuery
             ->orderByRaw("CASE WHEN users.status = 'pending' THEN 0 ELSE 1 END")
             ->orderByDesc('users.created_at')
-            ->get(['id', 'name', 'first_name', 'last_name', 'email', 'status', 'program', 'created_at'])
+            ->get($this->studentListingColumns())
             ->map(function (User $student) use ($hasStudentProgramTable): array {
                 $firstName = is_string($student->first_name) ? trim($student->first_name) : '';
                 $lastName = is_string($student->last_name) ? trim($student->last_name) : '';
                 $fullName = $this->buildFullName($firstName, $lastName, $student->name);
                 $status = is_string($student->status) && $student->status !== '' ? $student->status : 'active';
+                $storedProgram = $this->hasUsersProgramColumn() ? $student->program : null;
                 $program = $hasStudentProgramTable
-                    ? ($student->studentProgram?->program ?? $this->normalizeProgramCode($student->program))
-                    : $this->normalizeProgramCode($student->program);
+                    ? ($student->studentProgram?->program ?? $this->normalizeProgramCode($storedProgram))
+                    : $this->normalizeProgramCode($storedProgram);
 
                 return [
                     'id' => $student->id,
@@ -536,6 +538,25 @@ class AdminUserController extends Controller
     private function hasStudentProgramTable(): bool
     {
         return Schema::hasTable('student_program');
+    }
+
+    private function hasUsersProgramColumn(): bool
+    {
+        return Schema::hasTable('users') && Schema::hasColumn('users', 'program');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function studentListingColumns(): array
+    {
+        $columns = ['id', 'name', 'first_name', 'last_name', 'email', 'status', 'created_at'];
+
+        if ($this->hasUsersProgramColumn()) {
+            $columns[] = 'program';
+        }
+
+        return $columns;
     }
 
     private function redirectToListing(Request $request, string $message, bool $isError = false): RedirectResponse

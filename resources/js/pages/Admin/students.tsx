@@ -131,10 +131,6 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
             });
     }, [managedStudents, search, program, status]);
 
-    const pendingRegistrationCount = React.useMemo(() => {
-        return managedStudents.filter((user) => user.status === 'pending').length;
-    }, [managedStudents]);
-
     React.useEffect(() => {
         setCurrentPage(1);
     }, [search, program, status]);
@@ -257,20 +253,6 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                         </button>
                     </div>
                 </div>
-
-                {pendingRegistrationCount > 0 ? (
-                    <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-amber-50 px-4 py-4 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <div className="text-xs font-semibold tracking-[0.18em] text-amber-700 uppercase">Registration approvals</div>
-                            <div className="mt-1 text-sm text-slate-700">
-                                {pendingRegistrationCount} student registration request{pendingRegistrationCount === 1 ? '' : 's'} pinned to the top.
-                            </div>
-                        </div>
-                        <div className="text-xs text-slate-500">
-                            Open `Manage` on a pending row, assign the final details, then change status to `active` to approve.
-                        </div>
-                    </div>
-                ) : null}
 
                 {/* Striped Table */}
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
