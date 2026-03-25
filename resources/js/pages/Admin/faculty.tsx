@@ -1,6 +1,6 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Filter, Search, Settings, Upload } from 'lucide-react';
+import { Check, ChevronRight, Filter, Search, Settings, Upload, X } from 'lucide-react';
 import React from 'react';
 import AddUserModal from '../../components/Admin/AddUserModal';
 import BulkUploadModal from '../../components/Admin/BulkUploadModal';
@@ -8,7 +8,7 @@ import ManageUserActionModal from '../../components/Admin/ManageUserActionModal'
 import AdminLayout from './_layout';
 
 type FacultyRole = 'admin' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
-type UserStatus = 'active' | 'inactive';
+type UserStatus = 'active' | 'inactive' | 'pending';
 
 type FacultyRow = {
     id: number;
@@ -32,6 +32,18 @@ type AdminFacultyProps = {
 
 const facultyRoleOptions: Array<FacultyRole | 'all'> = ['all', 'admin', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 
+const statusBadgeClasses = (status: UserStatus): string => {
+    if (status === 'pending') {
+        return 'bg-amber-100 text-amber-800';
+    }
+
+    if (status === 'active') {
+        return 'bg-emerald-100 text-emerald-700';
+    }
+
+    return 'bg-slate-200 text-slate-600';
+};
+
 const AdminFaculty = ({ faculties = [], filters }: AdminFacultyProps) => {
     const initialFaculties = React.useMemo(() => {
         return Array.isArray(faculties) ? faculties : [];
@@ -44,6 +56,7 @@ const AdminFaculty = ({ faculties = [], filters }: AdminFacultyProps) => {
     const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = React.useState(false);
     const [isManageUserModalOpen, setIsManageUserModalOpen] = React.useState(false);
     const [selectedFaculty, setSelectedFaculty] = React.useState<FacultyRow | null>(null);
+    const [processingFacultyId, setProcessingFacultyId] = React.useState<number | null>(null);
     const [currentPage, setCurrentPage] = React.useState(1);
     const usersPerPage = 10;
 
@@ -55,13 +68,29 @@ const AdminFaculty = ({ faculties = [], filters }: AdminFacultyProps) => {
     const filteredUsers = React.useMemo(() => {
         const query = search.trim().toLowerCase();
 
-        return managedFaculties.filter((user) => {
-            const matchesQuery = !query || user.fullName.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
-            const matchesRole = role === 'all' || user.roles.includes(role);
+        return managedFaculties
+            .filter((user) => {
+                const matchesQuery = !query || user.fullName.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
+                const matchesRole = role === 'all' || user.roles.includes(role);
 
-            return matchesQuery && matchesRole;
-        });
+                return matchesQuery && matchesRole;
+            })
+            .sort((leftUser, rightUser) => {
+                if (leftUser.status === 'pending' && rightUser.status !== 'pending') {
+                    return -1;
+                }
+
+                if (leftUser.status !== 'pending' && rightUser.status === 'pending') {
+                    return 1;
+                }
+
+                return rightUser.createdAt.localeCompare(leftUser.createdAt);
+            });
     }, [managedFaculties, search, role]);
+
+    const pendingRegistrationCount = React.useMemo(() => {
+        return managedFaculties.filter((user) => user.status === 'pending').length;
+    }, [managedFaculties]);
 
     React.useEffect(() => {
         setCurrentPage(1);
@@ -96,6 +125,19 @@ const AdminFaculty = ({ faculties = [], filters }: AdminFacultyProps) => {
         setManagedFaculties((previousFaculties) => previousFaculties.map((faculty) => (faculty.id === updatedFaculty.id ? updatedFaculty : faculty)));
         setIsManageUserModalOpen(false);
         setSelectedFaculty(null);
+    };
+
+    const handlePendingAction = (faculty: FacultyRow, action: 'approve' | 'reject') => {
+        setProcessingFacultyId(faculty.id);
+
+        router.patch(
+            `/admin/users/${faculty.id}/${action}?from=faculty`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setProcessingFacultyId(null),
+            },
+        );
     };
 
     return (
@@ -160,6 +202,20 @@ const AdminFaculty = ({ faculties = [], filters }: AdminFacultyProps) => {
                     </div>
                 </div>
 
+                {pendingRegistrationCount > 0 ? (
+                    <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-amber-50 px-4 py-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <div className="text-xs font-semibold tracking-[0.18em] text-amber-700 uppercase">Registration approvals</div>
+                            <div className="mt-1 text-sm text-slate-700">
+                                {pendingRegistrationCount} faculty registration request{pendingRegistrationCount === 1 ? '' : 's'} pinned to the top.
+                            </div>
+                        </div>
+                        <div className="text-xs text-slate-500">
+                            Review the pending row, confirm the role assignment, then switch the status to `active` to approve access.
+                        </div>
+                    </div>
+                ) : null}
+
                 {/* Striped Table */}
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                     <table className="w-full text-left text-xs">
@@ -177,7 +233,9 @@ const AdminFaculty = ({ faculties = [], filters }: AdminFacultyProps) => {
                             {paginatedUsers.map((user, index) => (
                                 <tr
                                     key={user.id}
-                                    className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
+                                    className={`transition-colors hover:bg-green-50/30 ${
+                                        user.status === 'pending' ? 'bg-amber-50/60' : index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'
+                                    }`}
                                 >
                                     <td className="px-6 py-3.5 font-semibold text-slate-800">{user.fullName}</td>
                                     <td className="px-6 py-3.5 text-slate-500">{user.email}</td>
@@ -195,23 +253,44 @@ const AdminFaculty = ({ faculties = [], filters }: AdminFacultyProps) => {
                                     </td>
                                     <td className="px-6 py-3.5">
                                         <span
-                                            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${
-                                                user.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
-                                            }`}
+                                            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${statusBadgeClasses(user.status)}`}
                                         >
                                             {user.status}
                                         </span>
                                     </td>
                                     <td className="px-6 py-3.5 text-slate-500">{user.createdAt}</td>
                                     <td className="px-6 py-3.5 text-right">
-                                        <button
-                                            type="button"
-                                            onClick={() => openManageFacultyModal(user)}
-                                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700"
-                                        >
-                                            <Settings className="h-3 w-3" />
-                                            Manage
-                                        </button>
+                                        {user.status === 'pending' ? (
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handlePendingAction(user, 'reject')}
+                                                    disabled={processingFacultyId === user.id}
+                                                    className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-bold text-rose-700 shadow-sm transition-all hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                    Reject
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handlePendingAction(user, 'approve')}
+                                                    disabled={processingFacultyId === user.id}
+                                                    className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-100 px-2.5 py-1.5 text-[11px] font-bold text-amber-800 shadow-sm transition-all hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                    <Check className="h-3 w-3" />
+                                                    Approve
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => openManageFacultyModal(user)}
+                                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700"
+                                            >
+                                                <Settings className="h-3 w-3" />
+                                                Manage
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

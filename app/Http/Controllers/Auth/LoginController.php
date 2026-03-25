@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\StoreSelfRegistrationRequest;
 use App\Models\AuditLog;
 use App\Models\Role;
+use App\Models\StudentProgram;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,21 +43,24 @@ class LoginController extends Controller
         'program_chairperson',
     ];
 
+    /**
+     * @var array<int, string>
+     */
+    private const SELF_REGISTRATION_ROLES = [
+        'student',
+        'adviser',
+        'panelist',
+        'instructor',
+        'dean',
+        'program_chairperson',
+    ];
+
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
-            'role' => ['required', 'string'],
         ]);
-
-        $requestedRole = Role::normalizeRole((string) $request->input('role'));
-
-        if ($requestedRole === null || ! array_key_exists($requestedRole, self::ROLE_DASHBOARD_ROUTES)) {
-            return back()->withErrors([
-                'role' => 'The selected role is not configured for dashboard access.',
-            ]);
-        }
 
         $user = User::query()->with('roles:id,slug')->where('email', $request->email)->first();
 
@@ -65,9 +70,19 @@ class LoginController extends Controller
             ]);
         }
 
-        if (! $this->canAccessRequestedRole($user, $requestedRole)) {
+        $blockedLoginMessage = $this->resolveBlockedLoginMessage($user);
+
+        if ($blockedLoginMessage !== null) {
             return back()->withErrors([
-                'role' => 'You are not assigned to the selected role.',
+                'email' => $blockedLoginMessage,
+            ]);
+        }
+
+        $requestedRole = $this->resolveLoginRole($user);
+
+        if ($requestedRole === null) {
+            return back()->withErrors([
+                'email' => 'Your account does not have a valid role assignment.',
             ]);
         }
 
@@ -84,6 +99,76 @@ class LoginController extends Controller
         Inertia::clearHistory();
 
         return redirect()->route(self::ROLE_DASHBOARD_ROUTES[$requestedRole]);
+    }
+
+    public function register(StoreSelfRegistrationRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+        $requestedRole = Role::normalizeRole($validated['role']);
+
+        if ($requestedRole === null || ! in_array($requestedRole, self::SELF_REGISTRATION_ROLES, true)) {
+            return back()->withErrors([
+                'role' => 'The selected role is not available for self-registration.',
+            ]);
+        }
+
+        $user = User::query()->create([
+            'name' => $this->buildDisplayName($validated['first_name'], $validated['last_name']),
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'email' => $validated['email'],
+            'role' => $requestedRole,
+            'status' => 'pending',
+            'program' => $this->normalizeProgramCode($validated['program'] ?? null),
+            'password' => $validated['password'],
+        ]);
+
+        $user->syncRoles([$requestedRole]);
+        $this->syncStudentProfile($user, $validated['program'] ?? null, $requestedRole === 'student');
+
+        return redirect()
+            ->route('login')
+            ->with('success', 'Registration request submitted. Wait for admin approval before signing in.');
+    }
+
+    private function resolveLoginRole(User $user): ?string
+    {
+        $storedRole = Role::normalizeRole((string) $user->role);
+
+        if ($storedRole !== null && $this->canAccessRequestedRole($user, $storedRole)) {
+            return $storedRole;
+        }
+
+        $assignedRole = collect($user->roleSlugs())
+            ->map(fn (string $role): ?string => Role::normalizeRole($role))
+            ->filter(fn (?string $role): bool => $role !== null)
+            ->first(fn (string $role): bool => $this->canAccessRequestedRole($user, $role));
+
+        if (is_string($assignedRole)) {
+            return $assignedRole;
+        }
+
+        $legacyRole = collect(explode(',', (string) $user->role))
+            ->map(fn (string $role): ?string => Role::normalizeRole($role))
+            ->filter(fn (?string $role): bool => $role !== null)
+            ->first(fn (string $role): bool => $this->canAccessRequestedRole($user, $role));
+
+        return is_string($legacyRole) ? $legacyRole : null;
+    }
+
+    private function resolveBlockedLoginMessage(User $user): ?string
+    {
+        $status = is_string($user->status) ? trim(strtolower($user->status)) : '';
+
+        if ($status === 'pending') {
+            return 'Your registration is pending admin approval.';
+        }
+
+        if ($status === 'inactive') {
+            return 'Your account is inactive.';
+        }
+
+        return null;
     }
 
     public function logout(Request $request): RedirectResponse
@@ -180,6 +265,52 @@ class LoginController extends Controller
         ])->save();
 
         return true;
+    }
+
+    private function buildDisplayName(string $firstName, string $lastName): string
+    {
+        return trim($firstName.' '.$lastName);
+    }
+
+    private function normalizeProgramCode(mixed $programCode): ?string
+    {
+        if (! is_string($programCode) || trim($programCode) === '') {
+            return null;
+        }
+
+        $normalizedCode = strtoupper(trim($programCode));
+
+        if (! in_array($normalizedCode, ['BSIT', 'BSIS'], true)) {
+            return null;
+        }
+
+        return $normalizedCode;
+    }
+
+    private function syncStudentProfile(User $user, mixed $programCode, bool $isStudent): void
+    {
+        if (! Schema::hasTable('student_program')) {
+            return;
+        }
+
+        if (! $isStudent) {
+            $user->studentProgram()->delete();
+
+            return;
+        }
+
+        $resolvedProgram = $this->normalizeProgramCode($programCode);
+
+        if ($resolvedProgram === null) {
+            $user->studentProgram()->delete();
+
+            return;
+        }
+
+        StudentProgram::query()->updateOrCreate(
+            ['student_id' => $user->id],
+            ['program' => $resolvedProgram]
+        );
     }
 
     private function recordLoginAudit(User $user, Request $request, string $requestedRole): void

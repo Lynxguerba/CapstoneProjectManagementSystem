@@ -222,6 +222,42 @@ class AdminUserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'User account updated successfully.');
     }
 
+    public function approve(Request $request, User $user): RedirectResponse
+    {
+        $roles = $user->roleSlugs();
+        $isStudent = $user->hasRole('student') || Role::normalizeRole((string) $user->role) === 'student';
+        $programCode = $user->studentProgram?->program ?? $user->program;
+
+        if ($isStudent && $this->normalizeProgramCode($programCode) === null) {
+            return $this->redirectToListing($request, 'Assign a valid program before approving this student account.', true);
+        }
+
+        $user->forceFill([
+            'status' => 'active',
+        ])->save();
+
+        if ($isStudent) {
+            $this->syncStudentProfile($user, $programCode, true);
+        }
+
+        if ($user->role === '' || $user->role === null) {
+            $user->forceFill([
+                'role' => $roles[0] ?? ($isStudent ? 'student' : 'adviser'),
+            ])->save();
+        }
+
+        return $this->redirectToListing($request, 'Account approved and activated successfully.');
+    }
+
+    public function reject(Request $request, User $user): RedirectResponse
+    {
+        $user->forceFill([
+            'status' => 'inactive',
+        ])->save();
+
+        return $this->redirectToListing($request, 'Account request rejected successfully.');
+    }
+
     public function bulkStore(StoreBulkAdminUsersRequest $request): RedirectResponse
     {
         $entityType = $request->query('type', 'user');
@@ -347,16 +383,17 @@ class AdminUserController extends Controller
         }
 
         $students = $studentsQuery
+            ->orderByRaw("CASE WHEN users.status = 'pending' THEN 0 ELSE 1 END")
             ->orderByDesc('users.created_at')
-            ->get(['id', 'name', 'first_name', 'last_name', 'email', 'status', 'created_at'])
+            ->get(['id', 'name', 'first_name', 'last_name', 'email', 'status', 'program', 'created_at'])
             ->map(function (User $student) use ($hasStudentProgramTable): array {
                 $firstName = is_string($student->first_name) ? trim($student->first_name) : '';
                 $lastName = is_string($student->last_name) ? trim($student->last_name) : '';
                 $fullName = $this->buildFullName($firstName, $lastName, $student->name);
                 $status = is_string($student->status) && $student->status !== '' ? $student->status : 'active';
                 $program = $hasStudentProgramTable
-                    ? $student->studentProgram?->program
-                    : null;
+                    ? ($student->studentProgram?->program ?? $this->normalizeProgramCode($student->program))
+                    : $this->normalizeProgramCode($student->program);
 
                 return [
                     'id' => $student->id,
@@ -415,6 +452,7 @@ class AdminUserController extends Controller
                         });
                 });
             })
+            ->orderByRaw("CASE WHEN users.status = 'pending' THEN 0 ELSE 1 END")
             ->orderByDesc('users.created_at')
             ->get(['id', 'name', 'first_name', 'last_name', 'email', 'role', 'status', 'created_at'])
             ->map(function (User $user) use ($facultyRoles): array {
@@ -454,7 +492,7 @@ class AdminUserController extends Controller
         ]);
     }
 
-    private function normalizeStudentProgram(?string $programCode): ?string
+    private function normalizeProgramCode(mixed $programCode): ?string
     {
         if (! is_string($programCode) || trim($programCode) === '') {
             return null;
@@ -481,7 +519,13 @@ class AdminUserController extends Controller
             return;
         }
 
-        $resolvedProgram = $this->normalizeStudentProgram($programCode) ?? 'BSIT';
+        $resolvedProgram = $this->normalizeProgramCode($programCode);
+
+        if ($resolvedProgram === null) {
+            $user->studentProgram()->delete();
+
+            return;
+        }
 
         StudentProgram::query()->updateOrCreate(
             ['student_id' => $user->id],
@@ -492,6 +536,24 @@ class AdminUserController extends Controller
     private function hasStudentProgramTable(): bool
     {
         return Schema::hasTable('student_program');
+    }
+
+    private function redirectToListing(Request $request, string $message, bool $isError = false): RedirectResponse
+    {
+        $from = $request->string('from')->toString();
+        $routeName = 'admin.users.index';
+
+        if ($from === 'student') {
+            $routeName = 'admin.users.students';
+        }
+
+        if ($from === 'faculty') {
+            $routeName = 'admin.users.faculty';
+        }
+
+        $redirect = redirect()->route($routeName);
+
+        return $isError ? $redirect->with('error', $message) : $redirect->with('success', $message);
     }
 
     private function buildDisplayName(string $firstName, string $lastName): string

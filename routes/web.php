@@ -26,6 +26,7 @@ Route::get('/login', function () {
 })->name('login.show');
 
 Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+Route::post('/register', [LoginController::class, 'register'])->name('register.store');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::post('/switch-role', \App\Http\Controllers\Auth\SwitchRoleController::class)
     ->name('switch-role')

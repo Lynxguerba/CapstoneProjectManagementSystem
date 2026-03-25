@@ -19,6 +19,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::post('/users', [AdminUserController::class, 'store'])->name('admin.users.store');
     Route::post('/users/bulk', [AdminUserController::class, 'bulkStore'])->name('admin.users.bulk-store');
     Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
+    Route::patch('/users/{user}/approve', [AdminUserController::class, 'approve'])->name('admin.users.approve');
+    Route::patch('/users/{user}/reject', [AdminUserController::class, 'reject'])->name('admin.users.reject');
     Route::get('/monitoring/sections', function () {
         $sections = [];
         $academicYears = [];

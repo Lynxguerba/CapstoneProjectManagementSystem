@@ -30,15 +30,17 @@ class EnsureRole
             return redirect()->route('login');
         }
 
-        if ($this->isInactiveAccount($user)) {
-            $this->recordInactiveAutoLogoutAudit($user, $request);
+        $blockedAccountMessage = $this->resolveBlockedAccountMessage($user);
+
+        if ($blockedAccountMessage !== null) {
+            $this->recordBlockedAutoLogoutAudit($user, $request, $blockedAccountMessage);
 
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
             return redirect()->route('login')->withErrors([
-                'email' => 'Your account is inactive.',
+                'email' => $blockedAccountMessage,
             ]);
         }
 
@@ -57,14 +59,22 @@ class EnsureRole
         return $next($request);
     }
 
-    private function isInactiveAccount(User $user): bool
+    private function resolveBlockedAccountMessage(User $user): ?string
     {
         $status = is_string($user->status ?? null) ? trim(strtolower((string) $user->status)) : '';
 
-        return $status === 'inactive';
+        if ($status === 'pending') {
+            return 'Your registration is pending admin approval.';
+        }
+
+        if ($status === 'inactive') {
+            return 'Your account is inactive.';
+        }
+
+        return null;
     }
 
-    private function recordInactiveAutoLogoutAudit(User $user, Request $request): void
+    private function recordBlockedAutoLogoutAudit(User $user, Request $request, string $message): void
     {
         if (! Schema::hasTable('audit_logs')) {
             return;
@@ -75,12 +85,13 @@ class EnsureRole
         $actorName = $firstName !== '' || $lastName !== ''
             ? trim($firstName.' '.$lastName)
             : (is_string($user->name) ? trim($user->name) : 'User');
+        $logoutReason = str_contains(strtolower($message), 'pending') ? 'pending_approval' : 'inactive_account';
 
         try {
             AuditLog::query()->create([
                 'user_id' => $user->id,
                 'actor_name' => $actorName !== '' ? $actorName : 'User',
-                'action' => 'Automatic Sign Out (Inactive Account)',
+                'action' => 'Automatic Sign Out (Blocked Account)',
                 'entity' => 'Authentication',
                 'severity' => 'warning',
                 'route_name' => $request->route()?->getName(),
@@ -88,11 +99,11 @@ class EnsureRole
                 'status_code' => 302,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
-                'description' => 'User was automatically signed out because the account is inactive.',
+                'description' => $message,
                 'metadata' => [
                     'active_role' => $request->session()->get('active_role'),
                     'assigned_roles' => $user->roleSlugs(),
-                    'logout_reason' => 'inactive_account',
+                    'logout_reason' => $logoutReason,
                 ],
             ]);
         } catch (\Throwable $e) {

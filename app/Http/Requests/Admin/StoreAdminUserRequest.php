@@ -14,6 +14,7 @@ class StoreAdminUserRequest extends FormRequest
     private const AVAILABLE_STATUSES = [
         'active',
         'inactive',
+        'pending',
     ];
 
     /**
@@ -93,7 +94,7 @@ class StoreAdminUserRequest extends FormRequest
                 'email.unique' => 'This student email is already in use.',
                 'password.required' => 'Password is required.',
                 'password.min' => 'Password must be at least 8 characters.',
-                'status.in' => 'Status must be active or inactive.',
+                'status.in' => 'Status must be active, inactive, or pending.',
             ];
         }
 

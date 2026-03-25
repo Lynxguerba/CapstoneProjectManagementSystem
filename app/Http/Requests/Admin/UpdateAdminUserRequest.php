@@ -14,6 +14,7 @@ class UpdateAdminUserRequest extends FormRequest
     private const AVAILABLE_STATUSES = [
         'active',
         'inactive',
+        'pending',
     ];
 
     public function authorize(): bool

@@ -18,7 +18,6 @@ it('logs in adviser accounts with valid credentials and redirects to adviser das
     $response = $this->post(route('login.store'), [
         'email' => 'adviser-login@example.com',
         'password' => 'secretpass',
-        'role' => 'adviser',
     ]);
 
     $response->assertRedirect(route('adviser.dashboard'));
@@ -44,7 +43,6 @@ it('supports legacy plaintext passwords and rehashes after successful login', fu
     $response = $this->post(route('login.store'), [
         'email' => 'legacy-adviser@example.com',
         'password' => 'plain-text-pass',
-        'role' => 'adviser',
     ]);
 
     $response->assertRedirect(route('adviser.dashboard'));
@@ -52,6 +50,24 @@ it('supports legacy plaintext passwords and rehashes after successful login', fu
     $user->refresh();
 
     expect(Hash::check('plain-text-pass', (string) $user->password))->toBeTrue();
+});
+
+it('logs multi-role accounts into their stored active role', function (): void {
+    $user = User::factory()->create([
+        'email' => 'multirole@example.com',
+        'password' => 'secretpass',
+        'role' => 'panelist',
+    ]);
+    $user->syncRoles(['adviser', 'panelist']);
+
+    $response = $this->post(route('login.store'), [
+        'email' => 'multirole@example.com',
+        'password' => 'secretpass',
+    ]);
+
+    $response->assertRedirect(route('panelist.dashboard'));
+    $response->assertSessionHas('active_role', 'panelist');
+    $this->assertAuthenticatedAs($user, 'web');
 });
 
 it('stores the provided password when creating a faculty account', function (): void {

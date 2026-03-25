@@ -1,6 +1,6 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Filter, Search, Settings, Upload } from 'lucide-react';
+import { Check, ChevronRight, Filter, Search, Settings, Upload, X } from 'lucide-react';
 import React from 'react';
 import AddUserModal from '../../components/Admin/AddUserModal';
 import BulkUploadModal from '../../components/Admin/BulkUploadModal';
@@ -8,7 +8,7 @@ import ManageUserActionModal from '../../components/Admin/ManageUserActionModal'
 import AdminLayout from './_layout';
 
 type StudentProgram = 'BSIT' | 'BSIS';
-type StudentStatus = 'active' | 'inactive';
+type StudentStatus = 'active' | 'inactive' | 'pending';
 type StudentFilterProgram = StudentProgram | 'all';
 type StudentFilterStatus = StudentStatus | 'all';
 
@@ -61,6 +61,18 @@ const resolveStudentProgram = (student: RawStudentRow): StudentProgram | undefin
     return undefined;
 };
 
+const statusBadgeClasses = (status: StudentStatus): string => {
+    if (status === 'pending') {
+        return 'bg-amber-100 text-amber-800';
+    }
+
+    if (status === 'active') {
+        return 'bg-emerald-100 text-emerald-700';
+    }
+
+    return 'bg-slate-200 text-slate-600';
+};
+
 const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
     const initialStudents = React.useMemo(() => {
         if (!Array.isArray(students)) {
@@ -81,6 +93,7 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
     const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = React.useState(false);
     const [isManageUserModalOpen, setIsManageUserModalOpen] = React.useState(false);
     const [selectedStudent, setSelectedStudent] = React.useState<StudentRow | null>(null);
+    const [processingStudentId, setProcessingStudentId] = React.useState<number | null>(null);
     const [currentPage, setCurrentPage] = React.useState(1);
     const usersPerPage = 10;
 
@@ -92,19 +105,35 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
     const filteredUsers = React.useMemo(() => {
         const query = search.trim().toLowerCase();
 
-        return managedStudents.filter((user) => {
-            const programCode = (user.program ?? '').toLowerCase();
-            const matchesQuery =
-                !query ||
-                user.fullName.toLowerCase().includes(query) ||
-                programCode.includes(query) ||
-                (user.email ?? '').toLowerCase().includes(query);
-            const matchesProgram = program === 'all' || user.program === program;
-            const matchesStatus = status === 'all' || user.status === status;
+        return managedStudents
+            .filter((user) => {
+                const programCode = (user.program ?? '').toLowerCase();
+                const matchesQuery =
+                    !query ||
+                    user.fullName.toLowerCase().includes(query) ||
+                    programCode.includes(query) ||
+                    (user.email ?? '').toLowerCase().includes(query);
+                const matchesProgram = program === 'all' || user.program === program;
+                const matchesStatus = status === 'all' || user.status === status;
 
-            return matchesQuery && matchesProgram && matchesStatus;
-        });
+                return matchesQuery && matchesProgram && matchesStatus;
+            })
+            .sort((leftUser, rightUser) => {
+                if (leftUser.status === 'pending' && rightUser.status !== 'pending') {
+                    return -1;
+                }
+
+                if (leftUser.status !== 'pending' && rightUser.status === 'pending') {
+                    return 1;
+                }
+
+                return rightUser.createdAt.localeCompare(leftUser.createdAt);
+            });
     }, [managedStudents, search, program, status]);
+
+    const pendingRegistrationCount = React.useMemo(() => {
+        return managedStudents.filter((user) => user.status === 'pending').length;
+    }, [managedStudents]);
 
     React.useEffect(() => {
         setCurrentPage(1);
@@ -139,6 +168,19 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
         setManagedStudents((previousStudents) => previousStudents.map((student) => (student.id === updatedStudent.id ? updatedStudent : student)));
         setIsManageUserModalOpen(false);
         setSelectedStudent(null);
+    };
+
+    const handlePendingAction = (student: StudentRow, action: 'approve' | 'reject') => {
+        setProcessingStudentId(student.id);
+
+        router.patch(
+            `/admin/users/${student.id}/${action}?from=student`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setProcessingStudentId(null),
+            },
+        );
     };
 
     return (
@@ -191,6 +233,7 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                             >
                                 <option value="all">All Statuses</option>
                                 <option value="active">Active</option>
+                                <option value="pending">Pending</option>
                                 <option value="inactive">Inactive</option>
                             </select>
                         </div>
@@ -215,6 +258,20 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                     </div>
                 </div>
 
+                {pendingRegistrationCount > 0 ? (
+                    <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-white to-amber-50 px-4 py-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <div className="text-xs font-semibold tracking-[0.18em] text-amber-700 uppercase">Registration approvals</div>
+                            <div className="mt-1 text-sm text-slate-700">
+                                {pendingRegistrationCount} student registration request{pendingRegistrationCount === 1 ? '' : 's'} pinned to the top.
+                            </div>
+                        </div>
+                        <div className="text-xs text-slate-500">
+                            Open `Manage` on a pending row, assign the final details, then change status to `active` to approve.
+                        </div>
+                    </div>
+                ) : null}
+
                 {/* Striped Table */}
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                     <table className="w-full text-left text-xs">
@@ -232,7 +289,9 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                             {paginatedUsers.map((user, index) => (
                                 <tr
                                     key={user.id}
-                                    className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
+                                    className={`transition-colors hover:bg-green-50/30 ${
+                                        user.status === 'pending' ? 'bg-amber-50/60' : index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'
+                                    }`}
                                 >
                                     <td className="px-6 py-3.5 font-semibold text-slate-800">{user.fullName}</td>
                                     <td className="px-6 py-3.5 text-slate-500">{user.email ?? '—'}</td>
@@ -245,23 +304,44 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                     </td>
                                     <td className="px-6 py-3.5">
                                         <span
-                                            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${
-                                                user.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
-                                            }`}
+                                            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${statusBadgeClasses(user.status)}`}
                                         >
                                             {user.status}
                                         </span>
                                     </td>
                                     <td className="px-6 py-3.5 text-slate-500">{user.createdAt}</td>
                                     <td className="px-6 py-3.5 text-right">
-                                        <button
-                                            type="button"
-                                            onClick={() => openManageStudentModal(user)}
-                                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700"
-                                        >
-                                            <Settings className="h-3 w-3" />
-                                            Manage
-                                        </button>
+                                        {user.status === 'pending' ? (
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handlePendingAction(user, 'reject')}
+                                                    disabled={processingStudentId === user.id}
+                                                    className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-bold text-rose-700 shadow-sm transition-all hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                    Reject
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handlePendingAction(user, 'approve')}
+                                                    disabled={processingStudentId === user.id}
+                                                    className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-100 px-2.5 py-1.5 text-[11px] font-bold text-amber-800 shadow-sm transition-all hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                    <Check className="h-3 w-3" />
+                                                    Approve
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => openManageStudentModal(user)}
+                                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700"
+                                            >
+                                                <Settings className="h-3 w-3" />
+                                                Manage
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

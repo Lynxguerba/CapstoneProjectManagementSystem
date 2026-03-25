@@ -6,7 +6,7 @@ import { store } from '../../routes/admin/users';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type FacultyRole = 'admin' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
-type UserStatus = 'active' | 'inactive';
+type UserStatus = 'active' | 'inactive' | 'pending';
 type StudentProgram = 'BSIT' | 'BSIS';
 type EntityType = 'user' | 'faculty' | 'student';
 
@@ -277,6 +277,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
                                     className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="active">active</option>
+                                    <option value="pending">pending</option>
                                     <option value="inactive">inactive</option>
                                 </select>
                                 {addUserForm.errors.status ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.status}</p> : null}
@@ -322,6 +323,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
                                     className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="active">active</option>
+                                    <option value="pending">pending</option>
                                     <option value="inactive">inactive</option>
                                 </select>
                                 {addUserForm.errors.status ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.status}</p> : null}

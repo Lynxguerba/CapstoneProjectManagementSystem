@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type FacultyRole = Exclude<UserRole, 'student'>;
-type UserStatus = 'active' | 'inactive';
+type UserStatus = 'active' | 'inactive' | 'pending';
 type StudentProgram = 'BSIT' | 'BSIS';
 type ManageMode = 'user' | 'student' | 'faculty';
 
@@ -313,6 +313,7 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
                                 className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm capitalize focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
                             >
                                 <option value="active">active</option>
+                                <option value="pending">pending</option>
                                 <option value="inactive">inactive</option>
                             </select>
                             {errors.status ? <p className="mt-1 text-xs text-rose-600">{errors.status}</p> : null}
