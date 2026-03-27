@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Box } from '@mui/material';
-import { LineChart, PieChart } from '@mui/x-charts';
+import { BarChart, LineChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
 import { CalendarCheck, FolderKanban, GraduationCap, Layers3, ShieldCheck, UserCheck, Users } from 'lucide-react';
 import React from 'react';
@@ -35,6 +35,11 @@ type ProgramDistribution = {
     color: string;
 };
 
+type ProgramSetGroupCount = {
+    label: string;
+    value: number;
+};
+
 type ActivitySeverity = 'info' | 'warning' | 'critical';
 
 type ActivityTrendEvent = {
@@ -53,6 +58,7 @@ type AdminDashboardProps = {
     stats?: DashboardStats;
     roleDistribution?: RoleDistribution[];
     programDistribution?: ProgramDistribution[];
+    programSetGroups?: ProgramSetGroupCount[];
     activityTrend?: ActivityTrend;
 };
 
@@ -153,6 +159,7 @@ const Dashboard = () => {
     const stats = props.stats ?? fallbackStats;
     const roleDistribution = props.roleDistribution ?? [];
     const programDistribution = props.programDistribution ?? fallbackProgramDistribution;
+    const programSetGroups = props.programSetGroups ?? [];
     const activityTrend = props.activityTrend ?? fallbackActivityTrend;
 
     const rolePieData = roleDistribution.map((item, index) => ({
@@ -173,6 +180,16 @@ const Dashboard = () => {
 
     const programTotal = programDistribution.reduce((sum, item) => sum + item.value, 0);
     const hasProgramData = programTotal > 0;
+    const [selectedProgramSetChartFilter, setSelectedProgramSetChartFilter] = React.useState<'All' | 'BSIT' | 'BSIS'>('All');
+    const filteredProgramSetGroups = React.useMemo(() => {
+        if (selectedProgramSetChartFilter === 'All') {
+            return programSetGroups;
+        }
+
+        return programSetGroups.filter((item) => item.label.toUpperCase().includes(selectedProgramSetChartFilter));
+    }, [programSetGroups, selectedProgramSetChartFilter]);
+    const hasProgramSetGroupData = filteredProgramSetGroups.length > 0;
+    const programSetBarChartWidth = Math.max(520, filteredProgramSetGroups.length * 92);
     const studentProgramCoverage = progressFor(programTotal, stats.totalStudents);
     const activityTrendSeries = React.useMemo(() => buildLocalActivityTrendSeries(activityTrend.events), [activityTrend.events]);
     const hasActivityData =
@@ -272,9 +289,32 @@ const Dashboard = () => {
     return (
         <AdminLayout title="Dashboard" subtitle="Admin Dashboard">
             <div className="space-y-8">
+                <style
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                            .cpms-scroll::-webkit-scrollbar {
+                                height: 6px;
+                            }
+                            .cpms-scroll::-webkit-scrollbar-track {
+                                background: transparent;
+                            }
+                            .cpms-scroll::-webkit-scrollbar-thumb {
+                                background: #09be8293;
+                                border-radius: 3px;
+                            }
+                            .cpms-scroll::-webkit-scrollbar-thumb:hover {
+                                background: #00af78ff;
+                            }
+                            .cpms-scroll::-webkit-scrollbar-button {
+                                display: none;
+                            }
+                        `,
+                    }}
+                />
                 <motion.section
                     initial={{ opacity: 0, y: 14, scale: 0.99 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
                     transition={{ duration: 0.45 }}
                     className="relative overflow-hidden rounded-3xl border border-emerald-300/70 bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-800 p-6 shadow-xl shadow-emerald-950/20 md:p-8"
                 >
@@ -309,8 +349,8 @@ const Dashboard = () => {
                             {dashboardHighlights.map((highlight, index) => (
                                 <motion.div
                                     key={highlight.label}
-                                    initial={{ opacity: 0, y: 12 }}
-                                    animate={{ opacity: 1, y: 0 }}
+                                    initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
                                     transition={{ delay: 0.08 + index * 0.06 }}
                                     className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm"
                                 >
@@ -326,9 +366,10 @@ const Dashboard = () => {
                 </motion.section>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.12 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-2"
                 >
                     <div className={panelClassName}>
@@ -396,7 +437,7 @@ const Dashboard = () => {
                                     />
                                 </Box>
 
-                                <div className="overflow-x-auto pb-1">
+                                <div className="cpms-scroll overflow-x-auto pb-1">
                                     <div className="mx-auto flex w-max items-center justify-center gap-2">
                                         {roleDistribution.map((role) => (
                                             <div
@@ -422,10 +463,11 @@ const Dashboard = () => {
                 </motion.section>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.18 }}
-                    className="grid grid-cols-1 gap-6 xl:grid-cols-2"
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
+                    className="grid grid-cols-1 gap-6 xl:grid-cols-3"
                 >
                     <div className={panelClassName}>
                         <div className="flex items-center justify-between gap-3">
@@ -502,6 +544,63 @@ const Dashboard = () => {
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2">
+                                    <FolderKanban className="h-5 w-5 text-emerald-700" />
+                                    <h3 className="text-lg font-semibold text-slate-900">Program Set Groups</h3>
+                                </div>
+                                <p className="mt-1 text-sm text-slate-600">Groups count per program set.</p>
+                            </div>
+                            <div className="relative">
+                                <select
+                                    value={selectedProgramSetChartFilter}
+                                    onChange={(event) => setSelectedProgramSetChartFilter(event.target.value as 'All' | 'BSIT' | 'BSIS')}
+                                    className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+                                >
+                                    <option value="All">All Programs</option>
+                                    <option value="BSIT">BSIT</option>
+                                    <option value="BSIS">BSIS</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {hasProgramSetGroupData ? (
+                            <div className="cpms-scroll mt-4 overflow-x-auto pb-1">
+                                <Box sx={{ minWidth: programSetBarChartWidth }}>
+                                    <BarChart
+                                        width={programSetBarChartWidth}
+                                        height={248}
+                                        xAxis={[
+                                            {
+                                                scaleType: 'band',
+                                                data: filteredProgramSetGroups.map((item) => item.label),
+                                                tickLabelStyle: { fontSize: 10 },
+                                            },
+                                        ]}
+                                        yAxis={[{ min: 0 }]}
+                                        series={[
+                                            {
+                                                label: 'Groups',
+                                                data: filteredProgramSetGroups.map((item) => item.value),
+                                                color: '#10b981',
+                                            },
+                                        ]}
+                                        margin={{ top: 16, right: 16, bottom: 54, left: 40 }}
+                                        grid={{ horizontal: true }}
+                                        slotProps={{ legend: { hidden: true } }}
+                                        skipAnimation={false}
+                                    />
+                                </Box>
+                            </div>
+                        ) : (
+                            <div className="mt-6 rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-6 text-center text-xs text-slate-500">
+                                No program-set group records available yet.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={panelClassName}>
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <div className="flex items-center gap-2">
                                     <ShieldCheck className="h-5 w-5 text-emerald-700" />
                                     <h3 className="text-lg font-semibold text-slate-900">Account Status</h3>
                                 </div>
@@ -532,9 +631,10 @@ const Dashboard = () => {
                 </motion.section>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.24 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
                     className={panelClassName}
                 >
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -554,29 +654,64 @@ const Dashboard = () => {
                                 xAxis={[{ data: activityTrendSeries.labels, scaleType: 'point' }]}
                                 series={[
                                     {
+                                        id: 'info',
                                         data: activityTrendSeries.info,
                                         label: 'Info Logs',
                                         color: '#059669',
                                         area: true,
+                                        disableHighlight: true,
                                         showMark: false,
                                     },
                                     {
+                                        id: 'warning',
                                         data: activityTrendSeries.warning,
                                         label: 'Warning Logs',
-                                        color: '#0f766e',
+                                        color: '#ca8a04',
+                                        area: true,
+                                        disableHighlight: true,
                                         showMark: false,
                                     },
                                     {
+                                        id: 'critical',
                                         data: activityTrendSeries.critical,
                                         label: 'Critical Logs',
                                         color: '#dc2626',
+                                        area: true,
+                                        disableHighlight: true,
                                         showMark: false,
                                     },
                                 ]}
                                 margin={{ top: 16, right: 20, bottom: 28, left: 40 }}
                                 grid={{ vertical: true, horizontal: true }}
+                                disableLineItemHighlight
+                                sx={{
+                                    '& .MuiAreaElement-series-info': {
+                                        fill: 'url(#auditTrendInfoAreaGradient) !important',
+                                    },
+                                    '& .MuiAreaElement-series-warning': {
+                                        fill: 'url(#auditTrendWarningAreaGradient) !important',
+                                    },
+                                    '& .MuiAreaElement-series-critical': {
+                                        fill: 'url(#auditTrendCriticalAreaGradient) !important',
+                                    },
+                                }}
                                 skipAnimation={false}
-                            />
+                            >
+                                <defs>
+                                    <linearGradient id="auditTrendInfoAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stopColor="#059669" stopOpacity="0.35" />
+                                        <stop offset="100%" stopColor="#059669" stopOpacity="0.04" />
+                                    </linearGradient>
+                                    <linearGradient id="auditTrendWarningAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stopColor="#ca8a04" stopOpacity="0.35" />
+                                        <stop offset="100%" stopColor="#ca8a04" stopOpacity="0.04" />
+                                    </linearGradient>
+                                    <linearGradient id="auditTrendCriticalAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stopColor="#dc2626" stopOpacity="0.32" />
+                                        <stop offset="100%" stopColor="#dc2626" stopOpacity="0.04" />
+                                    </linearGradient>
+                                </defs>
+                            </LineChart>
                         </Box>
                     ) : (
                         <div className="mt-2 rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-8 text-center text-xs text-slate-500">

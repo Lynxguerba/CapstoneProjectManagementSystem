@@ -115,6 +115,7 @@ class AdminDashboardController extends Controller
             ],
             'roleDistribution' => $this->buildRoleDistribution($hasUsersTable, $hasRoleTables),
             'programDistribution' => $this->buildProgramDistribution($hasUsersTable, $hasRoleTables),
+            'programSetGroups' => $this->buildProgramSetGroupDistribution(),
             'activityTrend' => $this->buildActivityTrend(Schema::hasTable('audit_logs')),
         ]);
     }
@@ -186,6 +187,27 @@ class AdminDashboardController extends Controller
                     'color' => $visual['color'],
                 ];
             })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{label: string, value: int}>
+     */
+    private function buildProgramSetGroupDistribution(): array
+    {
+        if (! Schema::hasTable('program_sets') || ! Schema::hasTable('groups')) {
+            return [];
+        }
+
+        return ProgramSet::query()
+            ->withCount('groups')
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(static fn (ProgramSet $programSet): array => [
+                'label' => (string) $programSet->name,
+                'value' => (int) ($programSet->groups_count ?? 0),
+            ])
             ->values()
             ->all();
     }

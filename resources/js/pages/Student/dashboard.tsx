@@ -208,7 +208,8 @@ const StudentDashboard = () => {
             <div className="space-y-6">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
                     transition={{ delay: 0.08 }}
                     className="rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white shadow-lg"
                 >
@@ -235,16 +236,18 @@ const StudentDashboard = () => {
                 </motion.div>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.08 }}
+                    initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
                     className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4"
                 >
                     {quickStats.map((stat, index) => (
                         <motion.div
                             key={stat.label}
-                            initial={{ opacity: 0, y: 14 }}
-                            animate={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, y: 14, scale: 0.96 }}
+                            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                            viewport={{ once: false, amount: 0.3 }}
                             transition={{ delay: 0.04 * index }}
                             whileHover={{ y: -4 }}
                             className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
@@ -267,15 +270,17 @@ const StudentDashboard = () => {
                 </motion.section>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.14 }}
+                    initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
                     className="grid grid-cols-1 gap-6 lg:grid-cols-3"
                 >
                     <motion.div
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.16 }}
+                        initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                        viewport={{ once: false, amount: 0.3 }}
+                        transition={{ duration: 0.35 }}
                         className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                     >
                         <div className="mb-3 flex items-center justify-between">
@@ -284,7 +289,12 @@ const StudentDashboard = () => {
                                 {stage.label}
                             </span>
                         </div>
-                        <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.96 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: false, amount: 0.4 }}
+                            transition={{ delay: 0.2 }}
+                        >
                             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                 <PieChart
                                     height={190}
@@ -318,9 +328,10 @@ const StudentDashboard = () => {
                     </motion.div>
 
                     <motion.div
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
+                        initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                        viewport={{ once: false, amount: 0.3 }}
+                        transition={{ duration: 0.35 }}
                         className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                     >
                         <div className="mb-3 flex items-center justify-between">
@@ -329,7 +340,12 @@ const StudentDashboard = () => {
                                 {groupName}
                             </span>
                         </div>
-                        <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.24 }}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.96 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: false, amount: 0.4 }}
+                            transition={{ delay: 0.24 }}
+                        >
                             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                 <PieChart
                                     height={190}
@@ -372,9 +388,10 @@ const StudentDashboard = () => {
                     </motion.div>
 
                     <motion.div
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.24 }}
+                        initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                        viewport={{ once: false, amount: 0.3 }}
+                        transition={{ duration: 0.35 }}
                         whileHover={{ y: -3 }}
                         className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                     >
@@ -396,7 +413,8 @@ const StudentDashboard = () => {
                                         <motion.div
                                             key={member.id}
                                             initial={{ opacity: 0, x: -8 }}
-                                            animate={{ opacity: 1, x: 0 }}
+                                            whileInView={{ opacity: 1, x: 0 }}
+                                            viewport={{ once: false, amount: 0.5 }}
                                             transition={{ delay: 0.28 + index * 0.04 }}
                                             className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3"
                                         >
@@ -423,9 +441,10 @@ const StudentDashboard = () => {
                 </motion.section>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
+                    initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
                     className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
                 >
                     <div className="mb-4 flex items-center justify-between">
@@ -440,8 +459,9 @@ const StudentDashboard = () => {
                             approvedSubmissions.map((record) => (
                                 <motion.div
                                     key={record.id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
+                                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                                    viewport={{ once: false, amount: 0.4 }}
                                     whileHover={{ y: -2 }}
                                     className="rounded-r-xl border border-emerald-200 bg-emerald-50 p-4"
                                     style={{ borderLeftWidth: '4px' }}

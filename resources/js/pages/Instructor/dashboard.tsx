@@ -434,7 +434,8 @@ const Dashboard = () => {
             <div className="space-y-8">
                 <motion.section
                     initial={{ opacity: 0, y: 14, scale: 0.99 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
                     transition={{ duration: 0.45 }}
                     className="relative overflow-hidden rounded-3xl border border-emerald-300/70 bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-800 p-6 shadow-xl shadow-emerald-950/20 md:p-8"
                 >
@@ -471,8 +472,9 @@ const Dashboard = () => {
                             {dashboardHighlights.map((highlight, index) => (
                                 <motion.div
                                     key={highlight.label}
-                                    initial={{ opacity: 0, y: 12 }}
-                                    animate={{ opacity: 1, y: 0 }}
+                                    initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                                    viewport={{ once: false, amount: 0.3 }}
                                     transition={{ delay: 0.08 + index * 0.06 }}
                                     className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm"
                                 >
@@ -488,9 +490,10 @@ const Dashboard = () => {
                 </motion.section>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.12 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-2"
                 >
                     <div className={panelClassName}>
@@ -566,8 +569,9 @@ const Dashboard = () => {
                         <Box sx={{ mt: 2 }}>
                             <motion.div
                                 key={selectedAcademicYear}
-                                initial={{ opacity: 0, y: 12 }}
-                                animate={{ opacity: 1, y: 0 }}
+                                initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                                viewport={{ once: false, amount: 0.3 }}
                                 transition={{ duration: 0.3 }}
                                 className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
                             >
@@ -618,9 +622,10 @@ const Dashboard = () => {
                 </motion.section>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.14 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-3"
                 >
                     <div className={panelClassName}>
@@ -634,8 +639,9 @@ const Dashboard = () => {
                             {hasProgramDistribution ? (
                                 <motion.div
                                     key={programDistributionTotal}
-                                    initial={{ opacity: 0, y: 12 }}
-                                    animate={{ opacity: 1, y: 0 }}
+                                    initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                                    viewport={{ once: false, amount: 0.3 }}
                                     transition={{ duration: 0.3 }}
                                     className="flex flex-col items-center gap-4"
                                 >
@@ -731,9 +737,10 @@ const Dashboard = () => {
                 </motion.section>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.16 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-3"
                 >
                     <div className={`${panelClassName} xl:col-span-2`}>
@@ -859,9 +866,10 @@ const Dashboard = () => {
                 </motion.section>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
                     className="grid grid-cols-1 gap-6 lg:grid-cols-2"
                 >
                     <div className={panelClassName}>

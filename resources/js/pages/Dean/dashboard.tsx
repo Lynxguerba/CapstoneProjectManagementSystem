@@ -6,8 +6,9 @@ const DeanDashboard = () => {
     return (
         <DeanLayout title="Dashboard" subtitle="Welcome back, Dean">
             <motion.section
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: false, amount: 0.3 }}
                 className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
             >
                 <h3 className="text-lg font-semibold text-slate-900">Dean Overview</h3>

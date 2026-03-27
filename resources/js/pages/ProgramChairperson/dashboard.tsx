@@ -52,15 +52,17 @@ const ProgramChairpersonDashboard = () => {
         <ProgramChairpersonLayout title="Program Chairperson Dashboard" subtitle="Deployment approvals and monitoring workspace (UI only)">
             <div className="space-y-6">
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
                     className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4"
                 >
                     {cards.map((card, index) => (
                         <motion.article
                             key={card.label}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
+                            initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                            viewport={{ once: false, amount: 0.3 }}
                             transition={{ delay: index * 0.05 }}
                             className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
                         >
@@ -79,9 +81,10 @@ const ProgramChairpersonDashboard = () => {
                 </motion.section>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.06 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-3"
                 >
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
@@ -124,9 +127,10 @@ const ProgramChairpersonDashboard = () => {
                 </motion.section>
 
                 <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-2"
                 >
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
