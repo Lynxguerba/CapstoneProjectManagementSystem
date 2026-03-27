@@ -65,6 +65,8 @@ services:
       PMA_HOST: db
       PMA_PORT: 3306
       MYSQL_ROOT_PASSWORD: root
+      PMA_USER: cpms
+      PMA_PASSWORD: root
     ports:
       - "8080:80"
     depends_on:
