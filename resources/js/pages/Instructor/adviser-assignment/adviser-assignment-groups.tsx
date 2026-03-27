@@ -17,11 +17,19 @@ type AdviserWorkload = {
     groups_count: number;
 };
 
+type AdviserProgramSummary = {
+    program: string;
+    max_groups: number;
+    assigned_count: number;
+};
+
 type AdviserSummary = {
     id: number;
     name: string;
     email: string;
     workloads?: AdviserWorkload[];
+    programs?: AdviserProgramSummary[];
+    is_available?: boolean;
 };
 
 type GroupRow = {
@@ -50,8 +58,6 @@ type AdviserAssignmentGroupsProps = {
     academicYears?: AcademicYearOption[];
     selectedAcademicYear?: string | null;
 };
-
-const MAX_LOAD = 5;
 
 const AdviserAssignmentGroups = ({
     adviser,
@@ -147,21 +153,68 @@ const AdviserAssignmentGroups = ({
         }
     }, [programSetOptions, selectedProgramSet]);
 
-    const getLoadForYear = React.useCallback(
-        (academicYear: string): number => {
-            const workloads = adviser.workloads ?? [];
+    const programUtilities = React.useMemo(() => {
+        const utilities = adviser.programs ?? [];
+        const byProgram = new Map(utilities.map((utility) => [utility.program, utility]));
 
-            if (academicYear === 'All') {
-                return workloads.reduce((total, item) => total + (item.groups_count ?? 0), 0);
+        return { utilities, byProgram };
+    }, [adviser.programs]);
+
+    const assignedByProgramYear = React.useMemo(() => {
+        const tracker = new Map<string, Map<string, number>>();
+
+        groups.forEach((group) => {
+            if (group.adviser_id !== adviser.id) {
+                return;
             }
 
-            return workloads.find((item) => item.academic_year === academicYear)?.groups_count ?? 0;
+            const program = group.program ?? 'Unspecified';
+            const year = group.school_year ?? 'Unspecified';
+            const programMap = tracker.get(program) ?? new Map<string, number>();
+            programMap.set(year, (programMap.get(year) ?? 0) + 1);
+            tracker.set(program, programMap);
+        });
+
+        return tracker;
+    }, [groups, adviser.id]);
+
+    const totalAssigned = programUtilities.utilities.reduce((total, utility) => total + (utility.assigned_count ?? 0), 0);
+    const totalCapacity = programUtilities.utilities.reduce((total, utility) => total + (utility.max_groups ?? 0), 0);
+
+    const selectedYearPrograms = React.useMemo(() => {
+        if (selectedAcademicYear === 'All') {
+            return programUtilities.utilities;
+        }
+
+        return programUtilities.utilities.map((utility) => {
+            const assigned = assignedByProgramYear.get(utility.program)?.get(selectedAcademicYear) ?? 0;
+            return {
+                ...utility,
+                assigned_count: assigned,
+            };
+        });
+    }, [assignedByProgramYear, programUtilities.utilities, selectedAcademicYear]);
+
+    const getMaxForProgram = React.useCallback(
+        (program?: string | null): number => {
+            if (!program) {
+                return 5;
+            }
+
+            return programUtilities.byProgram.get(program)?.max_groups ?? 5;
         },
-        [adviser.workloads],
+        [programUtilities.byProgram],
     );
 
-    const totalLoad = getLoadForYear('All');
-    const selectedYearLoad = selectedAcademicYear === 'All' ? totalLoad : getLoadForYear(selectedAcademicYear);
+    const getAssignedForProgramYear = React.useCallback(
+        (program?: string | null, year?: string | null): number => {
+            const resolvedProgram = program ?? 'Unspecified';
+            const resolvedYear = year ?? 'Unspecified';
+
+            return assignedByProgramYear.get(resolvedProgram)?.get(resolvedYear) ?? 0;
+        },
+        [assignedByProgramYear],
+    );
 
     const filteredGroups = React.useMemo(() => {
         const query = searchTerm.trim().toLowerCase();
@@ -339,28 +392,43 @@ const AdviserAssignmentGroups = ({
                                 <h2 className="text-lg font-semibold text-slate-900">{adviser.name}</h2>
                                 <p className="text-xs text-slate-500">{adviser.email}</p>
                             </div>
-                            <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                                Max {MAX_LOAD} groups per A.Y
+                            <span
+                                className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+                                    adviser.is_available === false ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
+                                }`}
+                            >
+                                {adviser.is_available === false ? 'Closed for requests' : 'Open for requests'}
                             </span>
                         </div>
-                        <div className="mt-4">
-                            <div className="flex items-center justify-between text-xs text-slate-600">
-                                <span>{selectedAcademicYear === 'All' ? 'Total handled groups' : `Handled groups in ${selectedAcademicYear}`}</span>
+                        <div className="mt-4 space-y-2 text-xs text-slate-600">
+                            <p className="font-semibold text-slate-700">
+                                Program capacity {selectedAcademicYear === 'All' ? '(all years)' : `(${selectedAcademicYear})`}
+                            </p>
+                            {selectedYearPrograms.length > 0 ? (
+                                selectedYearPrograms.map((program) => (
+                                    <div key={program.program} className="flex items-center justify-between">
+                                        <span>{program.program}</span>
+                                        <span className="font-semibold text-slate-800">
+                                            {program.assigned_count} / {program.max_groups}
+                                        </span>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-[11px] text-slate-500">No program utilities configured yet.</p>
+                            )}
+                            <div className="flex items-center justify-between pt-2 text-xs text-slate-600">
+                                <span>Total adviser load</span>
                                 <span className="font-semibold text-slate-800">
-                                    {selectedYearLoad}
-                                    {selectedAcademicYear === 'All' ? '' : ` / ${MAX_LOAD}`}
+                                    {totalAssigned}
+                                    {totalCapacity > 0 ? ` / ${totalCapacity}` : ''}
                                 </span>
                             </div>
-                            {selectedAcademicYear !== 'All' ? (
-                                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                                    <div
-                                        className="h-full rounded-full bg-emerald-500"
-                                        style={{ width: `${Math.min(100, Math.round((selectedYearLoad / MAX_LOAD) * 100))}%` }}
-                                    />
-                                </div>
-                            ) : (
-                                <p className="mt-2 text-[11px] text-slate-500">Select an academic year to see the per-year limit indicator.</p>
-                            )}
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                    className="h-full rounded-full bg-emerald-500"
+                                    style={{ width: `${totalCapacity > 0 ? Math.min(100, Math.round((totalAssigned / totalCapacity) * 100)) : 0}%` }}
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -384,7 +452,7 @@ const AdviserAssignmentGroups = ({
                             </div>
                             <div className="flex items-center justify-between">
                                 <span>Total adviser load</span>
-                                <span className="font-semibold text-slate-800">{totalLoad}</span>
+                                <span className="font-semibold text-slate-800">{totalAssigned}</span>
                             </div>
                         </div>
                     </div>
@@ -491,11 +559,13 @@ const AdviserAssignmentGroups = ({
                         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                             {paginatedGroups.map((group) => {
                                 const groupYear = group.school_year ?? 'Unassigned';
-                                const loadForYear = getLoadForYear(groupYear);
+                                const loadForYear = getAssignedForProgramYear(group.program, groupYear);
+                                const maxForProgram = getMaxForProgram(group.program);
                                 const isAssignedToAdviser = group.adviser_id === adviser.id;
                                 const isPending = Boolean(group.pending_request_id);
-                                const isAtLimit = loadForYear >= MAX_LOAD;
-                                const isDisabled = assigningGroupId !== null || (isAtLimit && !isAssignedToAdviser) || isPending;
+                                const isAtLimit = loadForYear >= maxForProgram;
+                                const isClosed = adviser.is_available === false;
+                                const isDisabled = assigningGroupId !== null || isClosed || (isAtLimit && !isAssignedToAdviser) || isPending;
                                 const isReassign = !isAssignedToAdviser && group.adviser_id;
                                 const statusLabel = isPending
                                     ? 'Pending Approval'
@@ -504,7 +574,13 @@ const AdviserAssignmentGroups = ({
                                       : isReassign
                                         ? 'Reassign'
                                         : 'Unassigned';
-                                const actionLabel = isAssignedToAdviser ? 'Assigned' : isPending ? 'Pending Approval' : 'Request Approval';
+                                const actionLabel = isClosed
+                                    ? 'Closed'
+                                    : isAssignedToAdviser
+                                      ? 'Assigned'
+                                      : isPending
+                                        ? 'Pending Approval'
+                                        : 'Request Approval';
 
                                 return (
                                     <div
@@ -584,13 +660,21 @@ const AdviserAssignmentGroups = ({
                                 <tbody className="divide-y divide-slate-100">
                                     {paginatedGroups.map((group) => {
                                         const groupYear = group.school_year ?? 'Unassigned';
-                                        const loadForYear = getLoadForYear(groupYear);
+                                        const loadForYear = getAssignedForProgramYear(group.program, groupYear);
+                                        const maxForProgram = getMaxForProgram(group.program);
                                         const isAssignedToAdviser = group.adviser_id === adviser.id;
                                         const isPending = Boolean(group.pending_request_id);
-                                        const isAtLimit = loadForYear >= MAX_LOAD;
-                                        const isDisabled = assigningGroupId !== null || (isAtLimit && !isAssignedToAdviser) || isPending;
+                                        const isAtLimit = loadForYear >= maxForProgram;
+                                        const isClosed = adviser.is_available === false;
+                                        const isDisabled = assigningGroupId !== null || isClosed || (isAtLimit && !isAssignedToAdviser) || isPending;
                                         const isReassign = !isAssignedToAdviser && group.adviser_id;
-                                        const actionLabel = isAssignedToAdviser ? 'Assigned' : isPending ? 'Pending Approval' : 'Request Approval';
+                                        const actionLabel = isClosed
+                                            ? 'Closed'
+                                            : isAssignedToAdviser
+                                              ? 'Assigned'
+                                              : isPending
+                                                ? 'Pending Approval'
+                                                : 'Request Approval';
                                         const status = isPending
                                             ? 'Pending Approval'
                                             : isAssignedToAdviser

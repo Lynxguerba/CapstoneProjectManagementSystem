@@ -18,19 +18,25 @@ type AdviserWorkload = {
     groups_count: number;
 };
 
+type AdviserProgramSummary = {
+    program: string;
+    max_groups: number;
+    assigned_count: number;
+};
+
 type AdviserRow = {
     id: number;
     name: string;
     email: string;
     workloads?: AdviserWorkload[];
+    programs?: AdviserProgramSummary[];
+    is_available?: boolean;
 };
 
 type AdviserAssignmentPageProps = {
     advisers?: AdviserRow[];
     academicYears?: AcademicYearOption[];
 };
-
-const MAX_LOAD = 5;
 
 const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAssignmentPageProps) => {
     const [searchTerm, setSearchTerm] = React.useState('');
@@ -39,7 +45,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
     const [viewMode, setViewMode] = React.useState<'card' | 'list'>('card');
     const [selectedAdviser, setSelectedAdviser] = React.useState<AdviserRow | null>(null);
     const [isGroupsModalOpen, setIsGroupsModalOpen] = React.useState(false);
-    const [statusFilter, setStatusFilter] = React.useState<'all' | 'available' | 'partial' | 'full'>('all');
+    const [statusFilter, setStatusFilter] = React.useState<'all' | 'available' | 'partial' | 'full' | 'closed'>('all');
     const [currentPage, setCurrentPage] = React.useState(1);
     const itemsPerPage = 9;
 
@@ -48,31 +54,45 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
         return ['All', ...years];
     }, [academicYears]);
 
-    const getLoadForYear = React.useCallback((adviser: AdviserRow, academicYear: string): number => {
-        const workloads = adviser.workloads ?? [];
+    const getProgramTotals = React.useCallback((adviser: AdviserRow) => {
+        const programs = adviser.programs ?? [];
+        const totalAssigned = programs.reduce((total, program) => total + (program.assigned_count ?? 0), 0);
+        const totalCapacity = programs.reduce((total, program) => total + (program.max_groups ?? 0), 0);
+        const remaining = programs.reduce((total, program) => total + Math.max(0, program.max_groups - program.assigned_count), 0);
 
-        if (academicYear === 'All') {
-            return workloads.reduce((total, item) => total + (item.groups_count ?? 0), 0);
-        }
-
-        return workloads.find((item) => item.academic_year === academicYear)?.groups_count ?? 0;
+        return {
+            programs,
+            totalAssigned,
+            totalCapacity,
+            remaining,
+            isAvailable: adviser.is_available !== false,
+        };
     }, []);
 
-    const getStatusMeta = (load: number) => {
-        const isFull = load >= MAX_LOAD;
-        const status = isFull ? 'Full' : load >= MAX_LOAD - 1 ? 'Partial' : 'Available';
-        const statusClasses = isFull
-            ? 'bg-rose-100 text-rose-700'
-            : status === 'Partial'
-              ? 'bg-amber-100 text-amber-700'
-              : 'bg-emerald-100 text-emerald-700';
+    const getStatusMeta = React.useCallback(
+        (adviser: AdviserRow) => {
+            const { remaining, totalCapacity, isAvailable } = getProgramTotals(adviser);
+            const hasCapacity = totalCapacity > 0;
 
-        return { status, statusClasses, isFull };
-    };
+            if (!isAvailable) {
+                return { status: 'Closed', statusClasses: 'bg-rose-100 text-rose-700', isFull: true };
+            }
+
+            if (hasCapacity && remaining <= 0) {
+                return { status: 'Full', statusClasses: 'bg-rose-100 text-rose-700', isFull: true };
+            }
+
+            if (hasCapacity && remaining <= 1) {
+                return { status: 'Partial', statusClasses: 'bg-amber-100 text-amber-700', isFull: false };
+            }
+
+            return { status: 'Available', statusClasses: 'bg-emerald-100 text-emerald-700', isFull: false };
+        },
+        [getProgramTotals],
+    );
 
     const filteredAdvisers = React.useMemo(() => {
         const query = searchTerm.trim().toLowerCase();
-        const isAllYears = selectedAcademicYear === 'All';
 
         return advisers.filter((adviser) => {
             const matchesSearch = !query || adviser.name.toLowerCase().includes(query) || adviser.email.toLowerCase().includes(query);
@@ -81,17 +101,16 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                 return false;
             }
 
-            if (isAllYears || statusFilter === 'all') {
+            if (statusFilter === 'all') {
                 return true;
             }
 
-            const load = getLoadForYear(adviser, selectedAcademicYear);
-            const { status } = getStatusMeta(load);
+            const { status } = getStatusMeta(adviser);
             const normalizedStatus = status.toLowerCase();
 
             return normalizedStatus === statusFilter;
         });
-    }, [advisers, searchTerm, selectedAcademicYear, statusFilter, getLoadForYear]);
+    }, [advisers, searchTerm, statusFilter, getStatusMeta]);
 
     const totalPages = Math.max(1, Math.ceil(filteredAdvisers.length / itemsPerPage));
 
@@ -116,14 +135,8 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
         setCurrentPage(1);
     }, [searchTerm, selectedAcademicYear, statusFilter]);
 
-    React.useEffect(() => {
-        if (selectedAcademicYear === 'All') {
-            setStatusFilter('all');
-        }
-    }, [selectedAcademicYear]);
-
     return (
-        <InstructorLayout title="Adviser Assignment" subtitle="Assign and manage adviser workloads by academic year">
+        <InstructorLayout title="Adviser Assignment" subtitle="Assign and manage adviser workloads by program">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
                     <Link href={instructorRoutes.dashboard.url()} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
@@ -169,14 +182,14 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                             <SlidersHorizontal className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                             <select
                                 value={statusFilter}
-                                onChange={(event) => setStatusFilter(event.target.value as 'all' | 'available' | 'partial' | 'full')}
-                                disabled={selectedAcademicYear === 'All'}
-                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm transition outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                                onChange={(event) => setStatusFilter(event.target.value as 'all' | 'available' | 'partial' | 'full' | 'closed')}
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm transition outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                             >
                                 <option value="all">All Statuses</option>
                                 <option value="available">Available</option>
                                 <option value="partial">Partial</option>
                                 <option value="full">Full</option>
+                                <option value="closed">Closed</option>
                             </select>
                         </div>
                     </div>
@@ -206,12 +219,9 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                 {viewMode === 'card' ? (
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         {paginatedAdvisers.map((adviser) => {
-                            const isAllYears = selectedAcademicYear === 'All';
-                            const load = getLoadForYear(adviser, selectedAcademicYear);
-                            const progress = isAllYears ? 100 : Math.min(100, Math.round((load / MAX_LOAD) * 100));
-                            const { status, statusClasses } = isAllYears
-                                ? { status: 'Summary', statusClasses: 'bg-slate-100 text-slate-600' }
-                                : getStatusMeta(load);
+                            const { programs, totalAssigned, totalCapacity } = getProgramTotals(adviser);
+                            const progress = totalCapacity > 0 ? Math.min(100, Math.round((totalAssigned / totalCapacity) * 100)) : 0;
+                            const { status, statusClasses } = getStatusMeta(adviser);
                             const assignHref = adviserAssignment.manage.url(
                                 { adviser: adviser.id },
                                 selectedAcademicYear === 'All' ? undefined : { query: { academic_year: selectedAcademicYear } },
@@ -234,15 +244,19 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                                         </div>
 
                                         <div className="mt-4 space-y-1 text-xs text-slate-600">
-                                            <p className="font-semibold text-slate-700">
-                                                Load ({selectedAcademicYear}): {load}
-                                                {isAllYears ? '' : ` / ${MAX_LOAD}`}
-                                            </p>
-                                            <p className="text-[11px] text-slate-500">
-                                                {isAllYears
-                                                    ? 'Select an academic year to see the per-year limit.'
-                                                    : 'Limit resets per academic year.'}
-                                            </p>
+                                            <p className="font-semibold text-slate-700">Program Capacity</p>
+                                            {programs.length > 0 ? (
+                                                programs.map((program) => (
+                                                    <div key={program.program} className="flex items-center justify-between">
+                                                        <span>{program.program}</span>
+                                                        <span className="font-semibold text-slate-700">
+                                                            {program.assigned_count} / {program.max_groups}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-[11px] text-slate-500">No program utilities configured yet.</p>
+                                            )}
                                         </div>
 
                                         <div className="mt-4 flex gap-2">
@@ -267,10 +281,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                                         </div>
                                     </div>
                                     <div className="h-1.5 w-full bg-slate-100">
-                                        <div
-                                            className={`h-full rounded-full ${isAllYears ? 'bg-slate-300' : 'bg-emerald-500'}`}
-                                            style={{ width: `${progress}%` }}
-                                        />
+                                        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${progress}%` }} />
                                     </div>
                                 </div>
                             );
@@ -295,12 +306,9 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {paginatedAdvisers.map((adviser) => {
-                                    const isAllYears = selectedAcademicYear === 'All';
-                                    const load = getLoadForYear(adviser, selectedAcademicYear);
-                                    const progress = isAllYears ? 100 : Math.min(100, Math.round((load / MAX_LOAD) * 100));
-                                    const { status, statusClasses } = isAllYears
-                                        ? { status: 'Summary', statusClasses: 'bg-slate-100 text-slate-600' }
-                                        : getStatusMeta(load);
+                                    const { programs, totalAssigned, totalCapacity } = getProgramTotals(adviser);
+                                    const progress = totalCapacity > 0 ? Math.min(100, Math.round((totalAssigned / totalCapacity) * 100)) : 0;
+                                    const { status, statusClasses } = getStatusMeta(adviser);
                                     const assignHref = adviserAssignment.manage.url(
                                         { adviser: adviser.id },
                                         selectedAcademicYear === 'All' ? undefined : { query: { academic_year: selectedAcademicYear } },
@@ -315,18 +323,22 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                                                 </div>
                                             </td>
                                             <td className="px-6 py-3.5">
-                                                <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-                                                    <span>
-                                                        {load}
-                                                        {isAllYears ? '' : ` / ${MAX_LOAD}`}
-                                                    </span>
-                                                    <span className="text-[10px] text-slate-500">{selectedAcademicYear}</span>
+                                                <div className="space-y-1 text-[11px] text-slate-600">
+                                                    {programs.length > 0 ? (
+                                                        programs.map((program) => (
+                                                            <div key={program.program} className="flex items-center justify-between">
+                                                                <span>{program.program}</span>
+                                                                <span className="font-semibold text-slate-700">
+                                                                    {program.assigned_count} / {program.max_groups}
+                                                                </span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-slate-400">No utilities configured.</span>
+                                                    )}
                                                 </div>
                                                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                                                    <div
-                                                        className={`h-full rounded-full ${isAllYears ? 'bg-slate-300' : 'bg-emerald-500'}`}
-                                                        style={{ width: `${progress}%` }}
-                                                    />
+                                                    <div className="h-full rounded-full bg-emerald-500" style={{ width: `${progress}%` }} />
                                                 </div>
                                             </td>
                                             <td className="px-6 py-3.5">

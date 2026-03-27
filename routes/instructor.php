@@ -19,6 +19,8 @@ use App\Http\Controllers\UpdateGroupMembersController;
 use App\Http\Controllers\UpdateProgramSetNameController;
 use App\Http\Controllers\UpsertDefenseScheduleController;
 use App\Models\AcademicYear;
+use App\Models\AdviserAvailability;
+use App\Models\AdviserProgramUtility;
 use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
@@ -1288,12 +1290,20 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     ->orderBy('last_name')
                     ->get(['id', 'name', 'first_name', 'last_name', 'email']);
 
+                $relations = [];
                 if (Schema::hasTable('group_advisers') && Schema::hasTable('groups') && Schema::hasTable('program_sets')) {
-                    $advisersQuery->load([
-                        'advisedGroups' => function ($query) {
-                            $query->with('programSet.academicYear');
-                        },
-                    ]);
+                    $relations['advisedGroups'] = function ($query) {
+                        $query->with('programSet.academicYear');
+                    };
+                }
+                if (Schema::hasTable('adviser_program_utilities')) {
+                    $relations[] = 'adviserProgramUtilities';
+                }
+                if (Schema::hasTable('adviser_availabilities')) {
+                    $relations[] = 'adviserAvailability';
+                }
+                if (count($relations) > 0) {
+                    $advisersQuery->load($relations);
                 }
 
                 $advisers = $advisersQuery
@@ -1321,11 +1331,47 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                                 ->all();
                         }
 
+                        $utilityMap = $adviser->relationLoaded('adviserProgramUtilities')
+                            ? $adviser->adviserProgramUtilities
+                                ->filter(fn (AdviserProgramUtility $utility): bool => trim((string) $utility->program) !== '')
+                                ->keyBy('program')
+                            : collect();
+
+                        $assignedByProgram = $adviser->relationLoaded('advisedGroups')
+                            ? $adviser->advisedGroups
+                                ->groupBy(fn (\App\Models\Group $group): ?string => $group->programSet?->program)
+                                ->map(fn ($groups) => $groups->count())
+                            : collect();
+
+                        $programSummaries = $utilityMap
+                            ->keys()
+                            ->merge($assignedByProgram->keys())
+                            ->filter(fn ($program): bool => is_string($program) && trim($program) !== '')
+                            ->unique()
+                            ->sort()
+                            ->map(function (string $program) use ($utilityMap, $assignedByProgram): array {
+                                $maxGroups = $utilityMap->get($program)?->max_groups ?? 5;
+
+                                return [
+                                    'program' => $program,
+                                    'max_groups' => $maxGroups,
+                                    'assigned_count' => $assignedByProgram->get($program, 0),
+                                ];
+                            })
+                            ->values()
+                            ->all();
+
+                        $isAvailable = $adviser->relationLoaded('adviserAvailability')
+                            ? (bool) $adviser->adviserAvailability?->is_available
+                            : true;
+
                         return [
                             'id' => $adviser->id,
                             'name' => $fullName,
                             'email' => $adviser->email ?? '',
                             'workloads' => $workloads,
+                            'is_available' => $isAvailable,
+                            'programs' => $programSummaries,
                         ];
                     })
                     ->values()
@@ -1367,12 +1413,20 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         $selectedAcademicYear = request()->query('academic_year');
         $selectedAcademicYear = is_string($selectedAcademicYear) ? $selectedAcademicYear : null;
 
+        $relations = [];
         if (Schema::hasTable('group_advisers') && Schema::hasTable('groups') && Schema::hasTable('program_sets')) {
-            $adviser->load([
-                'advisedGroups' => function ($query) {
-                    $query->with('programSet.academicYear');
-                },
-            ]);
+            $relations['advisedGroups'] = function ($query) {
+                $query->with('programSet.academicYear');
+            };
+        }
+        if (Schema::hasTable('adviser_program_utilities')) {
+            $relations[] = 'adviserProgramUtilities';
+        }
+        if (Schema::hasTable('adviser_availabilities')) {
+            $relations[] = 'adviserAvailability';
+        }
+        if (count($relations) > 0) {
+            $adviser->load($relations);
         }
 
         $userId = Auth::guard('web')->id();
@@ -1407,6 +1461,40 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 ->values()
                 ->all();
         }
+
+        $utilityMap = $adviser->relationLoaded('adviserProgramUtilities')
+            ? $adviser->adviserProgramUtilities
+                ->filter(fn (AdviserProgramUtility $utility): bool => trim((string) $utility->program) !== '')
+                ->keyBy('program')
+            : collect();
+
+        $assignedByProgram = $adviser->relationLoaded('advisedGroups')
+            ? $adviser->advisedGroups
+                ->groupBy(fn (\App\Models\Group $group): ?string => $group->programSet?->program)
+                ->map(fn ($groups) => $groups->count())
+            : collect();
+
+        $programSummaries = $utilityMap
+            ->keys()
+            ->merge($assignedByProgram->keys())
+            ->filter(fn ($program): bool => is_string($program) && trim($program) !== '')
+            ->unique()
+            ->sort()
+            ->map(function (string $program) use ($utilityMap, $assignedByProgram): array {
+                $maxGroups = $utilityMap->get($program)?->max_groups ?? 5;
+
+                return [
+                    'program' => $program,
+                    'max_groups' => $maxGroups,
+                    'assigned_count' => $assignedByProgram->get($program, 0),
+                ];
+            })
+            ->values()
+            ->all();
+
+        $isAvailable = $adviser->relationLoaded('adviserAvailability')
+            ? (bool) $adviser->adviserAvailability?->is_available
+            : true;
 
         $groups = [];
         try {
@@ -1462,6 +1550,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 'name' => $resolveUserName($adviser),
                 'email' => $adviser->email ?? '',
                 'workloads' => $workloads,
+                'is_available' => $isAvailable,
+                'programs' => $programSummaries,
             ],
             'groups' => $groups,
             'academicYears' => $academicYears,
@@ -1526,6 +1616,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             'id' => $group->id,
                             'name' => $group->name,
                             'program_set_name' => $programSet?->name ?: $fallbackName,
+                            'program' => $programSet?->program,
                             'school_year' => $schoolYear,
                             'leader_name' => $leaderName !== '' ? $leaderName : null,
                             'members_count' => $group->members_count ?? 0,
@@ -1538,12 +1629,65 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             $groups = [];
         }
 
+        $isAvailable = true;
+        $utilityMap = collect();
+
+        try {
+            if (Schema::hasTable('adviser_availabilities')) {
+                $availability = AdviserAvailability::query()
+                    ->where('adviser_id', $adviser->id)
+                    ->value('is_available');
+
+                if ($availability !== null) {
+                    $isAvailable = (bool) $availability;
+                }
+            }
+        } catch (\Throwable $e) {
+            $isAvailable = true;
+        }
+
+        try {
+            if (Schema::hasTable('adviser_program_utilities')) {
+                $utilityMap = AdviserProgramUtility::query()
+                    ->where('adviser_id', $adviser->id)
+                    ->get(['program', 'max_groups'])
+                    ->filter(fn (AdviserProgramUtility $utility): bool => trim((string) $utility->program) !== '')
+                    ->keyBy('program');
+            }
+        } catch (\Throwable $e) {
+            $utilityMap = collect();
+        }
+
+        $assignedByProgram = collect($groups)
+            ->filter(fn (array $group): bool => is_string($group['program'] ?? null) && $group['program'] !== '')
+            ->groupBy('program')
+            ->map(fn ($items) => $items->count());
+
+        $programSummaries = $utilityMap
+            ->keys()
+            ->merge($assignedByProgram->keys())
+            ->filter(fn ($program): bool => is_string($program) && trim($program) !== '')
+            ->unique()
+            ->sort()
+            ->map(function (string $program) use ($utilityMap, $assignedByProgram): array {
+                $maxGroups = $utilityMap->get($program)?->max_groups ?? 5;
+
+                return [
+                    'program' => $program,
+                    'max_groups' => $maxGroups,
+                    'assigned_count' => $assignedByProgram->get($program, 0),
+                ];
+            })
+            ->values()
+            ->all();
+
         return response()->json([
             'groups' => $groups,
             'summary' => [
                 'assigned_count' => count($groups),
-                'max_load' => 5,
                 'academic_year' => is_string($academicYearFilter) && $academicYearFilter !== '' ? $academicYearFilter : 'All',
+                'is_available' => $isAvailable,
+                'programs' => $programSummaries,
             ],
         ]);
     })->name('instructor.adviser-assignment.groups');

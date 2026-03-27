@@ -9,7 +9,15 @@ type AdviserOption = {
     id: number;
     name: string;
     email: string;
-    advised_groups_count: number;
+    advised_groups_count?: number;
+    is_available?: boolean;
+    programs?: AdviserProgramSummary[];
+};
+
+type AdviserProgramSummary = {
+    program: string;
+    max_groups: number;
+    assigned_count: number;
 };
 
 type AssignAdviserModalProps = {
@@ -20,8 +28,6 @@ type AssignAdviserModalProps = {
     advisers: AdviserOption[];
     onClose: () => void;
 };
-
-const MAX_LOAD = 5;
 
 const AssignAdviserModal = ({ open, groupId, groupName, currentAdviser, advisers, onClose }: AssignAdviserModalProps) => {
     const [searchQuery, setSearchQuery] = React.useState('');
@@ -143,15 +149,22 @@ const AssignAdviserModal = ({ open, groupId, groupName, currentAdviser, advisers
 
                     <div className="space-y-3">
                         {filteredAdvisers.map((adviser) => {
-                            const load = adviser.advised_groups_count ?? 0;
-                            const progress = Math.min(100, Math.round((load / MAX_LOAD) * 100));
-                            const isFull = load >= MAX_LOAD;
-                            const status = isFull ? 'Full' : load >= MAX_LOAD - 1 ? 'Partial' : 'Available';
-                            const statusClasses = isFull
-                                ? 'bg-rose-100 text-rose-700'
-                                : status === 'Partial'
-                                  ? 'bg-amber-100 text-amber-700'
-                                  : 'bg-emerald-100 text-emerald-700';
+                            const programs = adviser.programs ?? [];
+                            const isClosed = adviser.is_available === false;
+                            const remainingSlots = programs.reduce((total, program) => {
+                                return total + Math.max(0, program.max_groups - program.assigned_count);
+                            }, 0);
+                            const hasPrograms = programs.length > 0;
+                            const isFull = hasPrograms ? remainingSlots <= 0 : false;
+                            const status = isClosed ? 'Closed' : isFull ? 'Full' : remainingSlots <= 1 ? 'Partial' : 'Available';
+                            const statusClasses = isClosed
+                                ? 'bg-slate-200 text-slate-700'
+                                : isFull
+                                  ? 'bg-rose-100 text-rose-700'
+                                  : status === 'Partial'
+                                    ? 'bg-amber-100 text-amber-700'
+                                    : 'bg-emerald-100 text-emerald-700';
+                            const canAssign = !isClosed && (hasPrograms ? remainingSlots > 0 : true);
 
                             return (
                                 <div key={adviser.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
@@ -163,23 +176,34 @@ const AssignAdviserModal = ({ open, groupId, groupName, currentAdviser, advisers
                                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClasses}`}>{status}</span>
                                     </div>
 
+                                    {hasPrograms ? (
+                                        <div className="mt-3 space-y-1 text-xs text-slate-600">
+                                            {programs.map((program) => (
+                                                <div key={program.program} className="flex items-center justify-between">
+                                                    <span>{program.program}</span>
+                                                    <span className="font-semibold text-slate-700">
+                                                        {program.assigned_count} / {program.max_groups} ({Math.max(0, program.max_groups - program.assigned_count)} left)
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="mt-3 text-xs text-slate-500">No program utilities set yet.</p>
+                                    )}
+
                                     <div className="mt-3 flex items-center justify-between text-xs text-slate-600">
                                         <span>
-                                            Load: {load} / {MAX_LOAD}
+                                            Remaining slots: {hasPrograms ? remainingSlots : '—'}
                                         </span>
                                         <button
                                             type="button"
                                             onClick={() => assignAdviser(adviser.id)}
-                                            disabled={isAssigning || isFull}
+                                            disabled={isAssigning || !canAssign}
                                             className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             <UserCheck className="h-3 w-3" />
                                             Assign
                                         </button>
-                                    </div>
-
-                                    <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                                        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${progress}%` }} />
                                     </div>
                                 </div>
                             );

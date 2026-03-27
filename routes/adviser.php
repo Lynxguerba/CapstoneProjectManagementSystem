@@ -3,13 +3,18 @@
 use App\Http\Controllers\Adviser\ApproveGroupAdviserRequestController;
 use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\DismissGroupAdviserRequestController;
+use App\Http\Controllers\Adviser\UpdateAdviserAvailabilityController;
 use App\Http\Controllers\Adviser\UpdateAdviserPasswordController;
+use App\Http\Controllers\Adviser\UpdateAdviserProgramUtilitiesController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
+use App\Models\AdviserAvailability;
+use App\Models\AdviserProgramUtility;
 use App\Models\DefenseSchedule;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
 use App\Models\GroupAdviser;
 use App\Models\GroupAdviserRequest;
+use App\Models\ProgramSet;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -421,11 +426,198 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
             $assignmentRequests = [];
         }
 
+        $isAvailable = true;
+        $utilityPrograms = collect();
+
+        try {
+            if ($userId !== null && Schema::hasTable('adviser_availabilities')) {
+                $availability = AdviserAvailability::query()
+                    ->where('adviser_id', $userId)
+                    ->value('is_available');
+
+                if ($availability !== null) {
+                    $isAvailable = (bool) $availability;
+                }
+            }
+        } catch (\Throwable $e) {
+            $isAvailable = true;
+        }
+
+        try {
+            if ($userId !== null && Schema::hasTable('adviser_program_utilities')) {
+                $utilityPrograms = AdviserProgramUtility::query()
+                    ->where('adviser_id', $userId)
+                    ->orderBy('program')
+                    ->get(['program', 'max_groups']);
+            }
+        } catch (\Throwable $e) {
+            $utilityPrograms = collect();
+        }
+
+        $utilityMap = $utilityPrograms
+            ->filter(fn (AdviserProgramUtility $utility): bool => trim((string) $utility->program) !== '')
+            ->keyBy('program');
+
+        $assignedByProgram = collect($assignedGroups)
+            ->filter(fn (array $group): bool => is_string($group['program'] ?? null) && $group['program'] !== '')
+            ->groupBy('program')
+            ->map(fn ($items) => $items->count());
+
+        $pendingByProgram = collect($assignmentRequests)
+            ->filter(fn (array $request): bool => ($request['request_type'] ?? null) !== GroupAdviserRequest::TYPE_REASSIGN_NOTICE)
+            ->filter(fn (array $request): bool => is_string($request['program'] ?? null) && $request['program'] !== '')
+            ->groupBy('program')
+            ->map(fn ($items) => $items->count());
+
+        $programSummaries = $utilityMap
+            ->keys()
+            ->merge($assignedByProgram->keys())
+            ->merge($pendingByProgram->keys())
+            ->unique()
+            ->sort()
+            ->map(function (string $program) use ($utilityMap, $assignedByProgram, $pendingByProgram): array {
+                $maxGroups = $utilityMap->get($program)?->max_groups ?? 5;
+
+                return [
+                    'program' => $program,
+                    'max_groups' => $maxGroups,
+                    'assigned_count' => $assignedByProgram->get($program, 0),
+                    'pending_count' => $pendingByProgram->get($program, 0),
+                ];
+            })
+            ->values()
+            ->all();
+
         return Inertia::render('Adviser/groups', [
             'assignedGroups' => $assignedGroups,
             'assignmentRequests' => $assignmentRequests,
+            'utilities' => [
+                'is_available' => $isAvailable,
+                'programs' => $programSummaries,
+            ],
         ]);
     })->name('adviser.groups');
+    Route::get('/utilities', function () {
+        $userId = Auth::guard('web')->id();
+        $programOptions = [];
+        $utilityPrograms = collect();
+        $isAvailable = true;
+        $assignedByProgram = collect();
+        $pendingByProgram = collect();
+
+        try {
+            if (Schema::hasTable('program_sets')) {
+                $programOptions = ProgramSet::query()
+                    ->select('program')
+                    ->distinct()
+                    ->orderBy('program')
+                    ->pluck('program')
+                    ->filter(fn (?string $program): bool => is_string($program) && trim($program) !== '')
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $programOptions = [];
+        }
+
+        try {
+            if ($userId !== null && Schema::hasTable('adviser_availabilities')) {
+                $availability = AdviserAvailability::query()
+                    ->where('adviser_id', $userId)
+                    ->value('is_available');
+
+                if ($availability !== null) {
+                    $isAvailable = (bool) $availability;
+                }
+            }
+        } catch (\Throwable $e) {
+            $isAvailable = true;
+        }
+
+        try {
+            if ($userId !== null && Schema::hasTable('adviser_program_utilities')) {
+                $utilityPrograms = AdviserProgramUtility::query()
+                    ->where('adviser_id', $userId)
+                    ->orderBy('program')
+                    ->get(['program', 'max_groups']);
+            }
+        } catch (\Throwable $e) {
+            $utilityPrograms = collect();
+        }
+
+        try {
+            if (
+                $userId !== null
+                && Schema::hasTable('group_advisers')
+                && Schema::hasTable('groups')
+                && Schema::hasTable('program_sets')
+            ) {
+                $assignments = GroupAdviser::query()
+                    ->where('adviser_id', $userId)
+                    ->with('group.programSet')
+                    ->get();
+
+                $assignedByProgram = $assignments
+                    ->groupBy(fn (GroupAdviser $assignment): ?string => $assignment->group?->programSet?->program)
+                    ->map(fn ($items) => $items->count());
+            }
+        } catch (\Throwable $e) {
+            $assignedByProgram = collect();
+        }
+
+        try {
+            if ($userId !== null && Schema::hasTable('group_adviser_requests')) {
+                $pendingRequests = GroupAdviserRequest::query()
+                    ->where('adviser_id', $userId)
+                    ->where('status', GroupAdviserRequest::STATUS_PENDING)
+                    ->where('request_type', GroupAdviserRequest::TYPE_REQUEST)
+                    ->with('group.programSet')
+                    ->get();
+
+                $pendingByProgram = $pendingRequests
+                    ->groupBy(fn (GroupAdviserRequest $request): ?string => $request->group?->programSet?->program)
+                    ->map(fn ($items) => $items->count());
+            }
+        } catch (\Throwable $e) {
+            $pendingByProgram = collect();
+        }
+
+        $utilityMap = $utilityPrograms
+            ->filter(fn (AdviserProgramUtility $utility): bool => trim((string) $utility->program) !== '')
+            ->keyBy('program');
+
+        $programSummaries = collect($programOptions)
+            ->merge($utilityMap->keys())
+            ->merge($assignedByProgram->keys())
+            ->merge($pendingByProgram->keys())
+            ->filter(fn ($program): bool => is_string($program) && trim($program) !== '')
+            ->unique()
+            ->sort()
+            ->map(function (string $program) use ($utilityMap, $assignedByProgram, $pendingByProgram): array {
+                $maxGroups = $utilityMap->get($program)?->max_groups ?? 5;
+
+                return [
+                    'program' => $program,
+                    'max_groups' => $maxGroups,
+                    'assigned_count' => $assignedByProgram->get($program, 0),
+                    'pending_count' => $pendingByProgram->get($program, 0),
+                ];
+            })
+            ->values()
+            ->all();
+
+        return Inertia::render('Adviser/utilities/manage', [
+            'programOptions' => $programOptions,
+            'utilities' => [
+                'is_available' => $isAvailable,
+                'programs' => $programSummaries,
+            ],
+        ]);
+    })->name('adviser.utilities');
+    Route::post('/utilities/availability', UpdateAdviserAvailabilityController::class)
+        ->name('adviser.utilities.availability');
+    Route::post('/utilities/programs', UpdateAdviserProgramUtilitiesController::class)
+        ->name('adviser.utilities.programs');
     Route::post('/assignment-requests/{assignmentRequest}/approve', ApproveGroupAdviserRequestController::class)
         ->name('adviser.assignment-requests.approve');
     Route::delete('/assignment-requests/{assignmentRequest}', DismissGroupAdviserRequestController::class)

@@ -15,8 +15,15 @@ type AdviserGroupRow = {
 
 type AdviserGroupsSummary = {
     assigned_count: number;
-    max_load: number;
     academic_year: string | null;
+    is_available?: boolean;
+    programs?: AdviserProgramSummary[];
+};
+
+type AdviserProgramSummary = {
+    program: string;
+    max_groups: number;
+    assigned_count: number;
 };
 
 type AdviserGroupsModalProps = {
@@ -118,8 +125,9 @@ const AdviserGroupsModal = ({ open, adviserId, adviserName, academicYear, onClos
 
     const displayAcademicYear = summary?.academic_year ?? (academicYear && academicYear !== '' ? academicYear : 'All');
     const assignedCount = summary?.assigned_count ?? groups.length;
-    const maxLoad = summary?.max_load ?? 5;
+    const programs = summary?.programs ?? [];
     const isAllYears = displayAcademicYear === 'All';
+    const isAvailable = summary?.is_available ?? true;
 
     return createPortal(
         <div
@@ -171,11 +179,26 @@ const AdviserGroupsModal = ({ open, adviserId, adviserName, academicYear, onClos
                         <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
                             <ClipboardList className="h-3 w-3" />
                             Assigned: {assignedCount}
-                            {isAllYears ? ' total' : ` / ${maxLoad}`}
+                            {isAllYears ? ' total' : ''}
+                        </span>
+                        <span
+                            className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+                                isAvailable ? 'border border-emerald-200 bg-emerald-50 text-emerald-700' : 'border border-rose-200 bg-rose-50 text-rose-700'
+                            }`}
+                        >
+                            {isAvailable ? 'Open for requests' : 'Closed'}
                         </span>
                         <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-600">
                             Groups listed for {isAllYears ? 'all academic years' : displayAcademicYear}
                         </span>
+                        {programs.map((program) => (
+                            <span
+                                key={program.program}
+                                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-600"
+                            >
+                                {program.program}: {program.assigned_count}/{program.max_groups}
+                            </span>
+                        ))}
                     </div>
 
                     {errorMessage ? (

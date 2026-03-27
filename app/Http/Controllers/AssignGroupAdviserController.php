@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AssignGroupAdviserRequest;
+use App\Models\AdviserAvailability;
+use App\Models\AdviserProgramUtility;
 use App\Models\Group;
 use App\Models\GroupAdviser;
 use App\Models\GroupAdviserRequest;
@@ -43,11 +45,28 @@ class AssignGroupAdviserController extends Controller
             return back()->with('success', 'Adviser already assigned.');
         }
 
+        if (Schema::hasTable('adviser_availabilities')) {
+            $isAvailable = AdviserAvailability::query()
+                ->where('adviser_id', $adviser->id)
+                ->value('is_available');
+
+            if ($isAvailable === false || $isAvailable === 0) {
+                throw ValidationException::withMessages([
+                    'adviser_id' => 'Selected adviser is currently closed for new group requests.',
+                ]);
+            }
+        }
+
         $groupYear = $group->programSet?->academicYear?->label ?? $group->programSet?->school_year;
+        $program = $group->programSet?->program;
         $loadQuery = GroupAdviser::query()->where('adviser_id', $adviser->id);
 
-        if (is_string($groupYear) && $groupYear !== '') {
-            $loadQuery->whereHas('group.programSet', function ($query) use ($groupYear) {
+        $loadQuery->whereHas('group.programSet', function ($query) use ($groupYear, $program) {
+            if (is_string($program) && $program !== '') {
+                $query->where('program', $program);
+            }
+
+            if (is_string($groupYear) && $groupYear !== '') {
                 $query->where(function ($subQuery) use ($groupYear) {
                     $subQuery->whereHas('academicYear', fn ($academicQuery) => $academicQuery->where('label', $groupYear));
 
@@ -55,17 +74,29 @@ class AssignGroupAdviserController extends Controller
                         $subQuery->orWhere('school_year', $groupYear);
                     }
                 });
-            });
-        }
+            }
+        });
 
         $currentLoad = $loadQuery->count();
         $maxLoad = 5;
 
+        if (Schema::hasTable('adviser_program_utilities') && is_string($program) && $program !== '') {
+            $utility = AdviserProgramUtility::query()
+                ->where('adviser_id', $adviser->id)
+                ->where('program', $program)
+                ->first();
+
+            if ($utility) {
+                $maxLoad = $utility->max_groups;
+            }
+        }
+
         if ($currentLoad >= $maxLoad) {
+            $programLabel = is_string($program) && $program !== '' ? $program : 'this program';
             $label = is_string($groupYear) && $groupYear !== '' ? $groupYear : 'this academic year';
 
             throw ValidationException::withMessages([
-                'adviser_id' => "Selected adviser already reached {$maxLoad} groups for {$label}.",
+                'adviser_id' => "Selected adviser already reached {$maxLoad} {$programLabel} groups for {$label}.",
             ]);
         }
 

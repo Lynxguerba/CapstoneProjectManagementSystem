@@ -1,1 +1,1 @@
-Now for if there is new table need to add in Database initialize my codebase, database(apply normalization) and file structure. Provide command for migration or changes in DB, note: i used Docker.
+Now for if there is new table need to add in Database initialize my codebase, database(apply normalization) and file structure. Provide command for migration or changes in DB, note: i used Docker. Then at the end suggest commi message for the changes.

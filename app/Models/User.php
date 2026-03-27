@@ -81,6 +81,16 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function adviserAvailability(): HasOne
+    {
+        return $this->hasOne(AdviserAvailability::class, 'adviser_id');
+    }
+
+    public function adviserProgramUtilities(): HasMany
+    {
+        return $this->hasMany(AdviserProgramUtility::class, 'adviser_id');
+    }
+
     public function panelAssignments(): HasMany
     {
         return $this->hasMany(GroupPanelist::class, 'panelist_id');

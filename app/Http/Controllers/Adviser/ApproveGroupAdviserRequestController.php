@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Adviser;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdviserAvailability;
+use App\Models\AdviserProgramUtility;
 use App\Models\GroupAdviser;
 use App\Models\GroupAdviserRequest;
 use Illuminate\Http\RedirectResponse;
@@ -57,11 +59,26 @@ class ApproveGroupAdviserRequestController extends Controller
             return back()->with('success', 'Assignment already active.');
         }
 
+        if (Schema::hasTable('adviser_availabilities')) {
+            $isAvailable = AdviserAvailability::query()
+                ->where('adviser_id', $userId)
+                ->value('is_available');
+
+            if ($isAvailable === false || $isAvailable === 0) {
+                return back()->with('error', 'You are currently closed for new group requests.');
+            }
+        }
+
         $groupYear = $group->programSet?->academicYear?->label ?? $group->programSet?->school_year;
+        $program = $group->programSet?->program;
         $loadQuery = GroupAdviser::query()->where('adviser_id', $userId);
 
-        if (is_string($groupYear) && $groupYear !== '') {
-            $loadQuery->whereHas('group.programSet', function ($query) use ($groupYear) {
+        $loadQuery->whereHas('group.programSet', function ($query) use ($groupYear, $program) {
+            if (is_string($program) && $program !== '') {
+                $query->where('program', $program);
+            }
+
+            if (is_string($groupYear) && $groupYear !== '') {
                 $query->where(function ($subQuery) use ($groupYear) {
                     $subQuery->whereHas('academicYear', fn ($academicQuery) => $academicQuery->where('label', $groupYear));
 
@@ -69,16 +86,28 @@ class ApproveGroupAdviserRequestController extends Controller
                         $subQuery->orWhere('school_year', $groupYear);
                     }
                 });
-            });
-        }
+            }
+        });
 
         $currentLoad = $loadQuery->count();
         $maxLoad = 5;
 
+        if (Schema::hasTable('adviser_program_utilities') && is_string($program) && $program !== '') {
+            $utility = AdviserProgramUtility::query()
+                ->where('adviser_id', $userId)
+                ->where('program', $program)
+                ->first();
+
+            if ($utility) {
+                $maxLoad = $utility->max_groups;
+            }
+        }
+
         if ($currentLoad >= $maxLoad) {
+            $programLabel = is_string($program) && $program !== '' ? $program : 'this program';
             $label = is_string($groupYear) && $groupYear !== '' ? $groupYear : 'this academic year';
 
-            return back()->with('error', "You already reached {$maxLoad} groups for {$label}.");
+            return back()->with('error', "You already reached {$maxLoad} {$programLabel} groups for {$label}.");
         }
 
         GroupAdviser::query()->updateOrCreate(
