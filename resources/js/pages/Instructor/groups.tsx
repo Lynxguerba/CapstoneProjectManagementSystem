@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Calendar, ChevronRight, Filter, GraduationCap, LayoutGrid, List, Search, Users } from 'lucide-react';
 import React, { useState } from 'react';
@@ -13,13 +13,49 @@ type ProgramSetSummary = {
     groups_count?: number;
 };
 
-type InstructorGroupsPageProps = {
-    programSets?: ProgramSetSummary[];
+type AcademicYearOption = {
+    id: number;
+    label: string;
+    is_current: boolean;
 };
 
+type InstructorGroupsPageProps = {
+    programSets?: ProgramSetSummary[];
+    academicYears?: AcademicYearOption[];
+    selectedAcademicYear?: string | null;
+    selectedAcademicYearId?: number | null;
+};
+
+const normalizeAcademicYearLabel = (value: string): string => value.replace(/^A\.?Y\.?\s*/i, '').trim().toLowerCase();
+
 const InstructorGroups = () => {
-    const { props } = usePage<InstructorGroupsPageProps>();
+    const page = usePage<InstructorGroupsPageProps>();
+    const { props } = page;
     const programSets = props.programSets ?? [];
+    const academicYears = props.academicYears ?? [];
+    const currentAcademicYear = React.useMemo(() => {
+        const academicYear = academicYears.find((year) => year.is_current)?.label ?? academicYears[0]?.label ?? null;
+
+        return typeof academicYear === 'string' && academicYear !== '' ? academicYear : null;
+    }, [academicYears]);
+    const queryAcademicYearFilter = React.useMemo(() => {
+        const query = (page.url ?? '').includes('?') ? (page.url ?? '').split('?')[1] ?? '' : '';
+        const searchParams = new URLSearchParams(query);
+        const academicYear = searchParams.get('academic_year');
+
+        return academicYear !== null && academicYear !== '' ? academicYear : null;
+    }, [page.url]);
+    const selectedAcademicYearFilter = React.useMemo(() => {
+        const candidate =
+            queryAcademicYearFilter ??
+            (typeof props.selectedAcademicYear === 'string' && props.selectedAcademicYear !== '' ? props.selectedAcademicYear : null);
+
+        if (candidate === null) {
+            return null;
+        }
+
+        return normalizeAcademicYearLabel(candidate) === 'all' ? null : candidate;
+    }, [props.selectedAcademicYear, queryAcademicYearFilter]);
 
     const groupSets = programSets.map((ps) => ({
         id: ps.id,
@@ -32,11 +68,41 @@ const InstructorGroups = () => {
             ps.program === 'BSIT' ? 'Information Technology Capstone Groups' : ps.program === 'BSIS' ? 'Information System Capstone Groups' : '',
     }));
 
-    const schoolYearOptions = Array.from(new Set(programSets.map((ps) => ps.school_year).filter(Boolean)));
-    const schoolYears = ['All', ...schoolYearOptions];
-    const programs = ['All', 'BSIT', 'BSIS'];
+    const schoolYearOptions = React.useMemo(() => {
+        const academicYearLabels = academicYears
+            .map((academicYear) => academicYear.label)
+            .filter(
+                (label): label is string =>
+                    typeof label === 'string' && label !== '' && normalizeAcademicYearLabel(label) !== 'all',
+            );
+        const programSetYears = programSets
+            .map((programSet) => programSet.school_year)
+            .filter(
+                (schoolYear): schoolYear is string =>
+                    typeof schoolYear === 'string' && schoolYear !== '' && normalizeAcademicYearLabel(schoolYear) !== 'all',
+            );
 
-    const [selectedSchoolYear, setSelectedSchoolYear] = useState('All');
+        return Array.from(new Set([...academicYearLabels, ...programSetYears]));
+    }, [academicYears, programSets]);
+    const matchedAcademicYearFilter = React.useMemo(() => {
+        if (selectedAcademicYearFilter === null) {
+            return null;
+        }
+
+        const normalizedSelectedAcademicYear = normalizeAcademicYearLabel(selectedAcademicYearFilter);
+        const matchedYear = schoolYearOptions.find((year) => normalizeAcademicYearLabel(year) === normalizedSelectedAcademicYear);
+
+        return matchedYear ?? selectedAcademicYearFilter;
+    }, [schoolYearOptions, selectedAcademicYearFilter]);
+    const pinnedSchoolYear = matchedAcademicYearFilter ?? currentAcademicYear;
+    const schoolYears =
+        pinnedSchoolYear !== null && normalizeAcademicYearLabel(pinnedSchoolYear) !== 'all' && !schoolYearOptions.includes(pinnedSchoolYear)
+            ? ['All', ...schoolYearOptions, pinnedSchoolYear]
+            : ['All', ...schoolYearOptions];
+    const programs = ['All', 'BSIT', 'BSIS'];
+    const defaultSchoolYear = pinnedSchoolYear ?? 'All';
+
+    const [selectedSchoolYear, setSelectedSchoolYear] = useState(defaultSchoolYear);
     const [selectedProgram, setSelectedProgram] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
@@ -44,7 +110,8 @@ const InstructorGroups = () => {
     const itemsPerPage = 6;
 
     const filteredSets = groupSets.filter((set) => {
-        const matchesYear = selectedSchoolYear === 'All' || set.schoolYear === selectedSchoolYear;
+        const matchesYear =
+            selectedSchoolYear === 'All' || normalizeAcademicYearLabel(set.schoolYear) === normalizeAcademicYearLabel(selectedSchoolYear);
         const matchesProgram = selectedProgram === 'All' || set.program === selectedProgram;
         const matchesSearch =
             set.name.toLowerCase().includes(searchTerm.toLowerCase()) || set.program.toLowerCase().includes(searchTerm.toLowerCase());
@@ -75,6 +142,51 @@ const InstructorGroups = () => {
         setCurrentPage(1);
     }, [searchTerm, selectedSchoolYear, selectedProgram]);
 
+    React.useEffect(() => {
+        if (!schoolYears.includes(selectedSchoolYear)) {
+            setSelectedSchoolYear(defaultSchoolYear);
+            return;
+        }
+
+        if (matchedAcademicYearFilter !== null && selectedSchoolYear !== matchedAcademicYearFilter) {
+            setSelectedSchoolYear(matchedAcademicYearFilter);
+        }
+    }, [defaultSchoolYear, matchedAcademicYearFilter, schoolYears, selectedSchoolYear]);
+
+    const updateLayoutAcademicYearFilter = React.useCallback(
+        (schoolYear: string) => {
+            if (typeof window === 'undefined') {
+                return;
+            }
+
+            const searchParams = new URLSearchParams(window.location.search);
+
+            if (schoolYear === 'All') {
+                searchParams.delete('academic_year');
+                searchParams.delete('academic_year_id');
+            } else {
+                searchParams.set('academic_year', schoolYear);
+
+                const matchedAcademicYear = academicYears.find((academicYear) => {
+                    return normalizeAcademicYearLabel(academicYear.label) === normalizeAcademicYearLabel(schoolYear);
+                });
+
+                if (matchedAcademicYear) {
+                    searchParams.set('academic_year_id', String(matchedAcademicYear.id));
+                }
+            }
+
+            const query = searchParams.toString();
+
+            router.visit(query !== '' ? `${window.location.pathname}?${query}` : window.location.pathname, {
+                method: 'get',
+                preserveScroll: true,
+                replace: true,
+            });
+        },
+        [academicYears],
+    );
+
     return (
         <InstructorLayout title="Groups Management" subtitle="Organize capstone groups by program set">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
@@ -104,14 +216,25 @@ const InstructorGroups = () => {
                             <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                             <select
                                 value={selectedSchoolYear}
-                                onChange={(e) => setSelectedSchoolYear(e.target.value)}
+                                onChange={(e) => {
+                                    const nextSchoolYear = e.target.value;
+                                    setSelectedSchoolYear(nextSchoolYear);
+                                    updateLayoutAcademicYearFilter(nextSchoolYear);
+                                }}
                                 className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
                             >
-                                {schoolYears.map((year) => (
-                                    <option key={year} value={year}>
-                                        {year === 'All' ? 'All Years' : year}
-                                    </option>
-                                ))}
+                                {schoolYears.map((year) => {
+                                    const isCurrentAcademicYear =
+                                        year !== 'All' &&
+                                        currentAcademicYear !== null &&
+                                        normalizeAcademicYearLabel(year) === normalizeAcademicYearLabel(currentAcademicYear);
+
+                                    return (
+                                        <option key={year} value={year}>
+                                            {year === 'All' ? 'All Years' : `${year}${isCurrentAcademicYear ? ' (current)' : ''}`}
+                                        </option>
+                                    );
+                                })}
                             </select>
                         </div>
 
@@ -135,7 +258,7 @@ const InstructorGroups = () => {
                         <button
                             type="button"
                             onClick={() => {
-                                setSelectedSchoolYear('All');
+                                setSelectedSchoolYear(defaultSchoolYear);
                                 setSelectedProgram('All');
                                 setSearchTerm('');
                             }}

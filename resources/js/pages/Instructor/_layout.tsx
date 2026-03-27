@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Check, ChevronDown, GraduationCap } from 'lucide-react';
 import React from 'react';
@@ -44,18 +44,41 @@ const InstructorLayout = ({ title, subtitle, children }: Props) => {
     const dropdownRef = React.useRef<HTMLDivElement | null>(null);
 
     React.useEffect(() => {
-        if (selectedAcademicYearId !== null) {
-            return;
-        }
+        const queryAcademicYearId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('academic_year_id') : null;
+        const parsedAcademicYearId = queryAcademicYearId !== null && queryAcademicYearId !== '' ? Number(queryAcademicYearId) : null;
+        const fromQueryById =
+            parsedAcademicYearId !== null && !Number.isNaN(parsedAcademicYearId)
+                ? academicYears.find((year) => year.id === parsedAcademicYearId)
+                : undefined;
+        const queryAcademicYear = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('academic_year') : null;
+        const fromQueryByLabel = queryAcademicYear ? academicYears.find((year) => year.label === queryAcademicYear) : undefined;
+        const fromQuery = fromQueryById ?? fromQueryByLabel;
+        const fallback = academicYears.find((year) => year.is_current) ?? academicYears[0];
+        const nextAcademicYearId = fromQuery?.id ?? fallback?.id ?? null;
 
-        const current = academicYears.find((year) => year.is_current) ?? academicYears[0];
-        if (current) {
-            setSelectedAcademicYearId(current.id);
+        if (selectedAcademicYearId !== nextAcademicYearId) {
+            setSelectedAcademicYearId(nextAcademicYearId);
         }
     }, [academicYears, selectedAcademicYearId]);
 
     const selectedAcademicYear =
         academicYears.find((year) => year.id === selectedAcademicYearId) ?? academicYears.find((year) => year.is_current) ?? academicYears[0] ?? null;
+
+    const applyAcademicYearFilter = React.useCallback((academicYear: AcademicYearOption) => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const searchParams = new URLSearchParams(window.location.search);
+        searchParams.set('academic_year', academicYear.label);
+        searchParams.set('academic_year_id', String(academicYear.id));
+
+        router.visit(`${window.location.pathname}?${searchParams.toString()}`, {
+            method: 'get',
+            preserveScroll: true,
+            replace: true,
+        });
+    }, []);
 
     React.useEffect(() => {
         if (!isAcademicYearOpen) {
@@ -91,6 +114,28 @@ const InstructorLayout = ({ title, subtitle, children }: Props) => {
 
     return (
         <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-sm">
+            <style
+                dangerouslySetInnerHTML={{
+                    __html: `
+                        .cpms-scroll::-webkit-scrollbar {
+                            width: 6px;
+                        }
+                        .cpms-scroll::-webkit-scrollbar-track {
+                            background: transparent;
+                        }
+                        .cpms-scroll::-webkit-scrollbar-thumb {
+                            background: #09be8293;
+                            border-radius: 3px;
+                        }
+                        .cpms-scroll::-webkit-scrollbar-thumb:hover {
+                            background: #00af78ff;
+                        }
+                        .cpms-scroll::-webkit-scrollbar-button {
+                            display: none;
+                        }
+                    `,
+                }}
+            />
             <Sidebar />
 
             <main className="ml-0 flex-1 md:ml-56">
@@ -152,12 +197,12 @@ const InstructorLayout = ({ title, subtitle, children }: Props) => {
                                 >
                                     <div className="border-b border-emerald-100 bg-emerald-50/60 px-4 py-3">
                                         <p className="text-xs font-semibold text-emerald-900">Select Academic Year</p>
-                                        <p className="text-[11px] text-emerald-800/80">Showing the latest 2 academic years</p>
+                                        <p className="text-[11px] text-emerald-800/80">Showing all academic years</p>
                                     </div>
 
-                                    {academicYears.slice(0, 2).length ? (
-                                        <div className="p-2">
-                                            {academicYears.slice(0, 2).map((year) => {
+                                    {academicYears.length ? (
+                                        <div className="cpms-scroll h-[132px] overflow-auto p-2">
+                                            {academicYears.map((year) => {
                                                 const isSelected = year.id === selectedAcademicYear?.id;
 
                                                 return (
@@ -166,6 +211,9 @@ const InstructorLayout = ({ title, subtitle, children }: Props) => {
                                                         type="button"
                                                         role="menuitem"
                                                         onClick={() => {
+                                                            if (selectedAcademicYear?.id !== year.id) {
+                                                                applyAcademicYearFilter(year);
+                                                            }
                                                             setSelectedAcademicYearId(year.id);
                                                             setIsAcademicYearOpen(false);
                                                         }}

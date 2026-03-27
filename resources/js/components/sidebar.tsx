@@ -64,6 +64,13 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
     const scrollKey = useMemo(() => `cpms-sidebar-scroll-${role}`, [role]);
     const [showModal, setShowModal] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const selectedAcademicYear = useMemo(() => {
+        const query = currentUrl.includes('?') ? currentUrl.split('?')[1] ?? '' : '';
+        const searchParams = new URLSearchParams(query);
+        const academicYear = searchParams.get('academic_year');
+
+        return academicYear !== null && academicYear !== '' ? academicYear : null;
+    }, [currentUrl]);
 
     useEffect(() => {
         onModalOpen?.(showModal);
@@ -231,6 +238,32 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
 
     const menuItems = getMenuItems(role);
 
+    const resolveMenuHref = React.useCallback(
+        (href?: string): string => {
+            if (!href || href === '#') {
+                return href ?? '#';
+            }
+
+            if (selectedAcademicYear === null) {
+                return href;
+            }
+
+            const rolePrefixes = ROLE_ROUTE_PREFIXES[normalizedRole] ?? [];
+            const isCurrentRoleHref = rolePrefixes.some((prefix) => href === prefix || href.startsWith(`${prefix}/`));
+
+            if (!isCurrentRoleHref) {
+                return href;
+            }
+
+            const [path, query = ''] = href.split('?');
+            const searchParams = new URLSearchParams(query);
+            searchParams.set('academic_year', selectedAcademicYear);
+
+            return `${path}?${searchParams.toString()}`;
+        },
+        [normalizedRole, selectedAcademicYear],
+    );
+
     useEffect(() => {
         const normalizedUrl = currentUrl.split('?')[0];
         const allowedPrefixes = ROLE_ROUTE_PREFIXES[normalizedRole];
@@ -366,7 +399,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                             return (
                                 <Link
                                     key={item.label}
-                                    href={item.href ?? '#'}
+                                    href={resolveMenuHref(item.href)}
                                     onClick={() => setIsMobileOpen(false)}
                                     className={`group flex items-center justify-between rounded-lg px-3 py-2 transition-all duration-200 ${
                                         active ? 'bg-green-600 text-white shadow-md' : 'hover:bg-slate-800 hover:text-slate-100'

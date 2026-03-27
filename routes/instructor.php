@@ -35,6 +35,9 @@ use Inertia\Inertia;
 Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(function () {
     Route::get('/dashboard', function () {
         $userId = Auth::guard('web')->id();
+        $selectedAcademicYear = request()->query('academic_year');
+        $selectedAcademicYear = is_string($selectedAcademicYear) && $selectedAcademicYear !== '' ? $selectedAcademicYear : null;
+        $hasProgramSetsSchoolYearColumn = Schema::hasTable('program_sets') && Schema::hasColumn('program_sets', 'school_year');
         $pendingRequestsByGroup = collect();
         $pendingRequestsByGroup = collect();
         $programSetIds = [];
@@ -129,6 +132,18 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             if (class_exists(ProgramSet::class) && Schema::hasTable('program_sets')) {
                 $programSetIds = ProgramSet::query()
                     ->when($userId !== null, fn ($query) => $query->where('instructor_id', $userId))
+                    ->when(
+                        $selectedAcademicYear !== null && $selectedAcademicYear !== 'All',
+                        function ($query) use ($selectedAcademicYear, $hasProgramSetsSchoolYearColumn): void {
+                            $query->where(function ($subQuery) use ($selectedAcademicYear, $hasProgramSetsSchoolYearColumn): void {
+                                $subQuery->whereHas('academicYear', fn ($academicYearQuery) => $academicYearQuery->where('label', $selectedAcademicYear));
+
+                                if ($hasProgramSetsSchoolYearColumn) {
+                                    $subQuery->orWhere('school_year', $selectedAcademicYear);
+                                }
+                            });
+                        }
+                    )
                     ->pluck('id')
                     ->all();
                 $programSetsCount = count($programSetIds);
@@ -661,9 +676,24 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             'upcomingSchedules' => $upcomingSchedules,
             'attentionItems' => $attentionItems,
             'panelists' => $panelists,
+            'selectedAcademicYear' => $selectedAcademicYear,
         ]);
     })->name('instructor.dashboard');
     Route::get('/groups', function () {
+        $selectedAcademicYearId = request()->query('academic_year_id');
+        $selectedAcademicYearId = is_numeric($selectedAcademicYearId) ? (int) $selectedAcademicYearId : null;
+        $selectedAcademicYearId = $selectedAcademicYearId !== null && $selectedAcademicYearId > 0 ? $selectedAcademicYearId : null;
+        $selectedAcademicYear = request()->query('academic_year');
+        $selectedAcademicYear = is_string($selectedAcademicYear) && $selectedAcademicYear !== '' ? $selectedAcademicYear : null;
+        $normalizedSelectedAcademicYear = is_string($selectedAcademicYear)
+            ? trim((string) preg_replace('/^A\.?Y\.?\s*/i', '', $selectedAcademicYear))
+            : null;
+        $academicYearCandidates = collect([$selectedAcademicYear, $normalizedSelectedAcademicYear])
+            ->filter(fn ($value): bool => is_string($value) && $value !== '')
+            ->unique()
+            ->values()
+            ->all();
+        $hasProgramSetsSchoolYearColumn = Schema::hasTable('program_sets') && Schema::hasColumn('program_sets', 'school_year');
         $programSets = [];
 
         try {
@@ -671,25 +701,44 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             if (class_exists(\App\Models\ProgramSet::class) && Schema::hasTable('program_sets')) {
                 $hasProgramSetStudentTable = Schema::hasTable('program_set_student');
                 $hasGroupsTable = Schema::hasTable('groups');
+                $programSetColumns = ['id', 'name', 'program', 'academic_year_id', 'instructor_id'];
+
+                if ($hasProgramSetsSchoolYearColumn) {
+                    $programSetColumns[] = 'school_year';
+                }
 
                 $programSetsQuery = \App\Models\ProgramSet::query()
                     ->with(['academicYear', 'instructor'])
                     ->when($userId !== null, fn ($query) => $query->where('instructor_id', $userId))
+                    ->when($selectedAcademicYearId !== null, fn ($query) => $query->where('academic_year_id', $selectedAcademicYearId))
+                    ->when(
+                        $selectedAcademicYearId === null && count($academicYearCandidates) > 0 && ! in_array('All', $academicYearCandidates, true),
+                        function ($query) use ($academicYearCandidates, $hasProgramSetsSchoolYearColumn): void {
+                            $query->where(function ($subQuery) use ($academicYearCandidates, $hasProgramSetsSchoolYearColumn): void {
+                                $subQuery->whereHas('academicYear', fn ($academicYearQuery) => $academicYearQuery->whereIn('label', $academicYearCandidates));
+
+                                if ($hasProgramSetsSchoolYearColumn) {
+                                    $subQuery->orWhereIn('school_year', $academicYearCandidates);
+                                }
+                            });
+                        }
+                    )
                     ->when($hasProgramSetStudentTable, fn ($query) => $query->withCount('students'))
                     ->when($hasGroupsTable, fn ($query) => $query->withCount('groups'))
                     ->orderByDesc('created_at')
-                    ->get(['id', 'name', 'program', 'academic_year_id', 'instructor_id']);
+                    ->get($programSetColumns);
 
                 $programSets = $programSetsQuery
                     ->map(fn ($ps) => [
                         'id' => $ps->id,
                         'name' => $ps->name,
                         'program' => $ps->program,
-                        'school_year' => $ps->academicYear?->label,
+                        'school_year' => $ps->academicYear?->label ?? ($hasProgramSetsSchoolYearColumn ? $ps->school_year : null),
                         'instructor_name' => $ps->instructor?->name,
                         'students_count' => $hasProgramSetStudentTable ? ($ps->students_count ?? 0) : 0,
                         'groups_count' => $hasGroupsTable ? ($ps->groups_count ?? 0) : 0,
-                    ])->all();
+                    ])
+                    ->all();
             }
         } catch (\Throwable $e) {
             $programSets = [];
@@ -697,6 +746,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
         return Inertia::render('Instructor/groups', [
             'programSets' => $programSets,
+            'selectedAcademicYear' => $selectedAcademicYear,
+            'selectedAcademicYearId' => $selectedAcademicYearId,
         ]);
     })->name('instructor.groups');
     Route::get('/groups/{programSet}/manage', function (ProgramSet $programSet) {

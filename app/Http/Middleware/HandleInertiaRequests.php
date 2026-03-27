@@ -56,7 +56,6 @@ class HandleInertiaRequests extends Middleware
                     return AcademicYear::query()
                         ->orderByDesc('start_year')
                         ->orderByDesc('end_year')
-                        ->limit(2)
                         ->get(['id', 'label', 'is_current'])
                         ->map(static fn (AcademicYear $academicYear): array => [
                             'id' => $academicYear->id,

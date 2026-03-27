@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { Box } from '@mui/material';
 import { BarChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
@@ -111,6 +111,7 @@ type InstructorDashboardProps = {
     groups?: GroupRow[];
     upcomingSchedules?: UpcomingSchedule[];
     attentionItems?: AttentionItem[];
+    selectedAcademicYear?: string | null;
 };
 
 const fallbackStats: DashboardStats = {
@@ -203,6 +204,8 @@ const Dashboard = () => {
     const groups = props.groups ?? [];
     const upcomingSchedules = props.upcomingSchedules ?? [];
     const attentionItems = props.attentionItems ?? [];
+    const selectedAcademicYearFilter =
+        typeof props.selectedAcademicYear === 'string' && props.selectedAcademicYear !== '' ? props.selectedAcademicYear : null;
 
     const adviserProgress = progressFor(stats.adviserAssigned, stats.totalGroups);
     const panelProgress = progressFor(stats.panelSlotsFilled, stats.panelSlotsTotal);
@@ -270,15 +273,48 @@ const Dashboard = () => {
         return currentYear?.label ?? 'All';
     }, [statusRecordsByYear]);
 
-    const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(defaultStatusYear);
+    const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(() => {
+        if (selectedAcademicYearFilter && statusAcademicYearOptions.includes(selectedAcademicYearFilter)) {
+            return selectedAcademicYearFilter;
+        }
+
+        return defaultStatusYear;
+    });
 
     React.useEffect(() => {
         if (statusAcademicYearOptions.includes(selectedAcademicYear)) {
             return;
         }
 
+        if (selectedAcademicYearFilter && statusAcademicYearOptions.includes(selectedAcademicYearFilter)) {
+            setSelectedAcademicYear(selectedAcademicYearFilter);
+            return;
+        }
+
         setSelectedAcademicYear(defaultStatusYear);
-    }, [defaultStatusYear, selectedAcademicYear, statusAcademicYearOptions]);
+    }, [defaultStatusYear, selectedAcademicYear, selectedAcademicYearFilter, statusAcademicYearOptions]);
+
+    const applyAcademicYearFilter = React.useCallback((academicYear: string) => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const searchParams = new URLSearchParams(window.location.search);
+
+        if (academicYear === 'All') {
+            searchParams.delete('academic_year');
+        } else {
+            searchParams.set('academic_year', academicYear);
+        }
+
+        const query = searchParams.toString();
+
+        router.visit(query !== '' ? `${window.location.pathname}?${query}` : window.location.pathname, {
+            method: 'get',
+            preserveScroll: true,
+            replace: true,
+        });
+    }, []);
 
     const activeStatusRecords =
         selectedAcademicYear === 'All' ? statusRecords : (statusRecordsByYear.find((year) => year.label === selectedAcademicYear)?.records ?? []);
@@ -540,7 +576,11 @@ const Dashboard = () => {
                                 <span>A.Y</span>
                                 <select
                                     value={selectedAcademicYear}
-                                    onChange={(event) => setSelectedAcademicYear(event.target.value)}
+                                    onChange={(event) => {
+                                        const year = event.target.value;
+                                        setSelectedAcademicYear(year);
+                                        applyAcademicYearFilter(year);
+                                    }}
                                     className="bg-transparent text-xs font-semibold text-emerald-700 focus:outline-none"
                                 >
                                     {statusAcademicYearOptions.map((year) => {
