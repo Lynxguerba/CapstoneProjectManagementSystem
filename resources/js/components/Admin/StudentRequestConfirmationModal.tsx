@@ -21,14 +21,7 @@ type StudentRequestConfirmationModalProps = {
     onConfirm: () => void;
 };
 
-const StudentRequestConfirmationModal = ({
-    open,
-    action,
-    student,
-    processing,
-    onClose,
-    onConfirm,
-}: StudentRequestConfirmationModalProps) => {
+const StudentRequestConfirmationModal = ({ open, action, student, processing, onClose, onConfirm }: StudentRequestConfirmationModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
 
     React.useEffect(() => {

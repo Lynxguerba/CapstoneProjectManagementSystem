@@ -179,7 +179,7 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
                 }`}
                 onMouseDown={(event) => event.stopPropagation()}
             >
-                <div className="rounded-t-2xl flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
+                <div className="flex items-center justify-between rounded-t-2xl border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                     <div className="flex items-center gap-2">
                         <Settings className="h-5 w-5 text-emerald-800" />
                         <h2 className="text-lg font-bold text-emerald-900">{modalTitle}</h2>

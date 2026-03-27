@@ -276,7 +276,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
             .filter((line) => line.length > 0);
 
         if (lines.length <= 1) {
-            setFileError('CSV file must include a header row and at least one row.');
+            setFileError('XLSX file must include a header row and at least one row.');
             return;
         }
 
@@ -327,7 +327,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                 } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                     issues.push('Email format is invalid.');
                 } else if (emailTracker.has(email.toLowerCase())) {
-                    issues.push('Duplicate email in CSV.');
+                    issues.push('Duplicate email in file.');
                 } else if (existingUserEmails.has(email.toLowerCase())) {
                     issues.push('Email already exists in this table.');
                 }
@@ -369,7 +369,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
             } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 issues.push('Email format is invalid.');
             } else if (emailTracker.has(email.toLowerCase())) {
-                issues.push('Duplicate email in CSV.');
+                issues.push('Duplicate email in file.');
             } else if (existingUserEmails.has(email.toLowerCase())) {
                 issues.push('Email already exists in this table.');
             }
@@ -427,8 +427,8 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
         clearErrors();
         setFileError('');
 
-        if (!file.name.toLowerCase().endsWith('.csv')) {
-            setFileError('Please select a valid .csv file.');
+        if (!file.name.toLowerCase().endsWith('.xlsx')) {
+            setFileError('Please select a valid .xlsx file.');
             return;
         }
 
@@ -476,23 +476,21 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
     }
 
     const uploadLabel = userType === 'student' ? 'Bulk Upload Students' : userType === 'faculty' ? 'Bulk Upload Faculty' : 'Bulk Upload Users';
-    const csvGuide =
+    const xlsxGuide =
         userType === 'student'
             ? 'Last Name, First Name, Email, Program, Password, and optionally Status'
             : userType === 'faculty'
               ? 'Last Name, First Name, Email, Role, Password, and optionally Status'
               : 'Last Name, First Name, Email, Role, Password, and optionally Status';
-    const csvTemplateFileName =
+    const xlsxTemplateFileName =
         userType === 'student'
-            ? 'student-upload-template.csv'
+            ? 'student-upload-template.xlsx'
             : userType === 'faculty'
-              ? 'faculty-upload-template.csv'
-              : 'user-upload-template.csv';
-    const csvTemplateContent =
+              ? 'faculty-upload-template.xlsx'
+              : 'user-upload-template.xlsx';
+    const xlsxTemplateContent =
         userType === 'student'
-            ? ['last_name,first_name,email,program,password,status', 'Dela Cruz,Juan,juan.delacruz@example.com,BSIT,StrongPass123,active'].join(
-                  '\n',
-              )
+            ? ['last_name,first_name,email,program,password,status', 'Dela Cruz,Juan,juan.delacruz@example.com,BSIT,StrongPass123,active'].join('\n')
             : userType === 'faculty'
               ? [
                     'last_name,first_name,email,role,password,status',
@@ -505,13 +503,15 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                     'Lopez,Marco,marco.lopez@example.com,admin,StrongPass123,active',
                 ].join('\n');
 
-    const downloadCsvTemplate = () => {
-        const blob = new Blob([csvTemplateContent], { type: 'text/csv;charset=utf-8;' });
+    const downloadXlsxTemplate = () => {
+        const blob = new Blob([xlsxTemplateContent], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
         const url = URL.createObjectURL(blob);
         const anchorElement = document.createElement('a');
 
         anchorElement.href = url;
-        anchorElement.setAttribute('download', csvTemplateFileName);
+        anchorElement.setAttribute('download', xlsxTemplateFileName);
         anchorElement.click();
 
         URL.revokeObjectURL(url);
@@ -554,26 +554,26 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
 
                     <div className="space-y-4 p-4">
                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-                            Upload a CSV file with headers:
+                            Upload an XLSX file with headers:
                             <br />
-                            <span className="font-semibold">{csvGuide}</span>
+                            <span className="font-semibold">{xlsxGuide}</span>
                             <div className="mt-3">
                                 <button
                                     type="button"
-                                    onClick={downloadCsvTemplate}
+                                    onClick={downloadXlsxTemplate}
                                     className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
                                 >
                                     <Download className="h-3.5 w-3.5" />
-                                    Download CSV Template
+                                    Download XLSX Template
                                 </button>
                             </div>
                         </div>
 
                         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
                             <FileSpreadsheet className="h-8 w-8 text-slate-500" />
-                            <span className="text-sm font-semibold text-slate-700">{fileName || 'Choose CSV file'}</span>
+                            <span className="text-sm font-semibold text-slate-700">{fileName || 'Choose XLSX file'}</span>
                             <span className="text-xs text-slate-500">Click to browse and preview before importing.</span>
-                            <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
+                            <input type="file" accept=".xlsx" onChange={handleFileChange} className="hidden" />
                         </label>
 
                         {fileError ? <p className="text-sm text-rose-600">{fileError}</p> : null}
@@ -622,7 +622,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                         <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                             <div className="flex items-center gap-2">
                                 <CheckCircle2 className="h-5 w-5 text-emerald-800" />
-                                <h2 className="text-lg font-bold text-emerald-900">Review CSV Import</h2>
+                                <h2 className="text-lg font-bold text-emerald-900">Review XLSX Import</h2>
                             </div>
                             <button
                                 type="button"
