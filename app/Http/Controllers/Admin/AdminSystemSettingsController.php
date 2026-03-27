@@ -47,11 +47,27 @@ class AdminSystemSettingsController extends Controller
             ->pluck('value', 'key');
 
         $currentAcademicYear = null;
+        $academicYears = [];
 
         if (Schema::hasTable('academic_years')) {
             $currentAcademicYear = AcademicYear::query()
                 ->where('is_current', true)
                 ->value('label');
+
+            $academicYears = AcademicYear::query()
+                ->select(['id', 'label', 'start_year', 'end_year', 'is_current'])
+                ->orderByDesc('start_year')
+                ->orderByDesc('end_year')
+                ->get()
+                ->map(static fn (AcademicYear $academicYear): array => [
+                    'id' => $academicYear->id,
+                    'label' => $academicYear->label,
+                    'startYear' => $academicYear->start_year,
+                    'endYear' => $academicYear->end_year,
+                    'isCurrent' => $academicYear->is_current,
+                ])
+                ->values()
+                ->all();
         }
 
         $siteWideNotification = null;
@@ -118,6 +134,7 @@ class AdminSystemSettingsController extends Controller
                 'finalDefenseDeadline' => (string) ($settings['finalDefenseDeadline'] ?? ''),
                 'siteWideNotification' => (string) ($siteWideNotification ?? ''),
             ],
+            'academicYears' => $academicYears,
             'adminUsers' => $adminUsers,
         ]);
     }

@@ -32,8 +32,17 @@ type AdminUserRow = {
     createdAt: string;
 };
 
+type AcademicYearListItem = {
+    id: number;
+    label: string;
+    startYear: number;
+    endYear: number;
+    isCurrent: boolean;
+};
+
 type AdminSystemSettingsProps = {
     settings?: Partial<SystemSettingsData>;
+    academicYears?: AcademicYearListItem[];
     adminUsers?: AdminUserRow[];
 };
 
@@ -96,13 +105,16 @@ const cardVariants: Variants = {
     show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: easeOut } },
 };
 
-const AdminSystemSettings = ({ adminUsers }: AdminSystemSettingsProps) => {
+const AdminSystemSettings = ({ settings, academicYears, adminUsers }: AdminSystemSettingsProps) => {
     const academicYearForm = useForm<Pick<SystemSettingsData, 'academicYear'>>({
-        academicYear: '',
+        academicYear: settings?.academicYear ?? '',
     });
     const notificationForm = useForm<Pick<SystemSettingsData, 'siteWideNotification'>>({
-        siteWideNotification: '',
+        siteWideNotification: settings?.siteWideNotification ?? '',
     });
+    const academicYearEntries = React.useMemo(() => {
+        return Array.isArray(academicYears) ? academicYears : [];
+    }, [academicYears]);
     const admins = React.useMemo(() => {
         return Array.isArray(adminUsers) ? adminUsers : [];
     }, [adminUsers]);
@@ -164,6 +176,28 @@ const AdminSystemSettings = ({ adminUsers }: AdminSystemSettingsProps) => {
 
     return (
         <AdminLayout title="System Settings" subtitle="Configure global capstone lifecycle settings">
+            <style
+                dangerouslySetInnerHTML={{
+                    __html: `
+                        .cpms-scroll::-webkit-scrollbar {
+                            width: 6px;
+                        }
+                        .cpms-scroll::-webkit-scrollbar-track {
+                            background: transparent;
+                        }
+                        .cpms-scroll::-webkit-scrollbar-thumb {
+                            background: #09be8293;
+                            border-radius: 3px;
+                        }
+                        .cpms-scroll::-webkit-scrollbar-thumb:hover {
+                            background: #00af78ff;
+                        }
+                        .cpms-scroll::-webkit-scrollbar-button {
+                            display: none;
+                        }
+                    `,
+                }}
+            />
             <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-5">
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                     <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
@@ -182,34 +216,80 @@ const AdminSystemSettings = ({ adminUsers }: AdminSystemSettingsProps) => {
                         variants={cardVariants}
                         className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-1"
                     >
-                        <form onSubmit={submitAcademicYear}>
+                        <div className="">
                             <SectionHeader
                                 icon={GraduationCap}
                                 title="Academic Cycle"
                                 description="Set the current academic year and active capstone phase."
                             />
-                            <div className="mb-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
-                                <FormField label="Academic year" hint="Format: YYYY–YYYY" span2>
-                                    <input
-                                        value={academicYearForm.data.academicYear}
-                                        onChange={(e) => {
-                                            academicYearForm.clearErrors('academicYear');
-                                            academicYearForm.setData('academicYear', e.target.value);
-                                        }}
-                                        placeholder="[e.g. 2025–2026]"
-                                        className={inputClass}
-                                    />
-                                </FormField>
+                            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                                <form onSubmit={submitAcademicYear} className="rounded-xl border border-slate-200 bg-white p-4">
+                                    <div className="mb-4 grid grid-cols-1 gap-5">
+                                        <FormField label="Academic year" hint="Format: YYYY–YYYY" error={academicYearForm.errors.academicYear} span2>
+                                            <input
+                                                value={academicYearForm.data.academicYear}
+                                                onChange={(e) => {
+                                                    academicYearForm.clearErrors('academicYear');
+                                                    academicYearForm.setData('academicYear', e.target.value);
+                                                }}
+                                                placeholder="[e.g. 2025–2026]"
+                                                className={inputClass}
+                                            />
+                                        </FormField>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={academicYearForm.processing}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-green-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-green-700 hover:to-green-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <ShieldCheck className="h-4 w-4" />
+                                        {academicYearForm.processing ? 'Saving...' : 'Save Academic Year'}
+                                    </button>
+                                </form>
+
+                                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                                    <div className="mb-3 flex items-center justify-between">
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-slate-800">Academic Year List</h4>
+                                            <p className="text-xs text-slate-500">All academic years from the database</p>
+                                        </div>
+                                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                                            {academicYearEntries.length}
+                                        </span>
+                                    </div>
+                                    {academicYearEntries.length === 0 ? (
+                                        <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+                                            No academic years found.
+                                        </div>
+                                    ) : (
+                                        <div className="cpms-scroll max-h-[180px] space-y-2 overflow-auto pr-2">
+                                            {academicYearEntries.map((academicYearEntry) => (
+                                                <div
+                                                    key={academicYearEntry.id}
+                                                    className={`rounded-lg border p-3 ${
+                                                        academicYearEntry.isCurrent
+                                                            ? 'border-emerald-300 bg-emerald-50'
+                                                            : 'border-slate-200 bg-slate-50'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <p className="text-sm font-semibold text-slate-800">{academicYearEntry.label}</p>
+                                                        {academicYearEntry.isCurrent ? (
+                                                            <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                                                                Current
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
+                                                    <p className="mt-1 text-xs text-slate-500">
+                                                        {academicYearEntry.startYear} - {academicYearEntry.endYear}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <button
-                                type="submit"
-                                disabled={academicYearForm.processing}
-                                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-green-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-green-700 hover:to-green-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                <ShieldCheck className="h-4 w-4" />
-                                {academicYearForm.processing ? 'Saving...' : 'Save Academic Year'}
-                            </button>
-                        </form>
+                        </div>
 
                         <div className="mt-6 border-t border-slate-100 pt-6">
                             <form onSubmit={submitSiteWideNotification}>
