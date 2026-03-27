@@ -40,7 +40,8 @@ type AdviserAssignmentPageProps = {
 
 const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAssignmentPageProps) => {
     const [searchTerm, setSearchTerm] = React.useState('');
-    const currentAcademicYear = academicYears.find((year) => year.is_current)?.label ?? academicYears[0]?.label ?? 'All';
+    const currentAcademicYearLabel = academicYears.find((year) => year.is_current)?.label ?? null;
+    const currentAcademicYear = currentAcademicYearLabel ?? academicYears[0]?.label ?? 'All';
     const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(currentAcademicYear || 'All');
     const [viewMode, setViewMode] = React.useState<'card' | 'list'>('card');
     const [selectedAdviser, setSelectedAdviser] = React.useState<AdviserRow | null>(null);
@@ -69,6 +70,14 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
         };
     }, []);
 
+    const getTotalAssignedGroups = React.useCallback(
+        (adviser: AdviserRow) => {
+            const { totalAssigned } = getProgramTotals(adviser);
+            return totalAssigned;
+        },
+        [getProgramTotals],
+    );
+
     const getStatusMeta = React.useCallback(
         (adviser: AdviserRow) => {
             const { remaining, totalCapacity, isAvailable } = getProgramTotals(adviser);
@@ -91,10 +100,22 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
         [getProgramTotals],
     );
 
+    const sortedAdvisers = React.useMemo(() => {
+        return [...advisers].sort((first, second) => {
+            const workloadDelta = getTotalAssignedGroups(second) - getTotalAssignedGroups(first);
+
+            if (workloadDelta !== 0) {
+                return workloadDelta;
+            }
+
+            return first.name.localeCompare(second.name);
+        });
+    }, [advisers, getTotalAssignedGroups]);
+
     const filteredAdvisers = React.useMemo(() => {
         const query = searchTerm.trim().toLowerCase();
 
-        return advisers.filter((adviser) => {
+        return sortedAdvisers.filter((adviser) => {
             const matchesSearch = !query || adviser.name.toLowerCase().includes(query) || adviser.email.toLowerCase().includes(query);
 
             if (!matchesSearch) {
@@ -110,7 +131,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
 
             return normalizedStatus === statusFilter;
         });
-    }, [advisers, searchTerm, statusFilter, getStatusMeta]);
+    }, [sortedAdvisers, searchTerm, statusFilter, getStatusMeta]);
 
     const totalPages = Math.max(1, Math.ceil(filteredAdvisers.length / itemsPerPage));
 
