@@ -277,13 +277,6 @@ const Dashboard = () => {
         },
     ] as const;
 
-    const workloadIntensity = progressFor(
-        stats.inactiveUsers + stats.groupsWithoutAdviser + stats.pendingAdviserRequests,
-        Math.max(1, stats.totalUsers + stats.activeGroups),
-    );
-
-    const metricCardClassName =
-        'group relative overflow-hidden rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg';
     const panelClassName = 'rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm';
 
     return (
