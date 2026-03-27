@@ -5,12 +5,14 @@ import React from 'react';
 import AddUserModal from '../../components/Admin/AddUserModal';
 import BulkUploadModal from '../../components/Admin/BulkUploadModal';
 import ManageUserActionModal from '../../components/Admin/ManageUserActionModal';
+import StudentRequestConfirmationModal from '../../components/admin/StudentRequestConfirmationModal';
 import AdminLayout from './_layout';
 
 type StudentProgram = 'BSIT' | 'BSIS';
 type StudentStatus = 'active' | 'inactive' | 'pending';
 type StudentFilterProgram = StudentProgram | 'all';
 type StudentFilterStatus = StudentStatus | 'all';
+type PendingAction = 'approve' | 'reject';
 
 type StudentRow = {
     id: number;
@@ -94,6 +96,8 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
     const [isManageUserModalOpen, setIsManageUserModalOpen] = React.useState(false);
     const [selectedStudent, setSelectedStudent] = React.useState<StudentRow | null>(null);
     const [processingStudentId, setProcessingStudentId] = React.useState<number | null>(null);
+    const [confirmationAction, setConfirmationAction] = React.useState<PendingAction | null>(null);
+    const [confirmationStudent, setConfirmationStudent] = React.useState<StudentRow | null>(null);
     const [currentPage, setCurrentPage] = React.useState(1);
     const usersPerPage = 10;
 
@@ -166,17 +170,65 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
         setSelectedStudent(null);
     };
 
-    const handlePendingAction = (student: StudentRow, action: 'approve' | 'reject') => {
-        setProcessingStudentId(student.id);
+    const openPendingActionConfirmation = (student: StudentRow, action: PendingAction) => {
+        setConfirmationStudent(student);
+        setConfirmationAction(action);
+    };
+
+    const closePendingActionConfirmation = () => {
+        if (processingStudentId !== null) {
+            return;
+        }
+
+        setConfirmationStudent(null);
+        setConfirmationAction(null);
+    };
+
+    const handlePendingAction = () => {
+        if (!confirmationStudent || !confirmationAction) {
+            return;
+        }
+
+        const targetStudent = confirmationStudent;
+        const targetAction = confirmationAction;
+
+        setProcessingStudentId(targetStudent.id);
 
         router.patch(
-            `/admin/users/${student.id}/${action}?from=student`,
+            `/admin/users/${targetStudent.id}/${targetAction}?from=student`,
             {},
             {
                 preserveScroll: true,
-                onFinish: () => setProcessingStudentId(null),
+                onFinish: () => {
+                    setProcessingStudentId(null);
+                    setConfirmationStudent(null);
+                    setConfirmationAction(null);
+                },
             },
         );
+    };
+
+    const isConfirmingPendingAction = Boolean(confirmationStudent && confirmationAction);
+    const isPendingActionProcessing = confirmationStudent !== null && processingStudentId === confirmationStudent.id;
+
+    const handleApproveClick = (student: StudentRow) => {
+        openPendingActionConfirmation(student, 'approve');
+    };
+
+    const handleRejectClick = (student: StudentRow) => {
+        openPendingActionConfirmation(student, 'reject');
+    };
+
+    const handlePendingActionButtonDisabled = (studentId: number) => {
+        if (processingStudentId !== null) {
+            return true;
+        }
+
+        if (confirmationStudent && confirmationStudent.id === studentId) {
+            return true;
+        }
+
+        return false;
     };
 
     return (
@@ -297,8 +349,8 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     type="button"
-                                                    onClick={() => handlePendingAction(user, 'reject')}
-                                                    disabled={processingStudentId === user.id}
+                                                    onClick={() => handleRejectClick(user)}
+                                                    disabled={handlePendingActionButtonDisabled(user.id)}
                                                     className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-bold text-rose-700 shadow-sm transition-all hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     <X className="h-3 w-3" />
@@ -306,8 +358,8 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => handlePendingAction(user, 'approve')}
-                                                    disabled={processingStudentId === user.id}
+                                                    onClick={() => handleApproveClick(user)}
+                                                    disabled={handlePendingActionButtonDisabled(user.id)}
                                                     className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-100 px-2.5 py-1.5 text-[11px] font-bold text-amber-800 shadow-sm transition-all hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     <Check className="h-3 w-3" />
@@ -401,6 +453,24 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                     setSelectedStudent(null);
                 }}
                 onSave={(updatedUser) => saveManagedStudent(updatedUser as StudentRow)}
+            />
+            <StudentRequestConfirmationModal
+                open={isConfirmingPendingAction}
+                action={confirmationAction}
+                student={
+                    confirmationStudent
+                        ? {
+                              fullName: confirmationStudent.fullName,
+                              email: confirmationStudent.email,
+                              program: confirmationStudent.program,
+                              status: confirmationStudent.status,
+                              createdAt: confirmationStudent.createdAt,
+                          }
+                        : null
+                }
+                processing={isPendingActionProcessing}
+                onClose={closePendingActionConfirmation}
+                onConfirm={handlePendingAction}
             />
         </AdminLayout>
     );
