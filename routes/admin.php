@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminSystemSettingsController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Models\AcademicYear;
 use App\Models\ProgramSet;
+use App\Models\TitleRepository;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -646,8 +647,119 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/audit-logs', AdminAuditLogController::class)->name('admin.audit-logs');
 
     Route::get('/project-repository', function () {
-        return Inertia::render('Admin/project-repository');
+        $projects = [];
+
+        try {
+            if (Schema::hasTable('title_repositories')) {
+                $projects = TitleRepository::query()
+                    ->with('academicYear:id,label,start_year,end_year')
+                    ->orderByDesc('created_at')
+                    ->get(['id', 'title', 'academic_year_id', 'status', 'created_at'])
+                    ->map(static function (TitleRepository $repository): array {
+                        $academicYearLabel = trim((string) ($repository->academicYear?->label ?? ''));
+
+                        if ($academicYearLabel !== '') {
+                            $academicYearLabel = (string) preg_replace('/^A\\.Y\\s*/i', '', $academicYearLabel);
+                        } else {
+                            $startYear = $repository->academicYear?->start_year;
+                            $endYear = $repository->academicYear?->end_year;
+                            $academicYearLabel = $startYear && $endYear ? "{$startYear}-{$endYear}" : 'N/A';
+                        }
+
+                        return [
+                            'id' => $repository->id,
+                            'title' => $repository->title,
+                            'academicYear' => $academicYearLabel,
+                            'status' => in_array($repository->status, ['Archived', 'Approved'], true) ? $repository->status : 'Approved',
+                            'dateAdded' => $repository->created_at?->format('M Y') ?? 'N/A',
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $projects = [];
+        }
+
+        return Inertia::render('Admin/project-repository', [
+            'projects' => $projects,
+        ]);
     })->name('admin.repository');
+    Route::get('/project-repository/export', function () {
+        $rows = [];
+
+        try {
+            if (Schema::hasTable('title_repositories')) {
+                $rows = TitleRepository::query()
+                    ->with('academicYear:id,label,start_year,end_year')
+                    ->orderByDesc('created_at')
+                    ->get(['id', 'title', 'academic_year_id', 'status', 'created_at'])
+                    ->map(static function (TitleRepository $repository): array {
+                        $academicYearLabel = trim((string) ($repository->academicYear?->label ?? ''));
+
+                        if ($academicYearLabel !== '') {
+                            $academicYearLabel = (string) preg_replace('/^A\\.Y\\s*/i', '', $academicYearLabel);
+                        } else {
+                            $startYear = $repository->academicYear?->start_year;
+                            $endYear = $repository->academicYear?->end_year;
+                            $academicYearLabel = $startYear && $endYear ? "{$startYear}-{$endYear}" : 'N/A';
+                        }
+
+                        return [
+                            'title' => $repository->title,
+                            'authors' => '',
+                            'adviser' => '',
+                            'academic_year' => $academicYearLabel,
+                            'status' => in_array($repository->status, ['Archived', 'Approved'], true) ? $repository->status : 'Approved',
+                            'date_added' => $repository->created_at?->format('M Y') ?? 'N/A',
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $rows = [];
+        }
+
+        $fileName = 'project-repository-archive-'.now()->format('Y-m-d_H-i-s').'.xls';
+        $columns = ['Capstone Title', 'Authors / Group Members', 'Adviser', 'AY / Term', 'Status', 'Date Added'];
+
+        return response()->streamDownload(
+            function () use ($rows, $columns): void {
+                $output = fopen('php://output', 'w');
+
+                if ($output === false) {
+                    return;
+                }
+
+                $sanitizeForSpreadsheet = static function (?string $value): string {
+                    return str_replace(["\t", "\r", "\n"], ' ', trim((string) $value));
+                };
+
+                fwrite($output, implode("\t", $columns)."\n");
+
+                foreach ($rows as $row) {
+                    $line = [
+                        $sanitizeForSpreadsheet((string) ($row['title'] ?? '')),
+                        $sanitizeForSpreadsheet((string) ($row['authors'] ?? '')),
+                        $sanitizeForSpreadsheet((string) ($row['adviser'] ?? '')),
+                        $sanitizeForSpreadsheet((string) ($row['academic_year'] ?? '')),
+                        $sanitizeForSpreadsheet((string) ($row['status'] ?? '')),
+                        $sanitizeForSpreadsheet((string) ($row['date_added'] ?? '')),
+                    ];
+
+                    fwrite($output, implode("\t", $line)."\n");
+                }
+
+                fclose($output);
+            },
+            $fileName,
+            [
+                'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+                'Cache-Control' => 'no-store, no-cache',
+            ],
+        );
+    })->name('admin.repository.export');
     Route::get('/backup-restore', function () {
         return Inertia::render('Admin/backup-restore');
     })->name('admin.backup-restore');

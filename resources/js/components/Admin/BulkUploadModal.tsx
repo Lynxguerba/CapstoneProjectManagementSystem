@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { CheckCircle2, FileSpreadsheet, Upload, X } from 'lucide-react';
+import { CheckCircle2, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { bulkStore } from '../../routes/admin/users';
@@ -482,6 +482,40 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
             : userType === 'faculty'
               ? 'Last Name, First Name, Email, Role, Password, and optionally Status'
               : 'Last Name, First Name, Email, Role, Password, and optionally Status';
+    const csvTemplateFileName =
+        userType === 'student'
+            ? 'student-upload-template.csv'
+            : userType === 'faculty'
+              ? 'faculty-upload-template.csv'
+              : 'user-upload-template.csv';
+    const csvTemplateContent =
+        userType === 'student'
+            ? ['last_name,first_name,email,program,password,status', 'Dela Cruz,Juan,juan.delacruz@example.com,BSIT,StrongPass123,active'].join(
+                  '\n',
+              )
+            : userType === 'faculty'
+              ? [
+                    'last_name,first_name,email,role,password,status',
+                    'Santos,Maria,maria.santos@example.com,instructor,StrongPass123,active',
+                    'Reyes,Carlo,carlo.reyes@example.com,adviser;panelist,StrongPass123,active',
+                ].join('\n')
+              : [
+                    'last_name,first_name,email,role,password,status',
+                    'Garcia,Ana,ana.garcia@example.com,student,StrongPass123,active',
+                    'Lopez,Marco,marco.lopez@example.com,admin,StrongPass123,active',
+                ].join('\n');
+
+    const downloadCsvTemplate = () => {
+        const blob = new Blob([csvTemplateContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const anchorElement = document.createElement('a');
+
+        anchorElement.href = url;
+        anchorElement.setAttribute('download', csvTemplateFileName);
+        anchorElement.click();
+
+        URL.revokeObjectURL(url);
+    };
 
     return createPortal(
         <>
@@ -523,6 +557,16 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                             Upload a CSV file with headers:
                             <br />
                             <span className="font-semibold">{csvGuide}</span>
+                            <div className="mt-3">
+                                <button
+                                    type="button"
+                                    onClick={downloadCsvTemplate}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+                                >
+                                    <Download className="h-3.5 w-3.5" />
+                                    Download CSV Template
+                                </button>
+                            </div>
                         </div>
 
                         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
