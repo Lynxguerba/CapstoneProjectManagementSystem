@@ -5,7 +5,7 @@ import React from 'react';
 import AddUserModal from '../../components/Admin/AddUserModal';
 import BulkUploadModal from '../../components/Admin/BulkUploadModal';
 import ManageUserActionModal from '../../components/Admin/ManageUserActionModal';
-import StudentRequestConfirmationModal from '../../components/admin/StudentRequestConfirmationModal';
+import StudentRequestConfirmationModal from '../../components/Admin/StudentRequestConfirmationModal';
 import AdminLayout from './_layout';
 
 type StudentProgram = 'BSIT' | 'BSIS';

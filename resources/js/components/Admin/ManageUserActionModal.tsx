@@ -174,12 +174,12 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
             }}
         >
             <div
-                className={`max-h-[90vh] w-full max-w-xl overflow-visible rounded-xl bg-white shadow-2xl transition-all duration-200 ${
+                className={`max-h-[90vh] w-full max-w-xl overflow-visible rounded-2xl bg-white shadow-2xl transition-all duration-200 ${
                     isAppearing ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-95 opacity-0'
                 }`}
                 onMouseDown={(event) => event.stopPropagation()}
             >
-                <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
+                <div className="rounded-t-2xl flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                     <div className="flex items-center gap-2">
                         <Settings className="h-5 w-5 text-emerald-800" />
                         <h2 className="text-lg font-bold text-emerald-900">{modalTitle}</h2>
@@ -364,7 +364,7 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
                     </div>
                 </div>
 
-                <div className="border-t border-slate-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
+                <div className="rounded-b-2xl border-t border-slate-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                     <div className="flex justify-end gap-2">
                         <button
                             type="button"
