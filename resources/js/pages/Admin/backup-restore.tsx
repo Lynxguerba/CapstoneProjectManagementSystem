@@ -1,6 +1,6 @@
+import { Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Database, Download, Upload, History, ShieldCheck, RefreshCcw, AlertCircle, HardDrive, ChevronRight } from 'lucide-react';
-import { Link } from '@inertiajs/react';
 import AdminLayout from './_layout';
 
 // Mock Data for UI consistency

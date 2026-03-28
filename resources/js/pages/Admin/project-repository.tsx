@@ -1,6 +1,6 @@
+import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Calendar, ChevronRight, ExternalLink, FileText, Filter, FolderArchive, Search } from 'lucide-react';
-import { Link, usePage } from '@inertiajs/react';
 import React from 'react';
 import AdminLayout from './_layout';
 
