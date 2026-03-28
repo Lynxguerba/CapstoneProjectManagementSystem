@@ -22,6 +22,7 @@ type AdviserProgramSummary = {
     program: string;
     max_groups: number;
     assigned_count: number;
+    assigned_by_year?: Record<string, number>;
 };
 
 type AdviserRow = {
@@ -55,11 +56,25 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
         return ['All', ...years];
     }, [academicYears]);
 
-    const getProgramTotals = React.useCallback((adviser: AdviserRow) => {
+    const getAssignedForYear = React.useCallback((adviser: AdviserRow, yearLabel?: string | null): number => {
+        const workloads = adviser.workloads ?? [];
+
+        if (yearLabel && yearLabel !== 'All') {
+            return workloads.find((workload) => workload.academic_year === yearLabel)?.groups_count ?? 0;
+        }
+
+        if (workloads.length > 0) {
+            return workloads.reduce((total, workload) => total + (workload.groups_count ?? 0), 0);
+        }
+
+        return (adviser.programs ?? []).reduce((total, program) => total + (program.assigned_count ?? 0), 0);
+    }, []);
+
+    const getProgramTotals = React.useCallback((adviser: AdviserRow, yearLabel?: string | null) => {
         const programs = adviser.programs ?? [];
-        const totalAssigned = programs.reduce((total, program) => total + (program.assigned_count ?? 0), 0);
+        const totalAssigned = getAssignedForYear(adviser, yearLabel);
         const totalCapacity = programs.reduce((total, program) => total + (program.max_groups ?? 0), 0);
-        const remaining = programs.reduce((total, program) => total + Math.max(0, program.max_groups - program.assigned_count), 0);
+        const remaining = Math.max(0, totalCapacity - totalAssigned);
 
         return {
             programs,
@@ -68,19 +83,19 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
             remaining,
             isAvailable: adviser.is_available !== false,
         };
-    }, []);
+    }, [getAssignedForYear]);
 
     const getTotalAssignedGroups = React.useCallback(
-        (adviser: AdviserRow) => {
-            const { totalAssigned } = getProgramTotals(adviser);
+        (adviser: AdviserRow, yearLabel?: string | null) => {
+            const { totalAssigned } = getProgramTotals(adviser, yearLabel);
             return totalAssigned;
         },
         [getProgramTotals],
     );
 
     const getStatusMeta = React.useCallback(
-        (adviser: AdviserRow) => {
-            const { remaining, totalCapacity, isAvailable } = getProgramTotals(adviser);
+        (adviser: AdviserRow, yearLabel?: string | null) => {
+            const { remaining, totalCapacity, isAvailable } = getProgramTotals(adviser, yearLabel);
             const hasCapacity = totalCapacity > 0;
 
             if (!isAvailable) {
@@ -100,9 +115,22 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
         [getProgramTotals],
     );
 
+    const getProgramAssignedCount = React.useCallback(
+        (program: AdviserProgramSummary): number => {
+            if (selectedAcademicYear !== 'All') {
+                const yearCount = program.assigned_by_year?.[selectedAcademicYear];
+                return typeof yearCount === 'number' ? yearCount : 0;
+            }
+
+            return program.assigned_count ?? 0;
+        },
+        [selectedAcademicYear],
+    );
+
     const sortedAdvisers = React.useMemo(() => {
         return [...advisers].sort((first, second) => {
-            const workloadDelta = getTotalAssignedGroups(second) - getTotalAssignedGroups(first);
+            const workloadDelta =
+                getTotalAssignedGroups(second, selectedAcademicYear) - getTotalAssignedGroups(first, selectedAcademicYear);
 
             if (workloadDelta !== 0) {
                 return workloadDelta;
@@ -110,7 +138,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
 
             return first.name.localeCompare(second.name);
         });
-    }, [advisers, getTotalAssignedGroups]);
+    }, [advisers, getTotalAssignedGroups, selectedAcademicYear]);
 
     const filteredAdvisers = React.useMemo(() => {
         const query = searchTerm.trim().toLowerCase();
@@ -126,12 +154,12 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                 return true;
             }
 
-            const { status } = getStatusMeta(adviser);
+            const { status } = getStatusMeta(adviser, selectedAcademicYear);
             const normalizedStatus = status.toLowerCase();
 
             return normalizedStatus === statusFilter;
         });
-    }, [sortedAdvisers, searchTerm, statusFilter, getStatusMeta]);
+    }, [sortedAdvisers, searchTerm, statusFilter, getStatusMeta, selectedAcademicYear]);
 
     const totalPages = Math.max(1, Math.ceil(filteredAdvisers.length / itemsPerPage));
 
@@ -240,9 +268,9 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                 {viewMode === 'card' ? (
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         {paginatedAdvisers.map((adviser) => {
-                            const { programs, totalAssigned, totalCapacity } = getProgramTotals(adviser);
+                            const { programs, totalAssigned, totalCapacity } = getProgramTotals(adviser, selectedAcademicYear);
                             const progress = totalCapacity > 0 ? Math.min(100, Math.round((totalAssigned / totalCapacity) * 100)) : 0;
-                            const { status, statusClasses } = getStatusMeta(adviser);
+                            const { status, statusClasses } = getStatusMeta(adviser, selectedAcademicYear);
                             const assignHref = adviserAssignment.manage.url(
                                 { adviser: adviser.id },
                                 selectedAcademicYear === 'All' ? undefined : { query: { academic_year: selectedAcademicYear } },
@@ -271,7 +299,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                                                     <div key={program.program} className="flex items-center justify-between">
                                                         <span>{program.program}</span>
                                                         <span className="font-semibold text-slate-700">
-                                                            {program.assigned_count} / {program.max_groups}
+                                                            {getProgramAssignedCount(program)} / {program.max_groups}
                                                         </span>
                                                     </div>
                                                 ))
@@ -327,9 +355,9 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {paginatedAdvisers.map((adviser) => {
-                                    const { programs, totalAssigned, totalCapacity } = getProgramTotals(adviser);
+                                    const { programs, totalAssigned, totalCapacity } = getProgramTotals(adviser, selectedAcademicYear);
                                     const progress = totalCapacity > 0 ? Math.min(100, Math.round((totalAssigned / totalCapacity) * 100)) : 0;
-                                    const { status, statusClasses } = getStatusMeta(adviser);
+                                    const { status, statusClasses } = getStatusMeta(adviser, selectedAcademicYear);
                                     const assignHref = adviserAssignment.manage.url(
                                         { adviser: adviser.id },
                                         selectedAcademicYear === 'All' ? undefined : { query: { academic_year: selectedAcademicYear } },
@@ -350,7 +378,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
                                                             <div key={program.program} className="flex items-center justify-between">
                                                                 <span>{program.program}</span>
                                                                 <span className="font-semibold text-slate-700">
-                                                                    {program.assigned_count} / {program.max_groups}
+                                                                    {getProgramAssignedCount(program)} / {program.max_groups}
                                                                 </span>
                                                             </div>
                                                         ))

@@ -1315,20 +1315,31 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             : (is_string($adviser->name) ? $adviser->name : '');
 
                         $workloads = [];
+                        $assignedByProgramYear = collect();
                         if ($adviser->relationLoaded('advisedGroups')) {
-                            $workloads = $adviser->advisedGroups
-                                ->groupBy(function (\App\Models\Group $group): string {
-                                    $programSet = $group->programSet;
-                                    $label = $programSet?->academicYear?->label ?? $programSet?->school_year ?? '';
+                            $resolveAcademicYearLabel = static function (\App\Models\Group $group): string {
+                                $programSet = $group->programSet;
+                                $label = $programSet?->academicYear?->label ?? $programSet?->school_year ?? '';
 
-                                    return $label !== '' ? $label : 'Unspecified';
-                                })
+                                return $label !== '' ? $label : 'Unspecified';
+                            };
+
+                            $workloads = $adviser->advisedGroups
+                                ->groupBy($resolveAcademicYearLabel)
                                 ->map(fn ($groups, $label): array => [
                                     'academic_year' => $label,
                                     'groups_count' => $groups->count(),
                                 ])
                                 ->values()
                                 ->all();
+
+                            $assignedByProgramYear = $adviser->advisedGroups
+                                ->groupBy(fn (\App\Models\Group $group): ?string => $group->programSet?->program)
+                                ->map(
+                                    fn ($groups) => $groups
+                                        ->groupBy($resolveAcademicYearLabel)
+                                        ->map(fn ($yearGroups) => $yearGroups->count()),
+                                );
                         }
 
                         $utilityMap = $adviser->relationLoaded('adviserProgramUtilities')
@@ -1349,13 +1360,17 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             ->filter(fn ($program): bool => is_string($program) && trim($program) !== '')
                             ->unique()
                             ->sort()
-                            ->map(function (string $program) use ($utilityMap, $assignedByProgram): array {
+                            ->map(function (string $program) use ($utilityMap, $assignedByProgram, $assignedByProgramYear): array {
                                 $maxGroups = $utilityMap->get($program)?->max_groups ?? 5;
+                                $assignedByYear = collect($assignedByProgramYear->get($program, []))
+                                    ->mapWithKeys(fn ($count, $label): array => [$label => $count])
+                                    ->all();
 
                                 return [
                                     'program' => $program,
                                     'max_groups' => $maxGroups,
                                     'assigned_count' => $assignedByProgram->get($program, 0),
+                                    'assigned_by_year' => $assignedByYear,
                                 ];
                             })
                             ->values()
@@ -1446,20 +1461,31 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         };
 
         $workloads = [];
+        $assignedByProgramYear = collect();
         if ($adviser->relationLoaded('advisedGroups')) {
-            $workloads = $adviser->advisedGroups
-                ->groupBy(function (\App\Models\Group $group): string {
-                    $programSet = $group->programSet;
-                    $label = $programSet?->academicYear?->label ?? $programSet?->school_year ?? '';
+            $resolveAcademicYearLabel = static function (\App\Models\Group $group): string {
+                $programSet = $group->programSet;
+                $label = $programSet?->academicYear?->label ?? $programSet?->school_year ?? '';
 
-                    return $label !== '' ? $label : 'Unspecified';
-                })
+                return $label !== '' ? $label : 'Unspecified';
+            };
+
+            $workloads = $adviser->advisedGroups
+                ->groupBy($resolveAcademicYearLabel)
                 ->map(fn ($groups, $label): array => [
                     'academic_year' => $label,
                     'groups_count' => $groups->count(),
                 ])
                 ->values()
                 ->all();
+
+            $assignedByProgramYear = $adviser->advisedGroups
+                ->groupBy(fn (\App\Models\Group $group): ?string => $group->programSet?->program)
+                ->map(
+                    fn ($groups) => $groups
+                        ->groupBy($resolveAcademicYearLabel)
+                        ->map(fn ($yearGroups) => $yearGroups->count()),
+                );
         }
 
         $utilityMap = $adviser->relationLoaded('adviserProgramUtilities')
@@ -1480,13 +1506,17 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             ->filter(fn ($program): bool => is_string($program) && trim($program) !== '')
             ->unique()
             ->sort()
-            ->map(function (string $program) use ($utilityMap, $assignedByProgram): array {
+            ->map(function (string $program) use ($utilityMap, $assignedByProgram, $assignedByProgramYear): array {
                 $maxGroups = $utilityMap->get($program)?->max_groups ?? 5;
+                $assignedByYear = collect($assignedByProgramYear->get($program, []))
+                    ->mapWithKeys(fn ($count, $label): array => [$label => $count])
+                    ->all();
 
                 return [
                     'program' => $program,
                     'max_groups' => $maxGroups,
                     'assigned_count' => $assignedByProgram->get($program, 0),
+                    'assigned_by_year' => $assignedByYear,
                 ];
             })
             ->values()

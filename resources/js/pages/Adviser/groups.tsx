@@ -138,6 +138,19 @@ const AdviserGroups = () => {
     const utilities = props.utilities;
     const utilityPrograms = utilities?.programs ?? [];
 
+    const pendingRequestGroupIds = React.useMemo(() => {
+        return new Set(
+            assignmentRequests
+                .filter((request) => request.request_type !== 'ReassignNotice')
+                .map((request) => request.group_id)
+                .filter((groupId): groupId is number => typeof groupId === 'number'),
+        );
+    }, [assignmentRequests]);
+
+    const approvedAssignedGroups = React.useMemo(() => {
+        return assignedGroups.filter((group) => !pendingRequestGroupIds.has(group.id));
+    }, [assignedGroups, pendingRequestGroupIds]);
+
     const currentAcademicYear = academicYears.find((year) => year.is_current)?.label ?? academicYears[0]?.label ?? 'All';
     const [searchTerm, setSearchTerm] = React.useState('');
     const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(currentAcademicYear || 'All');
@@ -158,6 +171,22 @@ const AdviserGroups = () => {
         group: AssignedGroupRow | null;
     }>({ open: false, group: null });
 
+    const approvedAssignedGroupsForYear = React.useMemo(() => {
+        if (selectedAcademicYear === 'All') {
+            return approvedAssignedGroups;
+        }
+
+        return approvedAssignedGroups.filter((group) => group.school_year === selectedAcademicYear);
+    }, [approvedAssignedGroups, selectedAcademicYear]);
+
+    const pendingRequestsForYear = React.useMemo(() => {
+        if (selectedAcademicYear === 'All') {
+            return assignmentRequests;
+        }
+
+        return assignmentRequests.filter((request) => request.school_year === selectedAcademicYear);
+    }, [assignmentRequests, selectedAcademicYear]);
+
     const programSummaries = React.useMemo(() => {
         const maxByProgram = new Map(
             utilityPrograms
@@ -166,7 +195,7 @@ const AdviserGroups = () => {
         );
 
         const assignedByProgram = new Map<string, number>();
-        assignedGroups.forEach((group) => {
+        approvedAssignedGroupsForYear.forEach((group) => {
             if (!group.program) {
                 return;
             }
@@ -175,7 +204,7 @@ const AdviserGroups = () => {
         });
 
         const pendingByProgram = new Map<string, number>();
-        assignmentRequests
+        pendingRequestsForYear
             .filter((request) => request.request_type !== 'ReassignNotice')
             .forEach((request) => {
                 if (!request.program) {
@@ -205,7 +234,7 @@ const AdviserGroups = () => {
                     pendingCount,
                 };
             });
-    }, [assignmentRequests, assignedGroups, utilityPrograms]);
+    }, [approvedAssignedGroupsForYear, pendingRequestsForYear, utilityPrograms]);
 
     const academicYearOptions = React.useMemo(() => {
         const years = academicYears.map((year) => year.label);
@@ -284,8 +313,8 @@ const AdviserGroups = () => {
             return [];
         }
 
-        return assignedGroups.filter((group) => matchesFilters(group));
-    }, [assignedGroups, matchesFilters, statusFilter]);
+        return approvedAssignedGroups.filter((group) => matchesFilters(group));
+    }, [approvedAssignedGroups, matchesFilters, statusFilter]);
 
     const filteredRequests = React.useMemo(() => {
         return assignmentRequests.filter((request) => {
@@ -417,7 +446,7 @@ const AdviserGroups = () => {
         });
     };
 
-    const pendingCount = assignmentRequests.filter((request) => request.request_type !== 'ReassignNotice').length;
+    const pendingCount = pendingRequestsForYear.filter((request) => request.request_type !== 'ReassignNotice').length;
 
     return (
         <AdviserLayout title="Groups" subtitle="Review assignment requests and manage handled groups">
@@ -522,7 +551,7 @@ const AdviserGroups = () => {
                             </span>
                             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
                                 <Users className="h-3 w-3" />
-                                Assigned: {assignedGroups.length}
+                                Assigned: {approvedAssignedGroupsForYear.length}
                             </span>
                             <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-[11px] font-semibold text-green-700">
                                 <UserCheck className="h-3 w-3" />

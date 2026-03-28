@@ -160,14 +160,22 @@ const AdviserAssignmentGroups = ({
         return { utilities, byProgram };
     }, [adviser.programs]);
 
+    const approvedAssignedGroups = React.useMemo(() => {
+        return groups.filter((group) => group.adviser_id === adviser.id && !group.pending_request_id);
+    }, [groups, adviser.id]);
+
+    const approvedAssignedGroupsForYear = React.useMemo(() => {
+        if (selectedAcademicYear === 'All') {
+            return approvedAssignedGroups;
+        }
+
+        return approvedAssignedGroups.filter((group) => group.school_year === selectedAcademicYear);
+    }, [approvedAssignedGroups, selectedAcademicYear]);
+
     const assignedByProgramYear = React.useMemo(() => {
         const tracker = new Map<string, Map<string, number>>();
 
-        groups.forEach((group) => {
-            if (group.adviser_id !== adviser.id) {
-                return;
-            }
-
+        approvedAssignedGroups.forEach((group) => {
             const program = group.program ?? 'Unspecified';
             const year = group.school_year ?? 'Unspecified';
             const programMap = tracker.get(program) ?? new Map<string, number>();
@@ -176,14 +184,32 @@ const AdviserAssignmentGroups = ({
         });
 
         return tracker;
-    }, [groups, adviser.id]);
+    }, [approvedAssignedGroups]);
 
-    const totalAssigned = programUtilities.utilities.reduce((total, utility) => total + (utility.assigned_count ?? 0), 0);
+    const totalAssigned = approvedAssignedGroupsForYear.length;
     const totalCapacity = programUtilities.utilities.reduce((total, utility) => total + (utility.max_groups ?? 0), 0);
+
+    const assignedByProgram = React.useMemo(() => {
+        const tracker = new Map<string, number>();
+
+        approvedAssignedGroups.forEach((group) => {
+            const program = group.program ?? 'Unspecified';
+            tracker.set(program, (tracker.get(program) ?? 0) + 1);
+        });
+
+        return tracker;
+    }, [approvedAssignedGroups]);
 
     const selectedYearPrograms = React.useMemo(() => {
         if (selectedAcademicYear === 'All') {
-            return programUtilities.utilities;
+            return programUtilities.utilities.map((utility) => {
+                const assigned = assignedByProgram.get(utility.program) ?? 0;
+
+                return {
+                    ...utility,
+                    assigned_count: assigned,
+                };
+            });
         }
 
         return programUtilities.utilities.map((utility) => {
@@ -193,7 +219,7 @@ const AdviserAssignmentGroups = ({
                 assigned_count: assigned,
             };
         });
-    }, [assignedByProgramYear, programUtilities.utilities, selectedAcademicYear]);
+    }, [assignedByProgram, assignedByProgramYear, programUtilities.utilities, selectedAcademicYear]);
 
     const getMaxForProgram = React.useCallback(
         (program?: string | null): number => {
@@ -442,7 +468,7 @@ const AdviserAssignmentGroups = ({
                                 </p>
                             </div>
                             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                                {filteredGroups.filter((group) => group.adviser_id === adviser.id).length} assigned
+                                {filteredGroups.filter((group) => group.adviser_id === adviser.id && !group.pending_request_id).length} assigned
                             </span>
                         </div>
                         <div className="mt-4 space-y-2 text-xs text-slate-600">
