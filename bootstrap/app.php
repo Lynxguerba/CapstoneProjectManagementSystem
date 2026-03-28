@@ -47,5 +47,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->respond(function (SymfonyResponse $response, \Throwable $exception, Request $request): SymfonyResponse {
+            if ($request->expectsJson()) {
+                return $response;
+            }
+
+            return match ($response->getStatusCode()) {
+                404 => Inertia::render('Error/NotFound')->toResponse($request)->setStatusCode(404),
+                419 => Inertia::render('Error/PageExpired')->toResponse($request)->setStatusCode(419),
+                default => $response,
+            };
+        });
     })->create();
