@@ -24,14 +24,6 @@ type LoginPageProps = {
 
 type AuthView = 'login' | 'register';
 
-const resolveCsrfToken = (): string => {
-    if (typeof document === 'undefined') {
-        return '';
-    }
-
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-};
-
 const primaryButtonClassName =
     'group relative isolate inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-600 to-green-700 px-5 py-3.5 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:from-emerald-500 hover:to-green-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/25 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50';
 
@@ -67,18 +59,10 @@ export default function LoginPage() {
     const [authView, setAuthView] = useState<AuthView>('login');
     const [registrationMessage, setRegistrationMessage] = useState(flash?.success ?? '');
     const [showPassword, setShowPassword] = useState(false);
-    const csrfToken = React.useMemo(() => resolveCsrfToken(), []);
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
-        _token: csrfToken,
     });
-
-    useEffect(() => {
-        if (csrfToken !== '' && data._token !== csrfToken) {
-            setData('_token', csrfToken);
-        }
-    }, [csrfToken, data._token, setData]);
 
     useEffect(() => {
         if (!activeRole) {
