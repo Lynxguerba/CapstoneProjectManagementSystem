@@ -34,6 +34,7 @@ class EnsureRole
 
         if ($blockedAccountMessage !== null) {
             $this->recordBlockedAutoLogoutAudit($user, $request, $blockedAccountMessage);
+            $this->clearStoredActiveSessionIfOwnedBySession($user, (string) $request->session()->getId());
 
             Auth::guard('web')->logout();
             $request->session()->invalidate();
@@ -72,6 +73,38 @@ class EnsureRole
         }
 
         return null;
+    }
+
+    private function clearStoredActiveSessionIfOwnedBySession(User $user, string $sessionId): void
+    {
+        if (! $this->supportsActiveSessionTracking()) {
+            return;
+        }
+
+        $storedSessionId = is_string($user->active_session_id ?? null)
+            ? trim((string) $user->active_session_id)
+            : '';
+
+        if ($storedSessionId !== '' && $storedSessionId !== $sessionId) {
+            return;
+        }
+
+        User::withoutTimestamps(function () use ($user): void {
+            $user->forceFill([
+                'active_session_id' => null,
+                'active_session_last_activity_at' => null,
+            ])->saveQuietly();
+        });
+    }
+
+    private function supportsActiveSessionTracking(): bool
+    {
+        if (! Schema::hasTable('users')) {
+            return false;
+        }
+
+        return Schema::hasColumn('users', 'active_session_id')
+            && Schema::hasColumn('users', 'active_session_last_activity_at');
     }
 
     private function recordBlockedAutoLogoutAudit(User $user, Request $request, string $message): void

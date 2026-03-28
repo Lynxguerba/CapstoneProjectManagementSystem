@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnforceSingleBrowserSession;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\PreventBackHistory;
 use App\Http\Middleware\RecordAdminAuditLog;
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            EnforceSingleBrowserSession::class,
             PreventBackHistory::class,
             RecordAdminAuditLog::class,
         ]);

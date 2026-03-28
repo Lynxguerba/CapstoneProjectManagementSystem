@@ -29,6 +29,8 @@ class User extends Authenticatable
         'role',
         'status',
         'program',
+        'active_session_id',
+        'active_session_last_activity_at',
     ];
 
     /**
@@ -51,6 +53,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'active_session_last_activity_at' => 'datetime',
         ];
     }
 

@@ -8,8 +8,10 @@ use App\Models\AuditLog;
 use App\Models\Role;
 use App\Models\StudentProgram;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
@@ -18,6 +20,8 @@ use Inertia\Inertia;
 
 class LoginController extends Controller
 {
+    private const SESSION_CONFLICT_MESSAGE = 'The user you entered is already logged in on another browser.';
+
     /**
      * @var array<string, string>
      */
@@ -78,6 +82,12 @@ class LoginController extends Controller
             ]);
         }
 
+        if ($this->hasAnotherActiveSession($user, $request)) {
+            return back()->withErrors([
+                'email' => self::SESSION_CONFLICT_MESSAGE,
+            ]);
+        }
+
         $requestedRole = $this->resolveLoginRole($user);
 
         if ($requestedRole === null) {
@@ -95,6 +105,7 @@ class LoginController extends Controller
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
         $request->session()->put('active_role', $requestedRole);
+        $this->storeActiveSessionFingerprint($user, (string) $request->session()->getId());
         $this->recordLoginAudit($user, $request, $requestedRole);
         Inertia::clearHistory();
 
@@ -176,19 +187,45 @@ class LoginController extends Controller
         return null;
     }
 
+    private function hasAnotherActiveSession(User $user, Request $request): bool
+    {
+        if (! $this->supportsActiveSessionTracking()) {
+            return false;
+        }
+
+        $storedSessionId = is_string($user->active_session_id ?? null)
+            ? trim((string) $user->active_session_id)
+            : '';
+
+        if ($storedSessionId === '') {
+            return false;
+        }
+
+        $currentSessionId = (string) $request->session()->getId();
+
+        if ($storedSessionId === $currentSessionId) {
+            return false;
+        }
+
+        if ($this->sessionLockExpired($user)) {
+            $this->clearStoredActiveSession($user);
+
+            return false;
+        }
+
+        return true;
+    }
+
     public function logout(Request $request): RedirectResponse
     {
         $user = Auth::guard('web')->user();
         if ($user instanceof User) {
             $this->recordLogoutAudit($user, $request);
+            $this->clearStoredActiveSessionIfOwnedBySession($user, (string) $request->session()->getId());
         }
 
         Auth::logout();
-
-        // Destroy ALL session data including active_role
         $request->session()->invalidate();
-
-        // Regenerate CSRF token so old tokens cannot be reused
         $request->session()->regenerateToken();
 
         Inertia::clearHistory();
@@ -223,6 +260,10 @@ class LoginController extends Controller
                 'role' => $requestedRole,
             ])->save();
         }
+
+        $request->session()->put('active_role', $requestedRole);
+        $request->session()->regenerate();
+        $this->storeActiveSessionFingerprint($user, (string) $request->session()->getId());
 
         Inertia::clearHistory();
 
@@ -275,6 +316,96 @@ class LoginController extends Controller
     private function buildDisplayName(string $firstName, string $lastName): string
     {
         return trim($firstName.' '.$lastName);
+    }
+
+    private function supportsActiveSessionTracking(): bool
+    {
+        if (! Schema::hasTable('users')) {
+            return false;
+        }
+
+        return Schema::hasColumn('users', 'active_session_id')
+            && Schema::hasColumn('users', 'active_session_last_activity_at');
+    }
+
+    private function sessionLockExpired(User $user): bool
+    {
+        $lastActivity = $this->resolveLastActivityTimestamp($user);
+
+        if (! $lastActivity instanceof CarbonInterface) {
+            return false;
+        }
+
+        return $lastActivity->lt(now()->subMinutes($this->sessionLifetimeInMinutes()));
+    }
+
+    private function resolveLastActivityTimestamp(User $user): ?CarbonInterface
+    {
+        $lastActivity = $user->active_session_last_activity_at ?? null;
+
+        if ($lastActivity instanceof CarbonInterface) {
+            return $lastActivity;
+        }
+
+        if (! is_string($lastActivity) || trim($lastActivity) === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($lastActivity);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function sessionLifetimeInMinutes(): int
+    {
+        return max(1, (int) config('session.lifetime', 120));
+    }
+
+    private function storeActiveSessionFingerprint(User $user, string $sessionId): void
+    {
+        if (! $this->supportsActiveSessionTracking() || $sessionId === '') {
+            return;
+        }
+
+        User::withoutTimestamps(function () use ($user, $sessionId): void {
+            $user->forceFill([
+                'active_session_id' => $sessionId,
+                'active_session_last_activity_at' => now(),
+            ])->saveQuietly();
+        });
+    }
+
+    private function clearStoredActiveSessionIfOwnedBySession(User $user, string $sessionId): void
+    {
+        if (! $this->supportsActiveSessionTracking()) {
+            return;
+        }
+
+        $storedSessionId = is_string($user->active_session_id ?? null)
+            ? trim((string) $user->active_session_id)
+            : '';
+
+        if ($storedSessionId !== '' && $storedSessionId !== $sessionId) {
+            return;
+        }
+
+        $this->clearStoredActiveSession($user);
+    }
+
+    private function clearStoredActiveSession(User $user): void
+    {
+        if (! $this->supportsActiveSessionTracking()) {
+            return;
+        }
+
+        User::withoutTimestamps(function () use ($user): void {
+            $user->forceFill([
+                'active_session_id' => null,
+                'active_session_last_activity_at' => null,
+            ])->saveQuietly();
+        });
     }
 
     private function normalizeProgramCode(mixed $programCode): ?string
