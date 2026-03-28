@@ -7,6 +7,7 @@ use App\Models\DefenseSchedule;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
 use App\Models\GroupAdviser;
+use App\Models\GroupAdviserRequest;
 use App\Models\GroupPanelist;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -46,6 +47,7 @@ class StudentGroupController extends Controller
             ] : null,
             'members' => $this->buildGroupMembers($group),
             'adviser' => $group !== null ? $this->resolveAdviser($group->id) : null,
+            'pendingAdviserRequest' => $group !== null ? $this->resolvePendingAdviserRequest($group->id) : null,
             'panelists' => $group !== null ? $this->resolvePanelists($group->id) : [],
             'progress' => $this->buildProgressSteps($currentStage),
         ]);
@@ -160,6 +162,35 @@ class StudentGroupController extends Controller
             'name' => $this->resolveDisplayName($assignment->adviser),
             'email' => $assignment->adviser->email,
             'assignedAt' => $assignment->created_at?->format('Y-m-d'),
+        ];
+    }
+
+    /**
+     * @return array{id: int, adviserId: int|null, adviserName: string|null, requestedAt: string|null}|null
+     */
+    private function resolvePendingAdviserRequest(int $groupId): ?array
+    {
+        if (! Schema::hasTable('group_adviser_requests')) {
+            return null;
+        }
+
+        $request = GroupAdviserRequest::query()
+            ->with('adviser:id,name,first_name,last_name')
+            ->where('group_id', $groupId)
+            ->where('request_type', GroupAdviserRequest::TYPE_REQUEST)
+            ->where('status', GroupAdviserRequest::STATUS_PENDING)
+            ->orderByDesc('created_at')
+            ->first(['id', 'group_id', 'adviser_id', 'created_at']);
+
+        if (! $request) {
+            return null;
+        }
+
+        return [
+            'id' => $request->id,
+            'adviserId' => $request->adviser_id,
+            'adviserName' => $this->resolveDisplayName($request->adviser),
+            'requestedAt' => $request->created_at?->format('Y-m-d H:i'),
         ];
     }
 
