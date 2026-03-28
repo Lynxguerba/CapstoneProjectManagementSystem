@@ -6,7 +6,6 @@ import { bulkStore } from '../../routes/admin/users';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type FacultyRole = 'admin' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
-type UserStatus = 'active' | 'inactive';
 type StudentProgram = 'BSIT' | 'BSIS';
 type EntityType = 'user' | 'faculty' | 'student';
 
@@ -16,7 +15,6 @@ type PreviewRow = {
     last_name: string;
     email?: string;
     roles?: string[];
-    status?: UserStatus;
     password?: string;
     program?: StudentProgram;
     issues: string[];
@@ -37,14 +35,31 @@ type BulkUploadForm = {
 
 const availableRoles: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 const availableFacultyRoles: FacultyRole[] = ['admin', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
-const availableStatuses: UserStatus[] = ['active', 'inactive'];
 const studentPrograms: StudentProgram[] = ['BSIT', 'BSIS'];
 
 const normalizeHeader = (header: string): string => {
     return header
         .trim()
+        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
         .toLowerCase()
-        .replace(/[\s-]+/g, '_');
+        .replace(/[\s-]+/g, '_')
+        .replace(/[^a-z0-9_]/g, '');
+};
+
+const canonicalizeHeader = (header: string): string => {
+    const normalizedHeader = normalizeHeader(header);
+
+    const headerAliases: Record<string, string> = {
+        first: 'first_name',
+        firstname: 'first_name',
+        first_name: 'first_name',
+        last: 'last_name',
+        lastname: 'last_name',
+        last_name: 'last_name',
+        roles: 'role',
+    };
+
+    return headerAliases[normalizedHeader] ?? normalizedHeader;
 };
 
 const parseCsvLine = (line: string): string[] => {
@@ -163,7 +178,6 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                         email: row.email,
                         program: row.program,
                         password: row.password,
-                        status: row.status,
                     };
                 }
 
@@ -174,7 +188,6 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                         email: row.email,
                         roles: row.roles,
                         password: row.password,
-                        status: row.status,
                     };
                 }
 
@@ -183,7 +196,6 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                     last_name: row.last_name,
                     email: row.email,
                     roles: row.roles,
-                    status: row.status,
                     password: row.password,
                 };
             });
@@ -276,7 +288,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
             .filter((line) => line.length > 0);
 
         if (lines.length <= 1) {
-            setFileError('XLSX file must include a header row and at least one row.');
+            setFileError('Upload file must include a header row and at least one row.');
             return;
         }
 
@@ -287,7 +299,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                   ? (['last_name', 'first_name', 'email', 'role', 'password'] as const)
                   : (['last_name', 'first_name', 'email', 'role', 'password'] as const);
 
-        const headers = parseCsvLine(lines[0]).map((header) => normalizeHeader(header));
+        const headers = parseCsvLine(lines[0]).map((header) => canonicalizeHeader(header));
         const headerIndex = headers.reduce<Record<string, number>>((accumulator, header, index) => {
             accumulator[header] = index;
 
@@ -319,8 +331,6 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                 const email = values[headerIndex.email] ?? '';
                 const rawProgram = (values[headerIndex.program] ?? '').toUpperCase();
                 const password = values[headerIndex.password] ?? '';
-                const rawStatus = values[headerIndex.status] ?? 'active';
-                const statusValue = rawStatus.toLowerCase() as UserStatus;
 
                 if (email === '') {
                     issues.push('Email is required.');
@@ -340,10 +350,6 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                     issues.push('Password must be at least 8 characters.');
                 }
 
-                if (!availableStatuses.includes(statusValue)) {
-                    issues.push('Status is invalid.');
-                }
-
                 emailTracker.add(email.toLowerCase());
 
                 return {
@@ -353,7 +359,6 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                     email,
                     program: studentPrograms.includes(rawProgram as StudentProgram) ? (rawProgram as StudentProgram) : undefined,
                     password,
-                    status: availableStatuses.includes(statusValue) ? statusValue : 'active',
                     issues,
                 };
             }
@@ -361,8 +366,6 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
             const email = values[headerIndex.email] ?? '';
             const rawRoleValue = values[headerIndex.role] ?? '';
             const parsedRoles = parseRoles(rawRoleValue);
-            const rawStatus = values[headerIndex.status] ?? 'active';
-            const statusValue = rawStatus.toLowerCase() as UserStatus;
 
             if (email === '') {
                 issues.push('Email is required.');
@@ -383,10 +386,6 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                 issues.push('One or more roles are invalid.');
             }
 
-            if (!availableStatuses.includes(statusValue)) {
-                issues.push('Status is invalid.');
-            }
-
             let password: string | undefined;
             if (userType === 'user' || userType === 'faculty') {
                 password = values[headerIndex.password] ?? '';
@@ -404,7 +403,6 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                 last_name: lastName,
                 email,
                 roles: parsedRoles.roles,
-                status: availableStatuses.includes(statusValue) ? statusValue : 'active',
                 password,
                 issues,
             };
@@ -427,8 +425,12 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
         clearErrors();
         setFileError('');
 
-        if (!file.name.toLowerCase().endsWith('.xlsx')) {
-            setFileError('Please select a valid .xlsx file.');
+        const normalizedFileName = file.name.toLowerCase();
+        const isCsvFile = normalizedFileName.endsWith('.csv');
+        const isXlsxFile = normalizedFileName.endsWith('.xlsx');
+
+        if (!isCsvFile && !isXlsxFile) {
+            setFileError('Please select a valid .csv or .xlsx file.');
             return;
         }
 
@@ -475,43 +477,43 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
         return null;
     }
 
-    const uploadLabel = userType === 'student' ? 'Bulk Upload Students' : userType === 'faculty' ? 'Bulk Upload Faculty' : 'Bulk Upload Users';
-    const xlsxGuide =
+    const uploadLabel = userType === 'student' ? 'Bulk Upload Students' : userType === 'faculty' ? 'Bulk Upload Facultys' : 'Bulk Upload Users';
+    const csvGuide =
         userType === 'student'
-            ? 'Last Name, First Name, Email, Program, Password, and optionally Status'
+            ? 'Last Name, First Name, Email, Program, and Password'
             : userType === 'faculty'
-              ? 'Last Name, First Name, Email, Role, Password, and optionally Status'
-              : 'Last Name, First Name, Email, Role, Password, and optionally Status';
-    const xlsxTemplateFileName =
+              ? 'Last Name, First Name, Email, Role, and Password'
+              : 'Last Name, First Name, Email, Role, and Password';
+    const csvTemplateFileName =
         userType === 'student'
-            ? 'student-upload-template.xlsx'
+            ? 'student-upload-template.csv'
             : userType === 'faculty'
-              ? 'faculty-upload-template.xlsx'
-              : 'user-upload-template.xlsx';
-    const xlsxTemplateContent =
+              ? 'faculty-upload-template.csv'
+              : 'user-upload-template.csv';
+    const csvTemplateContent =
         userType === 'student'
-            ? ['last_name,first_name,email,program,password,status', 'Dela Cruz,Juan,juan.delacruz@example.com,BSIT,StrongPass123,active'].join('\n')
+            ? ['last_name,first_name,email,program,password', 'Dela Cruz,Juan,juan.delacruz@example.com,BSIT,StrongPass123'].join('\n')
             : userType === 'faculty'
               ? [
-                    'last_name,first_name,email,role,password,status',
-                    'Santos,Maria,maria.santos@example.com,instructor,StrongPass123,active',
-                    'Reyes,Carlo,carlo.reyes@example.com,adviser;panelist,StrongPass123,active',
+                    'last_name,first_name,email,role,password',
+                    'Santos,Maria,maria.santos@example.com,instructor,StrongPass123',
+                    'Reyes,Carlo,carlo.reyes@example.com,adviser;panelist,StrongPass123',
                 ].join('\n')
               : [
-                    'last_name,first_name,email,role,password,status',
-                    'Garcia,Ana,ana.garcia@example.com,student,StrongPass123,active',
-                    'Lopez,Marco,marco.lopez@example.com,admin,StrongPass123,active',
+                    'last_name,first_name,email,role,password',
+                    'Garcia,Ana,ana.garcia@example.com,student,StrongPass123',
+                    'Lopez,Marco,marco.lopez@example.com,admin,StrongPass123',
                 ].join('\n');
 
-    const downloadXlsxTemplate = () => {
-        const blob = new Blob([xlsxTemplateContent], {
-            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    const downloadCsvTemplate = () => {
+        const blob = new Blob([csvTemplateContent], {
+            type: 'text/csv;charset=utf-8',
         });
         const url = URL.createObjectURL(blob);
         const anchorElement = document.createElement('a');
 
         anchorElement.href = url;
-        anchorElement.setAttribute('download', xlsxTemplateFileName);
+        anchorElement.setAttribute('download', csvTemplateFileName);
         anchorElement.click();
 
         URL.revokeObjectURL(url);
@@ -554,26 +556,31 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
 
                     <div className="space-y-4 p-4">
                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-                            Upload an XLSX file with headers:
+                            Upload a CSV file (preferred) or XLSX file with headers:
                             <br />
-                            <span className="font-semibold">{xlsxGuide}</span>
+                            <span className="font-semibold">{csvGuide}</span>
                             <div className="mt-3">
                                 <button
                                     type="button"
-                                    onClick={downloadXlsxTemplate}
+                                    onClick={downloadCsvTemplate}
                                     className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
                                 >
                                     <Download className="h-3.5 w-3.5" />
-                                    Download XLSX Template
+                                    Download CSV Template (Recommended)
                                 </button>
                             </div>
                         </div>
 
                         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
                             <FileSpreadsheet className="h-8 w-8 text-slate-500" />
-                            <span className="text-sm font-semibold text-slate-700">{fileName || 'Choose XLSX file'}</span>
+                            <span className="text-sm font-semibold text-slate-700">{fileName || 'Choose CSV or XLSX file'}</span>
                             <span className="text-xs text-slate-500">Click to browse and preview before importing.</span>
-                            <input type="file" accept=".xlsx" onChange={handleFileChange} className="hidden" />
+                            <input
+                                type="file"
+                                accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                onChange={handleFileChange}
+                                className="hidden"
+                            />
                         </label>
 
                         {fileError ? <p className="text-sm text-rose-600">{fileError}</p> : null}
@@ -622,7 +629,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                         <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                             <div className="flex items-center gap-2">
                                 <CheckCircle2 className="h-5 w-5 text-emerald-800" />
-                                <h2 className="text-lg font-bold text-emerald-900">Review XLSX Import</h2>
+                                <h2 className="text-lg font-bold text-emerald-900">Review Import File</h2>
                             </div>
                             <button
                                 type="button"

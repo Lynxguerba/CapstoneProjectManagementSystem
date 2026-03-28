@@ -281,7 +281,7 @@ class AdminUserController extends Controller
                     'last_name' => $row['last_name'],
                     'email' => $row['email'],
                     'role' => $activeRole,
-                    'status' => $row['status'] ?? 'active',
+                    'status' => 'active',
                     'password' => (string) $row['password'],
                 ]);
 
@@ -301,7 +301,7 @@ class AdminUserController extends Controller
                     'last_name' => $row['last_name'],
                     'email' => $row['email'],
                     'role' => 'student',
-                    'status' => $row['status'] ?? 'active',
+                    'status' => 'active',
                     'password' => $row['password'],
                 ]);
 
@@ -327,7 +327,7 @@ class AdminUserController extends Controller
                 'last_name' => $row['last_name'],
                 'email' => $row['email'],
                 'role' => $activeRole,
-                'status' => $row['status'] ?? 'active',
+                'status' => 'active',
                 'password' => $row['password'],
             ]);
 
