@@ -130,3 +130,7 @@ CPSM TO DO:
   Now public/storage -> /var/www/storage/app/public exists, so Open PDF should work.
 
   If browser still shows old result, hard refresh the page and try again.
+
+
+#Date March 28, 2026
+  Admin: Students Management Reject Request account should be not display on the table after rejected[]

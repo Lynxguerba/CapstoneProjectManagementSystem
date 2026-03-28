@@ -39,7 +39,8 @@ class CsvAccountsAndAcademicYearsSeeder extends Seeder
     {
         $academicYears = [
             ['start_year' => 2023, 'end_year' => 2024, 'label' => '2023-2024', 'is_current' => false],
-            ['start_year' => 2024, 'end_year' => 2025, 'label' => '2024-2025', 'is_current' => true],
+            ['start_year' => 2024, 'end_year' => 2025, 'label' => '2024-2025', 'is_current' => false],
+            ['start_year' => 2025, 'end_year' => 2026, 'label' => '2025-2026', 'is_current' => true],
         ];
 
         foreach ($academicYears as $academicYear) {
