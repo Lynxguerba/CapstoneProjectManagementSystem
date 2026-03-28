@@ -70,6 +70,58 @@ it('logs multi-role accounts into their stored active role', function (): void {
     $this->assertAuthenticatedAs($user, 'web');
 });
 
+it('prevents login when the same account is active in another browser', function (): void {
+    $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+
+    $user = User::factory()->create([
+        'email' => 'already-active@example.com',
+        'password' => 'secretpass',
+        'role' => 'adviser',
+        'active_session_id' => 'brave-session-id',
+        'active_session_last_activity_at' => now(),
+    ]);
+    $user->syncRoles(['adviser']);
+
+    $response = $this->from(route('login'))->post(route('login.store'), [
+        'email' => 'already-active@example.com',
+        'password' => 'secretpass',
+    ]);
+
+    $response
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors([
+            'email' => 'The user you entered is already logged in on another browser.',
+        ]);
+
+    $this->assertGuest('web');
+});
+
+it('allows login when a previous browser lock is already expired', function (): void {
+    $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+
+    $user = User::factory()->create([
+        'email' => 'expired-session@example.com',
+        'password' => 'secretpass',
+        'role' => 'adviser',
+        'active_session_id' => 'expired-session-id',
+        'active_session_last_activity_at' => now()->subMinutes(((int) config('session.lifetime', 120)) + 5),
+    ]);
+    $user->syncRoles(['adviser']);
+
+    $response = $this->post(route('login.store'), [
+        'email' => 'expired-session@example.com',
+        'password' => 'secretpass',
+    ]);
+
+    $response->assertRedirect(route('adviser.dashboard'));
+    $this->assertAuthenticatedAs($user, 'web');
+
+    $user->refresh();
+
+    expect((string) $user->active_session_id)->not->toBe('expired-session-id');
+    expect($user->active_session_last_activity_at)->not->toBeNull();
+});
+
 it('stores the provided password when creating a faculty account', function (): void {
     $admin = User::factory()->create([
         'email' => 'admin@example.com',

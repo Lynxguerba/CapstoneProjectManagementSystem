@@ -63,6 +63,8 @@ export default function LoginPage() {
         email: '',
         password: '',
     });
+    const concurrentSessionError =
+        typeof errors.email === 'string' && errors.email.toLowerCase().includes('already logged in') ? errors.email : '';
 
     useEffect(() => {
         if (!activeRole) {
@@ -147,6 +149,15 @@ export default function LoginPage() {
                                                                 style={{ animationDelay: '0.1s' }}
                                                             >
                                                                 {flash.error}
+                                                            </div>
+                                                        ) : null}
+
+                                                        {concurrentSessionError !== '' ? (
+                                                            <div
+                                                                className="animate-fade-in-up rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+                                                                style={{ animationDelay: '0.1s' }}
+                                                            >
+                                                                {concurrentSessionError}
                                                             </div>
                                                         ) : null}
 
