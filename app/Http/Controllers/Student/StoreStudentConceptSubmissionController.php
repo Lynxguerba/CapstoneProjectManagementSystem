@@ -58,7 +58,7 @@ class StoreStudentConceptSubmissionController extends Controller
         DocumentSubmission::query()->create([
             'group_id' => $group->id,
             'document_requirement_id' => $requirement->id,
-            'title_category_id' => (int) $validated['title_category_id'],
+            'title_category_id' => null,
             'file_name' => trim((string) $validated['title']),
             'file_path' => $storedPath,
             'mime_type' => $conceptFile->getClientMimeType(),

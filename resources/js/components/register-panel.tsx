@@ -14,6 +14,14 @@ type RegistrationStep = 'details' | 'security';
 type ProgramOption = 'BSIT' | 'BSIS';
 type RegistrationRoleValue = RegistrationRole | '';
 
+const resolveCsrfToken = (): string => {
+    if (typeof document === 'undefined') {
+        return '';
+    }
+
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+};
+
 type RegisterForm = {
     first_name: string;
     last_name: string;
@@ -22,6 +30,7 @@ type RegisterForm = {
     program: ProgramOption | '';
     password: string;
     password_confirmation: string;
+    _token: string;
 };
 
 const roleOptions: Array<{ value: RegistrationRole; label: string }> = [
@@ -70,6 +79,7 @@ const RegisterPanel = ({ onBack, onRegistered }: RegisterPanelProps) => {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [isConfirmAppearing, setIsConfirmAppearing] = useState(false);
     const [passwordConfirmationError, setPasswordConfirmationError] = useState('');
+    const csrfToken = useMemo(() => resolveCsrfToken(), []);
     const { data, setData, post, processing, errors, reset } = useForm<RegisterForm>({
         first_name: '',
         last_name: '',
@@ -78,6 +88,7 @@ const RegisterPanel = ({ onBack, onRegistered }: RegisterPanelProps) => {
         program: '',
         password: '',
         password_confirmation: '',
+        _token: csrfToken,
     });
 
     const generatedEmail = useMemo(() => {
@@ -97,6 +108,12 @@ const RegisterPanel = ({ onBack, onRegistered }: RegisterPanelProps) => {
             setPasswordConfirmationError('');
         }
     }, [data.password, data.password_confirmation, passwordConfirmationError]);
+
+    useEffect(() => {
+        if (csrfToken !== '' && data._token !== csrfToken) {
+            setData('_token', csrfToken);
+        }
+    }, [csrfToken, data._token, setData]);
 
     useEffect(() => {
         if (requiresProgramSelection(data.role)) {

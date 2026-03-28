@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
             $lastName = 'User';
 
             $user = User::query()->updateOrCreate(
-                ['email' => $role.'@example.com'],
+                ['email' => $role.'@dnsc.ic.ph'],
                 [
                     'name' => $displayName,
                     'first_name' => $firstName,

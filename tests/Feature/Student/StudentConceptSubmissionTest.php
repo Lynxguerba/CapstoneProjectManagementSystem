@@ -7,8 +7,13 @@ use App\Models\Group;
 use App\Models\ProgramSet;
 use App\Models\TitleCategory;
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+
+beforeEach(function (): void {
+    $this->withoutMiddleware(ValidateCsrfToken::class);
+});
 
 it('stores a concept submission against the active concept requirement', function (): void {
     Storage::fake('public');
@@ -22,7 +27,6 @@ it('stores a concept submission against the active concept requirement', functio
         ->from(route('student.concepts'))
         ->post(route('student.concepts.submissions.store'), [
             'title' => 'Smart Campus Monitoring',
-            'title_category_id' => $context['titleCategory']->id,
             'concept_file' => $file,
         ]);
 
@@ -35,7 +39,7 @@ it('stores a concept submission against the active concept requirement', functio
     expect($submission)->not->toBeNull();
     expect($submission?->document_requirement_id)->toBe($context['requirement']->id);
     expect($submission?->group_id)->toBe($context['group']->id);
-    expect($submission?->title_category_id)->toBe($context['titleCategory']->id);
+    expect($submission?->title_category_id)->toBeNull();
     expect($submission?->file_name)->toBe('Smart Campus Monitoring');
     expect($submission?->status)->toBe('Submitted');
 
@@ -48,6 +52,7 @@ it('updates the concept title for a student submission', function (): void {
     $submission = DocumentSubmission::factory()->create([
         'group_id' => $context['group']->id,
         'document_requirement_id' => $context['requirement']->id,
+        'title_category_id' => $context['titleCategory']->id,
         'file_name' => 'Old Concept Title',
         'submitted_by' => $context['student']->id,
     ]);
@@ -58,7 +63,6 @@ it('updates the concept title for a student submission', function (): void {
         ->from(route('student.concepts'))
         ->patch(route('student.concepts.submissions.update', $submission), [
             'title' => 'Updated Concept Title',
-            'title_category_id' => $context['updatedTitleCategory']->id,
         ]);
 
     $response
@@ -66,7 +70,7 @@ it('updates the concept title for a student submission', function (): void {
         ->assertSessionHas('success', 'Concept details updated successfully.');
 
     expect($submission->fresh()?->file_name)->toBe('Updated Concept Title');
-    expect($submission->fresh()?->title_category_id)->toBe($context['updatedTitleCategory']->id);
+    expect($submission->fresh()?->title_category_id)->toBe($context['titleCategory']->id);
 });
 
 it('deletes the concept submission record and stored pdf', function (): void {
@@ -149,7 +153,7 @@ it('includes the selected concept category in the submission detail payload', fu
 });
 
 /**
- * @return array{student: User, group: Group, requirement: DocumentRequirement, titleCategory: TitleCategory, updatedTitleCategory: TitleCategory}
+ * @return array{student: User, group: Group, requirement: DocumentRequirement, titleCategory: TitleCategory}
  */
 function createStudentConceptContext(): array
 {
@@ -188,17 +192,10 @@ function createStudentConceptContext(): array
         'description' => 'Web, mobile, and progressive web applications.',
     ]);
 
-    $updatedTitleCategory = TitleCategory::query()->create([
-        'program' => 'BSIT',
-        'name' => 'Intelligent Systems',
-        'description' => 'AI, machine learning, and natural language processing projects.',
-    ]);
-
     return [
         'student' => $student,
         'group' => $group,
         'requirement' => $requirement,
         'titleCategory' => $titleCategory,
-        'updatedTitleCategory' => $updatedTitleCategory,
     ];
 }

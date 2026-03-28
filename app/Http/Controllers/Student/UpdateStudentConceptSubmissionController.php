@@ -9,7 +9,6 @@ use App\Models\Group;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Validation\ValidationException;
 
 class UpdateStudentConceptSubmissionController extends Controller
 {
@@ -25,15 +24,8 @@ class UpdateStudentConceptSubmissionController extends Controller
             403,
         );
 
-        if (! Schema::hasColumn('document_submissions', 'title_category_id')) {
-            throw ValidationException::withMessages([
-                'title_category_id' => 'Concept categories are not available yet. Please run the latest migrations first.',
-            ]);
-        }
-
         $submission->update([
             'file_name' => trim((string) $request->validated()['title']),
-            'title_category_id' => (int) $request->validated()['title_category_id'],
         ]);
 
         return redirect()

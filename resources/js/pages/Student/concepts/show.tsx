@@ -1,6 +1,6 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ChevronRight, ChevronsLeft, ChevronsRight, FilePenLine, FileText, PanelRightOpen, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronsLeft, FilePenLine, FileText, PanelRightOpen, Trash2 } from 'lucide-react';
 import React from 'react';
 import ConfirmConceptSubmissionActionModal from '@/components/Student/ConfirmConceptSubmissionActionModal';
 import EditConceptSubmissionModal from '@/components/Student/EditConceptSubmissionModal';
@@ -16,9 +16,6 @@ type GroupSummary = {
 type SubmissionDetail = {
     id: number;
     title: string;
-    titleCategoryId?: number | null;
-    category?: string | null;
-    categoryDescription?: string | null;
     status: string;
     submittedAt?: string | null;
     requirementType: string;
@@ -28,16 +25,9 @@ type SubmissionDetail = {
     fileUrl?: string | null;
 };
 
-type CategoryOption = {
-    id: number;
-    name: string;
-    description?: string | null;
-};
-
 type StudentConceptShowProps = {
     group: GroupSummary;
     studentProgram: 'BSIT' | 'BSIS' | string;
-    categoryOptions: CategoryOption[];
     submission: SubmissionDetail;
     flash?: {
         success?: string;
@@ -64,7 +54,6 @@ const StudentConceptSubmissionShow = () => {
 
     const group = props.group;
     const studentProgram = props.studentProgram ?? 'BSIT';
-    const categoryOptions = props.categoryOptions ?? [];
     const submission = props.submission;
     const successMessage = props.flash?.success ?? '';
     const deleteForm = useForm({});
@@ -111,11 +100,6 @@ const StudentConceptSubmissionShow = () => {
                                 <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusPillClass(submission.status)}`}>
                                     {submission.status}
                                 </span>
-                                {submission.category ? (
-                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                                        {submission.category}
-                                    </span>
-                                ) : null}
                             </div>
 
                             <div className="min-w-0">
@@ -217,19 +201,6 @@ const StudentConceptSubmissionShow = () => {
                                                 <p
                                                     className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}
                                                 >
-                                                    Category
-                                                </p>
-                                                <p className={`${isSidebarCollapsed ? 'hidden lg:block lg:text-center' : 'mt-1 text-slate-900'}`}>
-                                                    {submission.category ?? 'Uncategorized'}
-                                                </p>
-                                                {!isSidebarCollapsed && submission.categoryDescription ? (
-                                                    <p className="mt-1 text-xs text-slate-500">{submission.categoryDescription}</p>
-                                                ) : null}
-                                            </div>
-                                            <div>
-                                                <p
-                                                    className={`text-[11px] font-semibold tracking-wide text-slate-500 uppercase ${isSidebarCollapsed ? 'lg:hidden' : ''}`}
-                                                >
                                                     Submitted
                                                 </p>
                                                 <p className={`${isSidebarCollapsed ? 'hidden lg:block lg:text-center' : 'mt-1 text-slate-900'}`}>
@@ -295,7 +266,6 @@ const StudentConceptSubmissionShow = () => {
             <EditConceptSubmissionModal
                 open={isEditModalOpen}
                 submission={submission}
-                categories={categoryOptions}
                 onClose={() => setIsEditModalOpen(false)}
                 onSuccess={() => setIsEditModalOpen(false)}
             />

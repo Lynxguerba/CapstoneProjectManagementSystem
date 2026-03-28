@@ -6,43 +6,30 @@ import { createPortal } from 'react-dom';
 type EditableSubmission = {
     id: number;
     title: string;
-    titleCategoryId?: number | null;
-    category?: string | null;
     status: string;
     requirementType: string;
     submittedAt?: string | null;
 };
 
-type CategoryOption = {
-    id: number;
-    name: string;
-    description?: string | null;
-};
-
 type EditConceptSubmissionModalProps = {
     open: boolean;
     submission: EditableSubmission | null;
-    categories: CategoryOption[];
     onClose: () => void;
     onSuccess?: () => void;
 };
 
 type EditConceptSubmissionForm = {
     title: string;
-    title_category_id: string;
 };
 
-const EditConceptSubmissionModal = ({ open, submission, categories, onClose, onSuccess }: EditConceptSubmissionModalProps) => {
+const EditConceptSubmissionModal = ({ open, submission, onClose, onSuccess }: EditConceptSubmissionModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
     const form = useForm<EditConceptSubmissionForm>({
         title: submission?.title ?? '',
-        title_category_id: submission?.titleCategoryId ? String(submission.titleCategoryId) : '',
     });
     const submissionId = submission?.id ?? null;
     const submissionTitle = submission?.title ?? '';
-    const submissionCategoryId = submission?.titleCategoryId ? String(submission.titleCategoryId) : '';
     const { clearErrors, data, errors, patch, processing, reset, setData } = form;
-    const selectedCategory = categories.find((category) => String(category.id) === data.title_category_id) ?? null;
 
     React.useEffect(() => {
         if (!open) {
@@ -55,7 +42,6 @@ const EditConceptSubmissionModal = ({ open, submission, categories, onClose, onS
         setIsAppearing(false);
         clearErrors();
         setData('title', submissionTitle);
-        setData('title_category_id', submissionCategoryId);
 
         const animationFrame = window.requestAnimationFrame(() => {
             setIsAppearing(true);
@@ -64,7 +50,7 @@ const EditConceptSubmissionModal = ({ open, submission, categories, onClose, onS
         return () => {
             window.cancelAnimationFrame(animationFrame);
         };
-    }, [clearErrors, open, reset, setData, submissionCategoryId, submissionId, submissionTitle]);
+    }, [clearErrors, open, reset, setData, submissionId, submissionTitle]);
 
     React.useEffect(() => {
         if (!open) {
@@ -94,7 +80,7 @@ const EditConceptSubmissionModal = ({ open, submission, categories, onClose, onS
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        if (!submission || processing || data.title.trim() === '' || data.title_category_id === '') {
+        if (!submission || processing || data.title.trim() === '') {
             return;
         }
 
@@ -150,7 +136,7 @@ const EditConceptSubmissionModal = ({ open, submission, categories, onClose, onS
                             </div>
                             <div>
                                 <p className="text-sm font-bold text-emerald-900">Update submission details</p>
-                                <p className="text-xs text-emerald-800">Edit the concept title and category shown for this submission record.</p>
+                                <p className="text-xs text-emerald-800">Edit the concept title shown for this submission record.</p>
                             </div>
                         </div>
                     </div>
@@ -183,25 +169,6 @@ const EditConceptSubmissionModal = ({ open, submission, categories, onClose, onS
                             {errors.title ? <p className="mt-1 text-xs text-rose-600">{errors.title}</p> : null}
                         </div>
 
-                        <div className="mt-4">
-                            <label className="text-sm font-semibold text-slate-700">Concept Category</label>
-                            <select
-                                value={data.title_category_id}
-                                onChange={(event) => setData('title_category_id', event.target.value)}
-                                disabled={processing}
-                                className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
-                            >
-                                <option value="">Select category</option>
-                                {categories.map((category) => (
-                                    <option key={category.id} value={category.id}>
-                                        {category.name}
-                                    </option>
-                                ))}
-                            </select>
-                            {selectedCategory?.description ? <p className="mt-2 text-xs text-slate-500">{selectedCategory.description}</p> : null}
-                            {errors.title_category_id ? <p className="mt-1 text-xs text-rose-600">{errors.title_category_id}</p> : null}
-                        </div>
-
                         <div className="mt-4 border-t border-gray-200 bg-gradient-to-r from-slate-50 to-slate-100 px-0 pt-3">
                             <div className="flex justify-end gap-2">
                                 <button
@@ -214,7 +181,7 @@ const EditConceptSubmissionModal = ({ open, submission, categories, onClose, onS
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={processing || data.title.trim() === '' || data.title_category_id === ''}
+                                    disabled={processing || data.title.trim() === ''}
                                     className="group relative z-10 flex transform items-center gap-2 overflow-hidden rounded-lg bg-emerald-600 px-5 py-2 font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-emerald-700 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     <span className="pointer-events-none absolute inset-0 z-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 group-hover:translate-x-[100%]" />

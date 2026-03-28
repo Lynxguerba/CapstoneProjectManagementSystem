@@ -6,12 +6,8 @@ use App\Models\AcademicYear;
 use App\Models\TitleCategory;
 use App\Models\TitleRepository;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
 class TitleRepositorySeeder extends Seeder
 {
@@ -161,75 +157,17 @@ class TitleRepositorySeeder extends Seeder
      */
     private function resolveAdviserUsers(Collection $adviserNames): Collection
     {
-        $adviserByName = collect();
+        $defaultAdviserId = User::query()
+            ->where('email', 'adviser@dnsc.ic.ph')
+            ->value('id');
 
-        if (Schema::hasTable('users')) {
-            $adviserByName = User::query()
-                ->where(function (Builder $query): void {
-                    if (Schema::hasTable('roles') && Schema::hasTable('role_user')) {
-                        $query
-                            ->whereHas('roles', fn (Builder $roleQuery) => $roleQuery->where('slug', 'adviser'))
-                            ->orWhere('role', 'like', '%adviser%');
-
-                        return;
-                    }
-
-                    $query->where('role', 'like', '%adviser%');
-                })
-                ->get(['id', 'name', 'first_name', 'last_name'])
-                ->mapWithKeys(fn (User $user): array => [$this->resolveDisplayName($user) => $user->id]);
+        if (! is_int($defaultAdviserId)) {
+            return collect();
         }
 
-        foreach ($adviserNames as $adviserName) {
-            $normalizedName = trim((string) $adviserName);
-
-            if ($normalizedName === '' || $adviserByName->has($normalizedName)) {
-                continue;
-            }
-
-            $nameWithoutPrefix = preg_replace('/^Prof\.\s*/', '', $normalizedName) ?? $normalizedName;
-            $parts = preg_split('/\s+/', trim($nameWithoutPrefix));
-            $parts = is_array($parts) ? $parts : [];
-            $firstName = isset($parts[0]) && is_string($parts[0]) ? trim($parts[0]) : '';
-            $lastName = isset($parts[1]) && is_string($parts[1]) ? trim($parts[1]) : 'Adviser';
-            $email = Str::slug($firstName.' '.$lastName, '.').'@example.com';
-
-            $adviser = User::query()->updateOrCreate(
-                ['email' => $email],
-                [
-                    'name' => trim($firstName.' '.$lastName),
-                    'first_name' => $firstName,
-                    'last_name' => $lastName,
-                    'password' => Hash::make('password'),
-                    'role' => 'adviser',
-                    'status' => 'active',
-                ],
-            );
-
-            if (Schema::hasTable('roles') && Schema::hasTable('role_user')) {
-                $adviser->syncRoles(['adviser']);
-            }
-
-            $adviserByName->put($normalizedName, $adviser->id);
-        }
-
-        return $adviserByName;
-    }
-
-    private function resolveDisplayName(User $user): string
-    {
-        $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
-        $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
-        $fullName = trim($firstName.' '.$lastName);
-
-        if ($fullName !== '') {
-            return 'Prof. '.$fullName;
-        }
-
-        if (is_string($user->name) && trim($user->name) !== '') {
-            return 'Prof. '.trim((string) $user->name);
-        }
-
-        return 'Prof. Adviser';
+        return $adviserNames
+            ->map(fn (string $adviserName): string => trim($adviserName))
+            ->filter(fn (string $adviserName): bool => $adviserName !== '')
+            ->mapWithKeys(fn (string $adviserName): array => [$adviserName => $defaultAdviserId]);
     }
 }
