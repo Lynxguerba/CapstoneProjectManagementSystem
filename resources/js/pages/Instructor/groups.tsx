@@ -109,7 +109,7 @@ const InstructorGroups = () => {
     const [selectedSchoolYear, setSelectedSchoolYear] = useState(defaultSchoolYear);
     const [selectedProgram, setSelectedProgram] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
-    const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+    const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
 

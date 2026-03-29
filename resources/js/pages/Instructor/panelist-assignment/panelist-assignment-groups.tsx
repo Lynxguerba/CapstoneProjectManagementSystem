@@ -97,6 +97,64 @@ const panelRoleBadgeClasses = (role?: PanelRole | null): string => {
     return 'bg-slate-100 text-slate-600';
 };
 
+const normalizeProgramKey = (program?: string | null): string => {
+    if (typeof program !== 'string') {
+        return '';
+    }
+
+    return program.trim().toUpperCase();
+};
+
+const resolveMaxGroups = (currentValue: number, incomingValue: number): number => {
+    if (currentValue === 5 && incomingValue !== 5) {
+        return incomingValue;
+    }
+
+    if (currentValue !== 5 && incomingValue === 5) {
+        return currentValue;
+    }
+
+    return incomingValue;
+};
+
+const mergeProgramSummaries = (programs?: PanelistProgramSummary[]): PanelistProgramSummary[] => {
+    const tracker = new Map<string, PanelistProgramSummary>();
+
+    (programs ?? []).forEach((program) => {
+        const key = normalizeProgramKey(program.program);
+        if (key === '') {
+            return;
+        }
+
+        const existing = tracker.get(key);
+        const incomingAssignedByYear = program.assigned_by_year ?? {};
+
+        if (!existing) {
+            tracker.set(key, {
+                program: key,
+                max_groups: program.max_groups ?? 0,
+                assigned_count: program.assigned_count ?? 0,
+                assigned_by_year: { ...incomingAssignedByYear },
+            });
+            return;
+        }
+
+        const mergedAssignedByYear = { ...(existing.assigned_by_year ?? {}) };
+        Object.entries(incomingAssignedByYear).forEach(([year, count]) => {
+            mergedAssignedByYear[year] = (mergedAssignedByYear[year] ?? 0) + (count ?? 0);
+        });
+
+        tracker.set(key, {
+            program: key,
+            max_groups: resolveMaxGroups(existing.max_groups ?? 0, program.max_groups ?? 0),
+            assigned_count: (existing.assigned_count ?? 0) + (program.assigned_count ?? 0),
+            assigned_by_year: mergedAssignedByYear,
+        });
+    });
+
+    return Array.from(tracker.values()).sort((first, second) => first.program.localeCompare(second.program));
+};
+
 const PanelistAssignmentGroups = ({
     panelist,
     panelists = [],
@@ -210,7 +268,7 @@ const PanelistAssignmentGroups = ({
 
     const totalLoad = getLoadForYear('All');
     const selectedYearLoad = selectedAcademicYear === 'All' ? totalLoad : getLoadForYear(selectedAcademicYear);
-    const panelistPrograms = React.useMemo(() => panelist.programs ?? [], [panelist.programs]);
+    const panelistPrograms = React.useMemo(() => mergeProgramSummaries(panelist.programs), [panelist.programs]);
     const panelistIsAvailable = panelist.is_available === true;
 
     const selectedYearPrograms = React.useMemo(() => {
@@ -227,7 +285,11 @@ const PanelistAssignmentGroups = ({
 
     const getAssignedForProgramYear = React.useCallback(
         (program?: string | null, year?: string | null): number => {
-            const resolvedProgram = typeof program === 'string' ? program : '';
+            const resolvedProgram = normalizeProgramKey(program);
+            if (resolvedProgram === '') {
+                return 0;
+            }
+
             const matchedProgram = panelistPrograms.find((item) => item.program === resolvedProgram);
 
             if (!matchedProgram) {
@@ -245,11 +307,12 @@ const PanelistAssignmentGroups = ({
 
     const getMaxForProgram = React.useCallback(
         (program?: string | null): number => {
-            if (!program) {
+            const resolvedProgram = normalizeProgramKey(program);
+            if (resolvedProgram === '') {
                 return 5;
             }
 
-            return panelistPrograms.find((item) => item.program === program)?.max_groups ?? 5;
+            return panelistPrograms.find((item) => item.program === resolvedProgram)?.max_groups ?? 5;
         },
         [panelistPrograms],
     );

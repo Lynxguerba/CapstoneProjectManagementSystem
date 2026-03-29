@@ -44,7 +44,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
     const currentAcademicYearLabel = academicYears.find((year) => year.is_current)?.label ?? null;
     const currentAcademicYear = currentAcademicYearLabel ?? academicYears[0]?.label ?? 'All';
     const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(currentAcademicYear || 'All');
-    const [viewMode, setViewMode] = React.useState<'card' | 'list'>('card');
+    const [viewMode, setViewMode] = React.useState<'card' | 'list'>('list');
     const [selectedAdviser, setSelectedAdviser] = React.useState<AdviserRow | null>(null);
     const [isGroupsModalOpen, setIsGroupsModalOpen] = React.useState(false);
     const [statusFilter, setStatusFilter] = React.useState<'all' | 'available' | 'partial' | 'full' | 'closed'>('all');

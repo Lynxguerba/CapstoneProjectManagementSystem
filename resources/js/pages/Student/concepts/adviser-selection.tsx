@@ -65,7 +65,7 @@ const AdviserSelection = () => {
     const currentAcademicYearLabel = academicYears.find((year) => year.is_current)?.label ?? null;
     const defaultAcademicYear = group?.academicYear ?? currentAcademicYearLabel ?? academicYears[0]?.label ?? 'All';
     const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(defaultAcademicYear || 'All');
-    const [viewMode, setViewMode] = React.useState<'card' | 'list'>('card');
+    const [viewMode, setViewMode] = React.useState<'card' | 'list'>('list');
     const [statusFilter, setStatusFilter] = React.useState<'all' | 'available' | 'partial' | 'full' | 'closed'>('all');
     const [processingAdviserId, setProcessingAdviserId] = React.useState<number | null>(null);
     const [currentPage, setCurrentPage] = React.useState(1);

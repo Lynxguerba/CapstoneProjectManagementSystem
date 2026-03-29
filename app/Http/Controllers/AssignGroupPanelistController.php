@@ -10,6 +10,7 @@ use App\Models\PanelistProgramUtility;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AssignGroupPanelistController extends Controller
@@ -85,12 +86,12 @@ class AssignGroupPanelistController extends Controller
         }
 
         $groupYear = $group->programSet?->academicYear?->label ?? $group->programSet?->school_year;
-        $program = $group->programSet?->program;
+        $program = is_string($group->programSet?->program) ? Str::upper(trim($group->programSet->program)) : null;
         $loadQuery = GroupPanelist::query()->where('panelist_id', $panelist->id);
 
         $loadQuery->whereHas('group.programSet', function ($query) use ($groupYear, $program) {
             if (is_string($program) && $program !== '') {
-                $query->where('program', $program);
+                $query->whereRaw('UPPER(TRIM(program)) = ?', [$program]);
             }
 
             if (is_string($groupYear) && $groupYear !== '') {
@@ -110,7 +111,7 @@ class AssignGroupPanelistController extends Controller
         if (Schema::hasTable('panelist_program_utilities') && is_string($program) && $program !== '') {
             $utility = PanelistProgramUtility::query()
                 ->where('panelist_id', $panelist->id)
-                ->where('program', $program)
+                ->whereRaw('UPPER(TRIM(program)) = ?', [$program])
                 ->first();
 
             if ($utility) {

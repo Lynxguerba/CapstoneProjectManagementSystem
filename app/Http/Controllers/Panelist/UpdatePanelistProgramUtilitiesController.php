@@ -7,6 +7,7 @@ use App\Http\Requests\Panelist\UpdatePanelistProgramUtilitiesRequest;
 use App\Models\PanelistProgramUtility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class UpdatePanelistProgramUtilitiesController extends Controller
 {
@@ -31,7 +32,7 @@ class UpdatePanelistProgramUtilitiesController extends Controller
 
         $programs = collect($data['programs'])
             ->map(function (array $item): array {
-                $program = is_string($item['program'] ?? null) ? trim($item['program']) : '';
+                $program = is_string($item['program'] ?? null) ? Str::upper(trim($item['program'])) : '';
                 $maxGroups = (int) ($item['max_groups'] ?? 0);
 
                 return [

@@ -78,6 +78,26 @@ const getProgramSetKey = (group: AssignedGroupRow): string => {
     return `name:${name}::${year}`;
 };
 
+const normalizeProgramKey = (program?: string | null): string => {
+    if (typeof program !== 'string') {
+        return '';
+    }
+
+    return program.trim().toUpperCase();
+};
+
+const resolveMaxGroups = (currentValue: number, incomingValue: number): number => {
+    if (currentValue === 5 && incomingValue !== 5) {
+        return incomingValue;
+    }
+
+    if (currentValue !== 5 && incomingValue === 5) {
+        return currentValue;
+    }
+
+    return incomingValue;
+};
+
 const formatPanelRole = (role?: PanelRole | null): string => {
     if (role === 'chairman') {
         return 'Panel Chairman';
@@ -179,7 +199,11 @@ const PanelistAssignedGroups = () => {
         const tracker = new Map<string, Map<string, number>>();
 
         assignedGroups.forEach((group) => {
-            const program = group.program ?? 'Unspecified';
+            const program = normalizeProgramKey(group.program);
+            if (program === '') {
+                return;
+            }
+
             const year = group.school_year ?? 'Unspecified';
             const yearMap = tracker.get(program) ?? new Map<string, number>();
             yearMap.set(year, (yearMap.get(year) ?? 0) + 1);
@@ -190,13 +214,38 @@ const PanelistAssignedGroups = () => {
     }, [assignedGroups]);
 
     const utilityMap = React.useMemo(() => {
-        return new Map(utilityPrograms.map((utility) => [utility.program, utility]));
+        const normalizedUtilities = new Map<string, UtilityProgram>();
+
+        utilityPrograms.forEach((utility) => {
+            const normalizedProgram = normalizeProgramKey(utility.program);
+            if (normalizedProgram === '') {
+                return;
+            }
+
+            const existing = normalizedUtilities.get(normalizedProgram);
+            if (!existing) {
+                normalizedUtilities.set(normalizedProgram, {
+                    ...utility,
+                    program: normalizedProgram,
+                });
+                return;
+            }
+
+            normalizedUtilities.set(normalizedProgram, {
+                ...existing,
+                program: normalizedProgram,
+                max_groups: resolveMaxGroups(existing.max_groups ?? 0, utility.max_groups ?? 0),
+                assigned_count: (existing.assigned_count ?? 0) + (utility.assigned_count ?? 0),
+            });
+        });
+
+        return normalizedUtilities;
     }, [utilityPrograms]);
 
     const selectedYearPrograms = React.useMemo(() => {
         const programs = new Set([
-            ...utilityPrograms.map((utility) => utility.program),
-            ...assignedGroups.map((group) => group.program).filter((program): program is string => typeof program === 'string' && program.trim() !== ''),
+            ...utilityPrograms.map((utility) => normalizeProgramKey(utility.program)).filter((program) => program !== ''),
+            ...assignedGroups.map((group) => normalizeProgramKey(group.program)).filter((program) => program !== ''),
         ]);
 
         return Array.from(programs)
@@ -205,7 +254,7 @@ const PanelistAssignedGroups = () => {
                 const maxGroups = utilityMap.get(program)?.max_groups ?? 5;
                 const assignedCount =
                     selectedAcademicYear === 'All'
-                        ? assignedGroups.filter((group) => group.program === program).length
+                        ? assignedGroups.filter((group) => normalizeProgramKey(group.program) === program).length
                         : assignedByProgramYear.get(program)?.get(selectedAcademicYear) ?? 0;
 
                 return {
@@ -221,7 +270,11 @@ const PanelistAssignedGroups = () => {
 
     const getAssignedForProgramYear = React.useCallback(
         (program?: string | null, year?: string | null): number => {
-            const resolvedProgram = program ?? 'Unspecified';
+            const resolvedProgram = normalizeProgramKey(program);
+            if (resolvedProgram === '') {
+                return 0;
+            }
+
             const resolvedYear = year ?? 'Unspecified';
 
             return assignedByProgramYear.get(resolvedProgram)?.get(resolvedYear) ?? 0;
@@ -231,11 +284,12 @@ const PanelistAssignedGroups = () => {
 
     const getMaxForProgram = React.useCallback(
         (program?: string | null): number => {
-            if (!program) {
+            const resolvedProgram = normalizeProgramKey(program);
+            if (resolvedProgram === '') {
                 return 5;
             }
 
-            return utilityMap.get(program)?.max_groups ?? 5;
+            return utilityMap.get(resolvedProgram)?.max_groups ?? 5;
         },
         [utilityMap],
     );

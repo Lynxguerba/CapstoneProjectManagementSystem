@@ -39,17 +39,78 @@ type PanelistAssignmentPageProps = {
     academicYears?: AcademicYearOption[];
 };
 
+const normalizeProgramKey = (program?: string | null): string => {
+    if (typeof program !== 'string') {
+        return '';
+    }
+
+    return program.trim().toUpperCase();
+};
+
+const resolveMaxGroups = (currentValue: number, incomingValue: number): number => {
+    if (currentValue === 5 && incomingValue !== 5) {
+        return incomingValue;
+    }
+
+    if (currentValue !== 5 && incomingValue === 5) {
+        return currentValue;
+    }
+
+    return incomingValue;
+};
+
+const mergeProgramSummaries = (programs?: PanelistProgramSummary[]): PanelistProgramSummary[] => {
+    const tracker = new Map<string, PanelistProgramSummary>();
+
+    (programs ?? []).forEach((program) => {
+        const key = normalizeProgramKey(program.program);
+        if (key === '') {
+            return;
+        }
+
+        const existing = tracker.get(key);
+        const incomingAssignedByYear = program.assigned_by_year ?? {};
+
+        if (!existing) {
+            tracker.set(key, {
+                program: key,
+                max_groups: program.max_groups ?? 0,
+                assigned_count: program.assigned_count ?? 0,
+                assigned_by_year: { ...incomingAssignedByYear },
+            });
+            return;
+        }
+
+        const mergedAssignedByYear = { ...(existing.assigned_by_year ?? {}) };
+        Object.entries(incomingAssignedByYear).forEach(([year, count]) => {
+            mergedAssignedByYear[year] = (mergedAssignedByYear[year] ?? 0) + (count ?? 0);
+        });
+
+        tracker.set(key, {
+            program: key,
+            max_groups: resolveMaxGroups(existing.max_groups ?? 0, program.max_groups ?? 0),
+            assigned_count: (existing.assigned_count ?? 0) + (program.assigned_count ?? 0),
+            assigned_by_year: mergedAssignedByYear,
+        });
+    });
+
+    return Array.from(tracker.values()).sort((first, second) => first.program.localeCompare(second.program));
+};
+
 const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: PanelistAssignmentPageProps) => {
     const [searchTerm, setSearchTerm] = React.useState('');
     const currentAcademicYearLabel = academicYears.find((year) => year.is_current)?.label ?? null;
     const currentAcademicYear = currentAcademicYearLabel ?? academicYears[0]?.label ?? 'All';
     const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(currentAcademicYear || 'All');
-    const [viewMode, setViewMode] = React.useState<'card' | 'list'>('card');
+    const [viewMode, setViewMode] = React.useState<'card' | 'list'>('list');
     const [selectedPanelist, setSelectedPanelist] = React.useState<PanelistRow | null>(null);
     const [isGroupsModalOpen, setIsGroupsModalOpen] = React.useState(false);
     const [statusFilter, setStatusFilter] = React.useState<'all' | 'available' | 'partial' | 'full' | 'closed'>('all');
     const [currentPage, setCurrentPage] = React.useState(1);
     const itemsPerPage = 9;
+    const getPanelistPrograms = React.useCallback((panelist: PanelistRow): PanelistProgramSummary[] => {
+        return mergeProgramSummaries(panelist.programs);
+    }, []);
 
     const academicYearOptions = React.useMemo(() => {
         const years = academicYears.map((year) => year.label);
@@ -67,12 +128,12 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
             return workloads.reduce((total, workload) => total + (workload.groups_count ?? 0), 0);
         }
 
-        return (panelist.programs ?? []).reduce((total, program) => total + (program.assigned_count ?? 0), 0);
-    }, []);
+        return getPanelistPrograms(panelist).reduce((total, program) => total + (program.assigned_count ?? 0), 0);
+    }, [getPanelistPrograms]);
 
     const getProgramTotals = React.useCallback(
         (panelist: PanelistRow, yearLabel?: string | null) => {
-            const programs = panelist.programs ?? [];
+            const programs = getPanelistPrograms(panelist);
             const totalAssigned = getAssignedForYear(panelist, yearLabel);
             const totalCapacity = programs.reduce((total, program) => total + (program.max_groups ?? 0), 0);
             const remaining = Math.max(0, totalCapacity - totalAssigned);
@@ -85,7 +146,7 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
                 isAvailable: panelist.is_available === true,
             };
         },
-        [getAssignedForYear],
+        [getAssignedForYear, getPanelistPrograms],
     );
 
     const getTotalAssignedGroups = React.useCallback(

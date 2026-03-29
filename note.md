@@ -1,0 +1,1 @@
+NOTE IF NEEDED: Initialize codebase, database connection and file structures. Not Allowed to run any docker commands without an permision.
