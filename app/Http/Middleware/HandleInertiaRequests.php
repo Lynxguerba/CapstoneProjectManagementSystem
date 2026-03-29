@@ -81,6 +81,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
+                'created_group_id' => $request->session()->get('created_group_id'),
             ],
         ];
     }
