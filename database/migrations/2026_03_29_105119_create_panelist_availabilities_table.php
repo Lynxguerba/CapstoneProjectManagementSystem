@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('adviser_availabilities', function (Blueprint $table) {
+        Schema::create('panelist_availabilities', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('adviser_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('panelist_id')->constrained('users')->cascadeOnDelete();
             $table->boolean('is_available')->default(false);
             $table->timestamps();
 
-            $table->unique('adviser_id');
+            $table->unique('panelist_id');
         });
     }
 
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('adviser_availabilities');
+        Schema::dropIfExists('panelist_availabilities');
     }
 };
