@@ -39,6 +39,7 @@ type StudentConceptProps = {
         programSetName?: string | null;
         academicYear?: string | null;
     } | null;
+    isGroupLeader?: boolean;
     studentProgram: 'BSIT' | 'BSIS' | string;
     categoryOptions: CategoryOption[];
     readiness: {
@@ -86,6 +87,7 @@ const StudentConcepts = () => {
     const fileInputRef = React.useRef<HTMLInputElement | null>(null);
     const [isSubmitConfirmationOpen, setIsSubmitConfirmationOpen] = React.useState(false);
     const group = props.group;
+    const isGroupLeader = props.isGroupLeader ?? false;
     const readiness = props.readiness;
     const activeRequirement = props.activeRequirement;
     const submissions = props.submissions ?? [];
@@ -100,6 +102,7 @@ const StudentConcepts = () => {
     const requirementLabel = activeRequirement?.type ?? 'Concept Paper';
     const deadlineLabel = activeRequirement?.deadlineLabel ?? notifications.deadline ?? 'No deadline declared yet.';
     const canSubmit =
+        isGroupLeader &&
         readiness.isReady &&
         group !== null &&
         !form.processing &&
@@ -167,6 +170,78 @@ const StudentConcepts = () => {
         : 'No active group assignment yet.';
     const latestSubmission = submissions[0] ?? null;
     const uploadProgress = form.progress?.percentage ? Math.round(form.progress.percentage) : null;
+    const renderSubmittedConceptsSection = (delay: number) => (
+        <motion.section
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay }}
+            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
+        >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <FolderOpen className="h-3.5 w-3.5 text-slate-700" />
+                    <h3 className="text-sm font-semibold text-slate-900">Your Submitted Concepts</h3>
+                </div>
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    {submissions.length} record{submissions.length === 1 ? '' : 's'}
+                </span>
+            </div>
+
+            <div className="mt-4 overflow-hidden rounded-xl border border-slate-100">
+                <div className="overflow-x-auto">
+                    <table className="w-full min-w-[640px] text-left text-xs">
+                        <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                            <tr>
+                                <th className="px-3 py-3">Title</th>
+                                <th className="px-3 py-3">Requirement</th>
+                                <th className="px-3 py-3">Submitted</th>
+                                <th className="px-3 py-3">Status</th>
+                                <th className="px-3 py-3">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {submissions.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-3 py-8 text-center text-xs text-slate-500">
+                                        No concept submissions yet.
+                                    </td>
+                                </tr>
+                            ) : (
+                                submissions.map((submission) => (
+                                    <tr key={submission.id} className="hover:bg-slate-50/80">
+                                        <td className="px-3 py-3 font-semibold text-slate-900">{submission.title}</td>
+                                        <td className="px-3 py-3 text-slate-600">{submission.requirementType}</td>
+                                        <td className="px-3 py-3 text-slate-600">{submission.submittedAt ?? '—'}</td>
+                                        <td className="px-3 py-3">
+                                            <span
+                                                className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusPillClass(submission.status)}`}
+                                            >
+                                                {submission.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-3 py-3 text-xs text-slate-600">
+                                            <Link
+                                                href={submission.viewUrl ?? '#'}
+                                                preserveScroll
+                                                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                                                    submission.viewUrl
+                                                        ? 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50'
+                                                        : 'pointer-events-none cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                                                }`}
+                                            >
+                                                Open File
+                                            </Link>
+                                            {submission.fileSizeLabel ? <div className="mt-1 text-slate-500">{submission.fileSizeLabel}</div> : null}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </motion.section>
+    );
 
     return (
         <StudentLayout title="Concept Submission" subtitle="Submit and track your concept paper requirements">
@@ -246,113 +321,117 @@ const StudentConcepts = () => {
                 </motion.section>
 
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-                    <motion.section
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.04 }}
-                        className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
-                    >
-                        <div className="flex items-center justify-between gap-3">
-                            <h3 className="text-sm font-semibold text-slate-900">Submit New Concept / Revision</h3>
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                                PDF only
-                            </span>
-                        </div>
-
-                        <form onSubmit={handleFormSubmit} className="mt-4 space-y-3.5">
-                            <div>
-                                <label className="text-xs font-semibold tracking-wide text-slate-700 uppercase">Concept Title</label>
-                                <input
-                                    type="text"
-                                    value={form.data.title}
-                                    onChange={(event) => form.setData('title', event.target.value)}
-                                    placeholder="Auto-filled from the uploaded PDF file name"
-                                    disabled={!readiness.isReady || form.processing}
-                                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50"
-                                />
-                                {form.errors.title ? <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.title}</p> : null}
+                    {isGroupLeader ? (
+                        <motion.section
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.04 }}
+                            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
+                        >
+                            <div className="flex items-center justify-between gap-3">
+                                <h3 className="text-sm font-semibold text-slate-900">Submit New Concept / Revision</h3>
+                                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                                    PDF only
+                                </span>
                             </div>
 
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-                                <p className="font-semibold tracking-wide text-slate-700 uppercase">Active Requirement</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">{requirementLabel}</p>
-                                <p className="mt-1 text-xs text-slate-500">{deadlineLabel}</p>
-                            </div>
+                            <form onSubmit={handleFormSubmit} className="mt-4 space-y-3.5">
+                                <div>
+                                    <label className="text-xs font-semibold tracking-wide text-slate-700 uppercase">Concept Title</label>
+                                    <input
+                                        type="text"
+                                        value={form.data.title}
+                                        onChange={(event) => form.setData('title', event.target.value)}
+                                        placeholder="Auto-filled from the uploaded PDF file name"
+                                        disabled={!readiness.isReady || form.processing}
+                                        className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50"
+                                    />
+                                    {form.errors.title ? <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.title}</p> : null}
+                                </div>
 
-                            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                                <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden" onChange={handleFileChange} />
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                                    <p className="font-semibold tracking-wide text-slate-700 uppercase">Active Requirement</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">{requirementLabel}</p>
+                                    <p className="mt-1 text-xs text-slate-500">{deadlineLabel}</p>
+                                </div>
 
-                                <div className="flex flex-wrap items-center justify-between gap-4">
-                                    <div>
-                                        <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-slate-800 uppercase">
-                                            <UploadCloud className="h-3.5 w-3.5 text-emerald-600" />
-                                            Upload Concept PDF
+                                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                                    <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden" onChange={handleFileChange} />
+
+                                    <div className="flex flex-wrap items-center justify-between gap-4">
+                                        <div>
+                                            <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-slate-800 uppercase">
+                                                <UploadCloud className="h-3.5 w-3.5 text-emerald-600" />
+                                                Upload Concept PDF
+                                            </div>
+                                            <p className="mt-1 text-xs text-slate-500">Max file size: 50MB</p>
                                         </div>
-                                        <p className="mt-1 text-xs text-slate-500">Max file size: 50MB</p>
-                                    </div>
 
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={handleChooseFile}
-                                            disabled={!readiness.isReady || form.processing}
-                                            className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
-                                        >
-                                            Choose PDF
-                                        </button>
-                                        {form.data.concept_file !== null ? (
+                                        <div className="flex items-center gap-2">
                                             <button
                                                 type="button"
-                                                onClick={handleClearSelectedFile}
-                                                disabled={form.processing}
-                                                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                                onClick={handleChooseFile}
+                                                disabled={!readiness.isReady || form.processing}
+                                                className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
                                             >
-                                                Clear
+                                                Choose PDF
                                             </button>
-                                        ) : null}
-                                    </div>
-                                </div>
-
-                                <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-                                    {form.data.concept_file !== null ? form.data.concept_file.name : 'No file selected'}
-                                </div>
-
-                                {form.progress ? (
-                                    <div className="mt-3 rounded-xl border border-emerald-200 bg-white p-3">
-                                        <div className="flex items-center justify-between gap-3 text-[11px] font-semibold tracking-wide text-emerald-700 uppercase">
-                                            <span>Uploading file</span>
-                                            <span>{uploadProgress ?? 0}%</span>
-                                        </div>
-                                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-emerald-100">
-                                            <div
-                                                className="h-full rounded-full bg-emerald-600 transition-all duration-200"
-                                                style={{ width: `${Math.max(uploadProgress ?? 8, 8)}%` }}
-                                            />
+                                            {form.data.concept_file !== null ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleClearSelectedFile}
+                                                    disabled={form.processing}
+                                                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                                >
+                                                    Clear
+                                                </button>
+                                            ) : null}
                                         </div>
                                     </div>
-                                ) : null}
 
-                                {form.errors.concept_file ? (
-                                    <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.concept_file}</p>
-                                ) : null}
-                            </div>
+                                    <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                                        {form.data.concept_file !== null ? form.data.concept_file.name : 'No file selected'}
+                                    </div>
 
-                            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-700">
-                                Anti-duplication reminder: verify your title against the Final Approved Titles Repository before submission.
-                            </div>
+                                    {form.progress ? (
+                                        <div className="mt-3 rounded-xl border border-emerald-200 bg-white p-3">
+                                            <div className="flex items-center justify-between gap-3 text-[11px] font-semibold tracking-wide text-emerald-700 uppercase">
+                                                <span>Uploading file</span>
+                                                <span>{uploadProgress ?? 0}%</span>
+                                            </div>
+                                            <div className="mt-2 h-2 overflow-hidden rounded-full bg-emerald-100">
+                                                <div
+                                                    className="h-full rounded-full bg-emerald-600 transition-all duration-200"
+                                                    style={{ width: `${Math.max(uploadProgress ?? 8, 8)}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : null}
 
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                                <p className="text-xs text-slate-500">Deadline: {deadlineLabel}</p>
-                                <button
-                                    type="submit"
-                                    disabled={!canSubmit}
-                                    className="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    {form.processing ? 'Submitting...' : 'Submit Concept'}
-                                </button>
-                            </div>
-                        </form>
-                    </motion.section>
+                                    {form.errors.concept_file ? (
+                                        <p className="mt-1 text-xs font-medium text-rose-600">{form.errors.concept_file}</p>
+                                    ) : null}
+                                </div>
+
+                                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-700">
+                                    Anti-duplication reminder: verify your title against the Final Approved Titles Repository before submission.
+                                </div>
+
+                                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                                    <p className="text-xs text-slate-500">Deadline: {deadlineLabel}</p>
+                                    <button
+                                        type="submit"
+                                        disabled={!canSubmit}
+                                        className="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        {form.processing ? 'Submitting...' : 'Submit Concept'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.section>
+                    ) : (
+                        renderSubmittedConceptsSection(0.04)
+                    )}
 
                     <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
                         <motion.div
@@ -429,78 +508,7 @@ const StudentConcepts = () => {
                     </aside>
                 </div>
 
-                <motion.section
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.17 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md"
-                >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                            <FolderOpen className="h-3.5 w-3.5 text-slate-700" />
-                            <h3 className="text-sm font-semibold text-slate-900">Your Submitted Concepts</h3>
-                        </div>
-                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                            {submissions.length} record{submissions.length === 1 ? '' : 's'}
-                        </span>
-                    </div>
-
-                    <div className="mt-4 overflow-hidden rounded-xl border border-slate-100">
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[640px] text-left text-xs">
-                                <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                                    <tr>
-                                        <th className="px-3 py-3">Title</th>
-                                        <th className="px-3 py-3">Requirement</th>
-                                        <th className="px-3 py-3">Submitted</th>
-                                        <th className="px-3 py-3">Status</th>
-                                        <th className="px-3 py-3">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {submissions.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={5} className="px-3 py-8 text-center text-xs text-slate-500">
-                                                No concept submissions yet.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        submissions.map((submission) => (
-                                            <tr key={submission.id} className="hover:bg-slate-50/80">
-                                                <td className="px-3 py-3 font-semibold text-slate-900">{submission.title}</td>
-                                                <td className="px-3 py-3 text-slate-600">{submission.requirementType}</td>
-                                                <td className="px-3 py-3 text-slate-600">{submission.submittedAt ?? '—'}</td>
-                                                <td className="px-3 py-3">
-                                                    <span
-                                                        className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusPillClass(submission.status)}`}
-                                                    >
-                                                        {submission.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-3 py-3 text-xs text-slate-600">
-                                                    <Link
-                                                        href={submission.viewUrl ?? '#'}
-                                                        preserveScroll
-                                                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                                                            submission.viewUrl
-                                                                ? 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50'
-                                                                : 'pointer-events-none cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                                                        }`}
-                                                    >
-                                                        Open File
-                                                    </Link>
-                                                    {submission.fileSizeLabel ? (
-                                                        <div className="mt-1 text-slate-500">{submission.fileSizeLabel}</div>
-                                                    ) : null}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </motion.section>
+                {isGroupLeader ? renderSubmittedConceptsSection(0.17) : null}
             </div>
 
             <ConceptSubmitConfirmationModal

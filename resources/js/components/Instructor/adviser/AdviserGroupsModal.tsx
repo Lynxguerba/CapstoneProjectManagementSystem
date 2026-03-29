@@ -127,7 +127,7 @@ const AdviserGroupsModal = ({ open, adviserId, adviserName, academicYear, onClos
     const assignedCount = summary?.assigned_count ?? groups.length;
     const programs = summary?.programs ?? [];
     const isAllYears = displayAcademicYear === 'All';
-    const isAvailable = summary?.is_available ?? true;
+    const isAvailable = summary?.is_available ?? false;
 
     return createPortal(
         <div

@@ -27,6 +27,7 @@ type SubmissionDetail = {
 
 type StudentConceptShowProps = {
     group: GroupSummary;
+    isGroupLeader?: boolean;
     studentProgram: 'BSIT' | 'BSIS' | string;
     submission: SubmissionDetail;
     flash?: {
@@ -53,6 +54,7 @@ const StudentConceptSubmissionShow = () => {
     const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = React.useState(false);
 
     const group = props.group;
+    const isGroupLeader = props.isGroupLeader ?? false;
     const studentProgram = props.studentProgram ?? 'BSIT';
     const submission = props.submission;
     const successMessage = props.flash?.success ?? '';
@@ -108,25 +110,27 @@ const StudentConceptSubmissionShow = () => {
                             </div>
                         </div>
 
-                        <div className="flex shrink-0 flex-row items-center justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setIsEditModalOpen(true)}
-                                className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50"
-                            >
-                                <FilePenLine className="h-4 w-4" />
-                                Edit Details
-                            </button>
+                        {isGroupLeader ? (
+                            <div className="flex shrink-0 flex-row items-center justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditModalOpen(true)}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                                >
+                                    <FilePenLine className="h-4 w-4" />
+                                    Edit Details
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setIsDeleteConfirmationOpen(true)}
-                                className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                Delete
-                            </button>
-                        </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsDeleteConfirmationOpen(true)}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
+                                </button>
+                            </div>
+                        ) : null}
                     </div>
 
                     {successMessage !== '' ? (
@@ -263,23 +267,27 @@ const StudentConceptSubmissionShow = () => {
                 </motion.section>
             </div>
 
-            <EditConceptSubmissionModal
-                open={isEditModalOpen}
-                submission={submission}
-                onClose={() => setIsEditModalOpen(false)}
-                onSuccess={() => setIsEditModalOpen(false)}
-            />
+            {isGroupLeader ? (
+                <EditConceptSubmissionModal
+                    open={isEditModalOpen}
+                    submission={submission}
+                    onClose={() => setIsEditModalOpen(false)}
+                    onSuccess={() => setIsEditModalOpen(false)}
+                />
+            ) : null}
 
-            <ConfirmConceptSubmissionActionModal
-                open={isDeleteConfirmationOpen}
-                title="Delete Concept Submission"
-                message="This will permanently remove the selected submission record and delete the uploaded PDF file from storage."
-                confirmLabel="Delete Submission"
-                tone="danger"
-                processing={deleteForm.processing}
-                onClose={() => setIsDeleteConfirmationOpen(false)}
-                onConfirm={handleConfirmDelete}
-            />
+            {isGroupLeader ? (
+                <ConfirmConceptSubmissionActionModal
+                    open={isDeleteConfirmationOpen}
+                    title="Delete Concept Submission"
+                    message="This will permanently remove the selected submission record and delete the uploaded PDF file from storage."
+                    confirmLabel="Delete Submission"
+                    tone="danger"
+                    processing={deleteForm.processing}
+                    onClose={() => setIsDeleteConfirmationOpen(false)}
+                    onConfirm={handleConfirmDelete}
+                />
+            ) : null}
         </StudentLayout>
     );
 };

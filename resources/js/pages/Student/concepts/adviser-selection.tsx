@@ -102,7 +102,7 @@ const AdviserSelection = () => {
                 totalAssigned,
                 totalCapacity,
                 remaining,
-                isAvailable: adviser.is_available !== false,
+                isAvailable: adviser.is_available === true,
             };
         },
         [getAssignedForYear],
@@ -351,13 +351,16 @@ const AdviserSelection = () => {
                             const { status, statusClasses } = getStatusMeta(adviser, selectedAcademicYear);
                             const isAssigned = currentAdviser?.id === adviser.id;
                             const isPendingForAdviser = pendingAdviserId === adviser.id;
-                            const isDisabled = processingAdviserId !== null || !group || hasPendingRequest || isAssigned;
+                            const isClosed = status.toLowerCase() === 'closed';
+                            const isDisabled = processingAdviserId !== null || !group || hasPendingRequest || isAssigned || isClosed;
                             const actionLabel = !group
                                 ? 'No Group'
                                 : isAssigned
                                   ? 'Assigned'
                                   : isPendingForAdviser || hasPendingRequest
                                     ? 'Pending'
+                                    : isClosed
+                                      ? 'Closed'
                                     : isGroupAssigned
                                       ? 'Request Reassign'
                                       : 'Invite Adviser';
@@ -441,13 +444,16 @@ const AdviserSelection = () => {
                                     const { status, statusClasses } = getStatusMeta(adviser, selectedAcademicYear);
                                     const isAssigned = currentAdviser?.id === adviser.id;
                                     const isPendingForAdviser = pendingAdviserId === adviser.id;
-                                    const isDisabled = processingAdviserId !== null || !group || hasPendingRequest || isAssigned;
+                                    const isClosed = status.toLowerCase() === 'closed';
+                                    const isDisabled = processingAdviserId !== null || !group || hasPendingRequest || isAssigned || isClosed;
                                     const actionLabel = !group
                                         ? 'No Group'
                                         : isAssigned
                                           ? 'Assigned'
                                           : isPendingForAdviser || hasPendingRequest
                                             ? 'Pending'
+                                            : isClosed
+                                              ? 'Closed'
                                             : isGroupAssigned
                                               ? 'Request Reassign'
                                               : 'Invite Adviser';

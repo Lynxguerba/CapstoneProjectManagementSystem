@@ -11,6 +11,8 @@ type ProgramSetSummary = {
     school_year: string;
     students_count?: number;
     groups_count?: number;
+    local_groups_count?: number;
+    cross_set_groups_count?: number;
 };
 
 type AcademicYearOption = {
@@ -64,6 +66,8 @@ const InstructorGroups = () => {
         schoolYear: ps.school_year,
         totalStudents: ps.students_count ?? 0,
         totalGroups: ps.groups_count ?? 0,
+        localGroups: ps.local_groups_count ?? ps.groups_count ?? 0,
+        crossSetGroups: ps.cross_set_groups_count ?? 0,
         description:
             ps.program === 'BSIT' ? 'Information Technology Capstone Groups' : ps.program === 'BSIS' ? 'Information System Capstone Groups' : '',
     }));
@@ -332,6 +336,9 @@ const InstructorGroups = () => {
                                         <div className="text-center">
                                             <div className="text-lg font-bold text-slate-800">{set.totalGroups}</div>
                                             <div className="text-[10px] text-slate-600">Groups</div>
+                                            <div className="mt-1 text-[10px] text-slate-500">
+                                                Local {set.localGroups} • Cross-set {set.crossSetGroups}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -374,7 +381,10 @@ const InstructorGroups = () => {
                                         </td>
                                         <td className="px-6 py-3.5 text-slate-600">{set.schoolYear}</td>
                                         <td className="px-6 py-3.5 font-semibold text-slate-800">{set.totalStudents}</td>
-                                        <td className="px-6 py-3.5 font-semibold text-slate-800">{set.totalGroups}</td>
+                                        <td className="px-6 py-3.5">
+                                            <div className="font-semibold text-slate-800">{set.totalGroups}</div>
+                                            <div className="text-[10px] text-slate-500">Local {set.localGroups} • Cross-set {set.crossSetGroups}</div>
+                                        </td>
                                         <td className="px-6 py-3.5 text-right">
                                             <Link
                                                 href={`/instructor/groups/${set.id}/manage`}

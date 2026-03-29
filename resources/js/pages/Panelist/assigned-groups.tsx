@@ -1,234 +1,657 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Filter, Search, Users } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import { Calendar, ChevronRight, GraduationCap, LayoutGrid, List, Search, Settings, SlidersHorizontal, User, Users } from 'lucide-react';
+import React from 'react';
 import PanelLayout from './_layout';
 
-type DefenseType = 'Outline' | 'Pre-Deployment' | 'Final';
+type AcademicYearOption = {
+    id: number;
+    label: string;
+    is_current: boolean;
+};
 
-type EvalStatus = 'Scheduled' | 'Pending' | 'Evaluated';
+type PanelRole = 'chairman' | 'member';
 
-type GroupRow = {
-    id: string;
-    groupName: string;
-    projectTitle: string;
-    members: Array<{ name: string; role: string }>;
-    adviser: string;
-    defenseType: DefenseType;
-    defenseDate: string;
-    evaluationStatus: EvalStatus;
-    section: string;
+type AssignedPanelist = {
+    id?: number | null;
+    name?: string | null;
+    email?: string | null;
+    slot?: number;
+    role?: PanelRole | null;
+};
+
+type AssignedGroupRow = {
+    id: number;
+    name: string;
+    program_set_id?: number | null;
+    program_set_name?: string | null;
+    program?: string | null;
+    school_year?: string | null;
+    leader_name?: string | null;
+    members_count?: number;
+    panel_role?: PanelRole | null;
+    panel_slot?: number | null;
+    panelists?: AssignedPanelist[];
+};
+
+type UtilityProgram = {
+    program: string;
+    max_groups: number;
+    assigned_count: number;
+};
+
+type PanelistUtilitiesSummary = {
+    is_available?: boolean;
+    programs?: UtilityProgram[];
+};
+
+type ProgramSetOption = {
+    value: string;
+    label: string;
+    academicYear: string | null;
+};
+
+type PanelistAssignedGroupsProps = {
+    academicYears?: AcademicYearOption[];
+    assignedGroups?: AssignedGroupRow[];
+    selectedAcademicYear?: string | null;
+    utilities?: PanelistUtilitiesSummary;
+};
+
+const formatGroupName = (name: string): string => {
+    const trimmed = name.trim();
+    if (trimmed === '') {
+        return 'Group';
+    }
+
+    return trimmed.toLowerCase().endsWith(' group') ? trimmed : `${trimmed} Group`;
+};
+
+const getProgramSetKey = (group: AssignedGroupRow): string => {
+    if (group.program_set_id !== null && group.program_set_id !== undefined) {
+        return `id:${group.program_set_id}`;
+    }
+
+    const name = group.program_set_name ?? '';
+    const year = group.school_year ?? '';
+
+    return `name:${name}::${year}`;
+};
+
+const formatPanelRole = (role?: PanelRole | null): string => {
+    if (role === 'chairman') {
+        return 'Panel Chairman';
+    }
+
+    return 'Panel Member';
+};
+
+const roleBadgeClasses = (role?: PanelRole | null): string => {
+    if (role === 'chairman') {
+        return 'bg-indigo-100 text-indigo-700';
+    }
+
+    return 'bg-slate-100 text-slate-600';
 };
 
 const PanelistAssignedGroups = () => {
-    const [query, setQuery] = useState('');
-    const [defenseType, setDefenseType] = useState<'all' | DefenseType>('all');
-    const [status, setStatus] = useState<'all' | EvalStatus>('all');
+    const { props } = usePage<PanelistAssignedGroupsProps>();
+    const academicYears = React.useMemo(() => props.academicYears ?? [], [props.academicYears]);
+    const assignedGroups = React.useMemo(() => props.assignedGroups ?? [], [props.assignedGroups]);
+    const selectedAcademicYearProp = props.selectedAcademicYear ?? null;
+    const utilities = props.utilities;
+    const utilityPrograms = React.useMemo(() => utilities?.programs ?? [], [utilities?.programs]);
+    const isAvailable = utilities?.is_available === true;
 
-    const groups: GroupRow[] = [
-        {
-            id: 'g1',
-            groupName: 'Group Alpha',
-            projectTitle: 'Smart Attendance via QR',
-            members: [
-                { name: 'Juan D.', role: 'PM/Analyst' },
-                { name: 'Maria S.', role: 'Programmer' },
-                { name: 'Carlo T.', role: 'Documentarian' },
-            ],
-            adviser: 'Prof. L. Cruz',
-            defenseType: 'Outline',
-            defenseDate: '2026-03-21 • 9:00 AM',
-            evaluationStatus: 'Pending',
-            section: 'BSIT 4A',
-        },
-        {
-            id: 'g2',
-            groupName: 'Group Beta',
-            projectTitle: 'Clinic Queue Management',
-            members: [
-                { name: 'Mark R.', role: 'PM/Analyst' },
-                { name: 'Lea C.', role: 'Programmer' },
-                { name: 'John K.', role: 'Documentarian' },
-            ],
-            adviser: 'Prof. A. Reyes',
-            defenseType: 'Pre-Deployment',
-            defenseDate: '2026-04-03 • 10:30 AM',
-            evaluationStatus: 'Scheduled',
-            section: 'BSIT 4B',
-        },
-        {
-            id: 'g3',
-            groupName: 'Group Delta',
-            projectTitle: 'Library Asset Tracking',
-            members: [
-                { name: 'Tom B.', role: 'PM/Analyst' },
-                { name: 'Amy J.', role: 'Programmer' },
-                { name: 'Ken S.', role: 'Documentarian' },
-            ],
-            adviser: 'Prof. J. Ramos',
-            defenseType: 'Final',
-            defenseDate: '2026-03-28 • 1:00 PM',
-            evaluationStatus: 'Evaluated',
-            section: 'BSIT 4A',
-        },
-    ];
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [viewMode, setViewMode] = React.useState<'card' | 'list'>('card');
+    const [statusFilter, setStatusFilter] = React.useState<'all' | 'chairman' | 'member'>('all');
+    const [selectedProgramSet, setSelectedProgramSet] = React.useState('All');
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const itemsPerPage = 6;
 
-    const filtered = useMemo(() => {
-        const q = query.trim().toLowerCase();
+    const currentAcademicYear = academicYears.find((year) => year.is_current)?.label ?? academicYears[0]?.label ?? 'All';
+    const resolvedAcademicYear = React.useMemo(() => {
+        if (selectedAcademicYearProp === 'All') {
+            return 'All';
+        }
 
-        return groups.filter((g) => {
-            const matchesQuery =
-                !q ||
-                g.groupName.toLowerCase().includes(q) ||
-                g.projectTitle.toLowerCase().includes(q) ||
-                g.members.some((m) => m.name.toLowerCase().includes(q)) ||
-                g.adviser.toLowerCase().includes(q);
+        if (typeof selectedAcademicYearProp === 'string' && selectedAcademicYearProp !== '') {
+            const exists = academicYears.some((year) => year.label === selectedAcademicYearProp);
+            if (exists) {
+                return selectedAcademicYearProp;
+            }
+        }
 
-            const matchesDefenseType = defenseType === 'all' || g.defenseType === defenseType;
-            const matchesStatus = status === 'all' || g.evaluationStatus === status;
+        return currentAcademicYear || 'All';
+    }, [selectedAcademicYearProp, academicYears, currentAcademicYear]);
 
-            return matchesQuery && matchesDefenseType && matchesStatus;
+    const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(resolvedAcademicYear);
+
+    React.useEffect(() => {
+        setSelectedAcademicYear(resolvedAcademicYear);
+    }, [resolvedAcademicYear]);
+
+    const academicYearOptions = React.useMemo(() => {
+        const years = academicYears.map((year) => year.label);
+        return ['All', ...years];
+    }, [academicYears]);
+
+    const programSetOptions = React.useMemo((): ProgramSetOption[] => {
+        const options = new Map<string, ProgramSetOption>();
+
+        assignedGroups.forEach((group) => {
+            const label = (group.program_set_name ?? '').trim();
+
+            if (!label) {
+                return;
+            }
+
+            const value = getProgramSetKey(group);
+            if (!options.has(value)) {
+                options.set(value, {
+                    value,
+                    label,
+                    academicYear: group.school_year ?? null,
+                });
+            }
         });
-    }, [groups, query, defenseType, status]);
 
-    const statusPill = (s: EvalStatus): string => {
-        if (s === 'Evaluated') {
-            return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        const allOptions = Array.from(options.values());
+        const filteredOptions =
+            selectedAcademicYear === 'All' ? allOptions : allOptions.filter((option) => option.academicYear === selectedAcademicYear);
+
+        return filteredOptions.sort((first, second) => first.label.localeCompare(second.label));
+    }, [assignedGroups, selectedAcademicYear]);
+
+    React.useEffect(() => {
+        if (selectedProgramSet === 'All') {
+            return;
         }
 
-        if (s === 'Pending') {
-            return 'bg-amber-50 text-amber-700 border-amber-200';
+        const isStillAvailable = programSetOptions.some((option) => option.value === selectedProgramSet);
+        if (!isStillAvailable) {
+            setSelectedProgramSet('All');
         }
+    }, [programSetOptions, selectedProgramSet]);
 
-        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    };
+    const assignedByProgramYear = React.useMemo(() => {
+        const tracker = new Map<string, Map<string, number>>();
+
+        assignedGroups.forEach((group) => {
+            const program = group.program ?? 'Unspecified';
+            const year = group.school_year ?? 'Unspecified';
+            const yearMap = tracker.get(program) ?? new Map<string, number>();
+            yearMap.set(year, (yearMap.get(year) ?? 0) + 1);
+            tracker.set(program, yearMap);
+        });
+
+        return tracker;
+    }, [assignedGroups]);
+
+    const utilityMap = React.useMemo(() => {
+        return new Map(utilityPrograms.map((utility) => [utility.program, utility]));
+    }, [utilityPrograms]);
+
+    const selectedYearPrograms = React.useMemo(() => {
+        const programs = new Set([
+            ...utilityPrograms.map((utility) => utility.program),
+            ...assignedGroups.map((group) => group.program).filter((program): program is string => typeof program === 'string' && program.trim() !== ''),
+        ]);
+
+        return Array.from(programs)
+            .sort((first, second) => first.localeCompare(second))
+            .map((program) => {
+                const maxGroups = utilityMap.get(program)?.max_groups ?? 5;
+                const assignedCount =
+                    selectedAcademicYear === 'All'
+                        ? assignedGroups.filter((group) => group.program === program).length
+                        : assignedByProgramYear.get(program)?.get(selectedAcademicYear) ?? 0;
+
+                return {
+                    program,
+                    max_groups: maxGroups,
+                    assigned_count: assignedCount,
+                };
+            });
+    }, [assignedByProgramYear, assignedGroups, selectedAcademicYear, utilityMap, utilityPrograms]);
+
+    const totalAssigned = selectedAcademicYear === 'All' ? assignedGroups.length : assignedGroups.filter((group) => group.school_year === selectedAcademicYear).length;
+    const totalCapacity = selectedYearPrograms.reduce((total, utility) => total + (utility.max_groups ?? 0), 0);
+
+    const getAssignedForProgramYear = React.useCallback(
+        (program?: string | null, year?: string | null): number => {
+            const resolvedProgram = program ?? 'Unspecified';
+            const resolvedYear = year ?? 'Unspecified';
+
+            return assignedByProgramYear.get(resolvedProgram)?.get(resolvedYear) ?? 0;
+        },
+        [assignedByProgramYear],
+    );
+
+    const getMaxForProgram = React.useCallback(
+        (program?: string | null): number => {
+            if (!program) {
+                return 5;
+            }
+
+            return utilityMap.get(program)?.max_groups ?? 5;
+        },
+        [utilityMap],
+    );
+
+    const filteredGroups = React.useMemo(() => {
+        const query = searchTerm.trim().toLowerCase();
+
+        return assignedGroups.filter((group) => {
+            if (selectedAcademicYear !== 'All' && group.school_year !== selectedAcademicYear) {
+                return false;
+            }
+
+            if (selectedProgramSet !== 'All' && getProgramSetKey(group) !== selectedProgramSet) {
+                return false;
+            }
+
+            if (statusFilter === 'chairman' && group.panel_role !== 'chairman') {
+                return false;
+            }
+
+            if (statusFilter === 'member' && (group.panel_role ?? 'member') !== 'member') {
+                return false;
+            }
+
+            if (!query) {
+                return true;
+            }
+
+            const haystack = [group.name, group.leader_name, group.program_set_name, group.program].filter(Boolean).join(' ').toLowerCase();
+
+            return haystack.includes(query);
+        });
+    }, [assignedGroups, searchTerm, selectedAcademicYear, selectedProgramSet, statusFilter]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredGroups.length / itemsPerPage));
+
+    React.useEffect(() => {
+        setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
+    }, [totalPages]);
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, selectedAcademicYear, selectedProgramSet, statusFilter]);
+
+    const paginatedGroups = React.useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredGroups.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredGroups, currentPage]);
+
+    const pages = React.useMemo(() => {
+        const maxVisiblePages = 5;
+        const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - (maxVisiblePages - 1)));
+        const endPage = Math.min(totalPages, startPage + (maxVisiblePages - 1));
+
+        return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+    }, [currentPage, totalPages]);
 
     return (
-        <PanelLayout title="Assigned Groups" subtitle="Groups assigned to you for evaluation (UI only)">
-            <div className="space-y-6">
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-                >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="flex items-center gap-2">
-                            <Users size={18} className="text-slate-700" />
+        <PanelLayout title="Assigned Groups" subtitle="Manage your assigned groups and program capacities">
+            <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
+                <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+                    <Link href="/panelist/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <span className="font-semibold text-slate-800" aria-current="page">
+                        Assigned Groups
+                    </span>
+                </nav>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="flex items-start justify-between gap-4">
                             <div>
-                                <div className="text-lg font-semibold text-slate-900">Group Directory</div>
-                                <div className="text-sm text-slate-500">Search, filter, and open actions.</div>
+                                <p className="text-xs font-semibold tracking-widest text-slate-500 uppercase">Panelist Capacity</p>
+                                <h2 className="text-lg font-semibold text-slate-900">Program Capacity</h2>
+                                <p className="text-xs text-slate-500">
+                                    {selectedAcademicYear === 'All' ? 'All academic years' : selectedAcademicYear}
+                                </p>
                             </div>
+                            <span
+                                className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+                                    isAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                                }`}
+                            >
+                                {isAvailable ? 'Open for assignments' : 'Closed for assignments'}
+                            </span>
                         </div>
-
-                        <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
-                            <div className="relative w-full sm:w-72">
-                                <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500" />
-                                <input
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    placeholder="Search group, title, member..."
-                                    className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                        <div className="mt-4 space-y-2 text-xs text-slate-600">
+                            {selectedYearPrograms.length > 0 ? (
+                                selectedYearPrograms.map((program) => (
+                                    <div key={program.program} className="flex items-center justify-between">
+                                        <span>{program.program}</span>
+                                        <span className="font-semibold text-slate-800">
+                                            {program.assigned_count} / {program.max_groups}
+                                        </span>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-[11px] text-slate-500">No program utilities configured yet.</p>
+                            )}
+                            <div className="flex items-center justify-between pt-2 text-xs text-slate-600">
+                                <span>Total assigned groups</span>
+                                <span className="font-semibold text-slate-800">
+                                    {totalAssigned}
+                                    {totalCapacity > 0 ? ` / ${totalCapacity}` : ''}
+                                </span>
+                            </div>
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                    className="h-full rounded-full bg-emerald-500"
+                                    style={{ width: `${totalCapacity > 0 ? Math.min(100, Math.round((totalAssigned / totalCapacity) * 100)) : 0}%` }}
                                 />
-                            </div>
-
-                            <div className="relative w-full sm:w-52">
-                                <Filter size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500" />
-                                <select
-                                    value={defenseType}
-                                    onChange={(e) => setDefenseType(e.target.value as typeof defenseType)}
-                                    className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                                >
-                                    <option value="all">All defense types</option>
-                                    <option value="Outline">Outline</option>
-                                    <option value="Pre-Deployment">Pre-Deployment</option>
-                                    <option value="Final">Final</option>
-                                </select>
-                            </div>
-
-                            <div className="relative w-full sm:w-40">
-                                <Filter size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500" />
-                                <select
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value as typeof status)}
-                                    className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                                >
-                                    <option value="all">All status</option>
-                                    <option value="Scheduled">Scheduled</option>
-                                    <option value="Pending">Pending</option>
-                                    <option value="Evaluated">Evaluated</option>
-                                </select>
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-6 overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-200 text-slate-600">
-                                    <th className="py-3 text-left font-semibold">Group</th>
-                                    <th className="py-3 text-left font-semibold">Project</th>
-                                    <th className="py-3 text-left font-semibold">Adviser</th>
-                                    <th className="py-3 text-left font-semibold">Defense</th>
-                                    <th className="py-3 text-left font-semibold">Date</th>
-                                    <th className="py-3 text-left font-semibold">Status</th>
-                                    <th className="py-3 text-right font-semibold">Actions</th>
+                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-semibold text-slate-800">Assigned Groups Overview</p>
+                                <p className="text-xs text-slate-500">Filtered by academic year, program set, and role</p>
+                            </div>
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                {filteredGroups.length} shown
+                            </span>
+                        </div>
+                        <div className="mt-4 space-y-2 text-xs text-slate-600">
+                            <div className="flex items-center justify-between">
+                                <span>Chairman assignments</span>
+                                <span className="font-semibold text-slate-800">
+                                    {filteredGroups.filter((group) => group.panel_role === 'chairman').length}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span>Member assignments</span>
+                                <span className="font-semibold text-slate-800">
+                                    {filteredGroups.filter((group) => (group.panel_role ?? 'member') === 'member').length}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative">
+                            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search group, leader, or program set..."
+                                value={searchTerm}
+                                onChange={(event) => setSearchTerm(event.target.value)}
+                                className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm transition-all outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:w-64"
+                            />
+                        </div>
+                        <div className="relative">
+                            <Calendar className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                            <select
+                                value={selectedAcademicYear}
+                                onChange={(event) => setSelectedAcademicYear(event.target.value)}
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                            >
+                                {academicYearOptions.map((year) => {
+                                    const isCurrent = academicYears.find((item) => item.label === year)?.is_current;
+
+                                    return (
+                                        <option key={year} value={year}>
+                                            {year === 'All' ? 'All Academic Years' : `${year}${isCurrent ? ' (current)' : ''}`}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                        </div>
+                        <div className="relative">
+                            <GraduationCap className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                            <select
+                                value={selectedProgramSet}
+                                onChange={(event) => setSelectedProgramSet(event.target.value)}
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                            >
+                                <option value="All">All Program Sets</option>
+                                {programSetOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {selectedAcademicYear === 'All' && option.academicYear
+                                            ? `${option.label} (${option.academicYear})`
+                                            : option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="relative">
+                            <SlidersHorizontal className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                            <select
+                                value={statusFilter}
+                                onChange={(event) => setStatusFilter(event.target.value as 'all' | 'chairman' | 'member')}
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                            >
+                                <option value="all">All Roles</option>
+                                <option value="chairman">Panel Chairman</option>
+                                <option value="member">Panel Member</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <Link
+                            href="/panelist/utilities"
+                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                        >
+                            <Settings className="h-3.5 w-3.5" />
+                            Capacity Settings
+                        </Link>
+                        <div className="flex items-center rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('card')}
+                                className={`flex items-center justify-center rounded-md px-2 py-1.5 text-xs font-medium transition-all ${
+                                    viewMode === 'card' ? 'bg-emerald-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+                                }`}
+                            >
+                                <LayoutGrid className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('list')}
+                                className={`flex items-center justify-center rounded-md px-2 py-1.5 text-xs font-medium transition-all ${
+                                    viewMode === 'list' ? 'bg-emerald-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+                                }`}
+                            >
+                                <List className="h-3.5 w-3.5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {viewMode === 'card' ? (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.15 }}
+                        className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
+                    >
+                        {paginatedGroups.map((group, index) => {
+                            const groupYear = group.school_year ?? 'Unspecified';
+                            const loadForYear = getAssignedForProgramYear(group.program, groupYear);
+                            const maxForProgram = getMaxForProgram(group.program);
+
+                            return (
+                                <motion.div
+                                    key={group.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.07 * index }}
+                                    className="group flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+                                >
+                                    <div className="flex-1 p-5">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-slate-800 transition-colors group-hover:text-emerald-600">
+                                                    {formatGroupName(group.name)}
+                                                </h3>
+                                                <p className="mt-1 text-xs text-slate-500">{group.program_set_name ?? 'Program set'}</p>
+                                            </div>
+                                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleBadgeClasses(group.panel_role)}`}>
+                                                {formatPanelRole(group.panel_role)}
+                                            </span>
+                                        </div>
+
+                                        <div className="mt-3 space-y-1 text-xs text-slate-600">
+                                            <p>Leader: {group.leader_name ?? '—'}</p>
+                                            <p>Members: {group.members_count ?? 0}</p>
+                                            <p>A.Y: {groupYear}</p>
+                                            <p className="font-semibold text-slate-700">
+                                                Program Capacity: {loadForYear} / {maxForProgram}
+                                            </p>
+                                        </div>
+
+                                        <div className="mt-4 flex gap-2">
+                                            <Link
+                                                href={`/panelist/group-details?group=${group.id}`}
+                                                className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                                            >
+                                                <Users className="h-3 w-3" />
+                                                View
+                                            </Link>
+                                            <Link
+                                                href="/panelist/documents"
+                                                className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                                            >
+                                                <User className="h-3 w-3" />
+                                                Review Docs
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </motion.div>
+                ) : (
+                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                        <table className="w-full text-left text-xs">
+                            <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                <tr>
+                                    <th className="px-6 py-4">Group</th>
+                                    <th className="px-6 py-4">Leader</th>
+                                    <th className="px-6 py-4">Program Capacity</th>
+                                    <th className="px-6 py-4">Role</th>
+                                    <th className="px-6 py-4">A.Y</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filtered.map((g) => (
-                                    <tr key={g.id} className="hover:bg-slate-50">
-                                        <td className="py-3">
-                                            <div className="font-semibold text-slate-900">{g.groupName}</div>
-                                            <div className="text-xs text-slate-500">{g.section}</div>
-                                        </td>
-                                        <td className="py-3 text-slate-700">{g.projectTitle}</td>
-                                        <td className="py-3 text-slate-700">{g.adviser}</td>
-                                        <td className="py-3 text-slate-700">{g.defenseType}</td>
-                                        <td className="py-3 whitespace-nowrap text-slate-700">{g.defenseDate}</td>
-                                        <td className="py-3">
-                                            <span
-                                                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusPill(g.evaluationStatus)}`}
-                                            >
-                                                {g.evaluationStatus}
-                                            </span>
-                                        </td>
-                                        <td className="py-3">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Link
-                                                    href={`/panelist/group-details?group=${encodeURIComponent(g.id)}`}
-                                                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50"
-                                                >
-                                                    View details
-                                                </Link>
-                                                <a
-                                                    href="/panelist/documents"
-                                                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50"
-                                                >
-                                                    Review docs
-                                                </a>
-                                                <a
-                                                    href="/panelist/evaluation"
-                                                    className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-700 px-3 py-2 text-xs font-semibold text-white hover:shadow"
-                                                >
-                                                    Evaluate
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {paginatedGroups.map((group) => {
+                                    const groupYear = group.school_year ?? 'Unspecified';
+                                    const loadForYear = getAssignedForProgramYear(group.program, groupYear);
+                                    const maxForProgram = getMaxForProgram(group.program);
 
-                                {filtered.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={7} className="py-10 text-center text-slate-600">
-                                            No groups match your filters.
-                                        </td>
-                                    </tr>
-                                ) : null}
+                                    return (
+                                        <tr key={group.id} className="transition-colors hover:bg-emerald-50/30">
+                                            <td className="px-6 py-3.5">
+                                                <div>
+                                                    <div className="font-semibold text-slate-800">{formatGroupName(group.name)}</div>
+                                                    <div className="text-[10px] text-slate-500">{group.program_set_name ?? 'Program set'}</div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-3.5 text-slate-600">{group.leader_name ?? '—'}</td>
+                                            <td className="px-6 py-3.5 font-semibold text-slate-700">
+                                                {loadForYear} / {maxForProgram}
+                                            </td>
+                                            <td className="px-6 py-3.5">
+                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleBadgeClasses(group.panel_role)}`}>
+                                                    {formatPanelRole(group.panel_role)}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-3.5 text-slate-600">{groupYear}</td>
+                                            <td className="px-6 py-3.5 text-right">
+                                                <div className="inline-flex gap-2">
+                                                    <Link
+                                                        href={`/panelist/group-details?group=${group.id}`}
+                                                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                                                    >
+                                                        <Users className="h-3 w-3" />
+                                                        View
+                                                    </Link>
+                                                    <Link
+                                                        href="/panelist/documents"
+                                                        className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                                                    >
+                                                        Review
+                                                    </Link>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
-                </motion.section>
-            </div>
+                )}
+
+                {filteredGroups.length === 0 ? (
+                    <div className="rounded-xl border border-slate-200 bg-white py-12 text-center text-xs text-slate-500">
+                        No assigned groups match your filters.
+                    </div>
+                ) : null}
+
+                {filteredGroups.length > 0 && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-xs font-medium text-slate-500">
+                        Showing {paginatedGroups.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                        {Math.min(currentPage * itemsPerPage, filteredGroups.length)} of {filteredGroups.length} groups
+                    </motion.div>
+                )}
+
+                {filteredGroups.length > 0 && (
+                    <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
+                        <p className="text-xs font-medium text-slate-500">
+                            Page <span className="text-slate-900">{currentPage}</span> of <span className="text-slate-900">{totalPages}</span>
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                                disabled={currentPage === 1}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                            >
+                                <ChevronRight size={16} className="rotate-180" />
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                                {pages.map((page) => (
+                                    <button
+                                        key={page}
+                                        type="button"
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`h-8 min-w-[32px] rounded-lg text-xs font-bold transition-all ${
+                                            page === currentPage ? 'bg-emerald-700 text-white shadow-md shadow-emerald-700/20' : 'text-slate-600 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                                disabled={currentPage === totalPages}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </motion.section>
         </PanelLayout>
     );
 };

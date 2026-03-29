@@ -220,6 +220,7 @@ const AdviserAssignmentGroups = ({
             };
         });
     }, [assignedByProgram, assignedByProgramYear, programUtilities.utilities, selectedAcademicYear]);
+    const adviserIsAvailable = adviser.is_available === true;
 
     const getMaxForProgram = React.useCallback(
         (program?: string | null): number => {
@@ -420,10 +421,10 @@ const AdviserAssignmentGroups = ({
                             </div>
                             <span
                                 className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
-                                    adviser.is_available === false ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
+                                    adviserIsAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
                                 }`}
                             >
-                                {adviser.is_available === false ? 'Closed for requests' : 'Open for requests'}
+                                {adviserIsAvailable ? 'Open for requests' : 'Closed for requests'}
                             </span>
                         </div>
                         <div className="mt-4 space-y-2 text-xs text-slate-600">
@@ -590,7 +591,7 @@ const AdviserAssignmentGroups = ({
                                 const isAssignedToAdviser = group.adviser_id === adviser.id;
                                 const isPending = Boolean(group.pending_request_id);
                                 const isAtLimit = loadForYear >= maxForProgram;
-                                const isClosed = adviser.is_available === false;
+                                const isClosed = !adviserIsAvailable;
                                 const isDisabled = assigningGroupId !== null || isClosed || (isAtLimit && !isAssignedToAdviser) || isPending;
                                 const isReassign = !isAssignedToAdviser && group.adviser_id;
                                 const statusLabel = isPending
@@ -691,7 +692,7 @@ const AdviserAssignmentGroups = ({
                                         const isAssignedToAdviser = group.adviser_id === adviser.id;
                                         const isPending = Boolean(group.pending_request_id);
                                         const isAtLimit = loadForYear >= maxForProgram;
-                                        const isClosed = adviser.is_available === false;
+                                        const isClosed = !adviserIsAvailable;
                                         const isDisabled = assigningGroupId !== null || isClosed || (isAtLimit && !isAssignedToAdviser) || isPending;
                                         const isReassign = !isAssignedToAdviser && group.adviser_id;
                                         const actionLabel = isClosed

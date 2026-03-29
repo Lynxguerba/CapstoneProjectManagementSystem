@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Calendar, ChevronRight, LayoutGrid, List, Search, UserCheck, Users } from 'lucide-react';
+import { Calendar, ChevronRight, LayoutGrid, List, Search, SlidersHorizontal, UserCheck, Users } from 'lucide-react';
 import React from 'react';
 import PanelistGroupsModal from '../../components/Instructor/panelist/PanelistGroupsModal';
 import instructorRoutes from '../../routes/instructor';
@@ -18,11 +18,20 @@ type PanelistWorkload = {
     groups_count: number;
 };
 
+type PanelistProgramSummary = {
+    program: string;
+    max_groups: number;
+    assigned_count: number;
+    assigned_by_year?: Record<string, number>;
+};
+
 type PanelistRow = {
     id: number;
     name: string;
     email: string;
     workloads?: PanelistWorkload[];
+    programs?: PanelistProgramSummary[];
+    is_available?: boolean;
 };
 
 type PanelistAssignmentPageProps = {
@@ -32,40 +41,128 @@ type PanelistAssignmentPageProps = {
 
 const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: PanelistAssignmentPageProps) => {
     const [searchTerm, setSearchTerm] = React.useState('');
-    const currentAcademicYear = academicYears.find((year) => year.is_current)?.label ?? academicYears[0]?.label ?? 'All';
+    const currentAcademicYearLabel = academicYears.find((year) => year.is_current)?.label ?? null;
+    const currentAcademicYear = currentAcademicYearLabel ?? academicYears[0]?.label ?? 'All';
     const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(currentAcademicYear || 'All');
     const [viewMode, setViewMode] = React.useState<'card' | 'list'>('card');
     const [selectedPanelist, setSelectedPanelist] = React.useState<PanelistRow | null>(null);
     const [isGroupsModalOpen, setIsGroupsModalOpen] = React.useState(false);
+    const [statusFilter, setStatusFilter] = React.useState<'all' | 'available' | 'partial' | 'full' | 'closed'>('all');
     const [currentPage, setCurrentPage] = React.useState(1);
-    const itemsPerPage = 10;
+    const itemsPerPage = 9;
 
     const academicYearOptions = React.useMemo(() => {
         const years = academicYears.map((year) => year.label);
         return ['All', ...years];
     }, [academicYears]);
 
-    const getLoadForYear = React.useCallback((panelist: PanelistRow, academicYear: string): number => {
+    const getAssignedForYear = React.useCallback((panelist: PanelistRow, yearLabel?: string | null): number => {
         const workloads = panelist.workloads ?? [];
 
-        if (academicYear === 'All') {
-            return workloads.reduce((total, item) => total + (item.groups_count ?? 0), 0);
+        if (yearLabel && yearLabel !== 'All') {
+            return workloads.find((workload) => workload.academic_year === yearLabel)?.groups_count ?? 0;
         }
 
-        return workloads.find((item) => item.academic_year === academicYear)?.groups_count ?? 0;
+        if (workloads.length > 0) {
+            return workloads.reduce((total, workload) => total + (workload.groups_count ?? 0), 0);
+        }
+
+        return (panelist.programs ?? []).reduce((total, program) => total + (program.assigned_count ?? 0), 0);
     }, []);
+
+    const getProgramTotals = React.useCallback(
+        (panelist: PanelistRow, yearLabel?: string | null) => {
+            const programs = panelist.programs ?? [];
+            const totalAssigned = getAssignedForYear(panelist, yearLabel);
+            const totalCapacity = programs.reduce((total, program) => total + (program.max_groups ?? 0), 0);
+            const remaining = Math.max(0, totalCapacity - totalAssigned);
+
+            return {
+                programs,
+                totalAssigned,
+                totalCapacity,
+                remaining,
+                isAvailable: panelist.is_available === true,
+            };
+        },
+        [getAssignedForYear],
+    );
+
+    const getTotalAssignedGroups = React.useCallback(
+        (panelist: PanelistRow, yearLabel?: string | null): number => {
+            const { totalAssigned } = getProgramTotals(panelist, yearLabel);
+            return totalAssigned;
+        },
+        [getProgramTotals],
+    );
+
+    const getStatusMeta = React.useCallback(
+        (panelist: PanelistRow, yearLabel?: string | null) => {
+            const { remaining, totalCapacity, isAvailable } = getProgramTotals(panelist, yearLabel);
+            const hasCapacity = totalCapacity > 0;
+
+            if (!isAvailable) {
+                return { status: 'Closed', statusClasses: 'bg-rose-100 text-rose-700' };
+            }
+
+            if (hasCapacity && remaining <= 0) {
+                return { status: 'Full', statusClasses: 'bg-rose-100 text-rose-700' };
+            }
+
+            if (hasCapacity && remaining <= 1) {
+                return { status: 'Partial', statusClasses: 'bg-amber-100 text-amber-700' };
+            }
+
+            return { status: 'Available', statusClasses: 'bg-emerald-100 text-emerald-700' };
+        },
+        [getProgramTotals],
+    );
+
+    const getProgramAssignedCount = React.useCallback(
+        (program: PanelistProgramSummary): number => {
+            if (selectedAcademicYear !== 'All') {
+                const yearCount = program.assigned_by_year?.[selectedAcademicYear];
+                return typeof yearCount === 'number' ? yearCount : 0;
+            }
+
+            return program.assigned_count ?? 0;
+        },
+        [selectedAcademicYear],
+    );
+
+    const sortedPanelists = React.useMemo(() => {
+        return [...panelists].sort((first, second) => {
+            const workloadDelta =
+                getTotalAssignedGroups(second, selectedAcademicYear) - getTotalAssignedGroups(first, selectedAcademicYear);
+
+            if (workloadDelta !== 0) {
+                return workloadDelta;
+            }
+
+            return first.name.localeCompare(second.name);
+        });
+    }, [panelists, getTotalAssignedGroups, selectedAcademicYear]);
 
     const filteredPanelists = React.useMemo(() => {
         const query = searchTerm.trim().toLowerCase();
 
-        return panelists.filter((panelist) => {
-            if (!query) {
+        return sortedPanelists.filter((panelist) => {
+            const matchesSearch = !query || panelist.name.toLowerCase().includes(query) || panelist.email.toLowerCase().includes(query);
+
+            if (!matchesSearch) {
+                return false;
+            }
+
+            if (statusFilter === 'all') {
                 return true;
             }
 
-            return panelist.name.toLowerCase().includes(query) || panelist.email.toLowerCase().includes(query);
+            const { status } = getStatusMeta(panelist, selectedAcademicYear);
+            const normalizedStatus = status.toLowerCase();
+
+            return normalizedStatus === statusFilter;
         });
-    }, [panelists, searchTerm]);
+    }, [sortedPanelists, searchTerm, statusFilter, getStatusMeta, selectedAcademicYear]);
 
     const totalPages = Math.max(1, Math.ceil(filteredPanelists.length / itemsPerPage));
 
@@ -88,10 +185,10 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
 
     React.useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, selectedAcademicYear]);
+    }, [searchTerm, selectedAcademicYear, statusFilter]);
 
     return (
-        <InstructorLayout title="Panelist Assignment" subtitle="Assign and manage panelist groups by academic year">
+        <InstructorLayout title="Panelist Assignment" subtitle="Assign and manage panelist workloads by program">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
                     <Link href={instructorRoutes.dashboard.url()} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
@@ -133,6 +230,20 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
                                 })}
                             </select>
                         </div>
+                        <div className="relative">
+                            <SlidersHorizontal className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                            <select
+                                value={statusFilter}
+                                onChange={(event) => setStatusFilter(event.target.value as 'all' | 'available' | 'partial' | 'full' | 'closed')}
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm transition outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="available">Available</option>
+                                <option value="partial">Partial</option>
+                                <option value="full">Full</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div className="flex items-center rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
@@ -160,7 +271,9 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
                 {viewMode === 'card' ? (
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         {paginatedPanelists.map((panelist) => {
-                            const load = getLoadForYear(panelist, selectedAcademicYear);
+                            const { programs, totalAssigned, totalCapacity } = getProgramTotals(panelist, selectedAcademicYear);
+                            const progress = totalCapacity > 0 ? Math.min(100, Math.round((totalAssigned / totalCapacity) * 100)) : 0;
+                            const { status, statusClasses } = getStatusMeta(panelist, selectedAcademicYear);
                             const assignHref = panelistAssignment.manage.url(
                                 { panelist: panelist.id },
                                 selectedAcademicYear === 'All' ? undefined : { query: { academic_year: selectedAcademicYear } },
@@ -179,16 +292,23 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
                                                 </h3>
                                                 <p className="mt-1 text-xs text-slate-500">{panelist.email}</p>
                                             </div>
-                                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                                                Panelist
-                                            </span>
+                                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClasses}`}>{status}</span>
                                         </div>
 
                                         <div className="mt-4 space-y-1 text-xs text-slate-600">
-                                            <p className="font-semibold text-slate-700">
-                                                Assigned ({selectedAcademicYear}): {load}
-                                            </p>
-                                            <p className="text-[11px] text-slate-500">Assignments reflect the selected academic year.</p>
+                                            <p className="font-semibold text-slate-700">Program Capacity</p>
+                                            {programs.length > 0 ? (
+                                                programs.map((program) => (
+                                                    <div key={program.program} className="flex items-center justify-between">
+                                                        <span>{program.program}</span>
+                                                        <span className="font-semibold text-slate-700">
+                                                            {getProgramAssignedCount(program)} / {program.max_groups}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-[11px] text-slate-500">No program utilities configured yet.</p>
+                                            )}
                                         </div>
 
                                         <div className="mt-4 flex gap-2">
@@ -212,6 +332,9 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
                                             </button>
                                         </div>
                                     </div>
+                                    <div className="h-1.5 w-full bg-slate-100">
+                                        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${progress}%` }} />
+                                    </div>
                                 </div>
                             );
                         })}
@@ -228,13 +351,16 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
                             <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                                 <tr>
                                     <th className="px-6 py-4">Panelist</th>
-                                    <th className="px-6 py-4">Assigned</th>
+                                    <th className="px-6 py-4">Load</th>
+                                    <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {paginatedPanelists.map((panelist) => {
-                                    const load = getLoadForYear(panelist, selectedAcademicYear);
+                                    const { programs, totalAssigned, totalCapacity } = getProgramTotals(panelist, selectedAcademicYear);
+                                    const progress = totalCapacity > 0 ? Math.min(100, Math.round((totalAssigned / totalCapacity) * 100)) : 0;
+                                    const { status, statusClasses } = getStatusMeta(panelist, selectedAcademicYear);
                                     const assignHref = panelistAssignment.manage.url(
                                         { panelist: panelist.id },
                                         selectedAcademicYear === 'All' ? undefined : { query: { academic_year: selectedAcademicYear } },
@@ -249,10 +375,26 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
                                                 </div>
                                             </td>
                                             <td className="px-6 py-3.5">
-                                                <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-                                                    <span>{load}</span>
-                                                    <span className="text-[10px] text-slate-500">{selectedAcademicYear}</span>
+                                                <div className="space-y-1 text-[11px] text-slate-600">
+                                                    {programs.length > 0 ? (
+                                                        programs.map((program) => (
+                                                            <div key={program.program} className="flex items-center justify-between">
+                                                                <span>{program.program}</span>
+                                                                <span className="font-semibold text-slate-700">
+                                                                    {getProgramAssignedCount(program)} / {program.max_groups}
+                                                                </span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-[10px] text-slate-500">No program utilities</span>
+                                                    )}
+                                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                                                        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${progress}%` }} />
+                                                    </div>
                                                 </div>
+                                            </td>
+                                            <td className="px-6 py-3.5">
+                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClasses}`}>{status}</span>
                                             </td>
                                             <td className="px-6 py-3.5 text-right">
                                                 <div className="inline-flex gap-2">
@@ -303,7 +445,7 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
                         <div className="flex items-center gap-1.5">
                             <button
                                 type="button"
-                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                                 disabled={currentPage === 1}
                                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40"
                             >
@@ -329,7 +471,7 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
 
                             <button
                                 type="button"
-                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                                 disabled={currentPage === totalPages}
                                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40"
                             >

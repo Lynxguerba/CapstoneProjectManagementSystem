@@ -2,23 +2,22 @@ import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, CheckCircle2, ChevronRight, Power, Save, Settings, X } from 'lucide-react';
 import React from 'react';
-import AdviserLayout from '../_layout';
+import PanelLayout from '../_layout';
 
 type UtilityProgram = {
     program: string;
     max_groups: number;
     assigned_count?: number;
-    pending_count?: number;
 };
 
-type AdviserUtilitiesSummary = {
+type PanelistUtilitiesSummary = {
     is_available?: boolean;
     programs?: UtilityProgram[];
 };
 
-type AdviserUtilitiesPageProps = {
+type PanelistUtilitiesPageProps = {
     programOptions?: string[];
-    utilities?: AdviserUtilitiesSummary;
+    utilities?: PanelistUtilitiesSummary;
 };
 
 type UtilityFormRow = {
@@ -26,11 +25,11 @@ type UtilityFormRow = {
     max_groups: string;
 };
 
-const AdviserUtilitiesPage = () => {
-    const { props } = usePage<AdviserUtilitiesPageProps>();
-    const programOptions = props.programOptions ?? [];
+const PanelistUtilitiesPage = () => {
+    const { props } = usePage<PanelistUtilitiesPageProps>();
+    const programOptions = React.useMemo(() => props.programOptions ?? [], [props.programOptions]);
     const utilities = props.utilities;
-    const utilityPrograms = utilities?.programs ?? [];
+    const utilityPrograms = React.useMemo(() => utilities?.programs ?? [], [utilities?.programs]);
 
     const [isAvailable, setIsAvailable] = React.useState(utilities?.is_available ?? false);
     const [availabilityProcessing, setAvailabilityProcessing] = React.useState(false);
@@ -64,16 +63,23 @@ const AdviserUtilitiesPage = () => {
             max_groups: String(row.max_groups),
         })),
     });
+    const formActionsRef = React.useRef({
+        setData: form.setData,
+        clearErrors: form.clearErrors,
+    });
+
+    formActionsRef.current.setData = form.setData;
+    formActionsRef.current.clearErrors = form.clearErrors;
 
     React.useEffect(() => {
-        form.setData(
+        formActionsRef.current.setData(
             'programs',
             initialRows.map((row) => ({
                 program: row.program,
                 max_groups: String(row.max_groups),
             })),
         );
-        form.clearErrors();
+        formActionsRef.current.clearErrors();
         setErrorMessage('');
     }, [initialRows]);
 
@@ -98,14 +104,12 @@ const AdviserUtilitiesPage = () => {
             const maxGroups = Number(row.max_groups) || 0;
             const meta = metaByProgram.get(row.program);
             const assigned = meta?.assigned_count ?? 0;
-            const pending = meta?.pending_count ?? 0;
             const remaining = Math.max(0, maxGroups - assigned);
 
             return {
                 ...row,
                 maxGroups,
                 assigned,
-                pending,
                 remaining,
             };
         });
@@ -121,7 +125,7 @@ const AdviserUtilitiesPage = () => {
         setSuccessMessage('');
 
         router.post(
-            '/adviser/utilities/availability',
+            '/panelist/utilities/availability',
             { is_available: !isAvailable },
             {
                 preserveScroll: true,
@@ -161,7 +165,7 @@ const AdviserUtilitiesPage = () => {
 
         form.transform(() => ({ programs: sanitizedPrograms }));
 
-        form.post('/adviser/utilities/programs', {
+        form.post('/panelist/utilities/programs', {
             preserveScroll: true,
             onSuccess: () => {
                 setSuccessMessage('Program utilities updated.');
@@ -199,7 +203,7 @@ const AdviserUtilitiesPage = () => {
     }, [errorMessage, successMessage]);
 
     return (
-        <AdviserLayout title="Capacity Settings" subtitle="Set how many groups you can handle per program">
+        <PanelLayout title="Capacity Settings" subtitle="Set how many groups you can handle per program">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
                 <AnimatePresence initial={false}>
                     {notification ? (
@@ -270,12 +274,12 @@ const AdviserUtilitiesPage = () => {
                 </AnimatePresence>
 
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
-                    <Link href="/adviser/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                    <Link href="/panelist/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
                         Dashboard
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
-                    <Link href="/adviser/groups" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
-                        Groups
+                    <Link href="/panelist/assigned-groups" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Assigned Groups
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
                     <span className="font-semibold text-slate-800" aria-current="page">
@@ -291,7 +295,7 @@ const AdviserUtilitiesPage = () => {
                             </span>
                             <div>
                                 <p className="text-sm font-semibold text-slate-900">Availability</p>
-                                <p className="text-xs text-slate-500">Open or close group request intake for your adviser role.</p>
+                                <p className="text-xs text-slate-500">Open or close new group assignment intake for your panelist role.</p>
                             </div>
                         </div>
                         <button
@@ -316,7 +320,7 @@ const AdviserUtilitiesPage = () => {
                         >
                             {isAvailable ? 'Open for requests' : 'Closed for requests'}
                         </span>
-                        <span className="text-[11px] text-slate-500">You can reopen availability anytime.</span>
+                        <span className="text-[11px] text-slate-500">Instructors can assign you again once availability is open.</span>
                     </div>
                 </div>
 
@@ -324,7 +328,7 @@ const AdviserUtilitiesPage = () => {
                     <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <p className="text-sm font-semibold text-slate-900">Program Utilities</p>
-                            <p className="text-xs text-slate-500">Set the maximum groups you can handle per program.</p>
+                            <p className="text-xs text-slate-500">Set the maximum groups you can evaluate per program.</p>
                         </div>
                         <button
                             type="button"
@@ -343,7 +347,6 @@ const AdviserUtilitiesPage = () => {
                                 <th className="px-5 py-3">Program</th>
                                 <th className="px-5 py-3">Max Groups</th>
                                 <th className="px-5 py-3">Assigned</th>
-                                <th className="px-5 py-3">Pending</th>
                                 <th className="px-5 py-3">Remaining</th>
                             </tr>
                         </thead>
@@ -370,14 +373,13 @@ const AdviserUtilitiesPage = () => {
                                         />
                                     </td>
                                     <td className="px-5 py-3 text-slate-600">{row.assigned}</td>
-                                    <td className="px-5 py-3 text-slate-600">{row.pending}</td>
                                     <td className="px-5 py-3 font-semibold text-slate-800">{row.remaining}</td>
                                 </tr>
                             ))}
 
                             {rows.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-5 py-6 text-center text-xs text-slate-500">
+                                    <td colSpan={4} className="px-5 py-6 text-center text-xs text-slate-500">
                                         No program options found. Ask an instructor to create program sets first.
                                     </td>
                                 </tr>
@@ -386,8 +388,8 @@ const AdviserUtilitiesPage = () => {
                     </table>
                 </div>
             </motion.section>
-        </AdviserLayout>
+        </PanelLayout>
     );
 };
 
-export default AdviserUtilitiesPage;
+export default PanelistUtilitiesPage;

@@ -50,6 +50,7 @@ type ProgressStep = {
 
 type StudentGroupPageProps = {
     group?: GroupSummary | null;
+    isGroupLeader?: boolean;
     members?: GroupMember[];
     adviser?: GroupAdviser | null;
     pendingAdviserRequest?: PendingAdviserRequest | null;
@@ -87,6 +88,7 @@ const StudentGroup = () => {
     const { props } = usePage<StudentGroupPageProps>();
 
     const group = props.group ?? null;
+    const isGroupLeader = props.isGroupLeader ?? false;
     const members = props.members ?? [];
     const adviser = props.adviser ?? null;
     const pendingAdviserRequest = props.pendingAdviserRequest ?? null;
@@ -213,7 +215,7 @@ const StudentGroup = () => {
                                         {adviser ? 'Reassignment request pending' : 'Adviser request pending'}
                                         {pendingAdviserRequest?.adviserName ? `: ${pendingAdviserRequest.adviserName}` : '.'}
                                     </div>
-                                ) : (
+                                ) : isGroupLeader ? (
                                     <Link
                                         href={studentRoutes.adviserSelection.url()}
                                         className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
@@ -221,6 +223,10 @@ const StudentGroup = () => {
                                         <UserCheck className="h-3.5 w-3.5" />
                                         {adviser ? 'Request Reassign' : 'Invite Adviser'}
                                     </Link>
+                                ) : (
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-600">
+                                        Only the Project Manager can request or reassign an adviser.
+                                    </div>
                                 )}
                             </div>
                         ) : null}

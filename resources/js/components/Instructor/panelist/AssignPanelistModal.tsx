@@ -7,10 +7,19 @@ import panelistAssignment from '../../../routes/instructor/panelist-assignment';
 
 type PanelRole = 'chairman' | 'member';
 
+type PanelistProgramSummary = {
+    program: string;
+    max_groups: number;
+    assigned_count: number;
+    assigned_by_year?: Record<string, number>;
+};
+
 type PanelistOption = {
     id: number;
     name?: string | null;
     email?: string | null;
+    is_available?: boolean;
+    programs?: PanelistProgramSummary[];
 };
 
 type PanelistAssignment = {
@@ -26,6 +35,8 @@ type AssignPanelistModalProps = {
     groupId?: number | null;
     groupName?: string | null;
     programSetName?: string | null;
+    groupProgram?: string | null;
+    groupSchoolYear?: string | null;
     assignments?: PanelistAssignment[];
     currentPanelistId?: number | null;
     panelists: PanelistOption[];
@@ -43,11 +54,78 @@ const formatPanelRole = (role?: PanelRole | null): string => {
     return 'Panel Member';
 };
 
+const resolveCapacityStatus = (
+    panelist: PanelistOption,
+    groupProgram?: string | null,
+    groupSchoolYear?: string | null,
+): {
+    assigned: number;
+    maxGroups: number;
+    isClosed: boolean;
+    isFull: boolean;
+    label: string;
+    classes: string;
+} => {
+    const normalizedProgram = typeof groupProgram === 'string' ? groupProgram.trim() : '';
+    const isClosed = panelist.is_available !== true;
+    const programSummary = (panelist.programs ?? []).find((program) => program.program === normalizedProgram);
+    const maxGroups = programSummary?.max_groups ?? 5;
+    const assigned =
+        typeof groupSchoolYear === 'string' && groupSchoolYear !== ''
+            ? (programSummary?.assigned_by_year?.[groupSchoolYear] ?? 0)
+            : (programSummary?.assigned_count ?? 0);
+    const isFull = assigned >= maxGroups;
+
+    if (isClosed) {
+        return {
+            assigned,
+            maxGroups,
+            isClosed,
+            isFull,
+            label: 'Closed',
+            classes: 'bg-rose-100 text-rose-700',
+        };
+    }
+
+    if (isFull) {
+        return {
+            assigned,
+            maxGroups,
+            isClosed,
+            isFull,
+            label: 'Full',
+            classes: 'bg-rose-100 text-rose-700',
+        };
+    }
+
+    if (maxGroups - assigned <= 1) {
+        return {
+            assigned,
+            maxGroups,
+            isClosed,
+            isFull,
+            label: 'Partial',
+            classes: 'bg-amber-100 text-amber-700',
+        };
+    }
+
+    return {
+        assigned,
+        maxGroups,
+        isClosed,
+        isFull,
+        label: 'Available',
+        classes: 'bg-emerald-100 text-emerald-700',
+    };
+};
+
 const AssignPanelistModal = ({
     open,
     groupId,
     groupName,
     programSetName,
+    groupProgram,
+    groupSchoolYear,
     assignments = [],
     currentPanelistId = null,
     panelists,
@@ -89,7 +167,17 @@ const AssignPanelistModal = ({
 
     const hasChairman = assignments.some((assignment) => assignment.role === 'chairman');
     const memberCount = assignments.filter((assignment) => (assignment.role ?? 'member') === 'member').length;
-    const allowedRoles = hasChairman ? (['member'] as PanelRole[]) : memberCount >= 2 ? (['chairman'] as PanelRole[]) : PANEL_ROLE_OPTIONS;
+    const allowedRoles = React.useMemo<PanelRole[]>(() => {
+        if (hasChairman) {
+            return ['member'];
+        }
+
+        if (memberCount >= 2) {
+            return ['chairman'];
+        }
+
+        return PANEL_ROLE_OPTIONS;
+    }, [hasChairman, memberCount]);
     const effectiveRole = allowedRoles.includes(selectedRole) ? selectedRole : allowedRoles[0];
     const openSlots = Math.max(0, MAX_PANELS - assignments.length);
 
@@ -105,7 +193,7 @@ const AssignPanelistModal = ({
         setSearchQuery('');
         setErrorMessage('');
         setSelectedRole((current) => (allowedRoles.includes(current) ? current : allowedRoles[0]));
-    }, [open, groupId, hasChairman, memberCount]);
+    }, [open, groupId, hasChairman, memberCount, allowedRoles]);
 
     React.useEffect(() => {
         if (!open) {
@@ -155,7 +243,7 @@ const AssignPanelistModal = ({
                     }
                 },
                 onSuccess: () => {
-                    router.reload({ only: ['groups', 'panelist'] });
+                    router.reload({ only: ['groups', 'panelist', 'panelists'] });
                     onClose();
                 },
                 onFinish: () => {
@@ -184,7 +272,7 @@ const AssignPanelistModal = ({
                 initial={{ opacity: 0, y: 12, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.2 }}
-                className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+                className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
                 onMouseDown={(event) => event.stopPropagation()}
             >
                 <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-5 py-4">
@@ -215,6 +303,9 @@ const AssignPanelistModal = ({
                         </span>
                         <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-600">
                             Role: {formatPanelRole(effectiveRole)}
+                        </span>
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-600">
+                            Program: {groupProgram ?? '—'} {groupSchoolYear ? `• ${groupSchoolYear}` : ''}
                         </span>
                     </div>
 
@@ -260,33 +351,61 @@ const AssignPanelistModal = ({
                         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{errorMessage}</div>
                     ) : null}
 
-                    <div className="space-y-3">
-                        {filteredPanelists.map((panelist) => (
-                            <div key={panelist.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        <p className="text-sm font-semibold text-slate-800">{panelist.name ?? 'Panelist'}</p>
-                                        <p className="text-xs text-slate-500">{panelist.email ?? '—'}</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => assignPanelist(panelist.id)}
-                                        disabled={isAssigning || openSlots === 0}
-                                        className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        <UserCheck className="h-3 w-3" />
-                                        Assign
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                        <table className="w-full text-left text-xs">
+                            <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                <tr>
+                                    <th className="px-6 py-4">Panelist</th>
+                                    <th className="px-6 py-4">Email</th>
+                                    <th className="px-6 py-4">Program Capacity</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {filteredPanelists.map((panelistOption) => {
+                                    const capacityStatus = resolveCapacityStatus(panelistOption, groupProgram, groupSchoolYear);
+                                    const isAssignable = !capacityStatus.isClosed && !capacityStatus.isFull;
 
-                        {filteredPanelists.length === 0 ? (
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
-                                No available panelists match your search.
-                            </div>
-                        ) : null}
+                                    return (
+                                        <tr key={panelistOption.id} className="transition-colors hover:bg-emerald-50/30">
+                                            <td className="px-6 py-3.5 font-semibold text-slate-800">{panelistOption.name ?? 'Panelist'}</td>
+                                            <td className="px-6 py-3.5 text-slate-600">{panelistOption.email ?? '—'}</td>
+                                            <td className="px-6 py-3.5 font-semibold text-slate-700">
+                                                {capacityStatus.assigned} / {capacityStatus.maxGroups}
+                                            </td>
+                                            <td className="px-6 py-3.5">
+                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${capacityStatus.classes}`}>
+                                                    {capacityStatus.label}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-3.5 text-right">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => assignPanelist(panelistOption.id)}
+                                                    disabled={isAssigning || openSlots === 0 || !isAssignable}
+                                                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold transition ${
+                                                        isAssignable
+                                                            ? 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                            : 'border border-slate-200 bg-slate-100 text-slate-500'
+                                                    } ${isAssigning || openSlots === 0 || !isAssignable ? 'cursor-not-allowed opacity-60' : ''}`}
+                                                >
+                                                    <UserCheck className="h-3 w-3" />
+                                                    Assign
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
+
+                    {filteredPanelists.length === 0 ? (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
+                            No available panelists match your search.
+                        </div>
+                    ) : null}
                 </div>
             </motion.div>
         </div>,

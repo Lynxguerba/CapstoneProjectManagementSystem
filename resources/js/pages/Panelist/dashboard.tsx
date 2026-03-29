@@ -1,135 +1,340 @@
-import { Box, Typography } from '@mui/material';
-import { LineChart, PieChart } from '@mui/x-charts';
+import { Link, usePage } from '@inertiajs/react';
+import { Box } from '@mui/material';
+import { BarChart, LineChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
-import { Bell, CalendarClock, ClipboardCheck, FileText, FolderOpen, LayoutDashboard, Scale, Users } from 'lucide-react';
+import { CalendarClock, CheckCircle2, ClipboardCheck, FileSearch, FolderOpen, LayoutDashboard, TimerReset, TrendingUp, Users } from 'lucide-react';
 import React from 'react';
+import panelistRoutes from '../../routes/panelist';
 import PanelLayout from './_layout';
 
-type DashboardNotification = {
-    id: string;
-    title: string;
-    message: string;
-    date: string;
-    tone: 'info' | 'success' | 'warning' | 'danger';
+type DashboardStats = {
+    assignedGroups: number;
+    scheduledDefenses: number;
+    pendingEvaluations: number;
+    completedDefenses: number;
+    overdueDefenses: number;
+    submittedDocuments: number;
+    reviewedDocuments: number;
+    revisionDocuments: number;
+    uniquePrograms: number;
 };
 
-type PendingDocument = {
-    id: string;
-    group: string;
-    documentType: string;
-    uploadedAt: string;
-    status: 'Not Reviewed' | 'In Progress' | 'Reviewed';
+type DistributionItem = {
+    label: string;
+    value: number;
+    color: string;
 };
 
-type UpcomingDefense = {
-    id: string;
-    group: string;
-    defenseType: 'Outline' | 'Pre-Deployment' | 'Final';
-    date: string;
-    time: string;
-    room: string;
+type UpcomingScheduleLoad = {
+    labels: string[];
+    values: number[];
+};
+
+type UpcomingSchedule = {
+    id: number;
+    groupName: string;
+    stage: string;
+    scheduledDate: string | null;
+    startTime: string | null;
+    roomName: string | null;
+    status: string;
+};
+
+type RecentDocumentActivity = {
+    id: number;
+    groupName: string;
+    requirementType: string;
+    stage: string | null;
+    fileName: string;
+    status: string;
+    updatedAt: string;
+};
+
+type PanelistDashboardProps = {
+    welcomeName?: string;
+    stats?: DashboardStats;
+    stageDistribution?: DistributionItem[];
+    scheduleStatusDistribution?: DistributionItem[];
+    documentStatusDistribution?: DistributionItem[];
+    programDistribution?: DistributionItem[];
+    upcomingScheduleLoad?: UpcomingScheduleLoad;
+    upcomingSchedules?: UpcomingSchedule[];
+    recentDocumentActivity?: RecentDocumentActivity[];
+};
+
+const fallbackStats: DashboardStats = {
+    assignedGroups: 0,
+    scheduledDefenses: 0,
+    pendingEvaluations: 0,
+    completedDefenses: 0,
+    overdueDefenses: 0,
+    submittedDocuments: 0,
+    reviewedDocuments: 0,
+    revisionDocuments: 0,
+    uniquePrograms: 0,
+};
+
+const fallbackLoad: UpcomingScheduleLoad = {
+    labels: [],
+    values: [],
+};
+
+const progressFor = (value: number, total: number): number => {
+    if (total <= 0) {
+        return 0;
+    }
+
+    return Math.round((value / total) * 100);
+};
+
+const formatDate = (value: string | null): string => {
+    if (!value) {
+        return 'TBA';
+    }
+
+    const parsed = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) {
+        return value;
+    }
+
+    return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const formatDateTime = (value: string): string => {
+    if (value.trim() === '') {
+        return 'No updates yet';
+    }
+
+    const parsed = new Date(value.replace(' ', 'T'));
+    if (Number.isNaN(parsed.getTime())) {
+        return value;
+    }
+
+    return parsed.toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+    });
+};
+
+const scheduleStatusTone = (status: string): string => {
+    if (status === 'Completed') {
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    }
+
+    if (status === 'Pending') {
+        return 'border-amber-200 bg-amber-50 text-amber-700';
+    }
+
+    if (status === 'Cancelled') {
+        return 'border-rose-200 bg-rose-50 text-rose-700';
+    }
+
+    return 'border-teal-200 bg-teal-50 text-teal-700';
+};
+
+const documentStatusTone = (status: string): string => {
+    if (status === 'Approved') {
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    }
+
+    if (status === 'Revision Required') {
+        return 'border-orange-200 bg-orange-50 text-orange-700';
+    }
+
+    return 'border-teal-200 bg-teal-50 text-teal-700';
 };
 
 const PanelistDashboard = () => {
-    const stats = [
+    const { props } = usePage<PanelistDashboardProps>();
+    const welcomeName = props.welcomeName ?? 'Panelist';
+    const stats = props.stats ?? fallbackStats;
+    const stageDistribution = props.stageDistribution ?? [];
+    const scheduleStatusDistribution = props.scheduleStatusDistribution ?? [];
+    const documentStatusDistribution = props.documentStatusDistribution ?? [];
+    const programDistribution = props.programDistribution ?? [];
+    const upcomingScheduleLoad = props.upcomingScheduleLoad ?? fallbackLoad;
+    const upcomingSchedules = props.upcomingSchedules ?? [];
+    const recentDocumentActivity = props.recentDocumentActivity ?? [];
+
+    const stageTotal = stageDistribution.reduce((sum, item) => sum + item.value, 0);
+    const scheduleStatusTotal = scheduleStatusDistribution.reduce((sum, item) => sum + item.value, 0);
+    const documentStatusTotal = documentStatusDistribution.reduce((sum, item) => sum + item.value, 0);
+    const programTotal = programDistribution.reduce((sum, item) => sum + item.value, 0);
+
+    const hasStageData = stageTotal > 0;
+    const hasScheduleStatusData = scheduleStatusTotal > 0;
+    const hasDocumentData = documentStatusTotal > 0;
+    const hasProgramData = programTotal > 0;
+    const hasLoadData = upcomingScheduleLoad.values.some((value) => value > 0);
+
+    const stagePieData = stageDistribution.map((item, index) => ({
+        id: index,
+        value: item.value,
+        label: item.label,
+        color: item.color,
+    }));
+    const scheduleStatusPieData = scheduleStatusDistribution.map((item, index) => ({
+        id: index,
+        value: item.value,
+        label: item.label,
+        color: item.color,
+    }));
+    const documentStatusPieData = documentStatusDistribution.map((item, index) => ({
+        id: index,
+        value: item.value,
+        label: item.label,
+        color: item.color,
+    }));
+
+    const scheduleCompletionRate = progressFor(stats.completedDefenses, scheduleStatusTotal);
+    const documentReviewRate = progressFor(stats.reviewedDocuments, documentStatusTotal);
+    const revisionRate = progressFor(stats.revisionDocuments, documentStatusTotal);
+
+    const heroHighlights = [
         {
-            label: 'Total Assigned Groups',
-            value: 8,
+            label: 'Assigned Groups',
+            value: stats.assignedGroups.toLocaleString(),
             icon: Users,
-            tone: 'from-slate-800 to-slate-700',
-        },
-        {
-            label: 'Pending Evaluations',
-            value: 3,
-            icon: ClipboardCheck,
-            tone: 'from-amber-500 to-orange-500',
         },
         {
             label: 'Upcoming Defenses',
-            value: 2,
+            value: stats.scheduledDefenses.toLocaleString(),
             icon: CalendarClock,
-            tone: 'from-emerald-500 to-teal-500',
         },
         {
-            label: 'Completed Evaluations',
-            value: 5,
-            icon: Scale,
-            tone: 'from-indigo-500 to-violet-500',
+            label: 'Pending Evaluations',
+            value: stats.pendingEvaluations.toLocaleString(),
+            icon: ClipboardCheck,
+        },
+        {
+            label: 'Reviewed Documents',
+            value: stats.reviewedDocuments.toLocaleString(),
+            icon: CheckCircle2,
         },
     ] as const;
 
-    const upcomingDefenses: UpcomingDefense[] = [
-        { id: 'ud1', group: 'Group Alpha', defenseType: 'Outline', date: '2026-03-21', time: '9:00 AM', room: 'Room 101' },
-        { id: 'ud2', group: 'Group Delta', defenseType: 'Final', date: '2026-03-28', time: '1:00 PM', room: 'Room 202' },
-        { id: 'ud3', group: 'Group Gamma', defenseType: 'Pre-Deployment', date: '2026-04-03', time: '10:30 AM', room: 'Online' },
-    ];
-
-    const pendingDocuments: PendingDocument[] = [
-        { id: 'pd1', group: 'Group Beta', documentType: 'Proposal Manuscript', uploadedAt: '2026-03-12', status: 'Not Reviewed' },
-        { id: 'pd2', group: 'Group Alpha', documentType: 'Presentation Slides', uploadedAt: '2026-03-13', status: 'In Progress' },
-        { id: 'pd3', group: 'Group Delta', documentType: 'Final Manuscript', uploadedAt: '2026-03-10', status: 'Not Reviewed' },
-    ];
-
-    const urgentTasks = [
-        { label: 'Defenses within 3 days', value: 1, tone: 'bg-rose-50 text-rose-700 border-rose-200' },
-        { label: 'Pending evaluations', value: 3, tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-        { label: 'Documents needing review', value: 2, tone: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    const operationTiles = [
+        {
+            label: 'Completed Defenses',
+            value: stats.completedDefenses.toLocaleString(),
+            helper: `${scheduleCompletionRate}% completion coverage`,
+            icon: TrendingUp,
+            tone: 'from-emerald-600 to-emerald-500',
+        },
+        {
+            label: 'Overdue Defenses',
+            value: stats.overdueDefenses.toLocaleString(),
+            helper: 'Scheduled or pending past due dates',
+            icon: TimerReset,
+            tone: 'from-orange-500 to-amber-500',
+        },
+        {
+            label: 'Submitted Documents',
+            value: stats.submittedDocuments.toLocaleString(),
+            helper: `${documentReviewRate}% already reviewed`,
+            icon: FolderOpen,
+            tone: 'from-teal-600 to-emerald-500',
+        },
+        {
+            label: 'Needs Revision',
+            value: stats.revisionDocuments.toLocaleString(),
+            helper: `${revisionRate}% of total documents`,
+            icon: FileSearch,
+            tone: 'from-lime-600 to-emerald-500',
+        },
     ] as const;
 
-    const notifications: DashboardNotification[] = [
-        { id: 'n1', title: 'New Document Uploaded', message: 'Group Beta uploaded Proposal Manuscript.', date: '2026-03-12', tone: 'info' },
-        { id: 'n2', title: 'Defense Reminder', message: 'Outline Defense for Group Alpha is in 2 days.', date: '2026-03-19', tone: 'warning' },
-        { id: 'n3', title: 'Evaluation Submitted', message: 'You submitted evaluation for Group Omega.', date: '2026-03-11', tone: 'success' },
-    ];
-
-    const toneStyles: Record<DashboardNotification['tone'], string> = {
-        info: 'bg-indigo-50 border-indigo-200 text-indigo-700',
-        success: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-        warning: 'bg-amber-50 border-amber-200 text-amber-700',
-        danger: 'bg-rose-50 border-rose-200 text-rose-700',
-    };
-
-    const reviewBreakdownData = [
-        { id: 0, value: 4, label: 'Reviewed', color: '#10b981' },
-        { id: 1, value: 3, label: 'In Progress', color: '#6366f1' },
-        { id: 2, value: 5, label: 'Not Reviewed', color: '#f59e0b' },
-    ] as const;
+    const panelClassName = 'rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm';
+    const programChartWidth = Math.max(360, programDistribution.length * 92);
 
     return (
         <PanelLayout title="Dashboard" subtitle="Panel Evaluation workspace overview">
             <div className="space-y-8">
+                <style
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                            .cpms-scroll::-webkit-scrollbar {
+                                height: 6px;
+                            }
+                            .cpms-scroll::-webkit-scrollbar-track {
+                                background: transparent;
+                            }
+                            .cpms-scroll::-webkit-scrollbar-thumb {
+                                background: #09be8293;
+                                border-radius: 3px;
+                            }
+                            .cpms-scroll::-webkit-scrollbar-thumb:hover {
+                                background: #00af78ff;
+                            }
+                            .cpms-scroll::-webkit-scrollbar-button {
+                                display: none;
+                            }
+                        `,
+                    }}
+                />
                 <motion.section
-                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    initial={{ opacity: 0, y: 14, scale: 0.99 }}
                     whileInView={{ opacity: 1, y: 0, scale: 1 }}
                     viewport={{ once: false, amount: 0.2 }}
-                    className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4"
+                    transition={{ duration: 0.45 }}
+                    className="relative overflow-hidden rounded-3xl border border-emerald-300/70 bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-800 p-6 shadow-xl shadow-emerald-950/20 md:p-8"
                 >
-                    {stats.map((card, idx) => (
-                        <motion.div
-                            key={card.label}
-                            initial={{ opacity: 0, y: 12, scale: 0.96 }}
-                            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                            viewport={{ once: false, amount: 0.3 }}
-                            transition={{ delay: 0.06 * idx }}
-                            className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-br from-slate-50/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                            <div className="relative flex items-start justify-between gap-4">
-                                <div>
-                                    <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{card.label}</div>
-                                    <div className="mt-2 text-3xl font-bold text-slate-900">{card.value}</div>
-                                </div>
-                                <div
-                                    className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${card.tone} flex items-center justify-center shadow-lg transition-transform group-hover:scale-105`}
+                    <div className="pointer-events-none absolute -top-24 right-0 h-72 w-72 rounded-full bg-emerald-300/20 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-24 left-16 h-64 w-64 rounded-full bg-lime-200/15 blur-3xl" />
+
+                    <div className="relative grid gap-8 xl:grid-cols-[1.25fr_1fr]">
+                        <div>
+                            <p className="text-[11px] font-semibold tracking-[0.24em] text-emerald-200 uppercase">Panelist Workspace</p>
+                            <h3 className="mt-3 text-2xl font-semibold text-white md:text-[2rem] md:leading-[1.1]">
+                                Evaluation Command Center
+                            </h3>
+                            <p className="mt-3 max-w-xl text-sm leading-relaxed text-emerald-100 md:text-base">
+                                Hello {welcomeName}. Track your assigned defenses, monitor review outcomes, and move directly to your evaluation actions.
+                            </p>
+
+                            <div className="mt-6 flex flex-wrap gap-3">
+                                <Link
+                                    href={panelistRoutes.assignedGroups.url()}
+                                    className="inline-flex items-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-900 transition hover:-translate-y-0.5 hover:shadow-lg"
                                 >
-                                    <card.icon size={20} className="text-white" />
-                                </div>
+                                    Open Assigned Groups
+                                </Link>
+                                <Link
+                                    href={panelistRoutes.schedule.url()}
+                                    className="inline-flex items-center rounded-xl border border-emerald-200/60 bg-white/10 px-4 py-2.5 text-sm font-semibold text-emerald-50 transition hover:bg-white/20"
+                                >
+                                    View Schedule
+                                </Link>
+                                <Link
+                                    href={panelistRoutes.evaluation.url()}
+                                    className="inline-flex items-center rounded-xl border border-emerald-200/60 bg-white/10 px-4 py-2.5 text-sm font-semibold text-emerald-50 transition hover:bg-white/20"
+                                >
+                                    Open Evaluation Form
+                                </Link>
                             </div>
-                            <div
-                                className={`absolute right-0 bottom-0 left-0 h-1 bg-gradient-to-r ${card.tone} origin-left scale-x-0 transform rounded-b-2xl transition-transform duration-300 group-hover:scale-x-100`}
-                            />
-                        </motion.div>
-                    ))}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                            {heroHighlights.map((highlight, index) => (
+                                <motion.div
+                                    key={highlight.label}
+                                    initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    transition={{ delay: 0.08 + index * 0.06 }}
+                                    className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm"
+                                >
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-[11px] font-semibold tracking-wide text-emerald-100 uppercase">{highlight.label}</span>
+                                        <highlight.icon className="h-4 w-4 text-emerald-100" />
+                                    </div>
+                                    <div className="mt-2 text-2xl font-semibold text-white">{highlight.value}</div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
                 </motion.section>
 
                 <motion.section
@@ -139,82 +344,93 @@ const PanelistDashboard = () => {
                     transition={{ duration: 0.35 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-2"
                 >
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <LayoutDashboard size={18} className="text-slate-700" />
-                                    <h3 className="text-lg font-semibold text-slate-900">Scoring Trend</h3>
-                                </div>
-                                <p className="mt-1 text-sm text-slate-500">Line chart using MUI X Charts (dummy).</p>
-                            </div>
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                                MUI X Charts
-                            </span>
-                        </div>
-
-                        <Box sx={{ mt: 3 }}>
-                            <LineChart
-                                height={260}
-                                xAxis={[{ data: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6'], scaleType: 'point' }]}
-                                series={[{ data: [82, 78, 85, 88, 84, 90], label: 'Avg Score Given', color: '#4f46e5', area: true }]}
-                                margin={{ top: 20, right: 20, bottom: 40, left: 40 }}
-                                grid={{ vertical: true, horizontal: true }}
-                            />
-                            <Typography sx={{ mt: 1, fontSize: 12, fontWeight: 600, color: 'text.secondary' }}>
-                                Dummy analytics only. Real data will come from backend.
-                            </Typography>
-                        </Box>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className={panelClassName}>
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <FileText size={18} className="text-slate-700" />
-                                    <h3 className="text-lg font-semibold text-slate-900">Document Review Status</h3>
+                                    <LayoutDashboard className="h-5 w-5 text-emerald-700" />
+                                    <h3 className="text-lg font-semibold text-slate-900">Panel Operations Snapshot</h3>
                                 </div>
-                                <p className="mt-1 text-sm text-slate-500">Pie chart distribution (dummy).</p>
+                                <p className="mt-1 text-sm text-slate-600">Live metrics from your assigned schedules and submissions.</p>
                             </div>
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                                MUI X Charts
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                Current Load
                             </span>
                         </div>
 
-                        <Box sx={{ mt: 2 }}>
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                                <div className="flex flex-1 justify-center">
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            {operationTiles.map((tile) => (
+                                <div key={tile.label} className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">{tile.label}</p>
+                                            <p className="mt-1 text-xl font-bold text-slate-900">{tile.value}</p>
+                                            <p className="mt-1 text-[11px] text-slate-500">{tile.helper}</p>
+                                        </div>
+                                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${tile.tone}`}>
+                                            <tile.icon className="h-4 w-4 text-white" />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className={panelClassName}>
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-lg font-semibold text-slate-900">Stage Distribution</h3>
+                                <p className="mt-1 text-sm text-slate-600">Defense stage spread across your assignment history.</p>
+                            </div>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                {stageTotal.toLocaleString()} entries
+                            </span>
+                        </div>
+
+                        {hasStageData ? (
+                            <>
+                                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                     <PieChart
-                                        height={260}
+                                        height={190}
+                                        margin={{ left: 88 }}
                                         series={[
                                             {
-                                                data: [...reviewBreakdownData],
-                                                innerRadius: 60,
-                                                outerRadius: 100,
-                                                paddingAngle: 3,
-                                                cornerRadius: 6,
+                                                data: stagePieData,
+                                                innerRadius: 44,
+                                                outerRadius: 74,
+                                                paddingAngle: 2,
+                                                cornerRadius: 5,
                                                 highlightScope: { faded: 'global', highlighted: 'item' },
-                                                faded: { innerRadius: 60, additionalRadius: -4, color: 'gray' },
+                                                faded: { innerRadius: 40, additionalRadius: -5, color: '#d1d5db' },
                                             },
                                         ]}
                                         slotProps={{ legend: { hidden: true } }}
+                                        skipAnimation={false}
                                     />
-                                </div>
+                                </Box>
 
-                                <div className="lg:w-44">
-                                    <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Legend</div>
-                                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 lg:grid-cols-1">
-                                        {reviewBreakdownData.map((item) => (
-                                            <div key={item.id} className="flex items-center gap-2 text-sm text-slate-700">
-                                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                                                <span className="truncate font-medium">{item.label}</span>
-                                                <span className="ml-auto text-slate-500 tabular-nums">{item.value}</span>
+                                <div className="cpms-scroll overflow-x-auto pb-1">
+                                    <div className="mx-auto flex w-max items-center justify-center gap-2">
+                                        {stageDistribution.map((item) => (
+                                            <div
+                                                key={item.label}
+                                                className="min-w-[105px] rounded-lg border border-emerald-100 px-2.5 py-2 text-center text-xs text-slate-700"
+                                            >
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                                                    <span className="font-medium">{item.label}</span>
+                                                </div>
+                                                <p className="mt-1 font-semibold text-slate-900 tabular-nums">{item.value.toLocaleString()}</p>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
+                            </>
+                        ) : (
+                            <div className="mt-6 rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-6 text-center text-xs text-slate-500">
+                                No stage records available for this panelist yet.
                             </div>
-                        </Box>
+                        )}
                     </div>
                 </motion.section>
 
@@ -225,68 +441,144 @@ const PanelistDashboard = () => {
                     transition={{ duration: 0.35 }}
                     className="grid grid-cols-1 gap-6 xl:grid-cols-3"
                 >
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
-                        <div className="flex items-center justify-between gap-4">
+                    <div className={panelClassName}>
+                        <div className="flex items-center justify-between gap-3">
                             <div>
-                                <h3 className="text-lg font-semibold text-slate-900">Upcoming Defense Schedule</h3>
-                                <p className="mt-1 text-sm text-slate-500">Quick view of what you need to attend.</p>
+                                <h3 className="text-lg font-semibold text-slate-900">Schedule Status</h3>
+                                <p className="mt-1 text-sm text-slate-600">Status split for all assigned defense schedules.</p>
                             </div>
-                            <a
-                                href="/panelist/schedule"
-                                className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-700 px-4 py-2.5 text-sm font-semibold text-white hover:shadow-lg"
-                            >
-                                Open schedule
-                            </a>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                {scheduleStatusTotal.toLocaleString()} schedules
+                            </span>
                         </div>
 
-                        <div className="mt-5 overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b border-slate-200 text-slate-600">
-                                        <th className="py-3 text-left font-semibold">Group</th>
-                                        <th className="py-3 text-left font-semibold">Defense Type</th>
-                                        <th className="py-3 text-left font-semibold">Date & Time</th>
-                                        <th className="py-3 text-left font-semibold">Room</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {upcomingDefenses.map((row) => (
-                                        <tr key={row.id} className="hover:bg-slate-50">
-                                            <td className="py-3 font-medium text-slate-900">{row.group}</td>
-                                            <td className="py-3 text-slate-600">{row.defenseType}</td>
-                                            <td className="py-3 text-slate-600">
-                                                {row.date} • {row.time}
-                                            </td>
-                                            <td className="py-3 text-slate-600">{row.room}</td>
-                                        </tr>
+                        {hasScheduleStatusData ? (
+                            <>
+                                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                    <PieChart
+                                        height={190}
+                                        margin={{ left: 88 }}
+                                        series={[
+                                            {
+                                                data: scheduleStatusPieData,
+                                                innerRadius: 44,
+                                                outerRadius: 74,
+                                                paddingAngle: 2,
+                                                cornerRadius: 5,
+                                                highlightScope: { faded: 'global', highlighted: 'item' },
+                                                faded: { innerRadius: 40, additionalRadius: -5, color: '#d1d5db' },
+                                            },
+                                        ]}
+                                        slotProps={{ legend: { hidden: true } }}
+                                        skipAnimation={false}
+                                    />
+                                </Box>
+
+                                <div className="space-y-2">
+                                    {scheduleStatusDistribution.map((item) => (
+                                        <div key={item.label} className="rounded-lg border border-emerald-100 bg-emerald-50/40 p-2.5">
+                                            <div className="flex items-center justify-between gap-2 text-xs text-slate-700">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                                                    <span className="font-medium">{item.label}</span>
+                                                </div>
+                                                <span className="font-semibold text-slate-900">{item.value.toLocaleString()}</span>
+                                            </div>
+                                        </div>
                                     ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="mt-6 rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-6 text-center text-xs text-slate-500">
+                                No schedule status records yet.
+                            </div>
+                        )}
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Bell size={18} className="text-slate-700" />
-                                <h3 className="text-lg font-semibold text-slate-900">Recent Notifications</h3>
+                    <div className={panelClassName}>
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-lg font-semibold text-slate-900">Program Coverage</h3>
+                                <p className="mt-1 text-sm text-slate-600">Assigned groups by program track.</p>
                             </div>
-                            <a href="/panelist/notifications" className="text-sm font-semibold text-slate-700 hover:text-slate-900">
-                                View all
-                            </a>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                {stats.uniquePrograms} programs
+                            </span>
                         </div>
 
-                        <div className="mt-5 space-y-3">
-                            {notifications.map((n) => (
-                                <div key={n.id} className={`rounded-2xl border p-4 ${toneStyles[n.tone]} bg-white`}>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="text-sm font-semibold">{n.title}</div>
-                                        <div className="text-xs whitespace-nowrap opacity-80">{n.date}</div>
-                                    </div>
-                                    <div className="mt-1 text-sm text-slate-700">{n.message}</div>
-                                </div>
-                            ))}
+                        {hasProgramData ? (
+                            <div className="cpms-scroll mt-4 overflow-x-auto pb-1">
+                                <Box sx={{ minWidth: programChartWidth }}>
+                                    <BarChart
+                                        width={programChartWidth}
+                                        height={246}
+                                        xAxis={[
+                                            {
+                                                scaleType: 'band',
+                                                data: programDistribution.map((item) => item.label),
+                                                tickLabelStyle: { fontSize: 10 },
+                                            },
+                                        ]}
+                                        yAxis={[{ min: 0 }]}
+                                        series={[
+                                            {
+                                                label: 'Groups',
+                                                data: programDistribution.map((item) => item.value),
+                                                color: '#10b981',
+                                            },
+                                        ]}
+                                        margin={{ top: 16, right: 16, bottom: 52, left: 38 }}
+                                        grid={{ horizontal: true }}
+                                        slotProps={{ legend: { hidden: true } }}
+                                        skipAnimation={false}
+                                    />
+                                </Box>
+                            </div>
+                        ) : (
+                            <div className="mt-6 rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-6 text-center text-xs text-slate-500">
+                                No program distribution data yet.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={panelClassName}>
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-lg font-semibold text-slate-900">Upcoming 7-Day Load</h3>
+                                <p className="mt-1 text-sm text-slate-600">Scheduled and pending defenses for the next week.</p>
+                            </div>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                Weekly Forecast
+                            </span>
                         </div>
+
+                        {hasLoadData ? (
+                            <Box sx={{ mt: 2 }}>
+                                <LineChart
+                                    height={246}
+                                    xAxis={[{ data: upcomingScheduleLoad.labels, scaleType: 'point' }]}
+                                    series={[
+                                        {
+                                            id: 'weekly-load',
+                                            data: upcomingScheduleLoad.values,
+                                            label: 'Defenses',
+                                            color: '#059669',
+                                            area: true,
+                                            showMark: false,
+                                            disableHighlight: true,
+                                        },
+                                    ]}
+                                    margin={{ top: 16, right: 20, bottom: 28, left: 40 }}
+                                    grid={{ vertical: true, horizontal: true }}
+                                    disableLineItemHighlight
+                                    skipAnimation={false}
+                                />
+                            </Box>
+                        ) : (
+                            <div className="mt-6 rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-6 text-center text-xs text-slate-500">
+                                No upcoming defense load in the next 7 days.
+                            </div>
+                        )}
                     </div>
                 </motion.section>
 
@@ -295,76 +587,153 @@ const PanelistDashboard = () => {
                     whileInView={{ opacity: 1, y: 0, scale: 1 }}
                     viewport={{ once: false, amount: 0.2 }}
                     transition={{ duration: 0.35 }}
-                    className="grid grid-cols-1 gap-6 xl:grid-cols-3"
+                    className="grid grid-cols-1 gap-6 xl:grid-cols-2"
                 >
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
-                        <div className="flex items-center justify-between gap-4">
+                    <div className={panelClassName}>
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                             <div>
-                                <div className="flex items-center gap-2">
-                                    <FolderOpen size={18} className="text-slate-700" />
-                                    <h3 className="text-lg font-semibold text-slate-900">Documents Pending Review</h3>
-                                </div>
-                                <p className="mt-1 text-sm text-slate-500">Open the document review center to comment.</p>
+                                <h3 className="text-lg font-semibold text-slate-900">Upcoming Defense Queue</h3>
+                                <p className="mt-1 text-sm text-slate-600">Your next assigned schedules from today onward.</p>
                             </div>
-                            <a
-                                href="/panelist/documents"
-                                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                            <Link
+                                href={panelistRoutes.schedule.url()}
+                                className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
                             >
-                                Open documents
-                            </a>
+                                Open Full Schedule
+                            </Link>
                         </div>
 
-                        <div className="mt-5 overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b border-slate-200 text-slate-600">
-                                        <th className="py-3 text-left font-semibold">Group</th>
-                                        <th className="py-3 text-left font-semibold">Document Type</th>
-                                        <th className="py-3 text-left font-semibold">Upload Date</th>
-                                        <th className="py-3 text-left font-semibold">Review Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {pendingDocuments.map((row) => (
-                                        <tr key={row.id} className="hover:bg-slate-50">
-                                            <td className="py-3 font-medium text-slate-900">{row.group}</td>
-                                            <td className="py-3 text-slate-600">{row.documentType}</td>
-                                            <td className="py-3 text-slate-600">{row.uploadedAt}</td>
-                                            <td className="py-3">
-                                                <span
-                                                    className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
-                                                        row.status === 'Reviewed'
-                                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                                            : row.status === 'In Progress'
-                                                              ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                                                              : 'border-amber-200 bg-amber-50 text-amber-700'
-                                                    }`}
-                                                >
-                                                    {row.status}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="text-lg font-semibold text-slate-900">Urgent Tasks</div>
-                        <p className="mt-1 text-sm text-slate-500">Auto-highlighted items (dummy).</p>
-
-                        <div className="mt-5 space-y-3">
-                            {urgentTasks.map((t) => (
-                                <div key={t.label} className={`rounded-2xl border p-4 ${t.tone} bg-white`}>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="text-sm font-semibold">{t.label}</div>
-                                        <div className="text-2xl font-bold tabular-nums">{t.value}</div>
+                        {upcomingSchedules.length > 0 ? (
+                            <div className="space-y-3">
+                                {upcomingSchedules.map((schedule) => (
+                                    <div key={schedule.id} className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-sm font-semibold text-slate-900">{schedule.groupName}</p>
+                                                <p className="text-xs text-slate-600">
+                                                    {formatDate(schedule.scheduledDate)}
+                                                    {schedule.startTime ? ` • ${schedule.startTime}` : ''}
+                                                    {schedule.roomName ? ` • ${schedule.roomName}` : ''}
+                                                </p>
+                                                <p className="mt-1 text-xs text-slate-500">{schedule.stage}</p>
+                                            </div>
+                                            <span
+                                                className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${scheduleStatusTone(schedule.status)}`}
+                                            >
+                                                {schedule.status}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-8 text-center text-xs text-slate-500">
+                                No upcoming schedules assigned yet.
+                            </div>
+                        )}
                     </div>
+
+                    <div className={panelClassName}>
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-lg font-semibold text-slate-900">Recent Document Activity</h3>
+                                <p className="mt-1 text-sm text-slate-600">Latest submissions from your assigned groups.</p>
+                            </div>
+                            <Link
+                                href={panelistRoutes.documents.url()}
+                                className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                            >
+                                Open Document Center
+                            </Link>
+                        </div>
+
+                        {recentDocumentActivity.length > 0 ? (
+                            <div className="space-y-3">
+                                {recentDocumentActivity.map((document) => (
+                                    <div key={document.id} className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-semibold text-slate-900">{document.fileName}</p>
+                                                <p className="text-xs text-slate-600">{document.groupName}</p>
+                                                <p className="mt-1 text-xs text-slate-500">
+                                                    {document.requirementType}
+                                                    {document.stage ? ` • ${document.stage}` : ''}
+                                                </p>
+                                                <p className="mt-1 text-[11px] text-slate-500">{formatDateTime(document.updatedAt)}</p>
+                                            </div>
+                                            <span
+                                                className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${documentStatusTone(document.status)}`}
+                                            >
+                                                {document.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-8 text-center text-xs text-slate-500">
+                                No document submissions found for your assigned groups.
+                            </div>
+                        )}
+                    </div>
+                </motion.section>
+
+                <motion.section
+                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: false, amount: 0.2 }}
+                    transition={{ duration: 0.35 }}
+                    className={panelClassName}
+                >
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h3 className="text-lg font-semibold text-slate-900">Document Review Status</h3>
+                            <p className="mt-1 text-sm text-slate-600">Submission outcomes from all assigned groups.</p>
+                        </div>
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                            {documentStatusTotal.toLocaleString()} submissions
+                        </span>
+                    </div>
+
+                    {hasDocumentData ? (
+                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
+                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                <PieChart
+                                    height={190}
+                                    margin={{ left: 88 }}
+                                    series={[
+                                        {
+                                            data: documentStatusPieData,
+                                            innerRadius: 44,
+                                            outerRadius: 74,
+                                            paddingAngle: 2,
+                                            cornerRadius: 5,
+                                            highlightScope: { faded: 'global', highlighted: 'item' },
+                                            faded: { innerRadius: 40, additionalRadius: -5, color: '#d1d5db' },
+                                        },
+                                    ]}
+                                    slotProps={{ legend: { hidden: true } }}
+                                    skipAnimation={false}
+                                />
+                            </Box>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                {documentStatusDistribution.map((item) => (
+                                    <div key={item.label} className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                                            <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{item.label}</span>
+                                        </div>
+                                        <p className="mt-2 text-2xl font-semibold text-slate-900">{item.value.toLocaleString()}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="mt-2 rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-8 text-center text-xs text-slate-500">
+                            No document review status records available yet.
+                        </div>
+                    )}
                 </motion.section>
             </div>
         </PanelLayout>

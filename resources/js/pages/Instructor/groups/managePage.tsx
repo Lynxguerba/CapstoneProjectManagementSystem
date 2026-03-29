@@ -1,10 +1,11 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ChevronRight, LayoutGrid, List, PencilLine, Plus, Search, User, Users } from 'lucide-react';
 import React from 'react';
 import CreateGroupModal from '../../../components/Instructor/groups/CreateGroupModal';
 import EditGroupMembersModal from '../../../components/Instructor/groups/EditGroupMembersModal';
 import GroupDetailsModal from '../../../components/Instructor/groups/GroupDetailsModal';
+import instructorGroups from '../../../routes/instructor/groups';
 import InstructorLayout from '../_layout';
 
 type ProgramSetSummary = {
@@ -22,12 +23,51 @@ type GroupSummary = {
     members_count?: number;
 };
 
+type CrossSetRequestRow = {
+    id: number;
+    status?: 'pending' | 'approved' | 'rejected' | string;
+    student?: {
+        id: number;
+        first_name?: string | null;
+        last_name?: string | null;
+        student_id_number?: string | null;
+    } | null;
+    group?: {
+        id: number;
+        name?: string | null;
+    } | null;
+    requested_by?: number | null;
+    requestedBy?: {
+        id: number;
+        first_name?: string | null;
+        last_name?: string | null;
+    } | null;
+};
+
+type CrossSetMemberGroupRow = {
+    id: number;
+    name: string;
+    leader_name?: string | null;
+    members_count?: number;
+    cross_set_members_count?: number;
+    program_set_name?: string | null;
+    program?: string | null;
+    school_year?: string | null;
+};
+
 type InstructorGroupsManageProps = {
     programSet?: ProgramSetSummary;
     groups?: GroupSummary[];
+    crossSetRequests?: CrossSetRequestRow[];
+    crossSetMemberGroups?: CrossSetMemberGroupRow[];
 };
 
-const InstructorGroupsManage = ({ programSet, groups = [] }: InstructorGroupsManageProps) => {
+const InstructorGroupsManage = ({
+    programSet,
+    groups = [],
+    crossSetRequests = [],
+    crossSetMemberGroups = [],
+}: InstructorGroupsManageProps) => {
     const sectionName = typeof programSet?.name === 'string' && programSet.name.trim() !== '' ? programSet.name : 'Selected Set';
     const sectionProgram = typeof programSet?.program === 'string' ? programSet.program : '';
     const sectionYear = typeof programSet?.school_year === 'string' ? programSet.school_year : '';
@@ -77,7 +117,7 @@ const InstructorGroupsManage = ({ programSet, groups = [] }: InstructorGroupsMan
     }, [searchTerm]);
 
     const subtitle = sectionMeta ? `Manage groups for ${sectionName} (${sectionMeta})` : `Manage groups for ${sectionName}`;
-    const availableProgramSets = programSet ? [programSet] : [];
+    const availableProgramSets = React.useMemo(() => (programSet ? [programSet] : []), [programSet]);
     const formatGroupName = (name: string): string => {
         const trimmed = name.trim();
         if (trimmed === '') {
@@ -85,6 +125,55 @@ const InstructorGroupsManage = ({ programSet, groups = [] }: InstructorGroupsMan
         }
 
         return trimmed.toLowerCase().endsWith(' group') ? trimmed : `${trimmed} Group`;
+    };
+
+    const resolvePersonName = (person?: { first_name?: string | null; last_name?: string | null } | null): string => {
+        if (!person) {
+            return '—';
+        }
+
+        const firstName = typeof person.first_name === 'string' ? person.first_name.trim() : '';
+        const lastName = typeof person.last_name === 'string' ? person.last_name.trim() : '';
+        const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+
+        return fullName || '—';
+    };
+
+    const formatProgramSetMeta = (group: CrossSetMemberGroupRow): string => {
+        const setName = typeof group.program_set_name === 'string' ? group.program_set_name.trim() : '';
+        const meta = [group.program, group.school_year].filter((value): value is string => typeof value === 'string' && value.trim() !== '');
+        const details = meta.join(' • ');
+
+        if (setName !== '' && details !== '') {
+            return `${setName} (${details})`;
+        }
+
+        if (setName !== '') {
+            return setName;
+        }
+
+        return details !== '' ? details : '—';
+    };
+
+    const statusBadgeClass = (status?: string): string => {
+        if (status === 'approved') {
+            return 'bg-emerald-100 text-emerald-700';
+        }
+
+        if (status === 'rejected') {
+            return 'bg-rose-100 text-rose-700';
+        }
+
+        return 'bg-amber-100 text-amber-700';
+    };
+
+    const submitCrossSetAction = (requestId: number, action: 'approve' | 'reject') => {
+        const actionRoute =
+            action === 'approve'
+                ? instructorGroups.crossSetRequest.approve.url({ crossSetRequest: requestId })
+                : instructorGroups.crossSetRequest.reject.url({ crossSetRequest: requestId });
+
+        router.patch(actionRoute, {}, { preserveScroll: true });
     };
 
     return (
@@ -148,6 +237,7 @@ const InstructorGroupsManage = ({ programSet, groups = [] }: InstructorGroupsMan
                         </button>
                     </div>
                 </div>
+
 
                 {viewMode === 'card' ? (
                     <motion.div
@@ -350,6 +440,148 @@ const InstructorGroupsManage = ({ programSet, groups = [] }: InstructorGroupsMan
                         </div>
                     </div>
                 )}
+
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-center justify-between gap-2">
+                        <div>
+                            <p className="text-sm font-semibold text-slate-800">Incoming Cross-Set Requests</p>
+                            <p className="text-xs text-slate-500">Requests sent to you for cross-set group membership approval.</p>
+                        </div>
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                            {crossSetRequests.length} pending
+                        </span>
+                    </div>
+
+                    {crossSetRequests.length === 0 ? (
+                        <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
+                            No incoming cross-set requests right now.
+                        </div>
+                    ) : (
+                        <div className="mt-4 space-y-2">
+                            {crossSetRequests.map((crossSetRequest) => {
+                                const studentName = resolvePersonName(crossSetRequest.student);
+                                const requesterName = resolvePersonName(crossSetRequest.requestedBy);
+                                const groupName = crossSetRequest.group?.name ? formatGroupName(crossSetRequest.group.name) : '—';
+                                const status = typeof crossSetRequest.status === 'string' ? crossSetRequest.status : 'pending';
+
+                                return (
+                                    <div
+                                        key={crossSetRequest.id}
+                                        className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 md:flex-row md:items-center md:justify-between"
+                                    >
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-semibold text-slate-800">
+                                                {studentName}
+                                                {crossSetRequest.student?.student_id_number ? (
+                                                    <span className="ml-2 text-xs font-normal text-slate-500">
+                                                        ({crossSetRequest.student.student_id_number})
+                                                    </span>
+                                                ) : null}
+                                            </p>
+                                            <p className="text-xs text-slate-500">Group: {groupName}</p>
+                                            <p className="text-xs text-slate-500">Requested by: {requesterName}</p>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span
+                                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase ${statusBadgeClass(status)}`}
+                                            >
+                                                {status}
+                                            </span>
+
+                                            {status === 'pending' ? (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => submitCrossSetAction(crossSetRequest.id, 'approve')}
+                                                        className="rounded-md bg-emerald-600 px-3 py-1 text-[11px] font-semibold text-white transition hover:bg-emerald-700"
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => submitCrossSetAction(crossSetRequest.id, 'reject')}
+                                                        className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100"
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </>
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    <div className="mt-5 border-t border-slate-200 pt-4">
+                        <div className="flex items-center justify-between gap-2">
+                            <div>
+                                <p className="text-sm font-semibold text-slate-800">Groups With Your Cross-Set Students</p>
+                                <p className="text-xs text-slate-500">
+                                    External groups currently carrying students handled in this program set.
+                                </p>
+                            </div>
+                            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700">
+                                {crossSetMemberGroups.length} groups
+                            </span>
+                        </div>
+
+                        {crossSetMemberGroups.length === 0 ? (
+                            <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
+                                No approved cross-set member groups yet.
+                            </div>
+                        ) : (
+                            <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                        <tr>
+                                            <th className="px-6 py-4">Group</th>
+                                            <th className="px-6 py-4">Handled By Set</th>
+                                            <th className="px-6 py-4">Leader</th>
+                                            <th className="px-6 py-4">Members</th>
+                                            <th className="px-6 py-4">Your Cross-Set Members</th>
+                                            <th className="px-6 py-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {crossSetMemberGroups.map((group, index) => (
+                                            <tr
+                                                key={group.id}
+                                                className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
+                                            >
+                                                <td className="px-6 py-3.5">
+                                                    <div className="font-semibold text-slate-800">{formatGroupName(group.name)}</div>
+                                                </td>
+                                                <td className="px-6 py-3.5 text-slate-600">{formatProgramSetMeta(group)}</td>
+                                                <td className="px-6 py-3.5 text-slate-600">{group.leader_name ?? '—'}</td>
+                                                <td className="px-6 py-3.5 font-semibold text-slate-800">{group.members_count ?? 0}</td>
+                                                <td className="px-6 py-3.5">
+                                                    <span className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700">
+                                                        {group.cross_set_members_count ?? 0}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-3.5 text-right">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSelectedGroupId(group.id);
+                                                            setIsDetailsModalOpen(true);
+                                                        }}
+                                                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-green-200 hover:bg-green-50 hover:text-green-700"
+                                                    >
+                                                        <Users className="h-3 w-3" />
+                                                        View
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </motion.section>
 
             <CreateGroupModal open={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} programSets={availableProgramSets} />
@@ -376,7 +608,14 @@ const InstructorGroupsManage = ({ programSet, groups = [] }: InstructorGroupsMan
 const InstructorGroupsManagePage = () => {
     const { props } = usePage<InstructorGroupsManageProps>();
 
-    return <InstructorGroupsManage programSet={props.programSet} groups={props.groups ?? []} />;
+    return (
+        <InstructorGroupsManage
+            programSet={props.programSet}
+            groups={props.groups ?? []}
+            crossSetRequests={props.crossSetRequests ?? []}
+            crossSetMemberGroups={props.crossSetMemberGroups ?? []}
+        />
+    );
 };
 
 export default InstructorGroupsManagePage;

@@ -37,6 +37,9 @@ type InstructorStudentsManageProps = {
         status: StudentStatus;
         createdAt: string;
         isAssignedToGroup?: boolean;
+        assignedGroupsCount?: number;
+        localGroupsCount?: number;
+        crossSetGroupsCount?: number;
     }[];
 };
 const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolledStudents = [] }: InstructorStudentsManageProps) => {
@@ -126,6 +129,18 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
         );
     };
 
+    const resolveGroupAssignmentBadge = (isAssignedToGroup?: boolean): { label: string; className: string } => {
+        return isAssignedToGroup
+            ? {
+                  label: 'Assigned',
+                  className: 'bg-emerald-100 text-emerald-700',
+              }
+            : {
+                  label: 'Unassigned',
+                  className: 'bg-amber-100 text-amber-700',
+              };
+    };
+
     return (
         <InstructorLayout title="Students Management" subtitle={subtitle}>
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
@@ -209,52 +224,54 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {paginatedUsers.map((user, index) => (
-                                <tr
-                                    key={user.id}
-                                    className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
-                                >
-                                    <td className="px-6 py-3.5 font-semibold text-slate-800">{user.fullName}</td>
-                                    <td className="px-6 py-3.5 text-slate-500">{user.email ?? '—'}</td>
-                                    <td className="px-6 py-3.5">
-                                        <div className="space-y-1">
-                                            <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600">
-                                                {user.program ?? 'Unassigned'}
+                            {paginatedUsers.map((user, index) => {
+                                const assignmentBadge = resolveGroupAssignmentBadge(user.isAssignedToGroup);
+
+                                return (
+                                    <tr
+                                        key={user.id}
+                                        className={`transition-colors hover:bg-green-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
+                                    >
+                                        <td className="px-6 py-3.5 font-semibold text-slate-800">{user.fullName}</td>
+                                        <td className="px-6 py-3.5 text-slate-500">{user.email ?? '—'}</td>
+                                        <td className="px-6 py-3.5">
+                                            <div className="space-y-1">
+                                                <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600">
+                                                    {user.program ?? 'Unassigned'}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-3.5">
+                                            <span
+                                                className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${assignmentBadge.className}`}
+                                            >
+                                                {assignmentBadge.label}
                                             </span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-3.5">
-                                        <span
-                                            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${
-                                                user.isAssignedToGroup === true ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                            }`}
-                                        >
-                                            {user.isAssignedToGroup === true ? 'Assigned' : 'Unassigned'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-3.5">
-                                        <span
-                                            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${
-                                                user.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
-                                            }`}
-                                        >
-                                            {user.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-3.5 text-slate-500">{user.createdAt}</td>
-                                    <td className="px-6 py-3.5 text-right">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleUnenrollRequest(user.id, user.fullName)}
-                                            disabled={processingStudentId === user.id}
-                                            className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-rose-600 shadow-sm transition-all hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                            <UserMinus className="h-3 w-3" />
-                                            {processingStudentId === user.id ? 'Unenrolling...' : 'Unenroll'}
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                        <td className="px-6 py-3.5">
+                                            <span
+                                                className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${
+                                                    user.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
+                                                }`}
+                                            >
+                                                {user.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-3.5 text-slate-500">{user.createdAt}</td>
+                                        <td className="px-6 py-3.5 text-right">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleUnenrollRequest(user.id, user.fullName)}
+                                                disabled={processingStudentId === user.id}
+                                                className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-rose-600 shadow-sm transition-all hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                                <UserMinus className="h-3 w-3" />
+                                                {processingStudentId === user.id ? 'Unenrolling...' : 'Unenroll'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
 

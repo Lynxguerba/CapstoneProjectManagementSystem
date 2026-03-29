@@ -81,7 +81,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
             totalAssigned,
             totalCapacity,
             remaining,
-            isAvailable: adviser.is_available !== false,
+            isAvailable: adviser.is_available === true,
         };
     }, [getAssignedForYear]);
 

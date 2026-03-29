@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { CheckCircle2, FileSpreadsheet, Upload, X } from 'lucide-react';
+import { CheckCircle2, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -312,7 +312,7 @@ const BulkEnrollStudentsModal = ({
 
             const matchedStudent = studentDirectory.get(email.toLowerCase());
             if (!matchedStudent) {
-                issues.push('Student not found in users table.');
+                issues.push('This student is not yet registered in the system.');
             }
 
             if (matchedStudent && enrolledEmailSet.has(email.toLowerCase())) {
@@ -392,6 +392,27 @@ const BulkEnrollStudentsModal = ({
     const invalidRowsCount = previewRows.filter((row) => row.issues.length > 0).length;
     const validRowsCount = previewRows.length - invalidRowsCount;
     const selectedRowsCount = data.rows.length;
+    const normalizedTemplateProgram = normalizeProgram(programSetProgram) || 'BSIT';
+    const csvTemplateFileName = 'student-enrollment-template.csv';
+    const csvTemplateContent = [
+        'last_name,first_name,email,program',
+        `Dela Cruz,Juan,juan.delacruz@example.com,${normalizedTemplateProgram}`,
+        `Santos,Maria,maria.santos@example.com,${normalizedTemplateProgram}`,
+    ].join('\n');
+
+    const downloadCsvTemplate = () => {
+        const blob = new Blob([csvTemplateContent], {
+            type: 'text/csv;charset=utf-8',
+        });
+        const url = URL.createObjectURL(blob);
+        const anchorElement = document.createElement('a');
+
+        anchorElement.href = url;
+        anchorElement.setAttribute('download', csvTemplateFileName);
+        anchorElement.click();
+
+        URL.revokeObjectURL(url);
+    };
 
     if (!open || typeof document === 'undefined') {
         return null;
@@ -436,7 +457,17 @@ const BulkEnrollStudentsModal = ({
                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
                             Upload a CSV file with headers:
                             <br />
-                            <span className="font-semibold">Last Name, First Name, Email</span>
+                            <span className="font-semibold">Last Name, First Name, Email, Program</span>
+                            <div className="mt-3">
+                                <button
+                                    type="button"
+                                    onClick={downloadCsvTemplate}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+                                >
+                                    <Download className="h-3.5 w-3.5" />
+                                    Download CSV Template (Recommended)
+                                </button>
+                            </div>
                         </div>
 
                         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">

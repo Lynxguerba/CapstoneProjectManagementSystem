@@ -150,7 +150,7 @@ const AssignAdviserModal = ({ open, groupId, groupName, currentAdviser, advisers
                     <div className="space-y-3">
                         {filteredAdvisers.map((adviser) => {
                             const programs = adviser.programs ?? [];
-                            const isClosed = adviser.is_available === false;
+                            const isClosed = adviser.is_available !== true;
                             const remainingSlots = programs.reduce((total, program) => {
                                 return total + Math.max(0, program.max_groups - program.assigned_count);
                             }, 0);

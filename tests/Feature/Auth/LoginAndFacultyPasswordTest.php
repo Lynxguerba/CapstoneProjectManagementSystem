@@ -70,7 +70,7 @@ it('logs multi-role accounts into their stored active role', function (): void {
     $this->assertAuthenticatedAs($user, 'web');
 });
 
-it('prevents login when the same account is active in another browser', function (): void {
+it('allows login when the same account is active in another browser', function (): void {
     $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
 
     $user = User::factory()->create([
@@ -82,21 +82,16 @@ it('prevents login when the same account is active in another browser', function
     ]);
     $user->syncRoles(['adviser']);
 
-    $response = $this->from(route('login'))->post(route('login.store'), [
+    $response = $this->post(route('login.store'), [
         'email' => 'already-active@example.com',
         'password' => 'secretpass',
     ]);
 
-    $response
-        ->assertRedirect(route('login'))
-        ->assertSessionHasErrors([
-            'email' => 'The user you entered is already logged in on another browser.',
-        ]);
-
-    $this->assertGuest('web');
+    $response->assertRedirect(route('adviser.dashboard'));
+    $this->assertAuthenticatedAs($user, 'web');
 });
 
-it('allows login when a previous browser lock is already expired', function (): void {
+it('allows login when a previous session marker is already stale', function (): void {
     $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
 
     $user = User::factory()->create([

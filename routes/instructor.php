@@ -7,8 +7,13 @@ use App\Http\Controllers\AssignGroupPanelistController;
 use App\Http\Controllers\BulkEnrollStudentsController;
 use App\Http\Controllers\DestroyDefenseRoomController;
 use App\Http\Controllers\DestroyDocumentRequirementController;
+use App\Http\Controllers\DestroyGroupController;
 use App\Http\Controllers\DownloadDocumentSubmissionController;
 use App\Http\Controllers\EnrollStudentController;
+use App\Http\Controllers\Instructor\ApproveCrossSetGroupRequestController;
+use App\Http\Controllers\Instructor\CrossSetStudentSearchController;
+use App\Http\Controllers\Instructor\RejectCrossSetGroupRequestController;
+use App\Http\Controllers\Instructor\StoreCrossSetGroupRequestController;
 use App\Http\Controllers\StoreDefenseRoomController;
 use App\Http\Controllers\StoreDocumentRequirementController;
 use App\Http\Controllers\UnenrollStudentController;
@@ -21,10 +26,13 @@ use App\Http\Controllers\UpsertDefenseScheduleController;
 use App\Models\AcademicYear;
 use App\Models\AdviserAvailability;
 use App\Models\AdviserProgramUtility;
+use App\Models\CrossSetGroupRequest;
 use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
 use App\Models\GroupAdviserRequest;
+use App\Models\PanelistAvailability;
+use App\Models\PanelistProgramUtility;
 use App\Models\ProgramSet;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -703,6 +711,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             if (class_exists(\App\Models\ProgramSet::class) && Schema::hasTable('program_sets')) {
                 $hasProgramSetStudentTable = Schema::hasTable('program_set_student');
                 $hasGroupsTable = Schema::hasTable('groups');
+                $hasGroupMembersTable = Schema::hasTable('group_members');
+                $hasGroupMembersIsCrossSetColumn = $hasGroupMembersTable && Schema::hasColumn('group_members', 'is_cross_set');
                 $programSetColumns = ['id', 'name', 'program', 'academic_year_id', 'instructor_id'];
 
                 if ($hasProgramSetsSchoolYearColumn) {
@@ -727,19 +737,43 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     )
                     ->when($hasProgramSetStudentTable, fn ($query) => $query->withCount('students'))
                     ->when($hasGroupsTable, fn ($query) => $query->withCount('groups'))
+                    ->when(
+                        $hasProgramSetStudentTable && $hasGroupsTable && $hasGroupMembersTable,
+                        function ($query) use ($hasGroupMembersIsCrossSetColumn): void {
+                            $query->selectSub(
+                                DB::table('program_set_student as pss')
+                                    ->join('group_members as gm', 'gm.student_id', '=', 'pss.student_id')
+                                    ->join('groups as g', 'g.id', '=', 'gm.group_id')
+                                    ->whereColumn('pss.program_set_id', 'program_sets.id')
+                                    ->whereColumn('g.program_set_id', '!=', 'pss.program_set_id')
+                                    ->when($hasGroupMembersIsCrossSetColumn, fn ($subQuery) => $subQuery->where('gm.is_cross_set', true))
+                                    ->selectRaw('count(distinct g.id)'),
+                                'cross_set_groups_count',
+                            );
+                        },
+                    )
                     ->orderByDesc('created_at')
                     ->get($programSetColumns);
 
                 $programSets = $programSetsQuery
-                    ->map(fn ($ps) => [
-                        'id' => $ps->id,
-                        'name' => $ps->name,
-                        'program' => $ps->program,
-                        'school_year' => $ps->academicYear?->label ?? ($hasProgramSetsSchoolYearColumn ? $ps->school_year : null),
-                        'instructor_name' => $ps->instructor?->name,
-                        'students_count' => $hasProgramSetStudentTable ? ($ps->students_count ?? 0) : 0,
-                        'groups_count' => $hasGroupsTable ? ($ps->groups_count ?? 0) : 0,
-                    ])
+                    ->map(function ($ps) use ($hasProgramSetStudentTable, $hasGroupsTable, $hasGroupMembersTable, $hasProgramSetsSchoolYearColumn): array {
+                        $localGroupsCount = $hasGroupsTable ? (int) ($ps->groups_count ?? 0) : 0;
+                        $crossSetGroupsCount = $hasProgramSetStudentTable && $hasGroupsTable && $hasGroupMembersTable
+                            ? (int) ($ps->cross_set_groups_count ?? 0)
+                            : 0;
+
+                        return [
+                            'id' => $ps->id,
+                            'name' => $ps->name,
+                            'program' => $ps->program,
+                            'school_year' => $ps->academicYear?->label ?? ($hasProgramSetsSchoolYearColumn ? $ps->school_year : null),
+                            'instructor_name' => $ps->instructor?->name,
+                            'students_count' => $hasProgramSetStudentTable ? (int) ($ps->students_count ?? 0) : 0,
+                            'groups_count' => $localGroupsCount + $crossSetGroupsCount,
+                            'local_groups_count' => $localGroupsCount,
+                            'cross_set_groups_count' => $crossSetGroupsCount,
+                        ];
+                    })
                     ->all();
             }
         } catch (\Throwable $e) {
@@ -759,6 +793,19 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         }
 
         $programSet->load('academicYear');
+        $resolveUserName = static function (?User $user): string {
+            if (! $user) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $fullName = $firstName !== '' || $lastName !== ''
+                ? trim($firstName.' '.$lastName)
+                : (is_string($user->name) ? $user->name : '');
+
+            return $fullName;
+        };
         $groups = [];
 
         try {
@@ -769,22 +816,13 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     ->withCount('members')
                     ->orderByDesc('created_at')
                     ->get()
-                    ->map(function (\App\Models\Group $group): array {
-                        $leader = $group->leader;
-                        $leaderName = $leader
-                            ? trim(collect([$leader->first_name ?? '', $leader->last_name ?? ''])->filter()->join(' '))
-                            : '';
-
-                        if ($leaderName === '' && $leader) {
-                            $leaderName = (string) $leader->name;
-                        }
-
+                    ->map(function (\App\Models\Group $group) use ($resolveUserName): array {
                         return [
                             'id' => $group->id,
                             'name' => $group->name,
                             'program_set_id' => $group->program_set_id,
-                            'leader_name' => $leaderName,
-                            'members_count' => $group->members_count ?? 0,
+                            'leader_name' => $resolveUserName($group->leader),
+                            'members_count' => (int) ($group->members_count ?? 0),
                         ];
                     })
                     ->values()
@@ -792,6 +830,91 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             }
         } catch (\Throwable $e) {
             $groups = [];
+        }
+
+        $crossSetRequests = collect();
+
+        try {
+            if (class_exists(CrossSetGroupRequest::class) && Schema::hasTable('cross_set_group_requests')) {
+                $studentColumns = ['id', 'first_name', 'last_name'];
+
+                if (Schema::hasColumn('users', 'student_id_number')) {
+                    $studentColumns[] = 'student_id_number';
+                }
+
+                $crossSetRequests = CrossSetGroupRequest::query()
+                    ->with([
+                        'student:'.implode(',', $studentColumns),
+                        'group:id,name',
+                        'requestedBy:id,first_name,last_name',
+                    ])
+                    ->where('requested_to', $userId)
+                    ->where('status', 'pending')
+                    ->latest()
+                    ->get();
+            }
+        } catch (\Throwable $e) {
+            $crossSetRequests = collect();
+        }
+
+        $crossSetMemberGroups = collect();
+
+        try {
+            if (Schema::hasTable('groups') && Schema::hasTable('group_members') && Schema::hasTable('program_set_student')) {
+                $hasGroupMembersIsCrossSetColumn = Schema::hasColumn('group_members', 'is_cross_set');
+
+                $crossSetMembershipRows = DB::table('group_members as gm')
+                    ->join('groups as g', 'g.id', '=', 'gm.group_id')
+                    ->join('program_set_student as pss', 'pss.student_id', '=', 'gm.student_id')
+                    ->where('pss.program_set_id', $programSet->id)
+                    ->where('g.program_set_id', '!=', $programSet->id)
+                    ->when($hasGroupMembersIsCrossSetColumn, fn ($query) => $query->where('gm.is_cross_set', true))
+                    ->select('gm.group_id', DB::raw('count(distinct gm.student_id) as cross_set_members_count'))
+                    ->groupBy('gm.group_id')
+                    ->get();
+
+                $crossSetGroupIds = $crossSetMembershipRows
+                    ->pluck('group_id')
+                    ->map(fn ($groupId): int => (int) $groupId)
+                    ->unique()
+                    ->values();
+
+                $crossSetGroupsById = Group::query()
+                    ->with([
+                        'leader:id,name,first_name,last_name',
+                        'programSet:id,name,program,academic_year_id',
+                        'programSet.academicYear:id,label',
+                    ])
+                    ->withCount('members')
+                    ->whereIn('id', $crossSetGroupIds->all())
+                    ->get()
+                    ->keyBy('id');
+
+                $crossSetMemberGroups = $crossSetMembershipRows
+                    ->map(function ($row) use ($crossSetGroupsById, $resolveUserName): ?array {
+                        $groupId = (int) $row->group_id;
+                        $group = $crossSetGroupsById->get($groupId);
+                        if (! $group) {
+                            return null;
+                        }
+
+                        return [
+                            'id' => $group->id,
+                            'name' => $group->name,
+                            'leader_name' => $resolveUserName($group->leader),
+                            'members_count' => (int) ($group->members_count ?? 0),
+                            'cross_set_members_count' => (int) ($row->cross_set_members_count ?? 0),
+                            'program_set_name' => $group->programSet?->name,
+                            'program' => $group->programSet?->program,
+                            'school_year' => $group->programSet?->academicYear?->label,
+                        ];
+                    })
+                    ->filter()
+                    ->sortByDesc('cross_set_members_count')
+                    ->values();
+            }
+        } catch (\Throwable $e) {
+            $crossSetMemberGroups = collect();
         }
 
         return Inertia::render('Instructor/groups/managePage', [
@@ -802,6 +925,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 'school_year' => $programSet->academicYear?->label,
             ],
             'groups' => $groups,
+            'crossSetRequests' => $crossSetRequests,
+            'crossSetMemberGroups' => $crossSetMemberGroups,
         ]);
     })->name('instructor.groups.manage');
     Route::get('/groups/{group}/details', function (\App\Models\Group $group) {
@@ -820,7 +945,25 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
         $group->load($relations);
 
-        if ($userId !== null && $group->programSet?->instructor_id !== $userId) {
+        $canViewCrossSetGroup = false;
+        if (
+            $userId !== null &&
+            Schema::hasTable('group_members') &&
+            Schema::hasTable('program_set_student') &&
+            Schema::hasTable('program_sets')
+        ) {
+            $hasGroupMembersIsCrossSetColumn = Schema::hasColumn('group_members', 'is_cross_set');
+
+            $canViewCrossSetGroup = DB::table('group_members as gm')
+                ->join('program_set_student as pss', 'pss.student_id', '=', 'gm.student_id')
+                ->join('program_sets as ps', 'ps.id', '=', 'pss.program_set_id')
+                ->where('gm.group_id', $group->id)
+                ->where('ps.instructor_id', $userId)
+                ->when($hasGroupMembersIsCrossSetColumn, fn ($query) => $query->where('gm.is_cross_set', true))
+                ->exists();
+        }
+
+        if ($userId !== null && $group->programSet?->instructor_id !== $userId && ! $canViewCrossSetGroup) {
             abort(403);
         }
 
@@ -895,6 +1038,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             'group' => [
                 'id' => $group->id,
                 'name' => $group->name,
+                'program_set_id' => $group->program_set_id,
                 'program' => $group->programSet?->program,
                 'school_year' => $group->programSet?->academicYear?->label,
                 'leader_name' => $leaderName,
@@ -957,8 +1101,15 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             'students' => $students,
         ]);
     })->name('instructor.program-sets.enrolled-students');
+    Route::get('/students/cross-set-search', CrossSetStudentSearchController::class)->name('instructor.students.cross-set-search');
     Route::post('/groups', \App\Http\Controllers\StoreGroupController::class)->name('instructor.groups.store');
+    Route::post('/groups/cross-set-request', StoreCrossSetGroupRequestController::class)->name('instructor.groups.cross-set-request.store');
+    Route::patch('/groups/cross-set-request/{crossSetRequest}/approve', ApproveCrossSetGroupRequestController::class)
+        ->name('instructor.groups.cross-set-request.approve');
+    Route::patch('/groups/cross-set-request/{crossSetRequest}/reject', RejectCrossSetGroupRequestController::class)
+        ->name('instructor.groups.cross-set-request.reject');
     Route::put('/groups/{group}/members', UpdateGroupMembersController::class)->name('instructor.groups.members.update');
+    Route::delete('/groups/{group}', DestroyGroupController::class)->name('instructor.groups.destroy');
     Route::get('/students', function () {
         $programSets = [];
         try {
@@ -1062,28 +1213,74 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             $hasStudentProgramTable = Schema::hasTable('student_program');
             $hasGroupsTable = Schema::hasTable('groups');
             $hasGroupMembersTable = Schema::hasTable('group_members');
-            $assignedStudentLookup = collect();
+            $enrolledStudentIds = $programSetModel
+                ->students()
+                ->pluck('users.id')
+                ->map(fn ($studentId): int => (int) $studentId)
+                ->unique()
+                ->values();
+            $assignmentSummaryByStudent = collect();
 
-            if ($hasGroupsTable) {
-                $assignedStudentIds = Group::query()
-                    ->where('program_set_id', $programSetModel->id)
-                    ->whereNotNull('leader_id')
-                    ->pluck('leader_id');
+            if ($hasGroupsTable && $enrolledStudentIds->isNotEmpty()) {
+                $memberAssignments = collect();
 
                 if ($hasGroupMembersTable) {
-                    $groupMemberIds = DB::table('group_members as gm')
+                    $memberAssignments = DB::table('group_members as gm')
                         ->join('groups as g', 'g.id', '=', 'gm.group_id')
-                        ->where('g.program_set_id', $programSetModel->id)
-                        ->pluck('gm.student_id');
-
-                    $assignedStudentIds = $assignedStudentIds->merge($groupMemberIds);
+                        ->whereIn('gm.student_id', $enrolledStudentIds->all())
+                        ->select('gm.student_id', 'gm.group_id', 'g.program_set_id')
+                        ->get()
+                        ->map(fn ($row): array => [
+                            'student_id' => (int) $row->student_id,
+                            'group_id' => (int) $row->group_id,
+                            'program_set_id' => (int) $row->program_set_id,
+                        ]);
                 }
 
-                $assignedStudentLookup = $assignedStudentIds
-                    ->filter(fn ($studentId) => $studentId !== null)
-                    ->map(fn ($studentId): int => (int) $studentId)
-                    ->unique()
-                    ->flip();
+                $leaderAssignments = Group::query()
+                    ->whereIn('leader_id', $enrolledStudentIds->all())
+                    ->select(['id', 'leader_id', 'program_set_id'])
+                    ->get()
+                    ->map(fn (Group $group): array => [
+                        'student_id' => (int) $group->leader_id,
+                        'group_id' => (int) $group->id,
+                        'program_set_id' => (int) $group->program_set_id,
+                    ]);
+
+                $allAssignments = $memberAssignments
+                    ->merge($leaderAssignments)
+                    ->unique(fn (array $assignment): string => $assignment['student_id'].'-'.$assignment['group_id'])
+                    ->values();
+
+                $assignmentSummaryByStudent = $allAssignments
+                    ->groupBy('student_id')
+                    ->map(function ($assignments) use ($programSetModel): array {
+                        $localGroupsCount = (int) $assignments
+                            ->where('program_set_id', $programSetModel->id)
+                            ->count();
+                        $crossSetGroupsCount = (int) $assignments
+                            ->where('program_set_id', '!=', $programSetModel->id)
+                            ->count();
+                        $assignedGroupsCount = (int) $assignments->count();
+
+                        $assignmentType = 'none';
+                        if ($assignedGroupsCount > 0) {
+                            if ($localGroupsCount > 0 && $crossSetGroupsCount > 0) {
+                                $assignmentType = 'mixed';
+                            } elseif ($crossSetGroupsCount > 0) {
+                                $assignmentType = 'cross_set';
+                            } else {
+                                $assignmentType = 'local';
+                            }
+                        }
+
+                        return [
+                            'assigned_groups_count' => $assignedGroupsCount,
+                            'local_groups_count' => $localGroupsCount,
+                            'cross_set_groups_count' => $crossSetGroupsCount,
+                            'assignment_type' => $assignmentType,
+                        ];
+                    });
             }
 
             $enrolledStudents = $programSetModel
@@ -1091,7 +1288,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 ->with($hasStudentProgramTable ? ['studentProgram:id,student_id,program'] : [])
                 ->orderBy('last_name')
                 ->get(['users.id', 'users.name', 'users.first_name', 'users.last_name', 'users.email', 'users.status', 'users.created_at'])
-                ->map(function (User $student) use ($hasStudentProgramTable, $assignedStudentLookup): array {
+                ->map(function (User $student) use ($hasStudentProgramTable, $assignmentSummaryByStudent): array {
                     $firstName = is_string($student->first_name) ? trim($student->first_name) : '';
                     $lastName = is_string($student->last_name) ? trim($student->last_name) : '';
                     $fullName = $firstName !== '' || $lastName !== ''
@@ -1099,7 +1296,19 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         : (is_string($student->name) ? $student->name : '');
                     $status = is_string($student->status) && $student->status !== '' ? $student->status : 'active';
                     $program = $hasStudentProgramTable ? $student->studentProgram?->program : null;
-                    $isAssignedToGroup = $assignedStudentLookup->has((int) $student->id);
+                    $assignmentSummary = $assignmentSummaryByStudent->get((int) $student->id, [
+                        'assigned_groups_count' => 0,
+                        'local_groups_count' => 0,
+                        'cross_set_groups_count' => 0,
+                        'assignment_type' => 'none',
+                    ]);
+                    $assignedGroupsCount = (int) ($assignmentSummary['assigned_groups_count'] ?? 0);
+                    $localGroupsCount = (int) ($assignmentSummary['local_groups_count'] ?? 0);
+                    $crossSetGroupsCount = (int) ($assignmentSummary['cross_set_groups_count'] ?? 0);
+                    $assignmentType = is_string($assignmentSummary['assignment_type'] ?? null)
+                        ? $assignmentSummary['assignment_type']
+                        : 'none';
+                    $isAssignedToGroup = $assignedGroupsCount > 0;
 
                     return [
                         'id' => $student->id,
@@ -1111,6 +1320,10 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         'status' => $status,
                         'createdAt' => $student->created_at?->format('Y-m-d') ?? '',
                         'isAssignedToGroup' => $isAssignedToGroup,
+                        'assignedGroupsCount' => $assignedGroupsCount,
+                        'localGroupsCount' => $localGroupsCount,
+                        'crossSetGroupsCount' => $crossSetGroupsCount,
+                        'groupAssignmentType' => $assignmentType,
                     ];
                 })
                 ->values();
@@ -1377,8 +1590,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             ->all();
 
                         $isAvailable = $adviser->relationLoaded('adviserAvailability')
-                            ? (bool) $adviser->adviserAvailability?->is_available
-                            : true;
+                            ? (bool) ($adviser->adviserAvailability?->is_available ?? false)
+                            : false;
 
                         return [
                             'id' => $adviser->id,
@@ -1523,8 +1736,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             ->all();
 
         $isAvailable = $adviser->relationLoaded('adviserAvailability')
-            ? (bool) $adviser->adviserAvailability?->is_available
-            : true;
+            ? (bool) ($adviser->adviserAvailability?->is_available ?? false)
+            : false;
 
         $groups = [];
         try {
@@ -1659,7 +1872,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             $groups = [];
         }
 
-        $isAvailable = true;
+        $isAvailable = false;
         $utilityMap = collect();
 
         try {
@@ -1673,7 +1886,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 }
             }
         } catch (\Throwable $e) {
-            $isAvailable = true;
+            $isAvailable = false;
         }
 
         try {
@@ -1758,12 +1971,20 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     ->orderBy('last_name')
                     ->get(['id', 'name', 'first_name', 'last_name', 'email']);
 
+                $relations = [];
                 if (Schema::hasTable('group_panelists') && Schema::hasTable('groups') && Schema::hasTable('program_sets')) {
-                    $panelistsQuery->load([
-                        'panelGroups' => function ($query) {
-                            $query->with('programSet.academicYear');
-                        },
-                    ]);
+                    $relations['panelGroups'] = function ($query) {
+                        $query->with('programSet.academicYear');
+                    };
+                }
+                if (Schema::hasTable('panelist_program_utilities')) {
+                    $relations[] = 'panelistProgramUtilities';
+                }
+                if (Schema::hasTable('panelist_availabilities')) {
+                    $relations[] = 'panelistAvailability';
+                }
+                if (count($relations) > 0) {
+                    $panelistsQuery->load($relations);
                 }
 
                 $panelists = $panelistsQuery
@@ -1775,27 +1996,78 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             : (is_string($panelist->name) ? $panelist->name : '');
 
                         $workloads = [];
+                        $assignedByProgramYear = collect();
                         if ($panelist->relationLoaded('panelGroups')) {
-                            $workloads = $panelist->panelGroups
-                                ->groupBy(function (\App\Models\Group $group): string {
-                                    $programSet = $group->programSet;
-                                    $label = $programSet?->academicYear?->label ?? $programSet?->school_year ?? '';
+                            $resolveAcademicYearLabel = static function (\App\Models\Group $group): string {
+                                $programSet = $group->programSet;
+                                $label = $programSet?->academicYear?->label ?? $programSet?->school_year ?? '';
 
-                                    return $label !== '' ? $label : 'Unspecified';
-                                })
+                                return $label !== '' ? $label : 'Unspecified';
+                            };
+
+                            $workloads = $panelist->panelGroups
+                                ->groupBy($resolveAcademicYearLabel)
                                 ->map(fn ($groups, $label): array => [
                                     'academic_year' => $label,
                                     'groups_count' => $groups->count(),
                                 ])
                                 ->values()
                                 ->all();
+
+                            $assignedByProgramYear = $panelist->panelGroups
+                                ->groupBy(fn (\App\Models\Group $group): ?string => $group->programSet?->program)
+                                ->map(
+                                    fn ($groups) => $groups
+                                        ->groupBy($resolveAcademicYearLabel)
+                                        ->map(fn ($yearGroups) => $yearGroups->count()),
+                                );
                         }
+
+                        $utilityMap = $panelist->relationLoaded('panelistProgramUtilities')
+                            ? $panelist->panelistProgramUtilities
+                                ->filter(fn (PanelistProgramUtility $utility): bool => trim((string) $utility->program) !== '')
+                                ->keyBy('program')
+                            : collect();
+
+                        $assignedByProgram = $panelist->relationLoaded('panelGroups')
+                            ? $panelist->panelGroups
+                                ->groupBy(fn (\App\Models\Group $group): ?string => $group->programSet?->program)
+                                ->map(fn ($groups) => $groups->count())
+                            : collect();
+
+                        $programSummaries = $utilityMap
+                            ->keys()
+                            ->merge($assignedByProgram->keys())
+                            ->filter(fn ($program): bool => is_string($program) && trim($program) !== '')
+                            ->unique()
+                            ->sort()
+                            ->map(function (string $program) use ($utilityMap, $assignedByProgram, $assignedByProgramYear): array {
+                                $maxGroups = $utilityMap->get($program)?->max_groups ?? 5;
+                                $assignedByYear = collect($assignedByProgramYear->get($program, []))
+                                    ->mapWithKeys(fn ($count, $label): array => [$label => $count])
+                                    ->all();
+
+                                return [
+                                    'program' => $program,
+                                    'max_groups' => $maxGroups,
+                                    'assigned_count' => $assignedByProgram->get($program, 0),
+                                    'assigned_by_year' => $assignedByYear,
+                                ];
+                            })
+                            ->values()
+                            ->all();
+
+                        $isAvailable = $panelist->relationLoaded('panelistAvailability')
+                            ? (bool) ($panelist->panelistAvailability?->is_available ?? false)
+                            : false;
 
                         return [
                             'id' => $panelist->id,
                             'name' => $fullName,
                             'email' => $panelist->email ?? '',
                             'workloads' => $workloads,
+                            'is_available' => $isAvailable,
+                            'programs' => $programSummaries,
                         ];
                     })
                     ->values()
@@ -1837,12 +2109,20 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         $selectedAcademicYear = request()->query('academic_year');
         $selectedAcademicYear = is_string($selectedAcademicYear) ? $selectedAcademicYear : null;
 
+        $relations = [];
         if (Schema::hasTable('group_panelists') && Schema::hasTable('groups') && Schema::hasTable('program_sets')) {
-            $panelist->load([
-                'panelGroups' => function ($query) {
-                    $query->with('programSet.academicYear');
-                },
-            ]);
+            $relations['panelGroups'] = function ($query) {
+                $query->with('programSet.academicYear');
+            };
+        }
+        if (Schema::hasTable('panelist_program_utilities')) {
+            $relations[] = 'panelistProgramUtilities';
+        }
+        if (Schema::hasTable('panelist_availabilities')) {
+            $relations[] = 'panelistAvailability';
+        }
+        if (count($relations) > 0) {
+            $panelist->load($relations);
         }
 
         $userId = Auth::guard('web')->id();
@@ -1862,21 +2142,70 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         };
 
         $workloads = [];
+        $assignedByProgramYear = collect();
         if ($panelist->relationLoaded('panelGroups')) {
-            $workloads = $panelist->panelGroups
-                ->groupBy(function (\App\Models\Group $group): string {
-                    $programSet = $group->programSet;
-                    $label = $programSet?->academicYear?->label ?? $programSet?->school_year ?? '';
+            $resolveAcademicYearLabel = static function (\App\Models\Group $group): string {
+                $programSet = $group->programSet;
+                $label = $programSet?->academicYear?->label ?? $programSet?->school_year ?? '';
 
-                    return $label !== '' ? $label : 'Unspecified';
-                })
+                return $label !== '' ? $label : 'Unspecified';
+            };
+
+            $workloads = $panelist->panelGroups
+                ->groupBy($resolveAcademicYearLabel)
                 ->map(fn ($groups, $label): array => [
                     'academic_year' => $label,
                     'groups_count' => $groups->count(),
                 ])
                 ->values()
                 ->all();
+
+            $assignedByProgramYear = $panelist->panelGroups
+                ->groupBy(fn (\App\Models\Group $group): ?string => $group->programSet?->program)
+                ->map(
+                    fn ($groups) => $groups
+                        ->groupBy($resolveAcademicYearLabel)
+                        ->map(fn ($yearGroups) => $yearGroups->count()),
+                );
         }
+
+        $utilityMap = $panelist->relationLoaded('panelistProgramUtilities')
+            ? $panelist->panelistProgramUtilities
+                ->filter(fn (PanelistProgramUtility $utility): bool => trim((string) $utility->program) !== '')
+                ->keyBy('program')
+            : collect();
+
+        $assignedByProgram = $panelist->relationLoaded('panelGroups')
+            ? $panelist->panelGroups
+                ->groupBy(fn (\App\Models\Group $group): ?string => $group->programSet?->program)
+                ->map(fn ($groups) => $groups->count())
+            : collect();
+
+        $programSummaries = $utilityMap
+            ->keys()
+            ->merge($assignedByProgram->keys())
+            ->filter(fn ($program): bool => is_string($program) && trim($program) !== '')
+            ->unique()
+            ->sort()
+            ->map(function (string $program) use ($utilityMap, $assignedByProgram, $assignedByProgramYear): array {
+                $maxGroups = $utilityMap->get($program)?->max_groups ?? 5;
+                $assignedByYear = collect($assignedByProgramYear->get($program, []))
+                    ->mapWithKeys(fn ($count, $label): array => [$label => $count])
+                    ->all();
+
+                return [
+                    'program' => $program,
+                    'max_groups' => $maxGroups,
+                    'assigned_count' => $assignedByProgram->get($program, 0),
+                    'assigned_by_year' => $assignedByYear,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $isAvailable = $panelist->relationLoaded('panelistAvailability')
+            ? (bool) ($panelist->panelistAvailability?->is_available ?? false)
+            : false;
 
         $panelists = [];
         try {
@@ -1894,12 +2223,83 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     ->orderBy('last_name')
                     ->get(['id', 'name', 'first_name', 'last_name', 'email']);
 
+                $panelistRelations = [];
+                if (Schema::hasTable('group_panelists') && Schema::hasTable('groups') && Schema::hasTable('program_sets')) {
+                    $panelistRelations['panelGroups'] = function ($query) {
+                        $query->with('programSet.academicYear');
+                    };
+                }
+                if (Schema::hasTable('panelist_program_utilities')) {
+                    $panelistRelations[] = 'panelistProgramUtilities';
+                }
+                if (Schema::hasTable('panelist_availabilities')) {
+                    $panelistRelations[] = 'panelistAvailability';
+                }
+                if (count($panelistRelations) > 0) {
+                    $panelistsQuery->load($panelistRelations);
+                }
+
                 $panelists = $panelistsQuery
-                    ->map(function (User $panelist) use ($resolveUserName): array {
+                    ->map(function (User $optionPanelist) use ($resolveUserName): array {
+                        $assignedByProgramYear = $optionPanelist->relationLoaded('panelGroups')
+                            ? $optionPanelist->panelGroups
+                                ->groupBy(fn (\App\Models\Group $group): ?string => $group->programSet?->program)
+                                ->map(
+                                    fn ($groups) => $groups
+                                        ->groupBy(function (\App\Models\Group $group): string {
+                                            $programSet = $group->programSet;
+                                            $label = $programSet?->academicYear?->label ?? $programSet?->school_year ?? '';
+
+                                            return $label !== '' ? $label : 'Unspecified';
+                                        })
+                                        ->map(fn ($yearGroups) => $yearGroups->count()),
+                                )
+                            : collect();
+
+                        $utilityMap = $optionPanelist->relationLoaded('panelistProgramUtilities')
+                            ? $optionPanelist->panelistProgramUtilities
+                                ->filter(fn (PanelistProgramUtility $utility): bool => trim((string) $utility->program) !== '')
+                                ->keyBy('program')
+                            : collect();
+
+                        $assignedByProgram = $optionPanelist->relationLoaded('panelGroups')
+                            ? $optionPanelist->panelGroups
+                                ->groupBy(fn (\App\Models\Group $group): ?string => $group->programSet?->program)
+                                ->map(fn ($groups) => $groups->count())
+                            : collect();
+
+                        $programSummaries = $utilityMap
+                            ->keys()
+                            ->merge($assignedByProgram->keys())
+                            ->filter(fn ($program): bool => is_string($program) && trim($program) !== '')
+                            ->unique()
+                            ->sort()
+                            ->map(function (string $program) use ($utilityMap, $assignedByProgram, $assignedByProgramYear): array {
+                                $maxGroups = $utilityMap->get($program)?->max_groups ?? 5;
+                                $assignedByYear = collect($assignedByProgramYear->get($program, []))
+                                    ->mapWithKeys(fn ($count, $label): array => [$label => $count])
+                                    ->all();
+
+                                return [
+                                    'program' => $program,
+                                    'max_groups' => $maxGroups,
+                                    'assigned_count' => $assignedByProgram->get($program, 0),
+                                    'assigned_by_year' => $assignedByYear,
+                                ];
+                            })
+                            ->values()
+                            ->all();
+
+                        $isAvailable = $optionPanelist->relationLoaded('panelistAvailability')
+                            ? (bool) ($optionPanelist->panelistAvailability?->is_available ?? false)
+                            : false;
+
                         return [
-                            'id' => $panelist->id,
-                            'name' => $resolveUserName($panelist),
-                            'email' => $panelist->email ?? '',
+                            'id' => $optionPanelist->id,
+                            'name' => $resolveUserName($optionPanelist),
+                            'email' => $optionPanelist->email ?? '',
+                            'is_available' => $isAvailable,
+                            'programs' => $programSummaries,
                         ];
                     })
                     ->values()
@@ -1967,6 +2367,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 'name' => $resolveUserName($panelist),
                 'email' => $panelist->email ?? '',
                 'workloads' => $workloads,
+                'is_available' => $isAvailable,
+                'programs' => $programSummaries,
             ],
             'panelists' => $panelists,
             'groups' => $groups,
@@ -2037,6 +2439,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             'id' => $group->id,
                             'name' => $group->name,
                             'program_set_name' => $programSet?->name ?: $fallbackName,
+                            'program' => $programSet?->program,
                             'school_year' => $schoolYear,
                             'leader_name' => $leaderName !== '' ? $leaderName : null,
                             'members_count' => $group->members_count ?? 0,
@@ -2050,11 +2453,65 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             $groups = [];
         }
 
+        $isAvailable = false;
+        $utilityMap = collect();
+
+        try {
+            if (Schema::hasTable('panelist_availabilities')) {
+                $availability = PanelistAvailability::query()
+                    ->where('panelist_id', $panelist->id)
+                    ->value('is_available');
+
+                if ($availability !== null) {
+                    $isAvailable = (bool) $availability;
+                }
+            }
+        } catch (\Throwable $e) {
+            $isAvailable = false;
+        }
+
+        try {
+            if (Schema::hasTable('panelist_program_utilities')) {
+                $utilityMap = PanelistProgramUtility::query()
+                    ->where('panelist_id', $panelist->id)
+                    ->get(['program', 'max_groups'])
+                    ->filter(fn (PanelistProgramUtility $utility): bool => trim((string) $utility->program) !== '')
+                    ->keyBy('program');
+            }
+        } catch (\Throwable $e) {
+            $utilityMap = collect();
+        }
+
+        $assignedByProgram = collect($groups)
+            ->filter(fn (array $group): bool => is_string($group['program'] ?? null) && $group['program'] !== '')
+            ->groupBy('program')
+            ->map(fn ($items) => $items->count());
+
+        $programSummaries = $utilityMap
+            ->keys()
+            ->merge($assignedByProgram->keys())
+            ->filter(fn ($program): bool => is_string($program) && trim($program) !== '')
+            ->unique()
+            ->sort()
+            ->map(function (string $program) use ($utilityMap, $assignedByProgram): array {
+                $maxGroups = $utilityMap->get($program)?->max_groups ?? 5;
+
+                return [
+                    'program' => $program,
+                    'max_groups' => $maxGroups,
+                    'assigned_count' => $assignedByProgram->get($program, 0),
+                ];
+            })
+            ->values()
+            ->all();
+
         return response()->json([
             'groups' => $groups,
             'summary' => [
                 'assigned_count' => count($groups),
                 'academic_year' => is_string($academicYearFilter) && $academicYearFilter !== '' ? $academicYearFilter : 'All',
+                'is_available' => $isAvailable,
+                'programs' => $programSummaries,
             ],
         ]);
     })->name('instructor.panelist-assignment.groups');

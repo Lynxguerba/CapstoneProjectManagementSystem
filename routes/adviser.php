@@ -15,6 +15,7 @@ use App\Models\Group;
 use App\Models\GroupAdviser;
 use App\Models\GroupAdviserRequest;
 use App\Models\ProgramSet;
+use App\Models\StudentProgram;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -426,7 +427,7 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
             $assignmentRequests = [];
         }
 
-        $isAvailable = true;
+        $isAvailable = false;
         $utilityPrograms = collect();
 
         try {
@@ -440,7 +441,7 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
                 }
             }
         } catch (\Throwable $e) {
-            $isAvailable = true;
+            $isAvailable = false;
         }
 
         try {
@@ -501,23 +502,57 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
         $userId = Auth::guard('web')->id();
         $programOptions = [];
         $utilityPrograms = collect();
-        $isAvailable = true;
+        $isAvailable = false;
         $assignedByProgram = collect();
         $pendingByProgram = collect();
 
         try {
-            if (Schema::hasTable('program_sets')) {
-                $programOptions = ProgramSet::query()
-                    ->select('program')
-                    ->distinct()
-                    ->orderBy('program')
-                    ->pluck('program')
-                    ->filter(fn (?string $program): bool => is_string($program) && trim($program) !== '')
-                    ->values()
-                    ->all();
+            $discoveredPrograms = collect();
+
+            if (class_exists(ProgramSet::class) && Schema::hasTable('program_sets')) {
+                $discoveredPrograms = $discoveredPrograms->merge(
+                    ProgramSet::query()
+                        ->select('program')
+                        ->distinct()
+                        ->orderBy('program')
+                        ->pluck('program')
+                        ->all(),
+                );
             }
+
+            if (class_exists(StudentProgram::class) && Schema::hasTable('student_program')) {
+                $discoveredPrograms = $discoveredPrograms->merge(
+                    StudentProgram::query()
+                        ->select('program')
+                        ->distinct()
+                        ->orderBy('program')
+                        ->pluck('program')
+                        ->all(),
+                );
+            }
+
+            if (class_exists(User::class) && Schema::hasTable('users') && Schema::hasColumn('users', 'program')) {
+                $discoveredPrograms = $discoveredPrograms->merge(
+                    User::query()
+                        ->select('program')
+                        ->whereNotNull('program')
+                        ->distinct()
+                        ->orderBy('program')
+                        ->pluck('program')
+                        ->all(),
+                );
+            }
+
+            $programOptions = $discoveredPrograms
+                ->map(fn ($program): string => is_string($program) ? strtoupper(trim($program)) : '')
+                ->filter(fn (string $program): bool => $program !== '')
+                ->merge(['BSIT', 'BSIS'])
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
         } catch (\Throwable $e) {
-            $programOptions = [];
+            $programOptions = ['BSIT', 'BSIS'];
         }
 
         try {
@@ -531,7 +566,7 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
                 }
             }
         } catch (\Throwable $e) {
-            $isAvailable = true;
+            $isAvailable = false;
         }
 
         try {

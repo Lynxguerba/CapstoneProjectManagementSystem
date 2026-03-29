@@ -18,11 +18,20 @@ type PanelistWorkload = {
     groups_count: number;
 };
 
+type PanelistProgramSummary = {
+    program: string;
+    max_groups: number;
+    assigned_count: number;
+    assigned_by_year?: Record<string, number>;
+};
+
 type PanelistSummary = {
     id: number;
     name: string;
     email: string;
     workloads?: PanelistWorkload[];
+    programs?: PanelistProgramSummary[];
+    is_available?: boolean;
 };
 
 type PanelistAssignment = {
@@ -201,6 +210,49 @@ const PanelistAssignmentGroups = ({
 
     const totalLoad = getLoadForYear('All');
     const selectedYearLoad = selectedAcademicYear === 'All' ? totalLoad : getLoadForYear(selectedAcademicYear);
+    const panelistPrograms = React.useMemo(() => panelist.programs ?? [], [panelist.programs]);
+    const panelistIsAvailable = panelist.is_available === true;
+
+    const selectedYearPrograms = React.useMemo(() => {
+        return panelistPrograms.map((program) => ({
+            ...program,
+            assigned_count:
+                selectedAcademicYear === 'All'
+                    ? program.assigned_count ?? 0
+                    : typeof program.assigned_by_year?.[selectedAcademicYear] === 'number'
+                      ? (program.assigned_by_year?.[selectedAcademicYear] ?? 0)
+                      : 0,
+        }));
+    }, [panelistPrograms, selectedAcademicYear]);
+
+    const getAssignedForProgramYear = React.useCallback(
+        (program?: string | null, year?: string | null): number => {
+            const resolvedProgram = typeof program === 'string' ? program : '';
+            const matchedProgram = panelistPrograms.find((item) => item.program === resolvedProgram);
+
+            if (!matchedProgram) {
+                return 0;
+            }
+
+            if (typeof year === 'string' && year !== '') {
+                return matchedProgram.assigned_by_year?.[year] ?? 0;
+            }
+
+            return matchedProgram.assigned_count ?? 0;
+        },
+        [panelistPrograms],
+    );
+
+    const getMaxForProgram = React.useCallback(
+        (program?: string | null): number => {
+            if (!program) {
+                return 5;
+            }
+
+            return panelistPrograms.find((item) => item.program === program)?.max_groups ?? 5;
+        },
+        [panelistPrograms],
+    );
 
     const getSlotAssignments = React.useCallback((group: GroupRow): PanelistSlot[] => {
         const assignments = group.panelists ?? [];
@@ -406,18 +458,37 @@ const PanelistAssignmentGroups = ({
                                 <h2 className="text-lg font-semibold text-slate-900">{panelist.name}</h2>
                                 <p className="text-xs text-slate-500">{panelist.email}</p>
                             </div>
-                            <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                                {MAX_PANELS} panel slots per group
+                            <span
+                                className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+                                    panelistIsAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                                }`}
+                            >
+                                {panelistIsAvailable ? 'Open for assignments' : 'Closed for assignments'}
                             </span>
                         </div>
-                        <div className="mt-4">
-                            <div className="flex items-center justify-between text-xs text-slate-600">
-                                <span>{selectedAcademicYear === 'All' ? 'Total assigned groups' : `Assigned groups in ${selectedAcademicYear}`}</span>
-                                <span className="font-semibold text-slate-800">{selectedYearLoad}</span>
+                        <div className="mt-4 space-y-2 text-xs text-slate-600">
+                            <p className="font-semibold text-slate-700">
+                                Program capacity {selectedAcademicYear === 'All' ? '(all years)' : `(${selectedAcademicYear})`}
+                            </p>
+                            {selectedYearPrograms.length > 0 ? (
+                                selectedYearPrograms.map((program) => (
+                                    <div key={program.program} className="flex items-center justify-between">
+                                        <span>{program.program}</span>
+                                        <span className="font-semibold text-slate-800">
+                                            {program.assigned_count} / {program.max_groups}
+                                        </span>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-[11px] text-slate-500">No program utilities configured yet.</p>
+                            )}
+                            <div className="flex items-center justify-between pt-2 text-xs text-slate-600">
+                                <span>Total panelist load</span>
+                                <span className="font-semibold text-slate-800">
+                                    {selectedYearLoad}
+                                    {panelistPrograms.length > 0 ? ` / ${panelistPrograms.reduce((total, program) => total + program.max_groups, 0)}` : ''}
+                                </span>
                             </div>
-                            {selectedAcademicYear === 'All' ? (
-                                <p className="mt-2 text-[11px] text-slate-500">Select an academic year to narrow down assignments.</p>
-                            ) : null}
                         </div>
                     </div>
 
@@ -546,11 +617,16 @@ const PanelistAssignmentGroups = ({
                         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                             {paginatedGroups.map((group) => {
                                 const groupYear = group.school_year ?? 'Unassigned';
+                                const loadForYear = getAssignedForProgramYear(group.program, groupYear);
+                                const maxForProgram = getMaxForProgram(group.program);
                                 const panelistAssignments = group.panelists ?? [];
                                 const isAssignedToPanelist = panelistAssignments.some((assignment) => assignment.id === panelist.id);
                                 const openSlots = Math.max(0, MAX_PANELS - panelistAssignments.length);
                                 const hasOpenSlots = openSlots > 0;
-                                const isDisabled = assigningGroupId !== null;
+                                const isAtProgramLimit = loadForYear >= maxForProgram;
+                                const canTakeNewGroup = !isAtProgramLimit || isAssignedToPanelist;
+                                const canAssignToGroup = panelistIsAvailable && canTakeNewGroup;
+                                const isBusy = assigningGroupId !== null;
                                 const selectedRole = resolveRoleSelection(group);
                                 const allowedRoles = getAllowedRoles(group);
                                 const availablePanelistsCount = panelists.filter(
@@ -579,13 +655,22 @@ const PanelistAssignmentGroups = ({
                                                 <p>Leader: {group.leader_name ?? '—'}</p>
                                                 <p>Members: {group.members_count ?? 0}</p>
                                                 <p>A.Y: {groupYear}</p>
+                                                <p className="font-semibold text-slate-700">
+                                                    Program Capacity: {loadForYear} / {maxForProgram}
+                                                </p>
+                                                {!panelistIsAvailable ? (
+                                                    <p className="text-[11px] text-rose-600">Panelist is closed for new assignments.</p>
+                                                ) : null}
+                                                {isAtProgramLimit && !isAssignedToPanelist ? (
+                                                    <p className="text-[11px] text-rose-600">Program capacity reached for this academic year.</p>
+                                                ) : null}
                                             </div>
 
                                             <div className="mt-4 space-y-2">
                                                 {panelistAssignments.length > 0 ? (
                                                     panelistAssignments.map((assignment) => {
                                                         const isCurrentPanelist = assignment.id === panelist.id;
-                                                        const canReplace = !isCurrentPanelist && !isAssignedToPanelist;
+                                                        const canReplace = !isCurrentPanelist && !isAssignedToPanelist && canTakeNewGroup && panelistIsAvailable;
                                                         const assignmentRole = assignment.role ?? 'member';
                                                         const isRoleUnchanged = selectedRole === assignmentRole;
 
@@ -628,12 +713,12 @@ const PanelistAssignmentGroups = ({
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => assignPanelist(group.id, selectedRole)}
-                                                                            disabled={isDisabled || isRoleUnchanged}
+                                                                            disabled={isBusy || isRoleUnchanged}
                                                                             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
                                                                                 isRoleUnchanged
                                                                                     ? 'bg-emerald-100 text-emerald-700'
                                                                                     : 'border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                                                                            } ${isDisabled || isRoleUnchanged ? 'cursor-not-allowed opacity-60' : ''}`}
+                                                                            } ${isBusy || isRoleUnchanged ? 'cursor-not-allowed opacity-60' : ''}`}
                                                                         >
                                                                             <UserCheck className="h-3 w-3" />
                                                                             {isRoleUnchanged ? 'Assigned' : 'Update Role'}
@@ -643,12 +728,12 @@ const PanelistAssignmentGroups = ({
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => assignPanelist(group.id, assignmentRole, assignment.id)}
-                                                                        disabled={isDisabled || !canReplace}
+                                                                        disabled={isBusy || !canReplace}
                                                                         className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
                                                                             isCurrentPanelist
                                                                                 ? 'bg-emerald-100 text-emerald-700'
                                                                                 : 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                                                        } ${isDisabled || !canReplace ? 'cursor-not-allowed opacity-60' : ''}`}
+                                                                        } ${isBusy || !canReplace ? 'cursor-not-allowed opacity-60' : ''}`}
                                                                     >
                                                                         <UserCheck className="h-3 w-3" />
                                                                         Replace
@@ -689,9 +774,9 @@ const PanelistAssignmentGroups = ({
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => assignPanelist(group.id, selectedRole)}
-                                                                    disabled={isDisabled}
+                                                                    disabled={isBusy || !canAssignToGroup}
                                                                     className={`inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 ${
-                                                                        isDisabled ? 'cursor-not-allowed opacity-60' : ''
+                                                                        isBusy || !canAssignToGroup ? 'cursor-not-allowed opacity-60' : ''
                                                                     }`}
                                                                 >
                                                                     <UserCheck className="h-3.5 w-3.5" />
@@ -702,9 +787,9 @@ const PanelistAssignmentGroups = ({
                                                         <button
                                                             type="button"
                                                             onClick={() => openAssignPanelistModal(group)}
-                                                            disabled={isDisabled || availablePanelistsCount === 0}
+                                                            disabled={isBusy || availablePanelistsCount === 0}
                                                             className={`inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 ${
-                                                                isDisabled || availablePanelistsCount === 0 ? 'cursor-not-allowed opacity-60' : ''
+                                                                isBusy || availablePanelistsCount === 0 ? 'cursor-not-allowed opacity-60' : ''
                                                             }`}
                                                         >
                                                             <Users className="h-3.5 w-3.5" />
@@ -739,17 +824,23 @@ const PanelistAssignmentGroups = ({
                                         <th className="px-6 py-4">Group</th>
                                         <th className="px-6 py-4">Leader</th>
                                         <th className="px-6 py-4">A.Y</th>
+                                        <th className="px-6 py-4">Program Capacity</th>
                                         <th className="px-6 py-4">Panel Slots</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {paginatedGroups.map((group) => {
                                         const groupYear = group.school_year ?? 'Unassigned';
+                                        const loadForYear = getAssignedForProgramYear(group.program, groupYear);
+                                        const maxForProgram = getMaxForProgram(group.program);
                                         const panelistAssignments = group.panelists ?? [];
                                         const isAssignedToPanelist = panelistAssignments.some((assignment) => assignment.id === panelist.id);
                                         const openSlots = Math.max(0, MAX_PANELS - panelistAssignments.length);
                                         const hasOpenSlots = openSlots > 0;
-                                        const isDisabled = assigningGroupId !== null;
+                                        const isAtProgramLimit = loadForYear >= maxForProgram;
+                                        const canTakeNewGroup = !isAtProgramLimit || isAssignedToPanelist;
+                                        const canAssignToGroup = panelistIsAvailable && canTakeNewGroup;
+                                        const isBusy = assigningGroupId !== null;
                                         const slots = getSlotAssignments(group);
                                         const selectedRole = resolveRoleSelection(group);
                                         const allowedRoles = getAllowedRoles(group);
@@ -769,12 +860,25 @@ const PanelistAssignmentGroups = ({
                                                 <td className="px-6 py-3.5 text-slate-600">{group.leader_name ?? '—'}</td>
                                                 <td className="px-6 py-3.5 text-slate-600">{groupYear}</td>
                                                 <td className="px-6 py-3.5">
+                                                    <div className="space-y-1">
+                                                        <p className="font-semibold text-slate-700">
+                                                            {loadForYear} / {maxForProgram}
+                                                        </p>
+                                                        {!panelistIsAvailable ? (
+                                                            <p className="text-[10px] text-rose-600">Closed</p>
+                                                        ) : null}
+                                                        {isAtProgramLimit && !isAssignedToPanelist ? (
+                                                            <p className="text-[10px] text-rose-600">Limit reached</p>
+                                                        ) : null}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-3.5">
                                                     <div className="space-y-2">
                                                         {slots.map((slot) => {
                                                             const isCurrentPanelist = slot.id === panelist.id;
                                                             const panelistId = slot.id;
                                                             const hasPanelist = panelistId !== undefined;
-                                                            const canReplace = hasPanelist && !isCurrentPanelist && !isAssignedToPanelist;
+                                                            const canReplace = hasPanelist && !isCurrentPanelist && !isAssignedToPanelist && canTakeNewGroup && panelistIsAvailable;
                                                             const slotRole = slot.role ?? 'member';
                                                             const isRoleUnchanged = selectedRole === slotRole;
 
@@ -822,12 +926,12 @@ const PanelistAssignmentGroups = ({
                                                                                 <button
                                                                                     type="button"
                                                                                     onClick={() => assignPanelist(group.id, selectedRole)}
-                                                                                    disabled={isDisabled || isRoleUnchanged}
+                                                                                    disabled={isBusy || isRoleUnchanged}
                                                                                     className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
                                                                                         isRoleUnchanged
                                                                                             ? 'bg-emerald-100 text-emerald-700'
                                                                                             : 'border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                                                                                    } ${isDisabled || isRoleUnchanged ? 'cursor-not-allowed opacity-60' : ''}`}
+                                                                                    } ${isBusy || isRoleUnchanged ? 'cursor-not-allowed opacity-60' : ''}`}
                                                                                 >
                                                                                     <UserCheck className="h-3 w-3" />
                                                                                     {isRoleUnchanged ? 'Assigned' : 'Update Role'}
@@ -837,12 +941,12 @@ const PanelistAssignmentGroups = ({
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => assignPanelist(group.id, slotRole, panelistId)}
-                                                                                disabled={isDisabled || !canReplace}
+                                                                                disabled={isBusy || !canReplace}
                                                                                 className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold transition ${
                                                                                     isCurrentPanelist
                                                                                         ? 'bg-emerald-100 text-emerald-700'
                                                                                         : 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                                                                } ${isDisabled || !canReplace ? 'cursor-not-allowed opacity-60' : ''}`}
+                                                                                } ${isBusy || !canReplace ? 'cursor-not-allowed opacity-60' : ''}`}
                                                                             >
                                                                                 <UserCheck className="h-3 w-3" />
                                                                                 Replace
@@ -869,9 +973,9 @@ const PanelistAssignmentGroups = ({
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => assignPanelist(group.id, selectedRole)}
-                                                                                disabled={isDisabled || isAssignedToPanelist}
+                                                                                disabled={isBusy || isAssignedToPanelist || !canAssignToGroup}
                                                                                 className={`inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 transition hover:bg-emerald-100 ${
-                                                                                    isDisabled || isAssignedToPanelist
+                                                                                    isBusy || isAssignedToPanelist || !canAssignToGroup
                                                                                         ? 'cursor-not-allowed opacity-60'
                                                                                         : ''
                                                                                 }`}
@@ -893,9 +997,9 @@ const PanelistAssignmentGroups = ({
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => openAssignPanelistModal(group)}
-                                                                        disabled={isDisabled || availablePanelistsCount === 0}
+                                                                        disabled={isBusy || availablePanelistsCount === 0}
                                                                         className={`inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 ${
-                                                                            isDisabled || availablePanelistsCount === 0
+                                                                            isBusy || availablePanelistsCount === 0
                                                                                 ? 'cursor-not-allowed opacity-60'
                                                                                 : ''
                                                                         }`}
@@ -982,6 +1086,8 @@ const PanelistAssignmentGroups = ({
                     groupId={activeGroupForPanelist?.id ?? null}
                     groupName={activeGroupForPanelist ? formatGroupName(activeGroupForPanelist.name) : null}
                     programSetName={activeGroupForPanelist?.program_set_name ?? null}
+                    groupProgram={activeGroupForPanelist?.program ?? null}
+                    groupSchoolYear={activeGroupForPanelist?.school_year ?? null}
                     assignments={activeGroupForPanelist?.panelists ?? []}
                     currentPanelistId={panelist.id}
                     panelists={panelists}

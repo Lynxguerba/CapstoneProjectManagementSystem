@@ -1,8 +1,11 @@
 import { router, useForm } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Search, UserPlus, X } from 'lucide-react';
+import { ChevronDown, Search, UserPlus, X } from 'lucide-react';
 import React from 'react';
 import { createPortal } from 'react-dom';
+import instructorGroups from '../../../routes/instructor/groups';
+import instructorProgramSets from '../../../routes/instructor/program-sets';
+import { crossSetSearch } from '../../../routes/instructor/students';
 
 type ProgramSetSummary = {
     id: number;
@@ -19,6 +22,18 @@ type StudentOption = {
     email: string;
     program?: string | null;
     isGrouped?: boolean;
+};
+
+type CrossSetProgramSet = {
+    id: number;
+    name: string;
+};
+
+type CrossSetStudentOption = {
+    id: number;
+    first_name?: string | null;
+    last_name?: string | null;
+    programSets?: CrossSetProgramSet[];
 };
 
 type SelectedMember = {
@@ -42,6 +57,14 @@ type CreateGroupForm = {
     }[];
 };
 
+type InertiaSuccessPayload = {
+    props?: {
+        flash?: {
+            created_group_id?: number | string | null;
+        };
+    };
+};
+
 const roleOptions: GroupRole[] = ['Project Manager', 'Programmer', 'Documentarian', 'Data Analyst'];
 
 const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps) => {
@@ -52,11 +75,24 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
     const [selectedMembers, setSelectedMembers] = React.useState<SelectedMember[]>([]);
     const [isLoadingStudents, setIsLoadingStudents] = React.useState(false);
     const [studentError, setStudentError] = React.useState('');
+    const [isCrossSetSectionOpen, setIsCrossSetSectionOpen] = React.useState(false);
+    const [crossSetSearchQuery, setCrossSetSearchQuery] = React.useState('');
+    const [crossSetSearchResults, setCrossSetSearchResults] = React.useState<CrossSetStudentOption[]>([]);
+    const [isCrossSetSearching, setIsCrossSetSearching] = React.useState(false);
+    const [crossSetSearchError, setCrossSetSearchError] = React.useState('');
+    const [pendingCrossSetRequests, setPendingCrossSetRequests] = React.useState<CrossSetStudentOption[]>([]);
 
     const groupForm = useForm<CreateGroupForm>({
         program_set_id: null,
         members: [],
     });
+    const {
+        errors: groupFormErrors,
+        post: postGroupForm,
+        processing: isGroupFormProcessing,
+        reset: resetGroupForm,
+        setData: setGroupFormData,
+    } = groupForm;
 
     React.useEffect(() => {
         if (!open) {
@@ -66,12 +102,18 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
             setAvailableStudents([]);
             setSelectedMembers([]);
             setStudentError('');
-            groupForm.reset();
+            setIsCrossSetSectionOpen(false);
+            setCrossSetSearchQuery('');
+            setCrossSetSearchResults([]);
+            setIsCrossSetSearching(false);
+            setCrossSetSearchError('');
+            setPendingCrossSetRequests([]);
+            resetGroupForm();
             return;
         }
 
         setIsAppearing(true);
-    }, [open, groupForm]);
+    }, [open, resetGroupForm]);
 
     React.useEffect(() => {
         if (!open) {
@@ -89,7 +131,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
         }
 
         const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && !groupForm.processing) {
+            if (event.key === 'Escape' && !isGroupFormProcessing) {
                 onClose();
             }
         };
@@ -102,7 +144,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
             document.body.style.overflow = originalOverflow;
             window.removeEventListener('keydown', onKeyDown);
         };
-    }, [open, onClose, groupForm.processing]);
+    }, [open, onClose, isGroupFormProcessing]);
 
     React.useEffect(() => {
         if (!open || selectedProgramSetId === null) {
@@ -117,9 +159,13 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
             setStudentError('');
             setAvailableStudents([]);
             setSelectedMembers([]);
+            setPendingCrossSetRequests([]);
+            setCrossSetSearchQuery('');
+            setCrossSetSearchResults([]);
+            setCrossSetSearchError('');
 
             try {
-                const response = await fetch(`/instructor/program-sets/${selectedProgramSetId}/enrolled-students`, {
+                const response = await fetch(instructorProgramSets.enrolledStudents.url({ programSet: selectedProgramSetId }), {
                     headers: {
                         Accept: 'application/json',
                     },
@@ -162,22 +208,78 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
             return;
         }
 
-        groupForm.setData('program_set_id', selectedProgramSetId);
-    }, [open, selectedProgramSetId, groupForm]);
+        setGroupFormData('program_set_id', selectedProgramSetId);
+    }, [open, selectedProgramSetId, setGroupFormData]);
 
     React.useEffect(() => {
         if (!open) {
             return;
         }
 
-        groupForm.setData(
+        setGroupFormData(
             'members',
             selectedMembers.map((member) => ({
                 student_id: member.student.id,
                 role: member.role,
             })),
         );
-    }, [open, selectedMembers, groupForm]);
+    }, [open, selectedMembers, setGroupFormData]);
+
+    React.useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        const query = crossSetSearchQuery.trim();
+        if (query.length === 0) {
+            setCrossSetSearchResults([]);
+            setCrossSetSearchError('');
+            setIsCrossSetSearching(false);
+            return;
+        }
+
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(async () => {
+            setIsCrossSetSearching(true);
+            setCrossSetSearchError('');
+
+            try {
+                const response = await fetch(
+                    crossSetSearch.url({
+                        query: { q: query },
+                    }),
+                    {
+                        headers: {
+                            Accept: 'application/json',
+                        },
+                        signal: controller.signal,
+                    },
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to search students.');
+                }
+
+                const payload = await response.json();
+                setCrossSetSearchResults(Array.isArray(payload.students) ? payload.students : []);
+            } catch {
+                if (controller.signal.aborted) {
+                    return;
+                }
+
+                setCrossSetSearchError('Unable to search students from other sets right now.');
+            } finally {
+                if (!controller.signal.aborted) {
+                    setIsCrossSetSearching(false);
+                }
+            }
+        }, 350);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+            controller.abort();
+        };
+    }, [open, crossSetSearchQuery]);
 
     const selectedProgramSet = programSets.find((set) => set.id === selectedProgramSetId);
     const programSetLabel = selectedProgramSet
@@ -192,6 +294,14 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
         const combined = [firstName, lastName].filter(Boolean).join(' ').trim();
 
         return fallbackName || combined || 'Unknown Student';
+    };
+
+    const resolveCrossSetStudentName = (student: CrossSetStudentOption): string => {
+        const firstName = typeof student.first_name === 'string' ? student.first_name.trim() : '';
+        const lastName = typeof student.last_name === 'string' ? student.last_name.trim() : '';
+        const combined = [firstName, lastName].filter(Boolean).join(' ').trim();
+
+        return combined || 'Unknown Student';
     };
 
     const filteredStudents = React.useMemo(() => {
@@ -224,6 +334,20 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
         setSearchQuery('');
     };
 
+    const handleStageCrossSetRequest = (student: CrossSetStudentOption) => {
+        setPendingCrossSetRequests((previous) => {
+            if (previous.some((candidate) => candidate.id === student.id)) {
+                return previous;
+            }
+
+            return [...previous, student];
+        });
+    };
+
+    const handleRemoveCrossSetRequest = (studentId: number) => {
+        setPendingCrossSetRequests((previous) => previous.filter((student) => student.id !== studentId));
+    };
+
     const handleRemoveMember = (studentId: number) => {
         setSelectedMembers((previous) => previous.filter((member) => member.student.id !== studentId));
     };
@@ -240,6 +364,51 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                 }
 
                 return member;
+            }),
+        );
+    };
+
+    const resolveCreatedGroupId = (payload?: InertiaSuccessPayload): number | null => {
+        const rawGroupId = payload?.props?.flash?.created_group_id;
+        if (typeof rawGroupId === 'number') {
+            return rawGroupId;
+        }
+
+        if (typeof rawGroupId === 'string') {
+            const parsedGroupId = Number(rawGroupId);
+
+            return Number.isFinite(parsedGroupId) ? parsedGroupId : null;
+        }
+
+        return null;
+    };
+
+    const submitCrossSetRequests = async (groupId: number): Promise<void> => {
+        if (pendingCrossSetRequests.length === 0) {
+            return;
+        }
+
+        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+
+        await Promise.all(
+            pendingCrossSetRequests.map(async (student) => {
+                const response = await fetch(instructorGroups.crossSetRequest.store.url(), {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    },
+                    body: JSON.stringify({
+                        group_id: groupId,
+                        student_id: student.id,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Unable to submit cross-set request.');
+                }
             }),
         );
     };
@@ -266,10 +435,20 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
             return;
         }
 
-        groupForm.post('/instructor/groups', {
+        postGroupForm(instructorGroups.store.url(), {
             preserveScroll: true,
-            onSuccess: () => {
-                router.reload({ only: ['groups'] });
+            onSuccess: async (payload) => {
+                const createdGroupId = resolveCreatedGroupId(payload as InertiaSuccessPayload);
+
+                if (createdGroupId !== null) {
+                    try {
+                        await submitCrossSetRequests(createdGroupId);
+                    } catch {
+                        setCrossSetSearchError('Group created, but one or more cross-set requests could not be submitted.');
+                    }
+                }
+
+                router.reload({ only: ['groups', 'crossSetRequests'] });
                 onClose();
             },
         });
@@ -288,7 +467,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
             role="dialog"
             aria-modal="true"
             onMouseDown={(event) => {
-                if (event.target === event.currentTarget && !groupForm.processing) {
+                if (event.target === event.currentTarget && !isGroupFormProcessing) {
                     onClose();
                 }
             }}
@@ -311,7 +490,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                     <button
                         type="button"
                         onClick={onClose}
-                        disabled={groupForm.processing}
+                        disabled={isGroupFormProcessing}
                         className="rounded-lg p-1.5 text-emerald-700 transition-all duration-200 hover:rotate-90 hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <X className="h-5 w-5" />
@@ -323,7 +502,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                             <p className="text-xs font-semibold tracking-widest text-slate-500 uppercase">Program Set</p>
                             <p className="mt-2 text-sm font-semibold text-slate-800">{programSetLabel}</p>
-                            {groupForm.errors.program_set_id ? <p className="mt-2 text-xs text-rose-600">{groupForm.errors.program_set_id}</p> : null}
+                            {groupFormErrors.program_set_id ? <p className="mt-2 text-xs text-rose-600">{groupFormErrors.program_set_id}</p> : null}
                         </div>
 
                         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
@@ -404,6 +583,116 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                     </div>
                                 ) : null}
                             </div>
+
+                            <div className="mt-4 border-t border-slate-200 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCrossSetSectionOpen((previous) => !previous)}
+                                    className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                                >
+                                    <span>Add students from other sets</span>
+                                    <ChevronDown className={`h-4 w-4 transition-transform ${isCrossSetSectionOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isCrossSetSectionOpen ? (
+                                    <div className="mt-3 space-y-3">
+                                        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                            These students require approval from their managing instructor before being added to the group.
+                                        </p>
+
+                                        <div>
+                                            <label className="text-xs font-semibold text-slate-600">Search students from other sets</label>
+                                            <div className="relative mt-1.5">
+                                                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                                <input
+                                                    value={crossSetSearchQuery}
+                                                    onChange={(event) => setCrossSetSearchQuery(event.target.value)}
+                                                    placeholder="Search by name or email..."
+                                                    className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {crossSetSearchError ? (
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                                                {crossSetSearchError}
+                                            </div>
+                                        ) : null}
+
+                                        {crossSetSearchQuery.trim() !== '' ? (
+                                            <div className="max-h-44 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                                                {isCrossSetSearching ? (
+                                                    <p className="px-4 py-3 text-sm text-slate-500">Searching...</p>
+                                                ) : crossSetSearchResults.length === 0 ? (
+                                                    <p className="px-4 py-3 text-sm text-slate-500">No students found.</p>
+                                                ) : (
+                                                    crossSetSearchResults.map((student) => {
+                                                        const isAlreadyQueued = pendingCrossSetRequests.some((pending) => pending.id === student.id);
+                                                        const displayName = resolveCrossSetStudentName(student);
+                                                        const programSetName = student.programSets?.[0]?.name ?? 'Unassigned Set';
+
+                                                        return (
+                                                            <div
+                                                                key={student.id}
+                                                                className="flex items-center justify-between border-b border-slate-100 px-3 py-2.5 last:border-b-0"
+                                                            >
+                                                                <div className="min-w-0">
+                                                                    <p className="truncate text-sm font-medium text-slate-800">{displayName}</p>
+                                                                    <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                                                        {programSetName}
+                                                                    </span>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleStageCrossSetRequest(student)}
+                                                                    disabled={isAlreadyQueued || isGroupFormProcessing}
+                                                                    className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                >
+                                                                    {isAlreadyQueued ? 'Queued' : 'Request'}
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })
+                                                )}
+                                            </div>
+                                        ) : null}
+
+                                        <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-xs font-semibold text-slate-700">Pending cross-set requests</p>
+                                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                    {pendingCrossSetRequests.length} staged
+                                                </span>
+                                            </div>
+
+                                            {pendingCrossSetRequests.length === 0 ? (
+                                                <p className="text-xs text-slate-500">No students staged for cross-set approval.</p>
+                                            ) : (
+                                                pendingCrossSetRequests.map((student) => (
+                                                    <div
+                                                        key={student.id}
+                                                        className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-2.5 py-1.5"
+                                                    >
+                                                        <div>
+                                                            <p className="text-xs font-semibold text-slate-700">
+                                                                {resolveCrossSetStudentName(student)}
+                                                            </p>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveCrossSetRequest(student.id)}
+                                                            className="rounded-full border border-rose-200 px-2 py-0.5 text-[10px] font-semibold text-rose-600 transition hover:bg-rose-50"
+                                                            aria-label="Remove pending cross-set request"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </div>
                         </div>
 
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -465,8 +754,8 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                         </div>
                     </div>
 
-                    {groupForm.errors.members ? (
-                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{groupForm.errors.members}</div>
+                    {groupFormErrors.members ? (
+                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{groupFormErrors.members}</div>
                     ) : null}
 
                     {!leaderMember && selectedMembers.length > 0 ? (
@@ -479,18 +768,18 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                         <button
                             type="button"
                             onClick={onClose}
-                            disabled={groupForm.processing}
+                            disabled={isGroupFormProcessing}
                             className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            disabled={groupForm.processing || !selectedProgramSetId || selectedMembers.length < 2 || !leaderMember}
+                            disabled={isGroupFormProcessing || !selectedProgramSetId || selectedMembers.length < 2 || !leaderMember}
                             className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <UserPlus className="h-3.5 w-3.5" />
-                            {groupForm.processing ? 'Creating...' : 'Create Group'}
+                            {isGroupFormProcessing ? 'Creating...' : 'Create Group'}
                         </button>
                     </div>
                 </form>

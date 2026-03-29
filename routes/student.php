@@ -236,8 +236,8 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
                             ->all();
 
                         $isAvailable = $adviser->relationLoaded('adviserAvailability')
-                            ? (bool) $adviser->adviserAvailability?->is_available
-                            : true;
+                            ? (bool) ($adviser->adviserAvailability?->is_available ?? false)
+                            : false;
 
                         return [
                             'id' => $adviser->id,

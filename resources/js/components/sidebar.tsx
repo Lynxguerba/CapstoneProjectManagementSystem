@@ -175,10 +175,12 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { icon: BarChart3, label: 'Reports', href: '/adviser/reports' },
                     { icon: Settings, label: 'Settings', href: '/adviser/settings' },
                 ];
-
-            case 'panelist':
-                return [
+                
+                case 'panelist':
+                    return [
+                    { label: 'Main', isSection: true },
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/panelist/dashboard' },
+                    { label: 'Defense Groups', isSection: true },
                     { icon: Users, label: 'Assigned Groups', href: '/panelist/assigned-groups' },
                     { icon: Calendar, label: 'Defense Schedule', href: '/panelist/schedule' },
                     { icon: FolderOpen, label: 'Document Review Center', href: '/panelist/documents' },
