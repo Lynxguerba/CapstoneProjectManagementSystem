@@ -39,13 +39,39 @@ class UpdateGroupMembersController extends Controller
 
         $memberIds = $members->pluck('student_id')->unique()->values();
         $existingMemberIds = $group->members()
-            ->whereIn('users.id', $memberIds->all())
             ->pluck('users.id')
+            ->unique()
+            ->values();
+        $newMemberIds = $memberIds->diff($existingMemberIds)->values();
+
+        if ($newMemberIds->isNotEmpty()) {
+            $enrolledNewMemberIds = $group->programSet
+                ? $group->programSet
+                    ->students()
+                    ->whereIn('users.id', $newMemberIds->all())
+                    ->pluck('users.id')
+                    ->unique()
+                    ->values()
+                : collect();
+
+            if ($enrolledNewMemberIds->count() !== $newMemberIds->count()) {
+                throw ValidationException::withMessages([
+                    'members' => 'Only students enrolled in this program set can be added.',
+                ]);
+            }
+        }
+
+        $alreadyGroupedInSetIds = GroupMember::query()
+            ->whereIn('student_id', $memberIds->all())
+            ->where('group_id', '!=', $group->id)
+            ->whereHas('group', fn ($query) => $query->where('program_set_id', $group->program_set_id))
+            ->pluck('student_id')
+            ->unique()
             ->values();
 
-        if ($existingMemberIds->count() !== $memberIds->count()) {
+        if ($alreadyGroupedInSetIds->isNotEmpty()) {
             throw ValidationException::withMessages([
-                'members' => 'Only existing group members can be updated.',
+                'members' => 'Some students are already assigned to another group in this program set.',
             ]);
         }
 

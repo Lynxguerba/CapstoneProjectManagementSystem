@@ -50,7 +50,7 @@ class AssignGroupAdviserController extends Controller
                 ->where('adviser_id', $adviser->id)
                 ->value('is_available');
 
-            if ($isAvailable === false || $isAvailable === 0) {
+            if (! (bool) $isAvailable) {
                 throw ValidationException::withMessages([
                     'adviser_id' => 'Selected adviser is currently closed for new group requests.',
                 ]);

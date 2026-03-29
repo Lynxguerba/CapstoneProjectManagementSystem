@@ -95,6 +95,8 @@ class StoreGroupController extends Controller
                 ->all(),
         );
 
-        return back()->with('success', 'Group created successfully.');
+        return back()
+            ->with('success', 'Group created successfully.')
+            ->with('created_group_id', $group->id);
     }
 }

@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AssignGroupPanelistRequest;
 use App\Models\Group;
 use App\Models\GroupPanelist;
+use App\Models\PanelistAvailability;
+use App\Models\PanelistProgramUtility;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class AssignGroupPanelistController extends Controller
@@ -19,7 +22,7 @@ class AssignGroupPanelistController extends Controller
         $data = $request->validated();
 
         $group = Group::query()
-            ->with(['programSet', 'panelAssignments'])
+            ->with(['programSet.academicYear', 'panelAssignments'])
             ->whereKey($data['group_id'])
             ->firstOrFail();
 
@@ -67,6 +70,61 @@ class AssignGroupPanelistController extends Controller
             ]);
 
             return back()->with('success', 'Panelist role updated successfully.');
+        }
+
+        if (Schema::hasTable('panelist_availabilities')) {
+            $isAvailable = PanelistAvailability::query()
+                ->where('panelist_id', $panelist->id)
+                ->value('is_available');
+
+            if (! (bool) $isAvailable) {
+                throw ValidationException::withMessages([
+                    'panelist_id' => 'Selected panelist is currently closed for new group assignments.',
+                ]);
+            }
+        }
+
+        $groupYear = $group->programSet?->academicYear?->label ?? $group->programSet?->school_year;
+        $program = $group->programSet?->program;
+        $loadQuery = GroupPanelist::query()->where('panelist_id', $panelist->id);
+
+        $loadQuery->whereHas('group.programSet', function ($query) use ($groupYear, $program) {
+            if (is_string($program) && $program !== '') {
+                $query->where('program', $program);
+            }
+
+            if (is_string($groupYear) && $groupYear !== '') {
+                $query->where(function ($subQuery) use ($groupYear) {
+                    $subQuery->whereHas('academicYear', fn ($academicQuery) => $academicQuery->where('label', $groupYear));
+
+                    if (Schema::hasColumn('program_sets', 'school_year')) {
+                        $subQuery->orWhere('school_year', $groupYear);
+                    }
+                });
+            }
+        });
+
+        $currentLoad = $loadQuery->count();
+        $maxLoad = 5;
+
+        if (Schema::hasTable('panelist_program_utilities') && is_string($program) && $program !== '') {
+            $utility = PanelistProgramUtility::query()
+                ->where('panelist_id', $panelist->id)
+                ->where('program', $program)
+                ->first();
+
+            if ($utility) {
+                $maxLoad = $utility->max_groups;
+            }
+        }
+
+        if ($currentLoad >= $maxLoad) {
+            $programLabel = is_string($program) && $program !== '' ? $program : 'this program';
+            $label = is_string($groupYear) && $groupYear !== '' ? $groupYear : 'this academic year';
+
+            throw ValidationException::withMessages([
+                'panelist_id' => "Selected panelist already reached {$maxLoad} {$programLabel} groups for {$label}.",
+            ]);
         }
 
         $replacePanelistId = $data['replace_panelist_id'] ?? null;
