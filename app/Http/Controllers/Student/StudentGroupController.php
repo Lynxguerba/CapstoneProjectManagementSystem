@@ -36,6 +36,9 @@ class StudentGroupController extends Controller
         $student = Auth::guard('web')->user();
         $group = $this->resolveStudentGroup($student?->id);
         $currentStage = $this->resolveCurrentStage($group?->id);
+        $isGroupLeader = $group !== null
+            && $student !== null
+            && (int) $group->leader_id === (int) $student->id;
 
         return Inertia::render('Student/group', [
             'group' => $group !== null ? [
@@ -45,6 +48,7 @@ class StudentGroupController extends Controller
                 'academicYear' => $group->programSet?->academicYear?->label,
                 'currentStage' => $currentStage,
             ] : null,
+            'isGroupLeader' => $isGroupLeader,
             'members' => $this->buildGroupMembers($group),
             'adviser' => $group !== null ? $this->resolveAdviser($group->id) : null,
             'pendingAdviserRequest' => $group !== null ? $this->resolvePendingAdviserRequest($group->id) : null,

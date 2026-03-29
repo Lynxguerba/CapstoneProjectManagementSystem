@@ -14,12 +14,14 @@ class DestroyStudentConceptSubmissionController extends Controller
 {
     public function __invoke(DocumentSubmission $submission): RedirectResponse
     {
-        $group = $this->resolveStudentGroup(request()->user()?->id);
+        $userId = request()->user()?->id;
+        $group = $this->resolveStudentGroup($userId);
         $submission->loadMissing('requirement:id,stage');
 
         abort_unless(
             $group instanceof Group
                 && $submission->group_id === $group->id
+                && (int) $group->leader_id === (int) ($userId ?? 0)
                 && $submission->requirement?->stage === 'Concept',
             403,
         );
@@ -52,6 +54,6 @@ class DestroyStudentConceptSubmissionController extends Controller
                     });
                 }
             })
-            ->first(['id']);
+            ->first(['id', 'leader_id']);
     }
 }

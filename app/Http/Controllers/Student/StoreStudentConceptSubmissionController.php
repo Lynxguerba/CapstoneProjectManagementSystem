@@ -27,6 +27,12 @@ class StoreStudentConceptSubmissionController extends Controller
             ]);
         }
 
+        if ((int) $group->leader_id !== (int) ($user?->id ?? 0)) {
+            throw ValidationException::withMessages([
+                'concept_file' => 'Only your group Project Manager can submit concept files.',
+            ]);
+        }
+
         $requirement = $this->resolveActiveRequirement($group);
 
         if (! $requirement instanceof DocumentRequirement) {

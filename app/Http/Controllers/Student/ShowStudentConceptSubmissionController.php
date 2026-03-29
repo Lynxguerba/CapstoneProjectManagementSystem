@@ -21,6 +21,9 @@ class ShowStudentConceptSubmissionController extends Controller
         /** @var User|null $student */
         $student = Auth::guard('web')->user();
         $group = $this->resolveStudentGroup($student?->id);
+        $isGroupLeader = $group !== null
+            && $student !== null
+            && (int) $group->leader_id === (int) $student->id;
 
         $submission->loadMissing([
             'requirement:id,requirement_type,stage,due_date',
@@ -48,6 +51,7 @@ class ShowStudentConceptSubmissionController extends Controller
                 'programSetName' => $submission->group->programSet?->name,
                 'academicYear' => $submission->group->programSet?->academicYear?->label,
             ],
+            'isGroupLeader' => $isGroupLeader,
             'studentProgram' => $studentProgram,
             'categoryOptions' => $this->resolveConceptCategories($studentProgram)
                 ->map(fn (TitleCategory $category): array => [
@@ -107,7 +111,7 @@ class ShowStudentConceptSubmissionController extends Controller
                     });
                 }
             })
-            ->first(['id']);
+            ->first(['id', 'leader_id']);
     }
 
     private function formatFileSize(?int $size): ?string

@@ -24,6 +24,9 @@ class StudentConceptController extends Controller
         /** @var User|null $student */
         $student = Auth::guard('web')->user();
         $group = $this->resolveStudentGroup($student?->id);
+        $isGroupLeader = $group !== null
+            && $student !== null
+            && (int) $group->leader_id === (int) $student->id;
         $studentProgram = $this->resolveStudentProgram($student?->id, $group);
         $academicYearId = $group?->programSet?->academic_year_id;
         $conceptRequirements = $this->resolveConceptRequirements($academicYearId);
@@ -45,9 +48,11 @@ class StudentConceptController extends Controller
 
         $readinessMessage = ! $group
             ? 'You are not assigned to a group yet. Concept submission is locked.'
-            : ($hasConceptRequirement
-                ? 'Concept requirement is declared by your instructor. You can now submit your Concept Paper.'
-                : 'Waiting for your instructor to declare the Concept Paper requirement.');
+            : (! $hasConceptRequirement
+                ? 'Waiting for your instructor to declare the Concept Paper requirement.'
+                : ($isGroupLeader
+                    ? 'Concept requirement is declared by your instructor. You can now submit your Concept Paper.'
+                    : 'Only your Project Manager can submit concept files. You can still monitor submissions and progress here.'));
 
         return Inertia::render('Student/concepts', [
             'group' => $group ? [
@@ -56,6 +61,7 @@ class StudentConceptController extends Controller
                 'programSetName' => $group->programSet?->name,
                 'academicYear' => $group->programSet?->academicYear?->label,
             ] : null,
+            'isGroupLeader' => $isGroupLeader,
             'studentProgram' => $studentProgram,
             'categoryOptions' => $categoryOptions
                 ->map(fn (TitleCategory $category): array => [

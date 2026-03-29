@@ -32,6 +32,10 @@ class AdviserRequestController extends Controller
             return back()->with('error', 'You are not assigned to a group yet.');
         }
 
+        if ((int) $group->leader_id !== (int) $userId) {
+            return back()->with('error', 'Only your Project Manager can request an adviser for this group.');
+        }
+
         if (! Schema::hasTable('group_adviser_requests')) {
             return back()->with('error', 'Adviser requests are not available yet.');
         }
@@ -67,7 +71,7 @@ class AdviserRequestController extends Controller
                 ->where('adviser_id', $adviser->id)
                 ->value('is_available');
 
-            if ($isAvailable === false || $isAvailable === 0) {
+            if (! (bool) $isAvailable) {
                 throw ValidationException::withMessages([
                     'adviser_id' => 'Selected adviser is currently closed for new group requests.',
                 ]);
