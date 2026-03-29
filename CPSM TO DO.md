@@ -134,3 +134,24 @@ CPSM TO DO:
 
 #Date March 28, 2026
   Admin: Students Management Reject Request account should be not display on the table after rejected[]
+
+#Date March 29, 2026
+    UTITLITIES Adviser [DONE]
+    Cross platform  in edit modal Instructor side[DONE]
+    Stutends members concept, the leader of the group must be authorize in the procees of the project, the rest of the member should not able to manage the process except viewing the process [DONE]
+    Panelist Utilities []
+    Instructor and Adviser approval concept[]
+
+
+
+let's work with the resources/js/pages/Panelist/assigned-groups.tsx concept, the UI/Layout, Logic and Database
+  connection must be similar to the resources/js/pages/Adviser/groups.tsx, so work with this thing. and also Panelist
+  also have cutomize the utilities similar to the resources/js/pages/Adviser/utilities also. so that it track how
+  many panelist can handle BSIS and BSIT student groups. Since the panelist handle groups are now change  then the
+  resources/js/pages/Instructor/panelist-assignment UI elements are now change becauese there is program capacity
+  display on each groups. Then for the resources/js/components/Instructor/panelist/AssignPanelistModal.tsx and the
+  resources/js/pages/Instructor/panelist-assignment/panelist-assignment-groups.tsx must  change the logic also,  the
+  modal set into the table  form with Program Capacity. and the  Layout grid/table type in the @panelist/assigned-
+  groups must be  same  in the resources/js/pages/Instructor/groups/managePage.tsx with  filters and  capacity
+  settings button, for another page of utilities  in the panelist must be similar to the resources/js/pages/Adviser/
+  utilities with notification message. don't forge the bread-crumbs link. Create now.
