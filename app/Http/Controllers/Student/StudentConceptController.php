@@ -96,7 +96,9 @@ class StudentConceptController extends Controller
                     'title' => (string) $submission->file_name,
                     'titleCategoryId' => $submission->title_category_id,
                     'category' => $submission->titleCategory?->name,
-                    'status' => (string) ($submission->status ?? 'Submitted'),
+                    'instructorStatus' => (string) ($submission->status ?? 'Submitted'),
+                    'adviserStatus' => (string) ($submission->adviser_status ?? 'Submitted'),
+                    'adviserReviewedAt' => $submission->adviser_reviewed_at?->format('Y-m-d H:i'),
                     'submittedAt' => $submission->created_at?->format('Y-m-d H:i'),
                     'requirementType' => (string) ($submission->requirement?->requirement_type ?? 'Concept Paper'),
                     'mimeType' => $submission->mime_type,
@@ -225,6 +227,8 @@ class StudentConceptController extends Controller
                 'mime_type',
                 'file_size',
                 'status',
+                'adviser_status',
+                'adviser_reviewed_at',
                 'created_at',
             ]);
     }

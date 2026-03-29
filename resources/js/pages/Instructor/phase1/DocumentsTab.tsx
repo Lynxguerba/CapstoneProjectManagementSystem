@@ -1,4 +1,4 @@
-import { Download, Eye, FileText } from 'lucide-react';
+import { Eye, FileText } from 'lucide-react';
 import React from 'react';
 
 type DocumentRow = {
@@ -22,8 +22,7 @@ type DocumentsTabProps = {
     filters: React.ReactNode;
     onPrevPage: () => void;
     onNextPage: () => void;
-    onViewDocuments: (groupId: number) => void;
-    onOpenDownload: (groupId: number) => void;
+    onReviewDocuments: (groupId: number) => void;
     documentBadge: (status: DocumentRow['status']) => string;
 };
 
@@ -37,8 +36,7 @@ const DocumentsTab = ({
     filters,
     onPrevPage,
     onNextPage,
-    onViewDocuments,
-    onOpenDownload,
+    onReviewDocuments,
     documentBadge,
 }: DocumentsTabProps) => {
     return (
@@ -108,17 +106,12 @@ const DocumentsTab = ({
                                                 <div className="flex flex-wrap gap-1">
                                                     <button
                                                         type="button"
-                                                        onClick={() => onViewDocuments(row.groupId)}
-                                                        className="flex h-8 w-8 items-center justify-center rounded-xl text-emerald-600 transition hover:bg-emerald-50"
+                                                        onClick={() => onReviewDocuments(row.groupId)}
+                                                        title="Review concept papers"
+                                                        className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-50"
                                                     >
                                                         <Eye className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onOpenDownload(row.groupId)}
-                                                        className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100"
-                                                    >
-                                                        <Download className="h-4 w-4" />
+                                                        <span>Review</span>
                                                     </button>
                                                 </div>
                                             </td>

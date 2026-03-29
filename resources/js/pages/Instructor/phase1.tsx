@@ -4,7 +4,6 @@ import { CalendarClock, ChevronRight, CreditCard, FileText, Filter, Search, Shie
 import React from 'react';
 import AddRequirementModal from '../../components/Instructor/requirements/AddRequirementModal';
 import DeleteRequirementModal from '../../components/Instructor/requirements/DeleteRequirementModal';
-import DownloadDocumentsModal from '../../components/Instructor/requirements/DownloadDocumentsModal';
 import EditRequirementModal from '../../components/Instructor/requirements/EditRequirementModal';
 import InstructorLayout from './_layout';
 import DeadlinesTab from './phase1/DeadlinesTab';
@@ -127,7 +126,6 @@ type RequirementDocumentDetail = {
     status: 'Missing' | 'Submitted' | 'Approved' | 'Revision Required';
     fileName?: string | null;
     submittedAt?: string | null;
-    downloadUrl?: string | null;
 };
 
 type RequirementRecord = {
@@ -139,6 +137,7 @@ type RequirementRecord = {
 };
 
 const avatarColors = ['bg-emerald-600', 'bg-emerald-500', 'bg-emerald-700', 'bg-slate-600', 'bg-slate-500', 'bg-amber-500'];
+const isTabKey = (value: string | null): value is TabKey => value === 'deadlines' || value === 'documents' || value === 'defense' || value === 'payments';
 
 const pad = (value: number): string => value.toString().padStart(2, '0');
 
@@ -223,7 +222,14 @@ const Phase1Page = () => {
     const currentAcademicYear = currentAcademicYearRecord?.label ?? 'All';
     const currentAcademicYearId = currentAcademicYearRecord ? String(currentAcademicYearRecord.id) : '';
 
-    const [activeTab, setActiveTab] = React.useState<TabKey>('deadlines');
+    const [activeTab, setActiveTab] = React.useState<TabKey>(() => {
+        if (typeof window === 'undefined') {
+            return 'deadlines';
+        }
+
+        const tabFromUrl = new URLSearchParams(window.location.search).get('tab');
+        return isTabKey(tabFromUrl) ? tabFromUrl : 'deadlines';
+    });
     const [selectedAcademicYear, setSelectedAcademicYear] = React.useState(currentAcademicYear || 'All');
     const [selectedProgramSet, setSelectedProgramSet] = React.useState('All');
     const [searchTerm, setSearchTerm] = React.useState('');
@@ -236,7 +242,6 @@ const Phase1Page = () => {
     const [paymentsPage, setPaymentsPage] = React.useState(1);
     const [editingRequirement, setEditingRequirement] = React.useState<RequirementRecord | null>(null);
     const [deletingRequirement, setDeletingRequirement] = React.useState<RequirementRecord | null>(null);
-    const [downloadGroupId, setDownloadGroupId] = React.useState<number | null>(null);
 
     const academicYearOptions = React.useMemo(() => ['All', ...academicYears.map((year) => year.label)], [academicYears]);
 
@@ -249,6 +254,33 @@ const Phase1Page = () => {
             setRequirementsAcademicYear('All');
         }
     }, [academicYearOptions, requirementsAcademicYear]);
+
+    React.useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const url = new URL(window.location.href);
+        const currentTab = url.searchParams.get('tab');
+
+        if (activeTab === 'deadlines') {
+            if (currentTab === null) {
+                return;
+            }
+
+            url.searchParams.delete('tab');
+        } else {
+            if (currentTab === activeTab) {
+                return;
+            }
+
+            url.searchParams.set('tab', activeTab);
+        }
+
+        const query = url.searchParams.toString();
+        const nextUrl = `${url.pathname}${query !== '' ? `?${query}` : ''}${url.hash}`;
+        window.history.replaceState(window.history.state, '', nextUrl);
+    }, [activeTab]);
 
     const formatProgramSetLabel = React.useCallback((programSet: ProgramSetOption): string => {
         const name = programSet.name?.trim() ?? '';
@@ -469,10 +501,6 @@ const Phase1Page = () => {
         return map;
     }, [documentSubmissions]);
 
-    const buildDownloadUrl = React.useCallback((submissionId: number) => {
-        return `/instructor/document-submissions/${submissionId}/download`;
-    }, []);
-
     const documentDetailsByGroup = React.useMemo(() => {
         const map = new Map<number, RequirementDocumentDetail[]>();
 
@@ -515,7 +543,6 @@ const Phase1Page = () => {
                     status,
                     fileName: submission?.file_name ?? null,
                     submittedAt: submission?.submitted_at ?? null,
-                    downloadUrl: submission ? buildDownloadUrl(submission.id) : null,
                 } satisfies RequirementDocumentDetail;
             });
 
@@ -523,7 +550,7 @@ const Phase1Page = () => {
         });
 
         return map;
-    }, [buildDownloadUrl, documentSubmissionsByGroupId, groups, requirementsByAcademicYearLabel]);
+    }, [documentSubmissionsByGroupId, groups, requirementsByAcademicYearLabel]);
 
     const documents = React.useMemo(() => {
         const iconTone: Record<DocumentRow['status'], string> = {
@@ -534,31 +561,42 @@ const Phase1Page = () => {
         };
 
         return filteredGroups.map((group) => {
-            const details = documentDetailsByGroup.get(group.id) ?? [];
-            const requiredCount = details.length;
-            const submittedDocs = details.filter((detail) => detail.status !== 'Missing');
-            const submittedCount = submittedDocs.length;
-            const hasRevision = details.some((detail) => detail.status === 'Revision Required');
-            const allApproved = requiredCount > 0 && details.every((detail) => detail.status === 'Approved');
+            const submissions = documentSubmissionsByGroupId.get(group.id) ?? [];
+            const normalizedStatuses = submissions.map((submission) => {
+                if (submission.status === 'Approved') {
+                    return 'Approved';
+                }
+
+                if (submission.status === 'Revision Required') {
+                    return 'Revision Required';
+                }
+
+                return 'Submitted';
+            });
+
+            const hasSubmissions = normalizedStatuses.length > 0;
+            const hasRevision = normalizedStatuses.some((status) => status === 'Revision Required');
+            const allApproved = hasSubmissions && normalizedStatuses.every((status) => status === 'Approved');
 
             let status: DocumentRow['status'] = 'Missing';
-            if (requiredCount > 0 && hasRevision) {
-                status = 'Revise';
-            } else if (requiredCount > 0 && submittedCount === 0) {
+            if (!hasSubmissions) {
                 status = 'Missing';
-            } else if (requiredCount > 0 && allApproved) {
+            } else if (hasRevision) {
+                status = 'Revise';
+            } else if (allApproved) {
                 status = 'Approved';
-            } else if (requiredCount > 0 && submittedCount > 0) {
+            } else {
                 status = 'For Review';
             }
 
-            const latestSubmittedAt = submittedDocs.reduce((latest, detail) => {
-                if (!detail.submittedAt) {
+            const latestSubmittedAt = submissions.reduce((latest, submission) => {
+                const submittedAt = submission.submitted_at ?? '';
+                if (submittedAt === '') {
                     return latest;
                 }
 
-                if (!latest || detail.submittedAt > latest) {
-                    return detail.submittedAt;
+                if (!latest || submittedAt > latest) {
+                    return submittedAt;
                 }
 
                 return latest;
@@ -575,7 +613,7 @@ const Phase1Page = () => {
                 iconColor: iconTone[status],
             } satisfies DocumentRow;
         });
-    }, [documentDetailsByGroup, filteredGroups]);
+    }, [documentSubmissionsByGroupId, filteredGroups]);
 
     const documentsPerPage = 6;
     const totalDocumentPages = Math.max(1, Math.ceil(documents.length / documentsPerPage));
@@ -601,9 +639,6 @@ const Phase1Page = () => {
     const groupById = React.useMemo(() => {
         return new Map(filteredGroups.map((group) => [group.id, group]));
     }, [filteredGroups]);
-
-    const downloadGroup = downloadGroupId !== null ? (groupById.get(downloadGroupId) ?? null) : null;
-    const downloadDocuments = downloadGroupId !== null ? (documentDetailsByGroup.get(downloadGroupId) ?? []) : [];
 
     const missingRequirementsByGroupId = React.useMemo(() => {
         const map = new Map<number, boolean>();
@@ -720,15 +755,7 @@ const Phase1Page = () => {
     };
 
     const handleViewDocuments = (groupId: number) => {
-        router.visit(`/instructor/requirements/${groupId}/documents`);
-    };
-
-    const handleOpenDownload = (groupId: number) => {
-        setDownloadGroupId(groupId);
-    };
-
-    const handleCloseDownload = () => {
-        setDownloadGroupId(null);
+        router.visit(`/instructor/requirements/documents?group=${groupId}`);
     };
 
     const handlePrevDeadlinesPage = () => {
@@ -980,8 +1007,7 @@ const Phase1Page = () => {
                         filters={renderFilters()}
                         onPrevPage={handlePrevDocumentsPage}
                         onNextPage={handleNextDocumentsPage}
-                        onViewDocuments={handleViewDocuments}
-                        onOpenDownload={handleOpenDownload}
+                        onReviewDocuments={handleViewDocuments}
                         documentBadge={documentBadge}
                     />
                 ) : null}
@@ -1016,12 +1042,6 @@ const Phase1Page = () => {
                     />
                 ) : null}
             </motion.section>
-            <DownloadDocumentsModal
-                open={downloadGroupId !== null}
-                groupName={downloadGroup?.name ?? 'Selected group'}
-                documents={downloadDocuments}
-                onClose={handleCloseDownload}
-            />
             <AddRequirementModal
                 open={isModalOpen}
                 academicYearOptions={academicYearSelectOptions}

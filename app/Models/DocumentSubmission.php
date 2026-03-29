@@ -22,7 +22,10 @@ class DocumentSubmission extends Model
         'mime_type',
         'file_size',
         'status',
+        'adviser_status',
         'submitted_by',
+        'adviser_reviewed_by',
+        'adviser_reviewed_at',
     ];
 
     /**
@@ -32,6 +35,7 @@ class DocumentSubmission extends Model
     {
         return [
             'file_size' => 'integer',
+            'adviser_reviewed_at' => 'datetime',
         ];
     }
 
@@ -53,5 +57,10 @@ class DocumentSubmission extends Model
     public function submitter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function adviserReviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'adviser_reviewed_by');
     }
 }

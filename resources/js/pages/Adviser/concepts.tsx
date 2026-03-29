@@ -1,14 +1,19 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Calendar, ChevronRight, ChevronsLeft, FileText, GraduationCap, PanelRightOpen, Search } from 'lucide-react';
+import { Calendar, CheckCircle2, ChevronRight, ChevronsLeft, FileText, GraduationCap, PanelRightOpen, RotateCcw, Search } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import adviserRoutes from '../../routes/adviser';
 import AdviserLayout from './_layout';
+
+type SubmissionStatus = 'Submitted' | 'Approved' | 'Revision Required';
 
 type Concept = {
     id: number;
     title: string;
     submitted_at?: string | null;
+    instructor_status: SubmissionStatus;
+    adviser_status: SubmissionStatus;
+    adviser_reviewed_at?: string | null;
     file_url?: string | null;
 };
 
@@ -36,6 +41,7 @@ const AdviserConcepts = () => {
     const [selectedConceptId, setSelectedConceptId] = useState<number | null>(null);
     const [isSubmissionsPaneCollapsed, setIsSubmissionsPaneCollapsed] = useState(false);
     const [bundles, setBundles] = useState<GroupConceptBundle[]>(() => props.groups ?? []);
+    const [processingConceptId, setProcessingConceptId] = useState<number | null>(null);
 
     useEffect(() => {
         setBundles(props.groups ?? []);
@@ -146,6 +152,66 @@ const AdviserConcepts = () => {
             setSelectedConceptId(null);
         }
     }, [selectedConceptId, selectedGroup]);
+
+    const adviserStatusPillClass = (status: SubmissionStatus): string => {
+        if (status === 'Approved') {
+            return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+        }
+
+        if (status === 'Revision Required') {
+            return 'border-amber-200 bg-amber-100 text-amber-700';
+        }
+
+        return 'border-slate-200 bg-slate-100 text-slate-600';
+    };
+
+    const instructorStatusPillClass = (status: SubmissionStatus): string => {
+        if (status === 'Approved') {
+            return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+        }
+
+        if (status === 'Revision Required') {
+            return 'border-amber-200 bg-amber-100 text-amber-700';
+        }
+
+        return 'border-indigo-200 bg-indigo-100 text-indigo-700';
+    };
+
+    const updateAdviserStatus = (conceptId: number, adviserStatus: Extract<SubmissionStatus, 'Approved' | 'Revision Required'>): void => {
+        if (processingConceptId !== null) {
+            return;
+        }
+
+        setProcessingConceptId(conceptId);
+
+        router.patch(
+            `/adviser/concepts/submissions/${conceptId}/status`,
+            { adviser_status: adviserStatus },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    setBundles((currentBundles) =>
+                        currentBundles.map((bundle) => ({
+                            ...bundle,
+                            concepts: bundle.concepts.map((concept) =>
+                                concept.id === conceptId
+                                    ? {
+                                          ...concept,
+                                          adviser_status: adviserStatus,
+                                          adviser_reviewed_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
+                                      }
+                                    : concept,
+                            ),
+                        })),
+                    );
+                },
+                onFinish: () => {
+                    setProcessingConceptId(null);
+                },
+            },
+        );
+    };
 
     return (
         <AdviserLayout title="Concepts" subtitle="Review concept submissions from your groups">
@@ -314,18 +380,22 @@ const AdviserConcepts = () => {
                                                     <tr>
                                                         <th className="px-4 py-3 font-semibold">Title</th>
                                                         <th className="px-4 py-3 font-semibold">Submitted Time</th>
+                                                        <th className="px-4 py-3 font-semibold">Status</th>
+                                                        <th className="px-4 py-3 font-semibold">Instructor Approval</th>
+                                                        <th className="px-4 py-3 font-semibold">Action</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">
                                                     {selectedGroup.concepts.length === 0 ? (
                                                         <tr>
-                                                            <td colSpan={2} className="px-4 py-8 text-center text-slate-500">
+                                                            <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
                                                                 No concept submissions yet.
                                                             </td>
                                                         </tr>
                                                     ) : (
                                                         selectedGroup.concepts.map((concept) => {
                                                             const active = concept.id === selectedConceptId;
+                                                            const isProcessing = processingConceptId === concept.id;
 
                                                             return (
                                                                 <tr
@@ -340,6 +410,52 @@ const AdviserConcepts = () => {
                                                                     </td>
                                                                     <td className="px-4 py-3 whitespace-nowrap text-slate-600">
                                                                         {concept.submitted_at ?? '—'}
+                                                                    </td>
+                                                                    <td className="px-4 py-3">
+                                                                        <span
+                                                                            className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${adviserStatusPillClass(
+                                                                                concept.adviser_status,
+                                                                            )}`}
+                                                                        >
+                                                                            {concept.adviser_status}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-4 py-3">
+                                                                        <span
+                                                                            className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${instructorStatusPillClass(
+                                                                                concept.instructor_status,
+                                                                            )}`}
+                                                                        >
+                                                                            {concept.instructor_status}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-4 py-3">
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(event) => {
+                                                                                    event.stopPropagation();
+                                                                                    updateAdviserStatus(concept.id, 'Approved');
+                                                                                }}
+                                                                                disabled={processingConceptId !== null}
+                                                                                className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                                            >
+                                                                                <CheckCircle2 className="h-3 w-3" />
+                                                                                {isProcessing ? 'Saving...' : 'Approve'}
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(event) => {
+                                                                                    event.stopPropagation();
+                                                                                    updateAdviserStatus(concept.id, 'Revision Required');
+                                                                                }}
+                                                                                disabled={processingConceptId !== null}
+                                                                                className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                                            >
+                                                                                <RotateCcw className="h-3 w-3" />
+                                                                                {isProcessing ? 'Saving...' : 'Revision'}
+                                                                            </button>
+                                                                        </div>
                                                                     </td>
                                                                 </tr>
                                                             );

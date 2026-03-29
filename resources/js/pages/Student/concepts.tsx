@@ -17,7 +17,9 @@ type ConceptSubmission = {
     title: string;
     titleCategoryId?: number | null;
     category?: string | null;
-    status: 'Submitted' | 'Approved' | 'Revision Required' | string;
+    instructorStatus: 'Submitted' | 'Approved' | 'Revision Required' | string;
+    adviserStatus: 'Submitted' | 'Approved' | 'Revision Required' | string;
+    adviserReviewedAt?: string | null;
     submittedAt?: string | null;
     requirementType: string;
     mimeType?: string | null;
@@ -62,7 +64,7 @@ type ConceptSubmissionForm = {
     concept_file: File | null;
 };
 
-const statusPillClass = (status: ConceptSubmission['status']): string => {
+const instructorStatusPillClass = (status: ConceptSubmission['instructorStatus']): string => {
     if (status === 'Approved') {
         return 'border-emerald-300 bg-emerald-100 text-emerald-800';
     }
@@ -72,6 +74,18 @@ const statusPillClass = (status: ConceptSubmission['status']): string => {
     }
 
     return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+};
+
+const adviserStatusPillClass = (status: ConceptSubmission['adviserStatus']): string => {
+    if (status === 'Approved') {
+        return 'border-emerald-300 bg-emerald-100 text-emerald-800';
+    }
+
+    if (status === 'Revision Required') {
+        return 'border-amber-200 bg-amber-100 text-amber-700';
+    }
+
+    return 'border-slate-200 bg-slate-100 text-slate-700';
 };
 
 const deriveTitleFromFileName = (fileName: string): string => {
@@ -195,14 +209,15 @@ const StudentConcepts = () => {
                                 <th className="px-3 py-3">Title</th>
                                 <th className="px-3 py-3">Requirement</th>
                                 <th className="px-3 py-3">Submitted</th>
-                                <th className="px-3 py-3">Status</th>
+                                <th className="px-3 py-3">Instructor Approval</th>
+                                <th className="px-3 py-3">Adviser Approval</th>
                                 <th className="px-3 py-3">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {submissions.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-3 py-8 text-center text-xs text-slate-500">
+                                    <td colSpan={6} className="px-3 py-8 text-center text-xs text-slate-500">
                                         No concept submissions yet.
                                     </td>
                                 </tr>
@@ -214,9 +229,16 @@ const StudentConcepts = () => {
                                         <td className="px-3 py-3 text-slate-600">{submission.submittedAt ?? '—'}</td>
                                         <td className="px-3 py-3">
                                             <span
-                                                className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusPillClass(submission.status)}`}
+                                                className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${instructorStatusPillClass(submission.instructorStatus)}`}
                                             >
-                                                {submission.status}
+                                                {submission.instructorStatus}
+                                            </span>
+                                        </td>
+                                        <td className="px-3 py-3">
+                                            <span
+                                                className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${adviserStatusPillClass(submission.adviserStatus)}`}
+                                            >
+                                                {submission.adviserStatus}
                                             </span>
                                         </td>
                                         <td className="px-3 py-3 text-xs text-slate-600">
@@ -306,7 +328,7 @@ const StudentConcepts = () => {
                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                                 <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase">Latest Activity</p>
                                 <p className="mt-1 text-xs text-slate-900">
-                                    {latestSubmission ? `${latestSubmission.status} · ${latestSubmission.title}` : 'No submissions yet.'}
+                                    {latestSubmission ? `${latestSubmission.instructorStatus} · ${latestSubmission.title}` : 'No submissions yet.'}
                                 </p>
                             </div>
 

@@ -4,6 +4,7 @@ use App\Http\Controllers\Adviser\ApproveGroupAdviserRequestController;
 use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\DismissGroupAdviserRequestController;
 use App\Http\Controllers\Adviser\UpdateAdviserAvailabilityController;
+use App\Http\Controllers\Adviser\UpdateAdviserConceptSubmissionStatusController;
 use App\Http\Controllers\Adviser\UpdateAdviserPasswordController;
 use App\Http\Controllers\Adviser\UpdateAdviserProgramUtilitiesController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
@@ -709,17 +710,24 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
                         $concepts = $conceptSubmissionsByGroup
                             ->get($group->id, collect())
                             ->map(function (DocumentSubmission $submission): array {
-                                $decision = match ($submission->status) {
+                                $instructorStatus = match ($submission->status) {
                                     'Approved' => 'Approved',
-                                    'Revision Required' => 'For Revision',
-                                    default => 'Pending',
+                                    'Revision Required' => 'Revision Required',
+                                    default => 'Submitted',
+                                };
+                                $adviserStatus = match ($submission->adviser_status) {
+                                    'Approved' => 'Approved',
+                                    'Revision Required' => 'Revision Required',
+                                    default => 'Submitted',
                                 };
 
                                 return [
                                     'id' => $submission->id,
                                     'title' => $submission->file_name,
-                                    'decision' => $decision,
+                                    'instructor_status' => $instructorStatus,
+                                    'adviser_status' => $adviserStatus,
                                     'submitted_at' => $submission->created_at?->format('Y-m-d H:i'),
+                                    'adviser_reviewed_at' => $submission->adviser_reviewed_at?->format('Y-m-d H:i'),
                                     'file_url' => $submission->file_path !== null ? Storage::disk('public')->url($submission->file_path) : null,
                                 ];
                             })
@@ -751,6 +759,8 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
             'groups' => $groups,
         ]);
     })->name('adviser.concepts');
+    Route::patch('/concepts/submissions/{submission}/status', UpdateAdviserConceptSubmissionStatusController::class)
+        ->name('adviser.concepts.submissions.status');
     Route::get('/documents', function () {
         return Inertia::render('Adviser/documents');
     })->name('adviser.documents');

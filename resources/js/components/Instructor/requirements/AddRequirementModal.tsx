@@ -35,10 +35,12 @@ const AddRequirementModal = ({ open, academicYearOptions, defaultAcademicYearId,
 
     React.useEffect(() => {
         if (!open) {
-            wasOpen.current = false;
-            setIsAppearing(false);
-            form.reset();
-            form.clearErrors();
+            if (wasOpen.current) {
+                wasOpen.current = false;
+                setIsAppearing(false);
+                form.reset();
+                form.clearErrors();
+            }
             return;
         }
 
@@ -51,7 +53,7 @@ const AddRequirementModal = ({ open, academicYearOptions, defaultAcademicYearId,
                 academic_year_id: defaultAcademicYearId,
             });
         }
-    }, [defaultAcademicYearId, form, open]);
+    }, [defaultAcademicYearId, open]);
 
     React.useEffect(() => {
         if (!open) {
