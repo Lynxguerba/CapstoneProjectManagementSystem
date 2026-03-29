@@ -14,7 +14,18 @@ class GroupMember extends Model
         'group_id',
         'student_id',
         'role',
+        'is_cross_set',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_cross_set' => 'boolean',
+        ];
+    }
 
     public function group(): BelongsTo
     {

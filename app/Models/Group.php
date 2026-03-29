@@ -17,7 +17,18 @@ class Group extends Model
         'program_set_id',
         'leader_id',
         'name',
+        'is_cross_set',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_cross_set' => 'boolean',
+        ];
+    }
 
     public function programSet(): BelongsTo
     {
@@ -32,7 +43,7 @@ class Group extends Model
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'group_members', 'group_id', 'student_id')
-            ->withPivot(['role'])
+            ->withPivot(['role', 'is_cross_set'])
             ->withTimestamps();
     }
 

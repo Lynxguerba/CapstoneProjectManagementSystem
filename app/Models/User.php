@@ -99,6 +99,16 @@ class User extends Authenticatable
         return $this->hasMany(GroupPanelist::class, 'panelist_id');
     }
 
+    public function panelistAvailability(): HasOne
+    {
+        return $this->hasOne(PanelistAvailability::class, 'panelist_id');
+    }
+
+    public function panelistProgramUtilities(): HasMany
+    {
+        return $this->hasMany(PanelistProgramUtility::class, 'panelist_id');
+    }
+
     public function panelGroups(): BelongsToMany
     {
         return $this->belongsToMany(Group::class, 'group_panelists', 'panelist_id', 'group_id')
