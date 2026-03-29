@@ -8,10 +8,8 @@ use App\Models\AuditLog;
 use App\Models\Role;
 use App\Models\StudentProgram;
 use App\Models\User;
-use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
@@ -20,8 +18,6 @@ use Inertia\Inertia;
 
 class LoginController extends Controller
 {
-    private const SESSION_CONFLICT_MESSAGE = 'The user you entered is already logged in on another browser.';
-
     /**
      * @var array<string, string>
      */
@@ -79,12 +75,6 @@ class LoginController extends Controller
         if ($blockedLoginMessage !== null) {
             return back()->withErrors([
                 'email' => $blockedLoginMessage,
-            ]);
-        }
-
-        if ($this->hasAnotherActiveSession($user, $request)) {
-            return back()->withErrors([
-                'email' => self::SESSION_CONFLICT_MESSAGE,
             ]);
         }
 
@@ -185,35 +175,6 @@ class LoginController extends Controller
         }
 
         return null;
-    }
-
-    private function hasAnotherActiveSession(User $user, Request $request): bool
-    {
-        if (! $this->supportsActiveSessionTracking()) {
-            return false;
-        }
-
-        $storedSessionId = is_string($user->active_session_id ?? null)
-            ? trim((string) $user->active_session_id)
-            : '';
-
-        if ($storedSessionId === '') {
-            return false;
-        }
-
-        $currentSessionId = (string) $request->session()->getId();
-
-        if ($storedSessionId === $currentSessionId) {
-            return false;
-        }
-
-        if ($this->sessionLockExpired($user)) {
-            $this->clearStoredActiveSession($user);
-
-            return false;
-        }
-
-        return true;
     }
 
     public function logout(Request $request): RedirectResponse
@@ -326,41 +287,6 @@ class LoginController extends Controller
 
         return Schema::hasColumn('users', 'active_session_id')
             && Schema::hasColumn('users', 'active_session_last_activity_at');
-    }
-
-    private function sessionLockExpired(User $user): bool
-    {
-        $lastActivity = $this->resolveLastActivityTimestamp($user);
-
-        if (! $lastActivity instanceof CarbonInterface) {
-            return false;
-        }
-
-        return $lastActivity->lt(now()->subMinutes($this->sessionLifetimeInMinutes()));
-    }
-
-    private function resolveLastActivityTimestamp(User $user): ?CarbonInterface
-    {
-        $lastActivity = $user->active_session_last_activity_at ?? null;
-
-        if ($lastActivity instanceof CarbonInterface) {
-            return $lastActivity;
-        }
-
-        if (! is_string($lastActivity) || trim($lastActivity) === '') {
-            return null;
-        }
-
-        try {
-            return Carbon::parse($lastActivity);
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
-    private function sessionLifetimeInMinutes(): int
-    {
-        return max(1, (int) config('session.lifetime', 120));
     }
 
     private function storeActiveSessionFingerprint(User $user, string $sessionId): void
