@@ -64,7 +64,7 @@ class ApproveGroupAdviserRequestController extends Controller
                 ->where('adviser_id', $userId)
                 ->value('is_available');
 
-            if ($isAvailable === false || $isAvailable === 0) {
+            if (! (bool) $isAvailable) {
                 return back()->with('error', 'You are currently closed for new group requests.');
             }
         }

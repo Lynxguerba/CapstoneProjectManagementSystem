@@ -16,8 +16,10 @@ class UpdateAdviserProgramUtilitiesController extends Controller
     public function __invoke(UpdateAdviserProgramUtilitiesRequest $request): RedirectResponse
     {
         $user = $request->user();
+        $activeRole = $request->session()->get('active_role');
+        $isAuthorizedAdviser = $user && ($user->hasRole('adviser') || $activeRole === 'adviser');
 
-        if (! $user || ! $user->hasRole('adviser')) {
+        if (! $isAuthorizedAdviser) {
             abort(403);
         }
 
