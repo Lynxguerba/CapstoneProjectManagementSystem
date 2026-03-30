@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ChevronRight, FileText } from 'lucide-react';
+import { ChevronRight, ChevronsLeft, ChevronsRight, FileText, Info } from 'lucide-react';
+import { useState } from 'react';
 import InstructorLayout from '../_layout';
 
 type SubmissionPreview = {
@@ -24,6 +25,7 @@ type PageProps = {
 const SubmissionPreviewPage = () => {
     const { props } = usePage<PageProps>();
     const submission = props.submission;
+    const [isDetailsCollapsed, setIsDetailsCollapsed] = useState<boolean>(false);
     const requirementDocumentsHref = submission.groupId
         ? `/instructor/requirements/documents?group=${submission.groupId}`
         : '/instructor/requirements/documents';
@@ -49,43 +51,80 @@ const SubmissionPreviewPage = () => {
                     </span>
                 </nav>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h2 className="text-base font-semibold text-slate-900">{submission.requirementType}</h2>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">Group {submission.groupName}</span>
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">{submission.programSetName ?? 'Program set'}</span>
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">{submission.program ?? 'Program'}</span>
-                    </div>
-                    <div className="mt-4 grid grid-cols-1 gap-2 text-sm text-slate-700 sm:grid-cols-2">
-                        <div>
-                            <span className="font-semibold text-slate-900">File:</span> {submission.fileName}
+                <div
+                    className={`grid grid-cols-1 gap-6 transition-[grid-template-columns] duration-300 ${
+                        isDetailsCollapsed ? 'lg:grid-cols-[88px_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)]'
+                    }`}
+                >
+                    <div
+                        className={`rounded-2xl border border-slate-200 bg-white shadow-sm transition-[padding] duration-300 ${
+                            isDetailsCollapsed ? 'p-3' : 'p-5'
+                        }`}
+                    >
+                        <div className={`flex items-center gap-3 ${isDetailsCollapsed ? 'justify-center' : 'justify-between'}`}>
+                            {!isDetailsCollapsed ? (
+                                <h2 className="text-base font-semibold text-slate-900">{submission.requirementType}</h2>
+                            ) : (
+                                <span
+                                    className="inline-flex rounded-md border border-slate-200 bg-slate-50 p-1 text-slate-600"
+                                    title="Details"
+                                    aria-hidden="true"
+                                >
+                                    <Info className="h-4 w-4" />
+                                </span>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setIsDetailsCollapsed((current) => !current)}
+                                className="inline-flex rounded-lg border border-slate-200 p-1.5 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                                aria-label={isDetailsCollapsed ? 'Expand submission details' : 'Collapse submission details'}
+                                aria-expanded={!isDetailsCollapsed}
+                                title={isDetailsCollapsed ? 'Expand' : 'Collapse'}
+                            >
+                                {isDetailsCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+                            </button>
                         </div>
-                        <div>
-                            <span className="font-semibold text-slate-900">Submitted:</span> {submission.submittedAt ?? '—'}
-                        </div>
-                        <div>
-                            <span className="font-semibold text-slate-900">Instructor Status:</span> {submission.status ?? 'Submitted'}
-                        </div>
-                        <div>
-                            <span className="font-semibold text-slate-900">Adviser Signed:</span> {submission.signedAt ?? '—'}
-                        </div>
-                    </div>
-                </div>
 
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-                        <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                            <FileText className="h-4 w-4 text-emerald-600" />
-                            PDF Preview
-                        </h3>
+                        {!isDetailsCollapsed ? (
+                            <>
+                                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">Group {submission.groupName}</span>
+                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">{submission.programSetName ?? 'Program set'}</span>
+                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">{submission.program ?? 'Program'}</span>
+                                </div>
+                                <div className="mt-4 grid grid-cols-1 gap-2 text-sm text-slate-700 sm:grid-cols-2">
+                                    <div>
+                                        <span className="font-semibold text-slate-900">File:</span> {submission.fileName}
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold text-slate-900">Submitted:</span> {submission.submittedAt ?? '—'}
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold text-slate-900">Instructor Status:</span> {submission.status ?? 'Submitted'}
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold text-slate-900">Adviser Signed:</span> {submission.signedAt ?? '—'}
+                                    </div>
+                                </div>
+                            </>
+                        ) : null}
                     </div>
-                    <div className="bg-slate-100 p-4">
-                        <iframe
-                            key={submission.fileUrl}
-                            src={`${submission.fileUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
-                            title={submission.fileName}
-                            className="h-[74vh] w-full rounded-2xl border border-slate-200 bg-white"
-                        />
+
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
+                            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                <FileText className="h-4 w-4 text-emerald-600" />
+                                PDF Preview
+                            </h3>
+                        </div>
+                        <div className="bg-slate-100 p-4">
+                            <iframe
+                                key={submission.fileUrl}
+                                src={`${submission.fileUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+                                title={submission.fileName}
+                                className="h-[74vh] w-full rounded-2xl border border-slate-200 bg-white"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
