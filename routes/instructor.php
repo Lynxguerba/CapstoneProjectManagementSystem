@@ -3147,7 +3147,9 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         $userId = Auth::guard('web')->id();
         $groupQueryValue = request()->query('group');
         $selectedGroupId = is_numeric($groupQueryValue) ? (int) $groupQueryValue : null;
-        $groups = [];
+        $groupOptions = [];
+        $selectedGroup = null;
+        $documents = [];
 
         $resolveUserName = static function (?User $user): string {
             if (! $user) {
@@ -3171,6 +3173,206 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     ->orderByDesc('updated_at')
                     ->get(['id', 'name', 'program_set_id', 'leader_id', 'updated_at']);
 
+                $groupOptions = $groupCollection
+                    ->map(function (Group $group): array {
+                        $programSet = $group->programSet;
+                        $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
+                        $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+
+                        return [
+                            'id' => $group->id,
+                            'name' => $group->name,
+                            'programSetName' => $programSet?->name ?: $fallbackName,
+                            'program' => $programSet?->program,
+                            'schoolYear' => $schoolYear,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+
+                /** @var Group|null $activeGroup */
+                $activeGroup = $selectedGroupId !== null
+                    ? $groupCollection->firstWhere('id', $selectedGroupId)
+                    : $groupCollection->first();
+
+                if (! $activeGroup instanceof Group) {
+                    /** @var Group|null $activeGroup */
+                    $activeGroup = $groupCollection->first();
+                }
+
+                if ($activeGroup instanceof Group) {
+                    $selectedGroupId = $activeGroup->id;
+                    $programSet = $activeGroup->programSet;
+                    $adviserAssignment = $activeGroup->adviserAssignment;
+                    $adviser = $adviserAssignment?->adviser;
+                    $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
+                    $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+                    $leaderName = $resolveUserName($activeGroup->leader);
+
+                    $selectedGroup = [
+                        'id' => $activeGroup->id,
+                        'name' => $activeGroup->name,
+                        'leaderName' => $leaderName !== '' ? $leaderName : null,
+                        'programSetName' => $programSet?->name ?: $fallbackName,
+                        'program' => $programSet?->program,
+                        'schoolYear' => $schoolYear,
+                        'adviser' => $adviser
+                            ? [
+                                'id' => $adviser->id,
+                                'name' => $resolveUserName($adviser),
+                                'email' => $adviser->email,
+                                'assignedAt' => $adviserAssignment?->created_at?->format('Y-m-d H:i'),
+                            ]
+                            : null,
+                    ];
+
+                    if (class_exists(DocumentRequirement::class) && Schema::hasTable('document_requirements')) {
+                        $requirementsQuery = DocumentRequirement::query()
+                            ->with('academicYear')
+                            ->where('stage', 'Concept')
+                            ->orderBy('due_date')
+                            ->orderBy('id');
+
+                        $requirements = $requirementsQuery
+                            ->get(['id', 'requirement_type', 'due_date', 'academic_year_id'])
+                            ->filter(function (DocumentRequirement $requirement) use ($schoolYear): bool {
+                                $requirementAcademicYear = $requirement->academicYear?->label;
+
+                                if (! is_string($requirementAcademicYear) || trim($requirementAcademicYear) === '') {
+                                    return true;
+                                }
+
+                                if (! is_string($schoolYear) || trim($schoolYear) === '') {
+                                    return false;
+                                }
+
+                                return $requirementAcademicYear === $schoolYear;
+                            })
+                            ->values();
+                        $latestSubmissionByRequirementId = collect();
+
+                        if (
+                            class_exists(DocumentSubmission::class)
+                            && Schema::hasTable('document_submissions')
+                            && $requirements->isNotEmpty()
+                        ) {
+                            $latestSubmissionByRequirementId = DocumentSubmission::query()
+                                ->where('group_id', $activeGroup->id)
+                                ->whereIn('document_requirement_id', $requirements->pluck('id')->all())
+                                ->orderByDesc('created_at')
+                                ->orderByDesc('id')
+                                ->get(['id', 'group_id', 'document_requirement_id', 'file_name', 'status', 'created_at'])
+                                ->unique('document_requirement_id')
+                                ->keyBy('document_requirement_id');
+                        }
+
+                        $documents = $requirements
+                            ->map(function (DocumentRequirement $requirement) use ($activeGroup, $latestSubmissionByRequirementId): array {
+                                /** @var DocumentSubmission|null $submission */
+                                $submission = $latestSubmissionByRequirementId->get($requirement->id);
+                                $status = match ((string) ($submission?->status ?? '')) {
+                                    'Approved' => 'Approved',
+                                    'Revision Required' => 'Revision Required',
+                                    default => $submission ? 'Submitted' : 'Missing',
+                                };
+
+                                $requirementType = trim((string) ($requirement->requirement_type ?? 'Requirement'));
+                                $isConceptRequirement = str_contains(strtolower($requirementType), 'concept');
+                                $isRecommendationRequirement = str_contains(strtolower($requirementType), 'recommendation');
+                                $canReview = $submission instanceof DocumentSubmission && ($isConceptRequirement || $isRecommendationRequirement);
+                                $reviewUrl = null;
+
+                                if ($canReview) {
+                                    if ($isConceptRequirement) {
+                                        $reviewUrl = route('instructor.requirements.documents.review', [
+                                            'group' => $activeGroup->id,
+                                            'requirement' => $requirement->id,
+                                        ]);
+                                    } else {
+                                        $reviewUrl = route('instructor.requirements.documents.submission-preview', [
+                                            'submission' => $submission->id,
+                                        ]);
+                                    }
+                                }
+
+                                return [
+                                    'requirementId' => $requirement->id,
+                                    'requirementType' => $requirementType !== '' ? $requirementType : 'Requirement',
+                                    'academicYear' => $requirement->academicYear?->label ?? 'All',
+                                    'dueDate' => $requirement->due_date?->format('Y-m-d'),
+                                    'status' => $status,
+                                    'fileName' => $submission?->file_name,
+                                    'submittedAt' => $submission?->created_at?->format('Y-m-d H:i'),
+                                    'canReview' => $canReview,
+                                    'reviewUrl' => $reviewUrl,
+                                ];
+                            })
+                            ->values()
+                            ->all();
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            $groupOptions = [];
+            $selectedGroup = null;
+            $documents = [];
+        }
+
+        return Inertia::render('Instructor/requirements/documents', [
+            'groupOptions' => $groupOptions,
+            'selectedGroupId' => $selectedGroupId,
+            'selectedGroup' => $selectedGroup,
+            'documents' => $documents,
+        ]);
+    })->name('instructor.requirements.documents.index');
+    Route::get('/requirements/documents/review', function () {
+        $userId = Auth::guard('web')->id();
+        $groupQueryValue = request()->query('group');
+        $requirementQueryValue = request()->query('requirement');
+        $selectedGroupId = is_numeric($groupQueryValue) ? (int) $groupQueryValue : null;
+        $selectedRequirementId = is_numeric($requirementQueryValue) ? (int) $requirementQueryValue : null;
+        $selectedRequirementType = null;
+        $groups = [];
+
+        $resolveUserName = static function (?User $user): string {
+            if (! $user) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $fullName = $firstName !== '' || $lastName !== ''
+                ? trim($firstName.' '.$lastName)
+                : (is_string($user->name) ? $user->name : '');
+
+            return $fullName;
+        };
+
+        try {
+            if (
+                $selectedRequirementId !== null
+                && class_exists(DocumentRequirement::class)
+                && Schema::hasTable('document_requirements')
+            ) {
+                /** @var DocumentRequirement|null $selectedRequirement */
+                $selectedRequirement = DocumentRequirement::query()
+                    ->where('stage', 'Concept')
+                    ->find($selectedRequirementId, ['id', 'requirement_type']);
+
+                if ($selectedRequirement instanceof DocumentRequirement) {
+                    $selectedRequirementType = $selectedRequirement->requirement_type;
+                } else {
+                    $selectedRequirementId = null;
+                }
+            }
+
+            if ($userId !== null && class_exists(Group::class) && Schema::hasTable('groups')) {
+                $groupCollection = Group::query()
+                    ->with(['programSet.academicYear', 'leader:id,name,first_name,last_name', 'adviserAssignment.adviser:id,name,first_name,last_name,email'])
+                    ->whereHas('programSet', fn ($query) => $query->where('instructor_id', $userId))
+                    ->orderByDesc('updated_at')
+                    ->get(['id', 'name', 'program_set_id', 'leader_id', 'updated_at']);
+
                 $groupIds = $groupCollection->pluck('id')->filter()->values();
                 $conceptSubmissionsByGroup = collect();
 
@@ -3183,7 +3385,11 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     $conceptSubmissionsByGroup = DocumentSubmission::query()
                         ->with('requirement:id,requirement_type,stage')
                         ->whereIn('group_id', $groupIds)
-                        ->whereHas('requirement', fn ($query) => $query->where('stage', 'Concept'))
+                        ->whereHas('requirement', function ($query): void {
+                            $query->where('stage', 'Concept')
+                                ->whereRaw('LOWER(requirement_type) like ?', ['%concept%']);
+                        })
+                        ->when($selectedRequirementId !== null, fn ($query) => $query->where('document_requirement_id', $selectedRequirementId))
                         ->orderByDesc('created_at')
                         ->orderByDesc('id')
                         ->get([
@@ -3236,14 +3442,6 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             ->values()
                             ->all();
 
-                        $latestSubmission = $groupSubmissions->first();
-                        $latestStatus = match ((string) ($latestSubmission?->status ?? '')) {
-                            'Approved' => 'Approved',
-                            'Revision Required' => 'Revision Required',
-                            default => $latestSubmission ? 'Submitted' : 'No Submission',
-                        };
-                        $latestSubmittedAt = $latestSubmission?->created_at?->format('Y-m-d H:i') ?? $group->updated_at?->format('Y-m-d H:i');
-
                         return [
                             'id' => $group->id,
                             'name' => $group->name,
@@ -3251,9 +3449,6 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             'programSetName' => $programSet?->name ?: $fallbackName,
                             'program' => $programSet?->program,
                             'schoolYear' => $schoolYear,
-                            'latestStatus' => $latestStatus,
-                            'latestSubmittedAt' => $latestSubmittedAt,
-                            'submissionsCount' => count($submissions),
                             'adviser' => $adviser
                                 ? [
                                     'id' => $adviser->id,
@@ -3270,13 +3465,44 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             }
         } catch (\Throwable $e) {
             $groups = [];
+            $selectedRequirementType = null;
         }
 
-        return Inertia::render('Instructor/requirements/documents', [
+        return Inertia::render('Instructor/requirements/documents-review', [
             'groups' => $groups,
             'selectedGroupId' => $selectedGroupId,
+            'selectedRequirementId' => $selectedRequirementId,
+            'selectedRequirementType' => $selectedRequirementType,
         ]);
-    })->name('instructor.requirements.documents.index');
+    })->name('instructor.requirements.documents.review');
+    Route::get('/requirements/documents/submissions/{submission}/preview', function (DocumentSubmission $submission) {
+        $userId = Auth::guard('web')->id();
+        $submission->loadMissing([
+            'group.programSet:id,instructor_id,name,program',
+            'requirement:id,requirement_type,stage',
+        ]);
+
+        if ($userId === null || (int) ($submission->group?->programSet?->instructor_id ?? 0) !== (int) $userId) {
+            abort(403);
+        }
+
+        return Inertia::render('Instructor/requirements/submission-preview', [
+            'submission' => [
+                'id' => $submission->id,
+                'groupId' => $submission->group?->id,
+                'groupName' => $submission->group?->name ?? 'Group',
+                'programSetName' => $submission->group?->programSet?->name,
+                'program' => $submission->group?->programSet?->program,
+                'requirementType' => $submission->requirement?->requirement_type ?? 'Document',
+                'fileName' => $submission->file_name,
+                'fileUrl' => Storage::disk('public')->url($submission->file_path),
+                'status' => $submission->status,
+                'adviserStatus' => $submission->adviser_status,
+                'submittedAt' => $submission->created_at?->format('Y-m-d H:i'),
+                'signedAt' => $submission->adviser_reviewed_at?->format('Y-m-d H:i'),
+            ],
+        ]);
+    })->name('instructor.requirements.documents.submission-preview');
     Route::get('/requirements/{group}/documents', function (Group $group) {
         $userId = Auth::guard('web')->id();
 

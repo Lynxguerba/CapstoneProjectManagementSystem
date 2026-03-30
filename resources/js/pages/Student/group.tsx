@@ -56,6 +56,11 @@ type StudentGroupPageProps = {
     pendingAdviserRequest?: PendingAdviserRequest | null;
     panelists?: GroupPanelist[];
     progress?: ProgressStep[];
+    auth?: {
+        user?: {
+            id?: number;
+        } | null;
+    };
 };
 
 const defaultProgress: ProgressStep[] = [
@@ -95,6 +100,7 @@ const StudentGroup = () => {
     const hasPendingRequest = Boolean(pendingAdviserRequest);
     const panelists = props.panelists ?? [];
     const progressSteps = props.progress && props.progress.length > 0 ? props.progress : defaultProgress;
+    const currentStudentId = props.auth?.user?.id ?? null;
 
     const sectionLabel = [group?.programSet, group?.academicYear].filter(Boolean).join(' • ');
 
@@ -154,24 +160,48 @@ const StudentGroup = () => {
                                 members.map((member) => {
                                     const meta = resolveRoleMeta(member);
                                     const Icon = meta.icon;
+                                    const isCurrentStudent = currentStudentId !== null && member.id === currentStudentId;
 
                                     return (
-                                        <div key={member.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                                        <div
+                                            key={member.id}
+                                            className={`rounded-xl border p-3 ${
+                                                isCurrentStudent
+                                                    ? 'border-emerald-300 bg-emerald-50/60 ring-1 ring-emerald-200'
+                                                    : 'border-slate-200 bg-slate-50/70'
+                                            }`}
+                                        >
                                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                 <div className="min-w-0">
-                                                    <div className="truncate text-sm font-semibold text-slate-900">{member.name}</div>
+                                                    <div className="inline-flex max-w-full items-center gap-2">
+                                                        <div className="truncate text-sm font-semibold text-slate-900">{member.name}</div>
+                                                        {isCurrentStudent ? (
+                                                            <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
+                                                                You
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
                                                     <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-slate-600">
                                                         <Mail size={12} />
                                                         <span className="truncate">{member.email ?? 'No email available'}</span>
                                                     </div>
                                                 </div>
 
-                                                <span
-                                                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${meta.tone}`}
-                                                >
-                                                    <Icon size={12} />
-                                                    {member.role}
-                                                </span>
+                                                <div className="inline-flex items-center gap-1.5">
+                                                    <span
+                                                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                                                            isCurrentStudent ? `${meta.tone} ring-2 ring-emerald-300` : meta.tone
+                                                        }`}
+                                                    >
+                                                        <Icon size={12} />
+                                                        {member.role}
+                                                    </span>
+                                                    {isCurrentStudent ? (
+                                                        <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
+                                                            Current role
+                                                        </span>
+                                                    ) : null}
+                                                </div>
                                             </div>
                                         </div>
                                     );

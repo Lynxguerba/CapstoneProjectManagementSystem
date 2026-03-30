@@ -67,6 +67,11 @@ class Group extends Model
         return $this->hasMany(DocumentSubmission::class);
     }
 
+    public function adviserRecommendationDocuments(): HasMany
+    {
+        return $this->hasMany(AdviserRecommendationDocument::class);
+    }
+
     public function panelists(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'group_panelists', 'group_id', 'panelist_id')

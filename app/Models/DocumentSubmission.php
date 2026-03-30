@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class DocumentSubmission extends Model
 {
@@ -62,5 +63,10 @@ class DocumentSubmission extends Model
     public function adviserReviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'adviser_reviewed_by');
+    }
+
+    public function adviserRecommendationDocument(): HasOne
+    {
+        return $this->hasOne(AdviserRecommendationDocument::class, 'document_submission_id');
     }
 }

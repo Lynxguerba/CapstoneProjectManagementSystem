@@ -1,7 +1,20 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { motion } from 'framer-motion';
-import { Calendar, CheckCircle2, ChevronRight, ChevronsLeft, FileText, GraduationCap, PanelRightOpen, RotateCcw, Search } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+    AlertCircle,
+    Calendar,
+    CheckCircle2,
+    ChevronRight,
+    ChevronsLeft,
+    FileText,
+    GraduationCap,
+    PanelRightOpen,
+    RotateCcw,
+    Search,
+    X,
+} from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import RecommendationModal, { type RecommendationDocument } from '@/components/Adviser/RecommendationModal';
 import adviserRoutes from '../../routes/adviser';
 import AdviserLayout from './_layout';
 
@@ -26,10 +39,22 @@ type GroupConceptBundle = {
     school_year?: string | null;
     updated_at?: string | null;
     concepts: Concept[];
+    member_names?: string[];
+    has_recommendation_requirement?: boolean;
+    recommendation_requirement_id?: number | null;
+    recommendation_requirement_type?: string | null;
+    recommendation_document?: RecommendationDocument | null;
 };
 
 type AdviserConceptsPageProps = {
     groups?: GroupConceptBundle[];
+    hasESignature?: boolean;
+};
+
+type ReviewNotification = {
+    tone: 'success' | 'warning' | 'error';
+    title: string;
+    message: string;
 };
 
 const AdviserConcepts = () => {
@@ -42,10 +67,31 @@ const AdviserConcepts = () => {
     const [isSubmissionsPaneCollapsed, setIsSubmissionsPaneCollapsed] = useState(false);
     const [bundles, setBundles] = useState<GroupConceptBundle[]>(() => props.groups ?? []);
     const [processingConceptId, setProcessingConceptId] = useState<number | null>(null);
+    const [isRecommendationModalOpen, setIsRecommendationModalOpen] = useState(false);
+    const [isRecommendationGenerating, setIsRecommendationGenerating] = useState(false);
+    const [notification, setNotification] = useState<ReviewNotification | null>(null);
+    const hasESignature = props.hasESignature ?? false;
+    const dismissNotification = useCallback(() => {
+        setNotification(null);
+    }, []);
 
     useEffect(() => {
         setBundles(props.groups ?? []);
     }, [props.groups]);
+
+    useEffect(() => {
+        if (!notification) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            dismissNotification();
+        }, 4500);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [dismissNotification, notification]);
 
     const programSetOptions = useMemo(() => {
         const options = new Map<string, { value: string; label: string }>();
@@ -129,6 +175,42 @@ const AdviserConcepts = () => {
         () => selectedGroup?.concepts.find((concept) => concept.id === selectedConceptId) ?? null,
         [selectedConceptId, selectedGroup],
     );
+    const approvedConceptTitles = useMemo(() => {
+        if (!selectedGroup) {
+            return [] as string[];
+        }
+
+        return selectedGroup.concepts
+            .filter((concept) => concept.adviser_status === 'Approved' && concept.instructor_status === 'Approved')
+            .map((concept) => concept.title)
+            .filter((title) => title.trim() !== '');
+    }, [selectedGroup]);
+    const areAllConceptsApproved = useMemo(() => {
+        if (!selectedGroup || selectedGroup.concepts.length === 0) {
+            return false;
+        }
+
+        return selectedGroup.concepts.every(
+            (concept) => concept.adviser_status === 'Approved' && concept.instructor_status === 'Approved',
+        );
+    }, [selectedGroup]);
+    const hasRecommendationRequirement = selectedGroup?.has_recommendation_requirement === true;
+    const canGenerateRecommendation = hasRecommendationRequirement && areAllConceptsApproved;
+    const recommendationDisabledReason = useMemo(() => {
+        if (!selectedGroup) {
+            return 'Select a group first.';
+        }
+
+        if (!hasRecommendationRequirement) {
+            return 'No recommendation document requirement is configured for this group in Requirements Manager.';
+        }
+
+        if (!areAllConceptsApproved) {
+            return 'All concept rows must be Approved in both Status and Instructor Approval columns.';
+        }
+
+        return null;
+    }, [areAllConceptsApproved, hasRecommendationRequirement, selectedGroup]);
 
     useEffect(() => {
         if (selectedGroupId === null) {
@@ -152,6 +234,12 @@ const AdviserConcepts = () => {
             setSelectedConceptId(null);
         }
     }, [selectedConceptId, selectedGroup]);
+
+    useEffect(() => {
+        if (!selectedGroup) {
+            setIsRecommendationModalOpen(false);
+        }
+    }, [selectedGroup]);
 
     const adviserStatusPillClass = (status: SubmissionStatus): string => {
         if (status === 'Approved') {
@@ -177,40 +265,181 @@ const AdviserConcepts = () => {
         return 'border-indigo-200 bg-indigo-100 text-indigo-700';
     };
 
-    const updateAdviserStatus = (conceptId: number, adviserStatus: Extract<SubmissionStatus, 'Approved' | 'Revision Required'>): void => {
+    const updateAdviserStatus = (
+        conceptId: number,
+        adviserStatus: Extract<SubmissionStatus, 'Approved' | 'Revision Required'>,
+    ): Promise<boolean> => {
         if (processingConceptId !== null) {
-            return;
+            return Promise.resolve(false);
         }
 
         setProcessingConceptId(conceptId);
+        setNotification(null);
 
-        router.patch(
-            `/adviser/concepts/submissions/${conceptId}/status`,
-            { adviser_status: adviserStatus },
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    setBundles((currentBundles) =>
-                        currentBundles.map((bundle) => ({
-                            ...bundle,
-                            concepts: bundle.concepts.map((concept) =>
-                                concept.id === conceptId
-                                    ? {
-                                          ...concept,
-                                          adviser_status: adviserStatus,
-                                          adviser_reviewed_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
-                                      }
-                                    : concept,
-                            ),
-                        })),
-                    );
+        return new Promise((resolve) => {
+            router.patch(
+                `/adviser/concepts/submissions/${conceptId}/status`,
+                { adviser_status: adviserStatus },
+                {
+                    preserveScroll: true,
+                    preserveState: true,
+                    onSuccess: () => {
+                        setBundles((currentBundles) =>
+                            currentBundles.map((bundle) => ({
+                                ...bundle,
+                                concepts: bundle.concepts.map((concept) =>
+                                    concept.id === conceptId
+                                        ? {
+                                              ...concept,
+                                              adviser_status: adviserStatus,
+                                              adviser_reviewed_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
+                                          }
+                                        : concept,
+                                ),
+                            })),
+                        );
+                        resolve(true);
+                    },
+                    onError: () => resolve(false),
+                    onCancel: () => resolve(false),
+                    onFinish: () => {
+                        setProcessingConceptId(null);
+                    },
                 },
-                onFinish: () => {
-                    setProcessingConceptId(null);
+            );
+        });
+    };
+
+    const handleApprove = async (conceptId: number): Promise<void> => {
+        const isSuccessful = await updateAdviserStatus(conceptId, 'Approved');
+        if (!isSuccessful) {
+            setNotification({
+                tone: 'error',
+                title: 'Unable to Approve Submission',
+                message: 'Please try again in a moment.',
+            });
+            return;
+        }
+
+        setNotification({
+            tone: 'success',
+            title: 'Submission Approved',
+            message: 'The selected concept paper is now marked as approved.',
+        });
+    };
+
+    const handleRequestRevision = async (conceptId: number): Promise<void> => {
+        const isSuccessful = await updateAdviserStatus(conceptId, 'Revision Required');
+        if (!isSuccessful) {
+            setNotification({
+                tone: 'error',
+                title: 'Unable to Request Revision',
+                message: 'Please try again in a moment.',
+            });
+            return;
+        }
+
+        setNotification({
+            tone: 'warning',
+            title: 'Revision Requested',
+            message: 'The selected concept paper is now marked for revision.',
+        });
+    };
+
+    const handleGenerateRecommendation = async (): Promise<void> => {
+        if (!selectedGroup) {
+            return;
+        }
+
+        if (!canGenerateRecommendation) {
+            setNotification({
+                tone: 'warning',
+                title: 'Recommendation Unavailable',
+                message: recommendationDisabledReason ?? 'Complete all prerequisite approvals before generating recommendation.',
+            });
+            return;
+        }
+
+        if (!hasESignature) {
+            setNotification({
+                tone: 'warning',
+                title: 'E-Signature Required',
+                message: 'Register your e-signature in Adviser Settings before generating recommendation.',
+            });
+            return;
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (!csrfToken) {
+            setNotification({
+                tone: 'error',
+                title: 'Security Token Missing',
+                message: 'Unable to validate request. Refresh the page and try again.',
+            });
+            return;
+        }
+
+        setIsRecommendationGenerating(true);
+        setNotification(null);
+
+        try {
+            const response = await fetch(`/adviser/concepts/groups/${selectedGroup.group_id}/recommendation-title-defense`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
-            },
-        );
+                credentials: 'same-origin',
+                body: JSON.stringify({}),
+            });
+
+            const payload = (await response.json().catch(() => null)) as
+                | {
+                      message?: string;
+                      recommendation?: RecommendationDocument;
+                  }
+                | null;
+
+            if (!response.ok) {
+                setNotification({
+                    tone: 'error',
+                    title: 'Recommendation Generation Failed',
+                    message: payload?.message ?? 'Unable to generate recommendation letter.',
+                });
+                return;
+            }
+
+            const recommendation = payload?.recommendation ?? null;
+
+            setBundles((currentBundles) =>
+                currentBundles.map((bundle) => {
+                    if (bundle.group_id !== selectedGroup.group_id) {
+                        return bundle;
+                    }
+
+                    return {
+                        ...bundle,
+                        recommendation_document: recommendation,
+                    };
+                }),
+            );
+
+            setNotification({
+                tone: 'success',
+                title: 'Recommendation Generated',
+                message: payload?.message ?? 'Signed recommendation letter generated successfully.',
+            });
+        } catch {
+            setNotification({
+                tone: 'error',
+                title: 'Recommendation Generation Failed',
+                message: 'An unexpected error occurred while generating the recommendation letter.',
+            });
+        } finally {
+            setIsRecommendationGenerating(false);
+        }
     };
 
     return (
@@ -225,6 +454,104 @@ const AdviserConcepts = () => {
                         Concepts
                     </span>
                 </nav>
+
+                <AnimatePresence initial={false}>
+                    {notification ? (
+                        <motion.div
+                            initial={{ opacity: 0, y: -16, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -12, scale: 0.98 }}
+                            transition={{ duration: 0.22, ease: 'easeOut' }}
+                            className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-3 sm:top-4 sm:justify-end sm:px-6"
+                        >
+                            <div
+                                role="alert"
+                                className={`pointer-events-auto w-full max-w-[30rem] overflow-hidden rounded-2xl border px-4 py-3 shadow-xl ring-1 ring-black/5 sm:w-fit sm:min-w-[22rem] ${
+                                    notification.tone === 'error'
+                                        ? 'border-rose-200 bg-gradient-to-r from-rose-50 to-red-50'
+                                        : notification.tone === 'warning'
+                                          ? 'border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50'
+                                          : 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50'
+                                }`}
+                            >
+                                <div className="flex items-start gap-3">
+                                    <span
+                                        className={`mt-0.5 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl ${
+                                            notification.tone === 'error'
+                                                ? 'bg-rose-100 text-rose-600'
+                                                : notification.tone === 'warning'
+                                                  ? 'bg-amber-100 text-amber-600'
+                                                  : 'bg-emerald-100 text-emerald-600'
+                                        }`}
+                                    >
+                                        {notification.tone === 'error' ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <p
+                                            className={`text-xs font-bold ${
+                                                notification.tone === 'error'
+                                                    ? 'text-rose-700'
+                                                    : notification.tone === 'warning'
+                                                      ? 'text-amber-700'
+                                                      : 'text-emerald-700'
+                                            }`}
+                                        >
+                                            {notification.title}
+                                        </p>
+                                        <p
+                                            className={`mt-1 text-xs font-medium ${
+                                                notification.tone === 'error'
+                                                    ? 'text-rose-700/90'
+                                                    : notification.tone === 'warning'
+                                                      ? 'text-amber-700/90'
+                                                      : 'text-emerald-700/90'
+                                            }`}
+                                        >
+                                            {notification.message}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={dismissNotification}
+                                        className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border transition ${
+                                            notification.tone === 'error'
+                                                ? 'border-rose-200 text-rose-500 hover:bg-rose-100'
+                                                : notification.tone === 'warning'
+                                                  ? 'border-amber-200 text-amber-500 hover:bg-amber-100'
+                                                  : 'border-emerald-200 text-emerald-500 hover:bg-emerald-100'
+                                        }`}
+                                        aria-label="Dismiss notification"
+                                    >
+                                        <X className="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
+                                <div
+                                    className={`mt-3 h-1 w-full overflow-hidden rounded-full ${
+                                        notification.tone === 'error'
+                                            ? 'bg-rose-100'
+                                            : notification.tone === 'warning'
+                                              ? 'bg-amber-100'
+                                              : 'bg-emerald-100'
+                                    }`}
+                                >
+                                    <motion.div
+                                        key={`${notification.tone}-${notification.message}`}
+                                        initial={{ width: '100%' }}
+                                        animate={{ width: '0%' }}
+                                        transition={{ duration: 4.5, ease: 'linear' }}
+                                        className={`h-full ${
+                                            notification.tone === 'error'
+                                                ? 'bg-rose-400'
+                                                : notification.tone === 'warning'
+                                                  ? 'bg-amber-500'
+                                                  : 'bg-emerald-500'
+                                        }`}
+                                    />
+                                </div>
+                            </div>
+                        </motion.div>
+                    ) : null}
+                </AnimatePresence>
 
                 <div className={`grid grid-cols-1 gap-5 ${isSubmissionsPaneCollapsed ? 'xl:grid-cols-[88px_minmax(0,1fr)]' : 'xl:grid-cols-3'}`}>
                     <motion.section
@@ -361,15 +688,27 @@ const AdviserConcepts = () => {
                             </div>
                         ) : (
                             <div className="space-y-5">
-                                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                                    <span className="font-semibold text-slate-900">Group</span>
-                                    <span className="font-semibold text-slate-900">{selectedGroup.group_name}</span>
-                                    <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
-                                        Leader {selectedGroup.leader_name ?? 'N/A'}
-                                    </span>
-                                    <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
-                                        {selectedGroup.program_set_name ?? 'Program set'}
-                                    </span>
+                                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="font-semibold text-slate-900">Group</span>
+                                        <span className="font-semibold text-slate-900">{selectedGroup.group_name}</span>
+                                        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
+                                            Leader {selectedGroup.leader_name ?? 'N/A'}
+                                        </span>
+                                        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
+                                            {selectedGroup.program_set_name ?? 'Program set'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsRecommendationModalOpen(true)}
+                                        disabled={!canGenerateRecommendation}
+                                        title={canGenerateRecommendation ? 'Open recommendation generator' : (recommendationDisabledReason ?? undefined)}
+                                        className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+                                    >
+                                        <FileText className="h-3.5 w-3.5" />
+                                        Recommendation
+                                    </button>
                                 </div>
 
                                 <div className="space-y-5">
@@ -435,7 +774,7 @@ const AdviserConcepts = () => {
                                                                                 type="button"
                                                                                 onClick={(event) => {
                                                                                     event.stopPropagation();
-                                                                                    updateAdviserStatus(concept.id, 'Approved');
+                                                                                    void handleApprove(concept.id);
                                                                                 }}
                                                                                 disabled={processingConceptId !== null}
                                                                                 className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -447,7 +786,7 @@ const AdviserConcepts = () => {
                                                                                 type="button"
                                                                                 onClick={(event) => {
                                                                                     event.stopPropagation();
-                                                                                    updateAdviserStatus(concept.id, 'Revision Required');
+                                                                                    void handleRequestRevision(concept.id);
                                                                                 }}
                                                                                 disabled={processingConceptId !== null}
                                                                                 className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -499,6 +838,23 @@ const AdviserConcepts = () => {
                     </motion.section>
                 </div>
             </motion.section>
+            <RecommendationModal
+                open={isRecommendationModalOpen && selectedGroup !== null}
+                onClose={() => setIsRecommendationModalOpen(false)}
+                groupName={selectedGroup?.group_name ?? 'Group'}
+                leaderName={selectedGroup?.leader_name ?? null}
+                recommendationRequirementType={selectedGroup?.recommendation_requirement_type ?? null}
+                approvedTitles={approvedConceptTitles}
+                memberNames={selectedGroup?.member_names ?? []}
+                hasESignature={hasESignature}
+                canGenerate={canGenerateRecommendation}
+                disabledReason={recommendationDisabledReason}
+                processing={isRecommendationGenerating}
+                recommendationDocument={selectedGroup?.recommendation_document ?? null}
+                onGenerate={() => {
+                    void handleGenerateRecommendation();
+                }}
+            />
         </AdviserLayout>
     );
 };

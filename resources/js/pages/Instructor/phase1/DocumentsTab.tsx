@@ -107,7 +107,7 @@ const DocumentsTab = ({
                                                     <button
                                                         type="button"
                                                         onClick={() => onReviewDocuments(row.groupId)}
-                                                        title="Review concept papers"
+                                                        title="Review requirement documents"
                                                         className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-50"
                                                     >
                                                         <Eye className="h-4 w-4" />

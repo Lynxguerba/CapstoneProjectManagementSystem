@@ -6,13 +6,32 @@ import { createPortal } from 'react-dom';
 type AssignmentRequestApproveModalProps = {
     open: boolean;
     groupName?: string | null;
+    members?: GroupMemberRow[];
     processing?: boolean;
     onClose: () => void;
     onConfirm: () => void;
 };
 
-const AssignmentRequestApproveModal = ({ open, groupName, processing = false, onClose, onConfirm }: AssignmentRequestApproveModalProps) => {
+type GroupMemberRow = {
+    id: number;
+    name: string;
+    email: string;
+    role?: string | null;
+    is_leader?: boolean;
+};
+
+const AssignmentRequestApproveModal = ({ open, groupName, members = [], processing = false, onClose, onConfirm }: AssignmentRequestApproveModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
+    const orderedMembers = React.useMemo(() => {
+        return [...members].sort((first, second) => {
+            const leaderSort = Number(Boolean(second.is_leader)) - Number(Boolean(first.is_leader));
+            if (leaderSort !== 0) {
+                return leaderSort;
+            }
+
+            return first.name.localeCompare(second.name);
+        });
+    }, [members]);
 
     React.useEffect(() => {
         if (!open) {
@@ -71,7 +90,7 @@ const AssignmentRequestApproveModal = ({ open, groupName, processing = false, on
                 initial={{ opacity: 0, y: 12, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.2 }}
-                className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl"
+                className="w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl"
                 onMouseDown={(event) => event.stopPropagation()}
             >
                 <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
@@ -94,10 +113,48 @@ const AssignmentRequestApproveModal = ({ open, groupName, processing = false, on
                     </button>
                 </div>
 
-                <div className="space-y-3 px-4 py-5">
+                <div className="space-y-4 px-4 py-5">
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                         <p className="text-xs text-slate-500">Group</p>
                         <p className="text-sm font-semibold text-slate-800">{groupName ?? 'Selected group'}</p>
+                    </div>
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Members</p>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                {orderedMembers.length} total
+                            </span>
+                        </div>
+                        <div className="mt-2 max-h-56 overflow-y-auto rounded-lg border border-slate-200">
+                            {orderedMembers.length === 0 ? (
+                                <div className="px-3 py-3 text-xs text-slate-500">No members found for this group.</div>
+                            ) : (
+                                <table className="w-full text-left text-xs">
+                                    <thead className="sticky top-0 border-b border-slate-200 bg-slate-50/90 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                        <tr>
+                                            <th className="px-4 py-2.5">Name</th>
+                                            <th className="px-4 py-2.5">Role</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {orderedMembers.map((member) => {
+                                            const roleLabel = member.is_leader ? 'Leader' : member.role ? member.role : 'Member';
+                                            const badgeClasses = member.is_leader ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-100 text-slate-600';
+                                            const rowClasses = member.is_leader ? 'bg-emerald-50/60' : 'bg-white';
+
+                                            return (
+                                                <tr key={member.id} className={rowClasses}>
+                                                    <td className="px-4 py-2.5 font-semibold text-slate-800">{member.name || 'Unnamed student'}</td>
+                                                    <td className="px-4 py-2.5">
+                                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClasses}`}>{roleLabel}</span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
                     </div>
                     <p className="text-sm text-slate-600">Make sure you are ready to handle this group before approving.</p>
                 </div>

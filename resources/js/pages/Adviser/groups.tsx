@@ -46,6 +46,7 @@ type AssignmentRequestRow = {
     requested_by?: string | null;
     requested_at?: string | null;
     current_adviser_name?: string | null;
+    members?: GroupMemberRow[];
 };
 
 type ProgramSetOption = {
@@ -725,6 +726,7 @@ const AdviserGroups = () => {
             <AssignmentRequestApproveModal
                 open={approveState.open}
                 groupName={approveState.request?.group_name}
+                members={approveState.request?.members ?? []}
                 processing={processingRequestId !== null}
                 onClose={closeApprove}
                 onConfirm={confirmApprove}
