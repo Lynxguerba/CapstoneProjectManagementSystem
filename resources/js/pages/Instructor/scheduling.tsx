@@ -26,6 +26,8 @@ type GroupRow = {
     school_year?: string | null;
     leader_name?: string | null;
     panelists?: PanelistSummary[];
+    requirements_approved?: boolean;
+    requirements_status?: 'Approved' | 'For Review' | 'Revise' | 'Missing' | string;
 };
 
 type RoomRow = {
@@ -269,7 +271,10 @@ const SchedulingPage = () => {
                 }
             }
 
-            return (group.panelists?.length ?? 0) >= 3;
+            const hasEnoughPanelists = (group.panelists?.length ?? 0) >= 3;
+            const hasApprovedRequirements = group.requirements_approved ?? true;
+
+            return hasEnoughPanelists && hasApprovedRequirements;
         });
     }, [groups, selectedAcademicYear, selectedProgram, searchTerm]);
 

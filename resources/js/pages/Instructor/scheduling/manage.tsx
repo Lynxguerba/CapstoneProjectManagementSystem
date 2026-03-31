@@ -19,6 +19,8 @@ type GroupRow = {
     school_year?: string | null;
     leader_name?: string | null;
     panelists?: PanelistSummary[];
+    requirements_approved?: boolean;
+    requirements_status?: 'Approved' | 'For Review' | 'Revise' | 'Missing' | string;
 };
 
 type RoomRow = {

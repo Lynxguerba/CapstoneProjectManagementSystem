@@ -209,6 +209,23 @@ const getInitials = (value?: string | null): string => {
     return initials || '—';
 };
 
+const resolveSubmissionStatus = (submission: DocumentSubmissionRow): RequirementDocumentDetail['status'] => {
+    if (submission.status === 'Approved') {
+        return 'Approved';
+    }
+
+    if (submission.status === 'Revision Required') {
+        return 'Revision Required';
+    }
+
+    const requirementType = (submission.requirement_type ?? '').toLowerCase();
+    if (requirementType.includes('recommendation')) {
+        return 'Approved';
+    }
+
+    return 'Submitted';
+};
+
 const Phase1Page = () => {
     const { props } = usePage<Phase1Props>();
     const programSets = props.programSets ?? [];
@@ -528,14 +545,7 @@ const Phase1Page = () => {
 
             const details = requirementsForGroup.map((requirement) => {
                 const submission = latestByRequirement.get(requirement.id);
-                const status =
-                    submission?.status === 'Revision Required'
-                        ? 'Revision Required'
-                        : submission?.status === 'Approved'
-                          ? 'Approved'
-                          : submission
-                            ? 'Submitted'
-                            : 'Missing';
+                const status = submission ? resolveSubmissionStatus(submission) : 'Missing';
 
                 return {
                     id: requirement.id,
@@ -562,17 +572,7 @@ const Phase1Page = () => {
 
         return filteredGroups.map((group) => {
             const submissions = documentSubmissionsByGroupId.get(group.id) ?? [];
-            const normalizedStatuses = submissions.map((submission) => {
-                if (submission.status === 'Approved') {
-                    return 'Approved';
-                }
-
-                if (submission.status === 'Revision Required') {
-                    return 'Revision Required';
-                }
-
-                return 'Submitted';
-            });
+            const normalizedStatuses = submissions.map((submission) => resolveSubmissionStatus(submission));
 
             const hasSubmissions = normalizedStatuses.length > 0;
             const hasRevision = normalizedStatuses.some((status) => status === 'Revision Required');

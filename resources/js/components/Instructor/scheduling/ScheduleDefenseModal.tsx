@@ -16,6 +16,8 @@ type GroupOption = {
     program?: string | null;
     school_year?: string | null;
     panelists?: PanelistSummary[];
+    requirements_approved?: boolean;
+    requirements_status?: 'Approved' | 'For Review' | 'Revise' | 'Missing' | string;
 };
 
 type RoomOption = {
@@ -365,7 +367,10 @@ const ScheduleDefenseForm = ({
                             ) : (
                                 groupSearchResults.map((group) => {
                                     const panelCount = group.panelists?.length ?? 0;
-                                    const isEligible = panelCount >= 3;
+                                    const hasEnoughPanelists = panelCount >= 3;
+                                    const hasApprovedRequirements = group.requirements_approved ?? true;
+                                    const requirementStatus = group.requirements_status ?? (hasApprovedRequirements ? 'Approved' : 'For Review');
+                                    const isEligible = hasEnoughPanelists && hasApprovedRequirements;
                                     const isSelected = form.data.group_id === String(group.id);
                                     const isDisabledResult = !isEligible && !isSelected;
                                     const meta = [group.program_set_name, group.program, group.school_year].filter(Boolean).join(' • ');
@@ -395,15 +400,29 @@ const ScheduleDefenseForm = ({
                                                 <span className="text-sm font-medium text-slate-800">{group.name}</span>
                                                 <span
                                                     className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                                        isEligible ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                                        hasEnoughPanelists ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                                                     }`}
                                                 >
                                                     {panelCount}/3 panelists
                                                 </span>
                                             </div>
+                                            <div className="flex items-center gap-2">
+                                                <span
+                                                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                                        hasApprovedRequirements ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                                    }`}
+                                                >
+                                                    Requirements: {requirementStatus}
+                                                </span>
+                                            </div>
                                             {meta ? <span className="text-xs text-slate-500">{meta}</span> : null}
                                             {isSelected ? <span className="text-[10px] font-semibold text-emerald-700">Selected</span> : null}
-                                            {!isEligible ? <span className="text-[10px] font-semibold text-amber-700">Needs 3 panelists</span> : null}
+                                            {!hasEnoughPanelists ? (
+                                                <span className="text-[10px] font-semibold text-amber-700">Needs 3 panelists</span>
+                                            ) : null}
+                                            {!hasApprovedRequirements ? (
+                                                <span className="text-[10px] font-semibold text-amber-700">Requirements are not approved</span>
+                                            ) : null}
                                         </button>
                                     );
                                 })

@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpsertDefenseScheduleRequest;
 use App\Models\DefenseRoom;
 use App\Models\DefenseSchedule;
+use App\Models\DocumentRequirement;
+use App\Models\DocumentSubmission;
 use App\Models\Group;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class UpsertDefenseScheduleController extends Controller
@@ -19,7 +23,7 @@ class UpsertDefenseScheduleController extends Controller
         $data = $request->validated();
 
         $group = Group::query()
-            ->with(['programSet', 'panelAssignments'])
+            ->with(['programSet.academicYear', 'panelAssignments'])
             ->whereKey($data['group_id'])
             ->firstOrFail();
 
@@ -31,6 +35,12 @@ class UpsertDefenseScheduleController extends Controller
         if ($group->panelAssignments->count() < 3) {
             throw ValidationException::withMessages([
                 'group_id' => 'Assign three panelists before scheduling this defense.',
+            ]);
+        }
+
+        if (! $this->hasApprovedConceptRequirements($group)) {
+            throw ValidationException::withMessages([
+                'group_id' => 'Approve all required documents before scheduling this defense.',
             ]);
         }
 
@@ -105,5 +115,77 @@ class UpsertDefenseScheduleController extends Controller
         }
 
         return back()->with('success', 'Defense schedule saved successfully.');
+    }
+
+    private function hasApprovedConceptRequirements(Group $group): bool
+    {
+        if (
+            ! class_exists(DocumentRequirement::class)
+            || ! class_exists(DocumentSubmission::class)
+            || ! Schema::hasTable('document_requirements')
+            || ! Schema::hasTable('document_submissions')
+        ) {
+            return true;
+        }
+
+        $group->loadMissing('programSet.academicYear');
+        $groupSchoolYear = trim((string) ($group->programSet?->academicYear?->label ?? $group->programSet?->school_year ?? ''));
+
+        $requirements = DocumentRequirement::query()
+            ->with('academicYear')
+            ->where('stage', 'Concept')
+            ->orderBy('id')
+            ->get(['id', 'requirement_type', 'academic_year_id']);
+
+        $applicableRequirements = $requirements
+            ->filter(function (DocumentRequirement $requirement) use ($groupSchoolYear): bool {
+                $requirementSchoolYear = trim((string) ($requirement->academicYear?->label ?? ''));
+
+                if ($requirementSchoolYear === '') {
+                    return true;
+                }
+
+                if ($groupSchoolYear === '') {
+                    return false;
+                }
+
+                return $groupSchoolYear === $requirementSchoolYear;
+            })
+            ->values();
+
+        if ($applicableRequirements->isEmpty()) {
+            return true;
+        }
+
+        $latestSubmissionsByRequirement = DocumentSubmission::query()
+            ->where('group_id', $group->id)
+            ->whereIn('document_requirement_id', $applicableRequirements->pluck('id')->all())
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get(['id', 'document_requirement_id', 'status'])
+            ->unique('document_requirement_id')
+            ->keyBy('document_requirement_id');
+
+        return $applicableRequirements->every(
+            fn (DocumentRequirement $requirement): bool => $this->isRequirementApproved($requirement, $latestSubmissionsByRequirement)
+        );
+    }
+
+    private function isRequirementApproved(DocumentRequirement $requirement, Collection $latestSubmissionsByRequirement): bool
+    {
+        /** @var DocumentSubmission|null $submission */
+        $submission = $latestSubmissionsByRequirement->get($requirement->id);
+
+        if (! $submission instanceof DocumentSubmission) {
+            return false;
+        }
+
+        if ($submission->status === 'Approved') {
+            return true;
+        }
+
+        $requirementType = strtolower(trim((string) ($requirement->requirement_type ?? '')));
+
+        return $submission->status === 'Submitted' && str_contains($requirementType, 'recommendation');
     }
 }

@@ -2558,14 +2558,47 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
         try {
             if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups')) {
-                $groups = \App\Models\Group::query()
+                $groupCollection = \App\Models\Group::query()
                     ->with(['programSet.academicYear', 'leader', 'panelAssignments.panelist'])
                     ->when($userId !== null, function ($query) use ($userId) {
                         $query->whereHas('programSet', fn ($subQuery) => $subQuery->where('instructor_id', $userId));
                     })
                     ->orderByDesc('created_at')
-                    ->get()
-                    ->map(function (\App\Models\Group $group) use ($resolveUserName): array {
+                    ->get();
+
+                $requirementCollection = collect();
+                $latestSubmissionsByGroup = collect();
+
+                if (
+                    class_exists(DocumentRequirement::class)
+                    && class_exists(DocumentSubmission::class)
+                    && Schema::hasTable('document_requirements')
+                    && Schema::hasTable('document_submissions')
+                ) {
+                    $requirementCollection = DocumentRequirement::query()
+                        ->with('academicYear')
+                        ->where('stage', 'Concept')
+                        ->orderBy('id')
+                        ->get(['id', 'requirement_type', 'academic_year_id']);
+
+                    $groupIds = $groupCollection->pluck('id')->filter()->values();
+
+                    if ($groupIds->isNotEmpty() && $requirementCollection->isNotEmpty()) {
+                        $latestSubmissionsByGroup = DocumentSubmission::query()
+                            ->whereIn('group_id', $groupIds->all())
+                            ->whereIn('document_requirement_id', $requirementCollection->pluck('id')->all())
+                            ->orderByDesc('created_at')
+                            ->orderByDesc('id')
+                            ->get(['id', 'group_id', 'document_requirement_id', 'status'])
+                            ->groupBy('group_id')
+                            ->map(static function ($submissions) {
+                                return $submissions->unique('document_requirement_id')->keyBy('document_requirement_id');
+                            });
+                    }
+                }
+
+                $groups = $groupCollection
+                    ->map(function (\App\Models\Group $group) use ($resolveUserName, $requirementCollection, $latestSubmissionsByGroup): array {
                         $programSet = $group->programSet;
                         $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
                         $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
@@ -2584,6 +2617,70 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             })
                             ->values()
                             ->all();
+                        $applicableRequirements = $requirementCollection
+                            ->filter(static function (DocumentRequirement $requirement) use ($schoolYear): bool {
+                                $requirementSchoolYear = trim((string) ($requirement->academicYear?->label ?? ''));
+
+                                if ($requirementSchoolYear === '') {
+                                    return true;
+                                }
+
+                                if (! is_string($schoolYear) || trim($schoolYear) === '') {
+                                    return false;
+                                }
+
+                                return $schoolYear === $requirementSchoolYear;
+                            })
+                            ->values();
+                        $latestSubmissionByRequirement = $latestSubmissionsByGroup->get($group->id, collect());
+
+                        $requirementStatuses = $applicableRequirements->map(
+                            static function (DocumentRequirement $requirement) use ($latestSubmissionByRequirement): string {
+                                /** @var DocumentSubmission|null $submission */
+                                $submission = $latestSubmissionByRequirement->get($requirement->id);
+
+                                if (! $submission instanceof DocumentSubmission) {
+                                    return 'Missing';
+                                }
+
+                                if ($submission->status === 'Approved') {
+                                    return 'Approved';
+                                }
+
+                                $requirementType = strtolower(trim((string) ($requirement->requirement_type ?? '')));
+
+                                if ($submission->status === 'Submitted' && str_contains($requirementType, 'recommendation')) {
+                                    return 'Approved';
+                                }
+
+                                if ($submission->status === 'Revision Required') {
+                                    return 'Revise';
+                                }
+
+                                return 'For Review';
+                            }
+                        );
+
+                        if ($applicableRequirements->isEmpty()) {
+                            $requirementsStatus = 'Approved';
+                            $requirementsApproved = true;
+                        } else {
+                            $hasMissingRequirement = $requirementStatuses->contains('Missing');
+                            $hasRevisionRequirement = $requirementStatuses->contains('Revise');
+                            $allRequirementsApproved = $requirementStatuses->every(fn (string $status): bool => $status === 'Approved');
+
+                            if ($hasMissingRequirement) {
+                                $requirementsStatus = 'Missing';
+                            } elseif ($hasRevisionRequirement) {
+                                $requirementsStatus = 'Revise';
+                            } elseif ($allRequirementsApproved) {
+                                $requirementsStatus = 'Approved';
+                            } else {
+                                $requirementsStatus = 'For Review';
+                            }
+
+                            $requirementsApproved = $allRequirementsApproved;
+                        }
 
                         return [
                             'id' => $group->id,
@@ -2593,6 +2690,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             'school_year' => $schoolYear,
                             'leader_name' => $leaderName !== '' ? $leaderName : null,
                             'panelists' => $panelists,
+                            'requirements_approved' => $requirementsApproved,
+                            'requirements_status' => $requirementsStatus,
                         ];
                     })
                     ->values()
@@ -2740,14 +2839,47 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
         try {
             if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups')) {
-                $groups = \App\Models\Group::query()
+                $groupCollection = \App\Models\Group::query()
                     ->with(['programSet.academicYear', 'leader', 'panelAssignments.panelist'])
                     ->when($userId !== null, function ($query) use ($userId) {
                         $query->whereHas('programSet', fn ($subQuery) => $subQuery->where('instructor_id', $userId));
                     })
                     ->orderByDesc('created_at')
-                    ->get()
-                    ->map(function (\App\Models\Group $group) use ($resolveUserName): array {
+                    ->get();
+
+                $requirementCollection = collect();
+                $latestSubmissionsByGroup = collect();
+
+                if (
+                    class_exists(DocumentRequirement::class)
+                    && class_exists(DocumentSubmission::class)
+                    && Schema::hasTable('document_requirements')
+                    && Schema::hasTable('document_submissions')
+                ) {
+                    $requirementCollection = DocumentRequirement::query()
+                        ->with('academicYear')
+                        ->where('stage', 'Concept')
+                        ->orderBy('id')
+                        ->get(['id', 'requirement_type', 'academic_year_id']);
+
+                    $groupIds = $groupCollection->pluck('id')->filter()->values();
+
+                    if ($groupIds->isNotEmpty() && $requirementCollection->isNotEmpty()) {
+                        $latestSubmissionsByGroup = DocumentSubmission::query()
+                            ->whereIn('group_id', $groupIds->all())
+                            ->whereIn('document_requirement_id', $requirementCollection->pluck('id')->all())
+                            ->orderByDesc('created_at')
+                            ->orderByDesc('id')
+                            ->get(['id', 'group_id', 'document_requirement_id', 'status'])
+                            ->groupBy('group_id')
+                            ->map(static function ($submissions) {
+                                return $submissions->unique('document_requirement_id')->keyBy('document_requirement_id');
+                            });
+                    }
+                }
+
+                $groups = $groupCollection
+                    ->map(function (\App\Models\Group $group) use ($resolveUserName, $requirementCollection, $latestSubmissionsByGroup): array {
                         $programSet = $group->programSet;
                         $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
                         $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
@@ -2766,6 +2898,70 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             })
                             ->values()
                             ->all();
+                        $applicableRequirements = $requirementCollection
+                            ->filter(static function (DocumentRequirement $requirement) use ($schoolYear): bool {
+                                $requirementSchoolYear = trim((string) ($requirement->academicYear?->label ?? ''));
+
+                                if ($requirementSchoolYear === '') {
+                                    return true;
+                                }
+
+                                if (! is_string($schoolYear) || trim($schoolYear) === '') {
+                                    return false;
+                                }
+
+                                return $schoolYear === $requirementSchoolYear;
+                            })
+                            ->values();
+                        $latestSubmissionByRequirement = $latestSubmissionsByGroup->get($group->id, collect());
+
+                        $requirementStatuses = $applicableRequirements->map(
+                            static function (DocumentRequirement $requirement) use ($latestSubmissionByRequirement): string {
+                                /** @var DocumentSubmission|null $submission */
+                                $submission = $latestSubmissionByRequirement->get($requirement->id);
+
+                                if (! $submission instanceof DocumentSubmission) {
+                                    return 'Missing';
+                                }
+
+                                if ($submission->status === 'Approved') {
+                                    return 'Approved';
+                                }
+
+                                $requirementType = strtolower(trim((string) ($requirement->requirement_type ?? '')));
+
+                                if ($submission->status === 'Submitted' && str_contains($requirementType, 'recommendation')) {
+                                    return 'Approved';
+                                }
+
+                                if ($submission->status === 'Revision Required') {
+                                    return 'Revise';
+                                }
+
+                                return 'For Review';
+                            }
+                        );
+
+                        if ($applicableRequirements->isEmpty()) {
+                            $requirementsStatus = 'Approved';
+                            $requirementsApproved = true;
+                        } else {
+                            $hasMissingRequirement = $requirementStatuses->contains('Missing');
+                            $hasRevisionRequirement = $requirementStatuses->contains('Revise');
+                            $allRequirementsApproved = $requirementStatuses->every(fn (string $status): bool => $status === 'Approved');
+
+                            if ($hasMissingRequirement) {
+                                $requirementsStatus = 'Missing';
+                            } elseif ($hasRevisionRequirement) {
+                                $requirementsStatus = 'Revise';
+                            } elseif ($allRequirementsApproved) {
+                                $requirementsStatus = 'Approved';
+                            } else {
+                                $requirementsStatus = 'For Review';
+                            }
+
+                            $requirementsApproved = $allRequirementsApproved;
+                        }
 
                         return [
                             'id' => $group->id,
@@ -2775,6 +2971,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             'school_year' => $schoolYear,
                             'leader_name' => $leaderName !== '' ? $leaderName : null,
                             'panelists' => $panelists,
+                            'requirements_approved' => $requirementsApproved,
+                            'requirements_status' => $requirementsStatus,
                         ];
                     })
                     ->values()
@@ -3270,15 +3468,19 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             ->map(function (DocumentRequirement $requirement) use ($activeGroup, $latestSubmissionByRequirementId): array {
                                 /** @var DocumentSubmission|null $submission */
                                 $submission = $latestSubmissionByRequirementId->get($requirement->id);
+                                $requirementType = trim((string) ($requirement->requirement_type ?? 'Requirement'));
+                                $isConceptRequirement = str_contains(strtolower($requirementType), 'concept');
+                                $isRecommendationRequirement = str_contains(strtolower($requirementType), 'recommendation');
                                 $status = match ((string) ($submission?->status ?? '')) {
                                     'Approved' => 'Approved',
                                     'Revision Required' => 'Revision Required',
                                     default => $submission ? 'Submitted' : 'Missing',
                                 };
 
-                                $requirementType = trim((string) ($requirement->requirement_type ?? 'Requirement'));
-                                $isConceptRequirement = str_contains(strtolower($requirementType), 'concept');
-                                $isRecommendationRequirement = str_contains(strtolower($requirementType), 'recommendation');
+                                if ($status === 'Submitted' && $isRecommendationRequirement) {
+                                    $status = 'Approved';
+                                }
+
                                 $canReview = $submission instanceof DocumentSubmission && ($isConceptRequirement || $isRecommendationRequirement);
                                 $reviewUrl = null;
 
