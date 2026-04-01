@@ -1,13 +1,15 @@
-import { useForm } from '@inertiajs/react';
-import { CheckCircle2, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { CheckCircle2, Download, FileSpreadsheet, Loader2, Upload, X } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { bulkStore } from '../../routes/admin/users';
+import { bulkStatus, bulkStore, faculty, index, students } from '../../routes/admin/users';
 
 type UserRole = 'admin' | 'student' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type FacultyRole = 'admin' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type StudentProgram = 'BSIT' | 'BSIS';
 type EntityType = 'user' | 'faculty' | 'student';
+type CsvDelimiter = ',' | ';' | '\t';
+type UploadSource = 'file' | 'paste';
 
 type PreviewRow = {
     line: number;
@@ -26,16 +28,49 @@ type BulkUploadModalProps = {
     existingUsers?: Array<{
         email?: string;
     }>;
+    existingEmails?: string[];
     userType?: EntityType;
 };
 
-type BulkUploadForm = {
-    rows: Array<Record<string, string | Array<string> | undefined>>;
+type UploadRow = Record<string, string | Array<string> | undefined>;
+
+type ImportFailureItem = {
+    line?: number;
+    email?: string | null;
+    message: string;
+};
+
+type BulkImportProgressResponse = {
+    import_id: string;
+    status: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled';
+    message: string;
+    total_rows: number;
+    processed_rows: number;
+    successful_rows: number;
+    failed_rows: number;
+    progress_percentage: number;
+    failed_items?: ImportFailureItem[];
+    cancel_requested?: boolean;
+};
+
+type ImportOutcome = {
+    successfulRows: number;
+    failedRows: number;
 };
 
 const availableRoles: UserRole[] = ['admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 const availableFacultyRoles: FacultyRole[] = ['admin', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 const studentPrograms: StudentProgram[] = ['BSIT', 'BSIS'];
+
+const resolveCsrfToken = (): string => {
+    const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+
+    if (csrfTokenMeta instanceof HTMLMetaElement) {
+        return csrfTokenMeta.content;
+    }
+
+    return '';
+};
 
 const normalizeHeader = (header: string): string => {
     return header
@@ -62,7 +97,7 @@ const canonicalizeHeader = (header: string): string => {
     return headerAliases[normalizedHeader] ?? normalizedHeader;
 };
 
-const parseCsvLine = (line: string): string[] => {
+const parseCsvLine = (line: string, delimiter: CsvDelimiter = ','): string[] => {
     const values: string[] = [];
     let currentValue = '';
     let insideQuotes = false;
@@ -81,7 +116,7 @@ const parseCsvLine = (line: string): string[] => {
             continue;
         }
 
-        if (character === ',' && !insideQuotes) {
+        if (character === delimiter && !insideQuotes) {
             values.push(currentValue.trim());
             currentValue = '';
             continue;
@@ -93,6 +128,115 @@ const parseCsvLine = (line: string): string[] => {
     values.push(currentValue.trim());
 
     return values.map((value) => value.replace(/^"|"$/g, '').trim());
+};
+
+const countDelimiterOccurrences = (line: string, delimiter: CsvDelimiter): number => {
+    let count = 0;
+    let insideQuotes = false;
+
+    for (let index = 0; index < line.length; index += 1) {
+        const character = line[index];
+
+        if (character === '"') {
+            if (insideQuotes && line[index + 1] === '"') {
+                index += 1;
+                continue;
+            }
+
+            insideQuotes = !insideQuotes;
+            continue;
+        }
+
+        if (character === delimiter && !insideQuotes) {
+            count += 1;
+        }
+    }
+
+    return count;
+};
+
+const detectCsvDelimiter = (headerLine: string): CsvDelimiter => {
+    const delimiterCounts: Record<CsvDelimiter, number> = {
+        ',': countDelimiterOccurrences(headerLine, ','),
+        ';': countDelimiterOccurrences(headerLine, ';'),
+        '\t': countDelimiterOccurrences(headerLine, '\t'),
+    };
+
+    if (delimiterCounts[';'] > delimiterCounts[','] && delimiterCounts[';'] >= delimiterCounts['\t']) {
+        return ';';
+    }
+
+    if (delimiterCounts['\t'] > delimiterCounts[','] && delimiterCounts['\t'] > delimiterCounts[';']) {
+        return '\t';
+    }
+
+    return ',';
+};
+
+const stripLeadingBom = (value: string): string => {
+    if (value.charCodeAt(0) === 0xfeff) {
+        return value.slice(1);
+    }
+
+    return value;
+};
+
+const tryDecodeCsv = (bytes: Uint8Array, encoding: string, fatal = false): string | null => {
+    try {
+        const decodedContent = new TextDecoder(encoding, {
+            fatal,
+        }).decode(bytes);
+
+        return stripLeadingBom(decodedContent);
+    } catch {
+        return null;
+    }
+};
+
+const readCsvContent = async (file: File): Promise<string> => {
+    const fileBuffer = await file.arrayBuffer();
+    const fileBytes = new Uint8Array(fileBuffer);
+
+    if (fileBytes.length === 0) {
+        return '';
+    }
+
+    const hasUtf8Bom = fileBytes.length >= 3 && fileBytes[0] === 0xef && fileBytes[1] === 0xbb && fileBytes[2] === 0xbf;
+    if (hasUtf8Bom) {
+        return stripLeadingBom(new TextDecoder('utf-8').decode(fileBytes));
+    }
+
+    const hasUtf16LeBom = fileBytes.length >= 2 && fileBytes[0] === 0xff && fileBytes[1] === 0xfe;
+    if (hasUtf16LeBom) {
+        return stripLeadingBom(new TextDecoder('utf-16le').decode(fileBytes));
+    }
+
+    const hasUtf16BeBom = fileBytes.length >= 2 && fileBytes[0] === 0xfe && fileBytes[1] === 0xff;
+    if (hasUtf16BeBom) {
+        return stripLeadingBom(new TextDecoder('utf-16be').decode(fileBytes));
+    }
+
+    const decodedUtf8 = tryDecodeCsv(fileBytes, 'utf-8', true);
+    if (decodedUtf8 !== null) {
+        return decodedUtf8;
+    }
+
+    const decodedUtf16Le = tryDecodeCsv(fileBytes, 'utf-16le');
+    if (decodedUtf16Le !== null) {
+        return decodedUtf16Le;
+    }
+
+    const decodedUtf16Be = tryDecodeCsv(fileBytes, 'utf-16be');
+    if (decodedUtf16Be !== null) {
+        return decodedUtf16Be;
+    }
+
+    const decodedWindows1252 = tryDecodeCsv(fileBytes, 'windows-1252');
+    if (decodedWindows1252 !== null) {
+        return decodedWindows1252;
+    }
+
+    throw new Error('Could not decode this CSV file. Save it as UTF-8 CSV and try again.');
 };
 
 const normalizeRoleToken = (rawRole: string): string | null => {
@@ -142,33 +286,57 @@ const parseRoles = (roleCell: string): { roles: string[]; hasInvalidRole: boolea
     };
 };
 
-const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' }: BulkUploadModalProps) => {
+const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [], userType = 'user' }: BulkUploadModalProps) => {
     const [isMainModalAppearing, setIsMainModalAppearing] = React.useState(false);
     const [isReviewModalAppearing, setIsReviewModalAppearing] = React.useState(false);
+    const [isUploadProgressModalAppearing, setIsUploadProgressModalAppearing] = React.useState(false);
+    const [uploadProgressValue, setUploadProgressValue] = React.useState(0);
+    const [uploadProgressMessage, setUploadProgressMessage] = React.useState('Import queued.');
+    const [activeImportId, setActiveImportId] = React.useState<string | null>(null);
+    const [isQueueRequestRunning, setIsQueueRequestRunning] = React.useState(false);
+    const [uploadSource, setUploadSource] = React.useState<UploadSource>('file');
     const [fileName, setFileName] = React.useState('');
+    const [pastedCsvContent, setPastedCsvContent] = React.useState('');
     const [previewRows, setPreviewRows] = React.useState<PreviewRow[]>([]);
     const [selectedRowLines, setSelectedRowLines] = React.useState<number[]>([]);
     const [showReviewModal, setShowReviewModal] = React.useState(false);
     const [fileError, setFileError] = React.useState('');
+    const [importErrorMessages, setImportErrorMessages] = React.useState<string[]>([]);
+    const [importOutcome, setImportOutcome] = React.useState<ImportOutcome | null>(null);
+    const [isCancellingImport, setIsCancellingImport] = React.useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+    const queueRequestAbortControllerRef = React.useRef<AbortController | null>(null);
+    const isImportRunning = isQueueRequestRunning || activeImportId !== null;
 
-    const { data, setData, post, processing, errors, clearErrors, reset } = useForm<BulkUploadForm>({
-        rows: [],
-    });
+    const resolveListingUrl = React.useCallback((): string => {
+        if (userType === 'student') {
+            return students.url();
+        }
+
+        if (userType === 'faculty') {
+            return faculty.url();
+        }
+
+        return index.url();
+    }, [userType]);
 
     const existingUserEmails = React.useMemo(() => {
-        return new Set(
-            existingUsers
-                .map((user) => user.email?.trim().toLowerCase())
-                .filter((email): email is string => typeof email === 'string' && email !== ''),
-        );
-    }, [existingUsers]);
+        const normalizedFromUsers = existingUsers
+            .map((user) => user.email?.trim().toLowerCase())
+            .filter((email): email is string => typeof email === 'string' && email !== '');
+        const normalizedFromSystem = existingEmails
+            .map((email) => email.trim().toLowerCase())
+            .filter((email) => email !== '');
+
+        return new Set([...normalizedFromUsers, ...normalizedFromSystem]);
+    }, [existingEmails, existingUsers]);
 
     const selectedRowLinesSet = React.useMemo(() => {
         return new Set(selectedRowLines);
     }, [selectedRowLines]);
 
-    useEffect(() => {
-        const selectedRows = previewRows
+    const selectedRows = React.useMemo<UploadRow[]>(() => {
+        return previewRows
             .filter((row) => row.issues.length === 0 && selectedRowLinesSet.has(row.line))
             .map((row) => {
                 if (userType === 'student') {
@@ -181,16 +349,6 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                     };
                 }
 
-                if (userType === 'faculty') {
-                    return {
-                        first_name: row.first_name,
-                        last_name: row.last_name,
-                        email: row.email,
-                        roles: row.roles,
-                        password: row.password,
-                    };
-                }
-
                 return {
                     first_name: row.first_name,
                     last_name: row.last_name,
@@ -199,9 +357,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                     password: row.password,
                 };
             });
-
-        setData('rows', selectedRows);
-    }, [previewRows, selectedRowLinesSet, setData, userType]);
+    }, [previewRows, selectedRowLinesSet, userType]);
 
     useEffect(() => {
         if (!open) {
@@ -209,7 +365,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
         }
 
         const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && !processing) {
+            if (event.key === 'Escape' && !isImportRunning) {
                 if (showReviewModal) {
                     setShowReviewModal(false);
                     return;
@@ -227,7 +383,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
             document.body.style.overflow = originalOverflow;
             window.removeEventListener('keydown', onKeyDown);
         };
-    }, [open, onClose, processing, showReviewModal]);
+    }, [open, onClose, isImportRunning, showReviewModal]);
 
     useEffect(() => {
         if (!open) {
@@ -261,18 +417,273 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
         };
     }, [showReviewModal]);
 
-    const clearUploadState = () => {
+    useEffect(() => {
+        if (!isImportRunning) {
+            setIsUploadProgressModalAppearing(false);
+            return;
+        }
+
+        setIsUploadProgressModalAppearing(false);
+        const animationFrame = window.requestAnimationFrame(() => {
+            setIsUploadProgressModalAppearing(true);
+        });
+
+        return () => {
+            window.cancelAnimationFrame(animationFrame);
+        };
+    }, [isImportRunning]);
+
+    const clearUploadState = React.useCallback(() => {
+        setUploadSource('file');
+        setFileName('');
+        setPastedCsvContent('');
+        setPreviewRows([]);
+        setSelectedRowLines([]);
+        setShowReviewModal(false);
+        setFileError('');
+        setImportErrorMessages([]);
+        setImportOutcome(null);
+        setIsCancellingImport(false);
+        setUploadProgressMessage('Import queued.');
+        setUploadProgressValue(0);
+        setActiveImportId(null);
+        setIsQueueRequestRunning(false);
+        if (fileInputRef.current !== null) {
+            fileInputRef.current.value = '';
+        }
+    }, []);
+
+    useEffect(() => {
+        if (activeImportId === null) {
+            return;
+        }
+
+        let isCancelled = false;
+
+        const pollImportProgress = async () => {
+            try {
+                const response = await fetch(
+                    bulkStatus.url({
+                        importId: activeImportId,
+                    }),
+                    {
+                        method: 'GET',
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin',
+                    },
+                );
+
+                const payload: BulkImportProgressResponse = await response.json();
+
+                if (isCancelled) {
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error(typeof payload.message === 'string' && payload.message !== '' ? payload.message : 'Unable to track import progress.');
+                }
+
+                setUploadProgressValue(Math.max(0, Math.min(100, payload.progress_percentage)));
+                setUploadProgressMessage(payload.message);
+
+                if (payload.status === 'failed') {
+                    setActiveImportId(null);
+                    setIsQueueRequestRunning(false);
+                    setIsCancellingImport(false);
+                    setImportOutcome({
+                        successfulRows: payload.successful_rows,
+                        failedRows: payload.failed_rows,
+                    });
+                    setImportErrorMessages([payload.message]);
+
+                    if (payload.successful_rows > 0) {
+                        router.reload();
+                    }
+
+                    return;
+                }
+
+                if (payload.status === 'cancelled') {
+                    setActiveImportId(null);
+                    setIsQueueRequestRunning(false);
+                    setIsCancellingImport(false);
+                    setImportOutcome({
+                        successfulRows: payload.successful_rows,
+                        failedRows: payload.failed_rows,
+                    });
+                    setImportErrorMessages([payload.message]);
+
+                    if (payload.successful_rows > 0) {
+                        clearUploadState();
+                        onClose();
+                        router.visit(resolveListingUrl(), {
+                            replace: true,
+                            preserveState: false,
+                        });
+                    }
+
+                    return;
+                }
+
+                if (payload.status !== 'completed') {
+                    return;
+                }
+
+                setActiveImportId(null);
+                setIsQueueRequestRunning(false);
+                setIsCancellingImport(false);
+                setUploadProgressValue(100);
+                setImportOutcome({
+                    successfulRows: payload.successful_rows,
+                    failedRows: payload.failed_rows,
+                });
+
+                if (payload.failed_rows > 0) {
+                    const failedItems = Array.isArray(payload.failed_items) ? payload.failed_items : [];
+                    const rowFailureMessages = failedItems
+                        .map((failedItem) => {
+                            const lineLabel = typeof failedItem.line === 'number' ? `Row ${failedItem.line}` : 'Row';
+                            const emailLabel = typeof failedItem.email === 'string' && failedItem.email !== '' ? ` (${failedItem.email})` : '';
+                            const message = typeof failedItem.message === 'string' && failedItem.message !== '' ? failedItem.message : 'Failed to import this row.';
+
+                            return `${lineLabel}${emailLabel}: ${message}`;
+                        })
+                        .slice(0, 10);
+
+                    setImportErrorMessages(
+                        rowFailureMessages.length > 0
+                            ? rowFailureMessages
+                            : [`${payload.failed_rows} row(s) failed to import. Please review and retry those rows.`],
+                    );
+
+                    return;
+                }
+
+                setImportErrorMessages([]);
+                clearUploadState();
+                onClose();
+                router.visit(resolveListingUrl(), {
+                    replace: true,
+                    preserveState: false,
+                });
+            } catch (error) {
+                if (isCancelled) {
+                    return;
+                }
+
+                setActiveImportId(null);
+                setIsQueueRequestRunning(false);
+                setIsCancellingImport(false);
+                setImportErrorMessages([error instanceof Error ? error.message : 'Unable to fetch import progress.']);
+            }
+        };
+
+        void pollImportProgress();
+        const pollingTimer = window.setInterval(() => {
+            void pollImportProgress();
+        }, 1200);
+
+        return () => {
+            isCancelled = true;
+            window.clearInterval(pollingTimer);
+        };
+    }, [activeImportId, clearUploadState, onClose, resolveListingUrl]);
+
+    const cancelImport = async () => {
+        if (isCancellingImport || !isImportRunning) {
+            return;
+        }
+
+        if (isQueueRequestRunning && activeImportId === null) {
+            queueRequestAbortControllerRef.current?.abort();
+            setIsQueueRequestRunning(false);
+            setIsCancellingImport(false);
+            setUploadProgressValue(0);
+            setUploadProgressMessage('Import cancelled.');
+            setImportErrorMessages(['Import queue request was cancelled.']);
+
+            return;
+        }
+
+        if (activeImportId === null) {
+            return;
+        }
+
+        setIsCancellingImport(true);
+        const csrfToken = resolveCsrfToken();
+
+        try {
+            const response = await fetch(`/admin/users/bulk/${encodeURIComponent(activeImportId)}/cancel`, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            const payload = (await response.json()) as Partial<BulkImportProgressResponse> & {
+                message?: string;
+            };
+
+            if (!response.ok) {
+                throw new Error(typeof payload.message === 'string' && payload.message !== '' ? payload.message : 'Failed to cancel import.');
+            }
+
+            const successfulRows = typeof payload.successful_rows === 'number' ? payload.successful_rows : 0;
+            const failedRows = typeof payload.failed_rows === 'number' ? payload.failed_rows : 0;
+            const message = typeof payload.message === 'string' && payload.message !== '' ? payload.message : 'Import cancellation requested.';
+
+            setUploadProgressMessage(message);
+            setImportOutcome({
+                successfulRows,
+                failedRows,
+            });
+            setImportErrorMessages([message]);
+            setActiveImportId(null);
+            setIsQueueRequestRunning(false);
+            setIsCancellingImport(false);
+
+            if ((payload.status ?? '') === 'cancelled' && successfulRows > 0) {
+                clearUploadState();
+                onClose();
+                router.visit(resolveListingUrl(), {
+                    replace: true,
+                    preserveState: false,
+                });
+            }
+        } catch (error) {
+            setIsCancellingImport(false);
+            setImportErrorMessages([error instanceof Error ? error.message : 'Failed to cancel import.']);
+        }
+    };
+
+    const switchUploadSource = (nextSource: UploadSource) => {
+        if (nextSource === uploadSource) {
+            return;
+        }
+
+        setUploadSource(nextSource);
         setFileName('');
         setPreviewRows([]);
         setSelectedRowLines([]);
         setShowReviewModal(false);
         setFileError('');
-        clearErrors();
-        reset();
+        setImportErrorMessages([]);
+        setImportOutcome(null);
+        setIsCancellingImport(false);
+
+        if (fileInputRef.current !== null) {
+            fileInputRef.current.value = '';
+        }
     };
 
     const closeAll = () => {
-        if (processing) {
+        if (isImportRunning) {
             return;
         }
 
@@ -280,15 +691,15 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
         onClose();
     };
 
-    const parseFile = async (file: File) => {
-        const rawContent = await file.text();
+    const parseRawCsvContent = (rawCsvContent: string) => {
+        const rawContent = stripLeadingBom(rawCsvContent);
         const lines = rawContent
             .split(/\r?\n/)
             .map((line) => line.trim())
             .filter((line) => line.length > 0);
 
         if (lines.length <= 1) {
-            setFileError('Upload file must include a header row and at least one row.');
+            setFileError('CSV content must include a header row and at least one row.');
             return;
         }
 
@@ -299,7 +710,8 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                   ? (['last_name', 'first_name', 'email', 'role', 'password'] as const)
                   : (['last_name', 'first_name', 'email', 'role', 'password'] as const);
 
-        const headers = parseCsvLine(lines[0]).map((header) => canonicalizeHeader(header));
+        const delimiter = detectCsvDelimiter(lines[0]);
+        const headers = parseCsvLine(lines[0], delimiter).map((header) => canonicalizeHeader(header));
         const headerIndex = headers.reduce<Record<string, number>>((accumulator, header, index) => {
             accumulator[header] = index;
 
@@ -314,7 +726,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
 
         const emailTracker = new Set<string>();
         const parsedPreviewRows: PreviewRow[] = lines.slice(1).map((line, lineIndex) => {
-            const values = parseCsvLine(line);
+            const values = parseCsvLine(line, delimiter);
             const firstName = values[headerIndex.first_name] ?? '';
             const lastName = values[headerIndex.last_name] ?? '';
             const issues: string[] = [];
@@ -339,7 +751,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                 } else if (emailTracker.has(email.toLowerCase())) {
                     issues.push('Duplicate email in file.');
                 } else if (existingUserEmails.has(email.toLowerCase())) {
-                    issues.push('Email already exists in this table.');
+                    issues.push('Email already exists in the system.');
                 }
 
                 if (!studentPrograms.includes(rawProgram as StudentProgram)) {
@@ -374,7 +786,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
             } else if (emailTracker.has(email.toLowerCase())) {
                 issues.push('Duplicate email in file.');
             } else if (existingUserEmails.has(email.toLowerCase())) {
-                issues.push('Email already exists in this table.');
+                issues.push('Email already exists in the system.');
             }
 
             const allowedRoles = userType === 'faculty' ? availableFacultyRoles : availableRoles;
@@ -414,6 +826,12 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
         setShowReviewModal(true);
     };
 
+    const parseFile = async (file: File) => {
+        const rawContent = await readCsvContent(file);
+
+        parseRawCsvContent(rawContent);
+    };
+
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
 
@@ -422,24 +840,49 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
         }
 
         setFileName(file.name);
-        clearErrors();
+        setImportErrorMessages([]);
         setFileError('');
 
         const normalizedFileName = file.name.toLowerCase();
         const isCsvFile = normalizedFileName.endsWith('.csv');
-        const isXlsxFile = normalizedFileName.endsWith('.xlsx');
 
-        if (!isCsvFile && !isXlsxFile) {
-            setFileError('Please select a valid .csv or .xlsx file.');
+        if (!isCsvFile) {
+            setFileError('Please select a valid .csv file.');
+            event.target.value = '';
             return;
         }
 
-        await parseFile(file);
+        try {
+            await parseFile(file);
+        } catch (error) {
+            setFileError(error instanceof Error ? error.message : 'Could not read the selected file. Please try again.');
+        } finally {
+            event.target.value = '';
+        }
+    };
+
+    const handlePastePreview = () => {
+        setImportErrorMessages([]);
+        setFileError('');
+        setFileName('Pasted CSV');
+
+        if (pastedCsvContent.trim() === '') {
+            setFileError('Paste CSV content before previewing.');
+
+            return;
+        }
+
+        try {
+            parseRawCsvContent(pastedCsvContent);
+        } catch {
+            setFileError('Could not parse the pasted CSV content. Check the format and try again.');
+        }
     };
 
     const invalidRowsCount = previewRows.filter((row) => row.issues.length > 0).length;
     const validRowsCount = previewRows.length - invalidRowsCount;
-    const selectedRowsCount = data.rows.length;
+    const selectedRowsCount = selectedRows.length;
+    const hasPartialImportSuccess = importOutcome !== null && importOutcome.successfulRows > 0 && importOutcome.failedRows > 0;
 
     const toggleRowSelection = (line: number) => {
         setSelectedRowLines((previousSelectedRows) => {
@@ -451,33 +894,113 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
         });
     };
 
-    const importRows = () => {
-        if (data.rows.length === 0) {
+    const importRows = async () => {
+        if (selectedRows.length === 0 || isImportRunning) {
             return;
         }
 
-        post(
-            bulkStore.url({
-                query: {
-                    type: userType,
+        setImportErrorMessages([]);
+        setImportOutcome(null);
+        setFileError('');
+        setIsCancellingImport(false);
+        setIsQueueRequestRunning(true);
+        setUploadProgressValue(0);
+        setUploadProgressMessage('Queueing import job...');
+
+        const csrfToken = resolveCsrfToken();
+        const requestAbortController = new AbortController();
+        queueRequestAbortControllerRef.current = requestAbortController;
+
+        try {
+            const response = await fetch(
+                bulkStore.url({
+                    query: {
+                        type: userType,
+                    },
+                }),
+                {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        type: userType,
+                        rows: selectedRows,
+                    }),
+                    signal: requestAbortController.signal,
                 },
-            }),
-            {
-                preserveScroll: true,
-                preserveState: false,
-                onSuccess: () => {
-                    clearUploadState();
-                    onClose();
-                },
-            },
-        );
+            );
+
+            const payload = (await response.json()) as
+                | (BulkImportProgressResponse & {
+                      errors?: Record<string, string | string[]>;
+                  })
+                | { message?: string; errors?: Record<string, string | string[]> };
+
+            if (!response.ok) {
+                const responseErrors = payload.errors ?? {};
+                const flattenedErrors = Object.values(responseErrors)
+                    .flatMap((error) => (Array.isArray(error) ? error : [error]))
+                    .map((error) => (typeof error === 'string' ? error.trim() : ''))
+                    .filter((error) => error !== '');
+
+                setImportErrorMessages(
+                    flattenedErrors.length > 0
+                        ? flattenedErrors
+                        : [typeof payload.message === 'string' ? payload.message : 'Failed to queue the bulk import.'],
+                );
+                setIsQueueRequestRunning(false);
+                setUploadProgressValue(0);
+                setUploadProgressMessage('Failed to queue import.');
+
+                return;
+            }
+
+            const importId = 'import_id' in payload ? payload.import_id : null;
+
+            if (typeof importId !== 'string' || importId.trim() === '') {
+                setImportErrorMessages(['Bulk import was queued, but no import ID was returned.']);
+                setIsQueueRequestRunning(false);
+                setUploadProgressValue(0);
+                setUploadProgressMessage('Failed to start progress tracking.');
+
+                return;
+            }
+
+            setUploadProgressMessage(
+                'message' in payload && typeof payload.message === 'string' ? payload.message : 'Import queued. Waiting for queue worker...',
+            );
+            setUploadProgressValue('progress_percentage' in payload ? payload.progress_percentage : 0);
+            setActiveImportId(importId);
+            setIsQueueRequestRunning(false);
+        } catch (error) {
+            if (error instanceof DOMException && error.name === 'AbortError') {
+                setImportErrorMessages(['Import queue request was cancelled.']);
+                setIsQueueRequestRunning(false);
+                setUploadProgressValue(0);
+                setUploadProgressMessage('Import cancelled.');
+
+                return;
+            }
+
+            setImportErrorMessages([error instanceof Error ? error.message : 'Failed to queue the bulk import.']);
+            setIsQueueRequestRunning(false);
+            setUploadProgressValue(0);
+            setUploadProgressMessage('Failed to queue import.');
+        } finally {
+            queueRequestAbortControllerRef.current = null;
+        }
     };
 
     if (!open || typeof document === 'undefined') {
         return null;
     }
 
-    const uploadLabel = userType === 'student' ? 'Bulk Upload Students' : userType === 'faculty' ? 'Bulk Upload Facultys' : 'Bulk Upload Users';
+    const uploadLabel = userType === 'student' ? 'Bulk Upload Students' : userType === 'faculty' ? 'Bulk Upload Faculty' : 'Bulk Upload Users';
     const csvGuide =
         userType === 'student'
             ? 'Last Name, First Name, Email, Program, and Password'
@@ -547,7 +1070,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                         <button
                             type="button"
                             onClick={closeAll}
-                            disabled={processing}
+                            disabled={isImportRunning}
                             className="rounded-lg p-1.5 text-emerald-700 transition-all duration-200 hover:rotate-90 hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <X className="h-5 w-5" />
@@ -556,7 +1079,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
 
                     <div className="space-y-4 p-4">
                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-                            Upload a CSV file (preferred) or XLSX file with headers:
+                            Upload a CSV file or paste CSV text with headers:
                             <br />
                             <span className="font-semibold">{csvGuide}</span>
                             <div className="mt-3">
@@ -571,17 +1094,62 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                             </div>
                         </div>
 
-                        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-                            <FileSpreadsheet className="h-8 w-8 text-slate-500" />
-                            <span className="text-sm font-semibold text-slate-700">{fileName || 'Choose CSV or XLSX file'}</span>
-                            <span className="text-xs text-slate-500">Click to browse and preview before importing.</span>
-                            <input
-                                type="file"
-                                accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                                onChange={handleFileChange}
-                                className="hidden"
-                            />
-                        </label>
+                        <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 text-xs font-semibold">
+                            <button
+                                type="button"
+                                onClick={() => switchUploadSource('file')}
+                                className={`rounded-md px-3 py-1.5 transition-colors ${
+                                    uploadSource === 'file' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
+                                }`}
+                            >
+                                Upload File
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => switchUploadSource('paste')}
+                                className={`rounded-md px-3 py-1.5 transition-colors ${
+                                    uploadSource === 'paste' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
+                                }`}
+                            >
+                                Paste CSV Text
+                            </button>
+                        </div>
+
+                        {uploadSource === 'file' ? (
+                            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                                <FileSpreadsheet className="h-8 w-8 text-slate-500" />
+                                <span className="text-sm font-semibold text-slate-700">{fileName || 'Choose CSV file'}</span>
+                                <span className="text-xs text-slate-500">Click to browse and preview before importing.</span>
+                                <input
+                                    type="file"
+                                    accept=".csv,text/csv"
+                                    onChange={handleFileChange}
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                />
+                            </label>
+                        ) : (
+                            <div className="rounded-xl border border-slate-300 bg-slate-50 p-3">
+                                <p className="mb-2 text-xs text-slate-600">Paste CSV content including the header row.</p>
+                                <textarea
+                                    value={pastedCsvContent}
+                                    onChange={(event) => setPastedCsvContent(event.target.value)}
+                                    rows={8}
+                                    placeholder={csvTemplateContent}
+                                    className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-700 outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                />
+                                <div className="mt-3 flex justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={handlePastePreview}
+                                        disabled={isImportRunning || pastedCsvContent.trim() === ''}
+                                        className="rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        Preview Pasted CSV
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {fileError ? <p className="text-sm text-rose-600">{fileError}</p> : null}
 
@@ -589,7 +1157,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                             <button
                                 type="button"
                                 onClick={closeAll}
-                                disabled={processing}
+                                disabled={isImportRunning}
                                 className="rounded-lg border-2 border-slate-300 px-5 py-2 font-medium text-slate-700 transition-all duration-200 hover:bg-slate-100 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Close
@@ -615,7 +1183,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                     role="dialog"
                     aria-modal="true"
                     onMouseDown={(event) => {
-                        if (event.target === event.currentTarget && !processing) {
+                        if (event.target === event.currentTarget && !isImportRunning) {
                             setShowReviewModal(false);
                         }
                     }}
@@ -634,7 +1202,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                             <button
                                 type="button"
                                 onClick={() => setShowReviewModal(false)}
-                                disabled={processing}
+                                disabled={isImportRunning}
                                 className="rounded-lg p-1.5 text-emerald-700 transition-all duration-200 hover:rotate-90 hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <X className="h-5 w-5" />
@@ -677,8 +1245,8 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                                                 key={`${row.line}-${row.first_name}-${row.last_name}`}
                                                 className={row.issues.length > 0 ? 'bg-rose-50' : ''}
                                             >
-                                                <td className="px-3 py-2">{row.last_name}</td>
                                                 <td className="px-3 py-2">{row.first_name}</td>
+                                                <td className="px-3 py-2">{row.last_name}</td>
                                                 {userType === 'student' ? <td className="px-3 py-2">{row.email ?? '-'}</td> : null}
                                                 {userType === 'student' ? <td className="px-3 py-2">{row.program ?? '-'}</td> : null}
                                                 {userType !== 'student' ? <td className="px-3 py-2">{row.email}</td> : null}
@@ -704,7 +1272,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                                                             type="checkbox"
                                                             checked={selectedRowLinesSet.has(row.line)}
                                                             onChange={() => toggleRowSelection(row.line)}
-                                                            disabled={processing}
+                                                            disabled={isImportRunning}
                                                             className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                                                         />
                                                     )}
@@ -715,9 +1283,24 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                                 </table>
                             </div>
 
-                            {Object.keys(errors).length > 0 ? (
-                                <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-                                    Import failed. Please fix row issues and try again.
+                            {importErrorMessages.length > 0 ? (
+                                <div
+                                    className={`rounded-lg p-3 text-sm ${
+                                        hasPartialImportSuccess
+                                            ? 'border border-amber-200 bg-amber-50 text-amber-800'
+                                            : 'border border-rose-200 bg-rose-50 text-rose-700'
+                                    }`}
+                                >
+                                    <p className="font-semibold">
+                                        {hasPartialImportSuccess
+                                            ? `Import completed with issues. ${importOutcome?.successfulRows ?? 0} row(s) were saved.`
+                                            : 'Import failed. Fix the following issues and try again.'}
+                                    </p>
+                                    <ul className="mt-2 list-disc pl-4">
+                                        {importErrorMessages.map((errorMessage) => (
+                                            <li key={errorMessage}>{errorMessage}</li>
+                                        ))}
+                                    </ul>
                                 </div>
                             ) : null}
 
@@ -725,7 +1308,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                                 <button
                                     type="button"
                                     onClick={() => setShowReviewModal(false)}
-                                    disabled={processing}
+                                    disabled={isImportRunning}
                                     className="rounded-lg border-2 border-slate-300 px-5 py-2 font-medium text-slate-700 transition-all duration-200 hover:bg-slate-100 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     Back
@@ -733,12 +1316,64 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], userType = 'user' 
                                 <button
                                     type="button"
                                     onClick={importRows}
-                                    disabled={processing || selectedRowsCount === 0}
+                                    disabled={isImportRunning || selectedRowsCount === 0}
                                     className="rounded-lg bg-emerald-600 px-5 py-2 font-medium text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    {processing ? 'Importing...' : `Approve and Import (${selectedRowsCount})`}
+                                    {isImportRunning ? 'Importing...' : `Approve and Import (${selectedRowsCount})`}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
+            {isImportRunning ? (
+                <div
+                    className={`fixed inset-0 z-[10000] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm transition-opacity duration-200 ${
+                        isUploadProgressModalAppearing ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    role="status"
+                    aria-live="polite"
+                    aria-modal="true"
+                >
+                    <div
+                        className={`w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl transition-all duration-200 ${
+                            isUploadProgressModalAppearing ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-95 opacity-0'
+                        }`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            </span>
+                            <div>
+                                <p className="text-base font-semibold text-slate-900">Importing CSV data</p>
+                                <p className="text-sm text-slate-600">{uploadProgressMessage}</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+                            <div
+                                className="h-full rounded-full bg-emerald-600 transition-[width] duration-300 ease-out"
+                                style={{ width: `${uploadProgressValue}%` }}
+                            />
+                        </div>
+
+                        <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+                            <span>
+                                {selectedRowsCount} row{selectedRowsCount === 1 ? '' : 's'} queued
+                            </span>
+                            <span>{uploadProgressValue}%</span>
+                        </div>
+
+                        <div className="mt-4 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={cancelImport}
+                                disabled={isCancellingImport}
+                                className="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {isCancellingImport ? 'Cancelling...' : 'Cancel Upload'}
+                            </button>
                         </div>
                     </div>
                 </div>

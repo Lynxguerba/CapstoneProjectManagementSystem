@@ -18,6 +18,7 @@ type AddUserModalProps = {
 };
 
 type AddUserForm = {
+    type: EntityType;
     first_name: string;
     last_name: string;
     email: string;
@@ -45,6 +46,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
     const initialRole = roleOptions[0] ?? 'student';
 
     const addUserForm = useForm<AddUserForm>({
+        type: userType,
         first_name: '',
         last_name: '',
         email: '',
@@ -92,6 +94,14 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
     }, [open]);
 
     useEffect(() => {
+        if (addUserForm.data.type === userType) {
+            return;
+        }
+
+        addUserForm.setData('type', userType);
+    }, [userType, addUserForm]);
+
+    useEffect(() => {
         if (!open) {
             hasInitializedRolesRef.current = false;
             return;
@@ -119,6 +129,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
                 preserveState: false,
                 onSuccess: () => {
                     addUserForm.reset();
+                    addUserForm.setData('type', userType);
                     addUserForm.setData('program', 'BSIT');
                     addUserForm.setData('roles', [initialRole]);
                     onClose();

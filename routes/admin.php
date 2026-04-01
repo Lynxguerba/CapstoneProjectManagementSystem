@@ -19,6 +19,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/users/faculty', [AdminUserController::class, 'faculty'])->name('admin.users.faculty');
     Route::post('/users', [AdminUserController::class, 'store'])->name('admin.users.store');
     Route::post('/users/bulk', [AdminUserController::class, 'bulkStore'])->name('admin.users.bulk-store');
+    Route::get('/users/bulk/{importId}/status', [AdminUserController::class, 'bulkStatus'])
+        ->whereUuid('importId')
+        ->name('admin.users.bulk-status');
+    Route::post('/users/bulk/{importId}/cancel', [AdminUserController::class, 'bulkCancel'])
+        ->whereUuid('importId')
+        ->name('admin.users.bulk-cancel');
     Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
     Route::patch('/users/{user}/approve', [AdminUserController::class, 'approve'])->name('admin.users.approve');
     Route::patch('/users/{user}/reject', [AdminUserController::class, 'reject'])->name('admin.users.reject');

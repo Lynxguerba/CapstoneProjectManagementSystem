@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from '@inertiajs/react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, ChevronsLeft, FileText, PanelRightOpen, PenLine, ShieldAlert, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';

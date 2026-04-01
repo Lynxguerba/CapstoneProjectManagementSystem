@@ -31,6 +31,7 @@ type RawStudentRow = Omit<StudentRow, 'program'> & {
 
 type AdminStudentsProps = {
     students?: RawStudentRow[];
+    existingEmails?: string[];
     filters?: {
         search?: string;
     };
@@ -75,7 +76,7 @@ const statusBadgeClasses = (status: StudentStatus): string => {
     return 'bg-slate-200 text-slate-600';
 };
 
-const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
+const AdminStudents = ({ students = [], existingEmails = [], filters }: AdminStudentsProps) => {
     const initialStudents = React.useMemo(() => {
         if (!Array.isArray(students)) {
             return [];
@@ -441,6 +442,7 @@ const AdminStudents = ({ students = [], filters }: AdminStudentsProps) => {
                 open={isBulkUploadModalOpen}
                 onClose={() => setIsBulkUploadModalOpen(false)}
                 existingUsers={managedStudents}
+                existingEmails={existingEmails}
                 userType="student"
             />
             <ManageUserActionModal

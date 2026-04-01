@@ -11,6 +11,15 @@ class StoreAdminUserRequest extends FormRequest
     /**
      * @var array<int, string>
      */
+    private const ENTITY_TYPES = [
+        'user',
+        'faculty',
+        'student',
+    ];
+
+    /**
+     * @var array<int, string>
+     */
     private const AVAILABLE_STATUSES = [
         'active',
         'inactive',
@@ -41,10 +50,14 @@ class StoreAdminUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $entityType = $this->query('type', 'user');
+        $entityType = $this->resolveEntityType();
+        $sharedRules = [
+            'type' => ['sometimes', 'string', Rule::in(self::ENTITY_TYPES)],
+        ];
 
         if ($entityType === 'faculty') {
             return [
+                ...$sharedRules,
                 'first_name' => ['required', 'string', 'max:255'],
                 'last_name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
@@ -57,6 +70,7 @@ class StoreAdminUserRequest extends FormRequest
 
         if ($entityType === 'student') {
             return [
+                ...$sharedRules,
                 'first_name' => ['required', 'string', 'max:255'],
                 'last_name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
@@ -67,6 +81,7 @@ class StoreAdminUserRequest extends FormRequest
         }
 
         return [
+            ...$sharedRules,
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
@@ -83,7 +98,7 @@ class StoreAdminUserRequest extends FormRequest
      */
     public function messages(): array
     {
-        $entityType = $this->query('type', 'user');
+        $entityType = $this->resolveEntityType();
 
         if ($entityType === 'student') {
             return [
@@ -108,5 +123,16 @@ class StoreAdminUserRequest extends FormRequest
             'status.in' => 'The selected status is invalid.',
             'program.in' => 'Program must be BSIT or BSIS.',
         ];
+    }
+
+    private function resolveEntityType(): string
+    {
+        $entityType = $this->input('type', $this->query('type', 'user'));
+
+        if (! is_string($entityType)) {
+            return 'user';
+        }
+
+        return in_array($entityType, self::ENTITY_TYPES, true) ? $entityType : 'user';
     }
 }

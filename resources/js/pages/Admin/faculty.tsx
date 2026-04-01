@@ -24,6 +24,7 @@ type FacultyRow = {
 
 type AdminFacultyProps = {
     faculties?: FacultyRow[];
+    existingEmails?: string[];
     filters?: {
         search?: string;
         role?: FacultyRole | 'all';
@@ -44,7 +45,7 @@ const statusBadgeClasses = (status: UserStatus): string => {
     return 'bg-slate-200 text-slate-600';
 };
 
-const AdminFaculty = ({ faculties = [], filters }: AdminFacultyProps) => {
+const AdminFaculty = ({ faculties = [], existingEmails = [], filters }: AdminFacultyProps) => {
     const initialFaculties = React.useMemo(() => {
         return Array.isArray(faculties) ? faculties : [];
     }, [faculties]);
@@ -338,6 +339,7 @@ const AdminFaculty = ({ faculties = [], filters }: AdminFacultyProps) => {
                 open={isBulkUploadModalOpen}
                 onClose={() => setIsBulkUploadModalOpen(false)}
                 existingUsers={managedFaculties}
+                existingEmails={existingEmails}
                 userType="faculty"
             />
             <ManageUserActionModal

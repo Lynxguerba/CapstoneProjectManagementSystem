@@ -86,6 +86,7 @@ const fallbackProgramDistribution: ProgramDistribution[] = [
     { label: 'BSIT', value: 0, color: '#10b981' },
     { label: 'BSIS', value: 0, color: '#22c55e' },
 ];
+const fallbackProgramSetGroups: ProgramSetGroupCount[] = [];
 const fallbackActivityTrend: ActivityTrend = {
     events: [],
 };
@@ -159,10 +160,15 @@ const Dashboard = () => {
     const stats = props.stats ?? fallbackStats;
     const roleDistribution = props.roleDistribution ?? [];
     const programDistribution = props.programDistribution ?? fallbackProgramDistribution;
-    const programSetGroups = props.programSetGroups ?? [];
+    const programSetGroups = props.programSetGroups ?? fallbackProgramSetGroups;
     const activityTrend = props.activityTrend ?? fallbackActivityTrend;
+    const filteredRoleDistribution = roleDistribution.filter((item) => {
+        const normalizedRoleLabel = item.label.trim().toLowerCase();
 
-    const rolePieData = roleDistribution.map((item, index) => ({
+        return !normalizedRoleLabel.includes('student');
+    });
+
+    const rolePieData = filteredRoleDistribution.map((item, index) => ({
         id: index,
         value: item.value,
         label: item.label,
@@ -175,7 +181,7 @@ const Dashboard = () => {
         color: item.color,
     }));
 
-    const roleTotal = roleDistribution.reduce((sum, item) => sum + item.value, 0);
+    const roleTotal = filteredRoleDistribution.reduce((sum, item) => sum + item.value, 0);
     const hasRoleData = roleTotal > 0;
 
     const programTotal = programDistribution.reduce((sum, item) => sum + item.value, 0);
@@ -190,16 +196,11 @@ const Dashboard = () => {
     }, [programSetGroups, selectedProgramSetChartFilter]);
     const hasProgramSetGroupData = filteredProgramSetGroups.length > 0;
     const programSetBarChartWidth = Math.max(520, filteredProgramSetGroups.length * 92);
-    const studentProgramCoverage = progressFor(programTotal, stats.totalStudents);
     const activityTrendSeries = React.useMemo(() => buildLocalActivityTrendSeries(activityTrend.events), [activityTrend.events]);
     const hasActivityData =
         activityTrendSeries.info.some((value) => value > 0) ||
         activityTrendSeries.warning.some((value) => value > 0) ||
         activityTrendSeries.critical.some((value) => value > 0);
-
-    const activeUserProgress = progressFor(stats.activeUsers, stats.totalUsers);
-    const adviserCoverageProgress = progressFor(stats.groupsWithAdviser, stats.activeGroups);
-    const facultyProgress = progressFor(stats.totalFaculty, stats.totalUsers);
 
     const operationTiles = [
         {
@@ -400,7 +401,7 @@ const Dashboard = () => {
                     <div className={panelClassName}>
                         <div className="mb-2 flex items-center justify-between gap-3">
                             <div>
-                                <h3 className="text-lg font-semibold text-slate-900">Role Distribution</h3>
+                                <h3 className="text-lg font-semibold text-slate-900">Faculties Role Distribution</h3>
                                 <p className="mt-1 text-sm text-slate-600">Breakdown of user accounts by role assignment.</p>
                             </div>
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
@@ -432,7 +433,7 @@ const Dashboard = () => {
 
                                 <div className="cpms-scroll overflow-x-auto pb-1">
                                     <div className="mx-auto flex w-max items-center justify-center gap-2">
-                                        {roleDistribution.map((role) => (
+                                        {filteredRoleDistribution.map((role) => (
                                             <div
                                                 key={role.label}
                                                 className="min-w-[105px] rounded-lg border border-emerald-100 px-2.5 py-2 text-center text-xs text-slate-700"

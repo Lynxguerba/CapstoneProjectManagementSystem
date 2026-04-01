@@ -6,18 +6,31 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminUserRequest;
 use App\Http\Requests\Admin\StoreBulkAdminUsersRequest;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
+use App\Jobs\ProcessBulkUserImport;
 use App\Models\Role;
 use App\Models\StudentProgram;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AdminUserController extends Controller
 {
+    /**
+     * @var array<int, string>
+     */
+    private const ENTITY_TYPES = [
+        'user',
+        'faculty',
+        'student',
+    ];
+
     /**
      * @var array<int, string>
      */
@@ -29,6 +42,10 @@ class AdminUserController extends Controller
         'dean',
         'program_chairperson',
     ];
+
+    private ?bool $hasStudentProgramTableCache = null;
+
+    private ?bool $hasUsersProgramColumnCache = null;
 
     public function index(Request $request): Response
     {
@@ -82,6 +99,7 @@ class AdminUserController extends Controller
 
         return Inertia::render('Admin/user-management', [
             'users' => $users,
+            'existingEmails' => $this->existingEmails(),
             'filters' => [
                 'search' => $filters['search'],
                 'role' => $filters['role'] !== '' ? $filters['role'] : 'all',
@@ -92,7 +110,7 @@ class AdminUserController extends Controller
 
     public function store(StoreAdminUserRequest $request): RedirectResponse
     {
-        $entityType = $request->query('type', 'user');
+        $entityType = $this->resolveEntityType($request);
         $validated = $request->validated();
 
         if ($entityType === 'faculty') {
@@ -259,13 +277,62 @@ class AdminUserController extends Controller
         return $this->redirectToListing($request, 'Account request rejected successfully.');
     }
 
-    public function bulkStore(StoreBulkAdminUsersRequest $request): RedirectResponse
+    public function bulkStore(StoreBulkAdminUsersRequest $request): RedirectResponse|JsonResponse
     {
-        $entityType = $request->query('type', 'user');
+        $entityType = $this->resolveEntityType($request);
         $validated = $request->validated();
 
+        if ($request->expectsJson()) {
+            $this->extendExecutionTimeForBulkImport();
+
+            $importId = (string) Str::uuid();
+            $queueConnection = $this->resolveBulkImportQueueConnection();
+            $progress = [
+                'import_id' => $importId,
+                'requested_by' => $request->user()?->id,
+                'type' => $entityType,
+                'status' => 'queued',
+                'total_rows' => count($validated['rows']),
+                'processed_rows' => 0,
+                'successful_rows' => 0,
+                'failed_rows' => 0,
+                'progress_percentage' => 0,
+                'message' => 'Import queued. Processing in the background...',
+                'failed_items' => [],
+                'cancel_requested' => false,
+                'started_at' => null,
+                'finished_at' => null,
+                'updated_at' => now()->toIso8601String(),
+            ];
+
+            Cache::put($this->bulkImportCacheKey($importId), $progress, now()->addHours(12));
+
+            ProcessBulkUserImport::dispatch(
+                importId: $importId,
+                requestedById: $request->user()?->id,
+                entityType: $entityType,
+                rows: $validated['rows']
+            )->onConnection($queueConnection);
+
+            return response()->json($progress, 202);
+        }
+
+        $this->extendExecutionTimeForBulkImport();
+        $hasStudentProgramTable = $this->hasStudentProgramTable();
+        $roleIdsBySlug = $this->roleIdsBySlug();
+
+        $resolveRoleIds = function (array $roles) use ($roleIdsBySlug): array {
+            return collect($roles)
+                ->map(fn (string $role): ?string => Role::normalizeRole($role))
+                ->filter(fn (?string $role): bool => is_string($role) && array_key_exists($role, $roleIdsBySlug))
+                ->values()
+                ->unique()
+                ->map(fn (string $role): int => $roleIdsBySlug[$role])
+                ->all();
+        };
+
         if ($entityType === 'faculty') {
-            collect($validated['rows'])->each(function (array $row): void {
+            collect($validated['rows'])->each(function (array $row) use ($resolveRoleIds): void {
                 $roles = collect($row['roles'] ?? [])
                     ->map(fn (string $role): ?string => Role::normalizeRole($role))
                     ->filter(fn (?string $role): bool => is_string($role) && in_array($role, self::FACULTY_ASSIGNABLE_ROLES, true))
@@ -285,14 +352,23 @@ class AdminUserController extends Controller
                     'password' => (string) $row['password'],
                 ]);
 
-                $user->syncRoles($roles->all());
+                $resolvedRoles = $roles->isNotEmpty() ? $roles->all() : [$activeRole];
+                $roleIds = $resolveRoleIds($resolvedRoles);
+
+                if (count($roleIds) > 0) {
+                    $user->roles()->attach($roleIds);
+                } else {
+                    $user->syncRoles($resolvedRoles);
+                }
             });
 
             return redirect()->route('admin.users.faculty')->with('success', 'Faculty users uploaded successfully.');
         }
 
         if ($entityType === 'student') {
-            collect($validated['rows'])->each(function (array $row): void {
+            $studentRoleId = $roleIdsBySlug['student'] ?? null;
+
+            collect($validated['rows'])->each(function (array $row) use ($hasStudentProgramTable, $studentRoleId): void {
                 $name = $this->buildDisplayName($row['first_name'], $row['last_name']);
 
                 $user = User::query()->create([
@@ -305,14 +381,19 @@ class AdminUserController extends Controller
                     'password' => $row['password'],
                 ]);
 
-                $user->syncRoles(['student']);
-                $this->syncStudentProfile($user, $row['program'], true);
+                if ($studentRoleId !== null) {
+                    $user->roles()->attach([$studentRoleId]);
+                } else {
+                    $user->syncRoles(['student']);
+                }
+
+                $this->syncStudentProfile($user, $row['program'], true, $hasStudentProgramTable);
             });
 
             return redirect()->route('admin.users.students')->with('success', 'Students uploaded successfully.');
         }
 
-        collect($validated['rows'])->each(function (array $row): void {
+        collect($validated['rows'])->each(function (array $row) use ($hasStudentProgramTable, $resolveRoleIds): void {
             $roles = collect($row['roles'])
                 ->map(fn (string $role): ?string => Role::normalizeRole($role))
                 ->filter()
@@ -331,11 +412,80 @@ class AdminUserController extends Controller
                 'password' => $row['password'],
             ]);
 
-            $user->syncRoles($roles->all());
-            $this->syncStudentProfile($user, $row['program'] ?? null, in_array('student', $roles->all(), true));
+            $resolvedRoles = $roles->isNotEmpty() ? $roles->all() : [$activeRole];
+            $roleIds = $resolveRoleIds($resolvedRoles);
+
+            if (count($roleIds) > 0) {
+                $user->roles()->attach($roleIds);
+            } else {
+                $user->syncRoles($resolvedRoles);
+            }
+
+            $this->syncStudentProfile($user, $row['program'] ?? null, in_array('student', $resolvedRoles, true), $hasStudentProgramTable);
         });
 
         return redirect()->route('admin.users.index')->with('success', 'Users uploaded successfully.');
+    }
+
+    public function bulkStatus(Request $request, string $importId): JsonResponse
+    {
+        $progress = Cache::get($this->bulkImportCacheKey($importId));
+
+        if (! is_array($progress)) {
+            return response()->json([
+                'message' => 'Bulk import progress not found or has expired.',
+            ], 404);
+        }
+
+        $requestedBy = $progress['requested_by'] ?? null;
+        $authenticatedUserId = $request->user()?->id;
+
+        if ($requestedBy !== null && $authenticatedUserId !== null && (int) $requestedBy !== (int) $authenticatedUserId) {
+            return response()->json([
+                'message' => 'You are not authorized to view this import progress.',
+            ], 403);
+        }
+
+        return response()->json($progress);
+    }
+
+    public function bulkCancel(Request $request, string $importId): JsonResponse
+    {
+        $progress = Cache::get($this->bulkImportCacheKey($importId));
+
+        if (! is_array($progress)) {
+            return response()->json([
+                'message' => 'Bulk import progress not found or has expired.',
+            ], 404);
+        }
+
+        $requestedBy = $progress['requested_by'] ?? null;
+        $authenticatedUserId = $request->user()?->id;
+
+        if ($requestedBy !== null && $authenticatedUserId !== null && (int) $requestedBy !== (int) $authenticatedUserId) {
+            return response()->json([
+                'message' => 'You are not authorized to cancel this import.',
+            ], 403);
+        }
+
+        $status = is_string($progress['status'] ?? null) ? $progress['status'] : 'queued';
+        if (in_array($status, ['completed', 'failed', 'cancelled'], true)) {
+            return response()->json($progress);
+        }
+
+        $progress['cancel_requested'] = true;
+        $progress['message'] = 'Import cancellation requested. Stopping after current row.';
+        $progress['updated_at'] = now()->toIso8601String();
+
+        if ($status === 'queued') {
+            $progress['status'] = 'cancelled';
+            $progress['message'] = 'Import cancelled before processing started.';
+            $progress['finished_at'] = now()->toIso8601String();
+        }
+
+        Cache::put($this->bulkImportCacheKey($importId), $progress, now()->addHours(12));
+
+        return response()->json($progress);
     }
 
     public function students(Request $request): Response
@@ -412,6 +562,7 @@ class AdminUserController extends Controller
 
         return Inertia::render('Admin/students', [
             'students' => $students,
+            'existingEmails' => $this->existingEmails(),
             'filters' => [
                 'search' => $filters['search'],
             ],
@@ -487,6 +638,7 @@ class AdminUserController extends Controller
 
         return Inertia::render('Admin/faculty', [
             'faculties' => $faculties,
+            'existingEmails' => $this->existingEmails(),
             'filters' => [
                 'search' => $filters['search'],
                 'role' => $filters['role'] !== '' ? $filters['role'] : 'all',
@@ -509,9 +661,11 @@ class AdminUserController extends Controller
         return $normalizedCode;
     }
 
-    private function syncStudentProfile(User $user, ?string $programCode, bool $isStudent): void
+    private function syncStudentProfile(User $user, ?string $programCode, bool $isStudent, ?bool $hasStudentProgramTable = null): void
     {
-        if (! $this->hasStudentProgramTable()) {
+        $studentProgramTableExists = $hasStudentProgramTable ?? $this->hasStudentProgramTable();
+
+        if (! $studentProgramTableExists) {
             return;
         }
 
@@ -537,12 +691,39 @@ class AdminUserController extends Controller
 
     private function hasStudentProgramTable(): bool
     {
-        return Schema::hasTable('student_program');
+        if ($this->hasStudentProgramTableCache !== null) {
+            return $this->hasStudentProgramTableCache;
+        }
+
+        $this->hasStudentProgramTableCache = Schema::hasTable('student_program');
+
+        return $this->hasStudentProgramTableCache;
     }
 
     private function hasUsersProgramColumn(): bool
     {
-        return Schema::hasTable('users') && Schema::hasColumn('users', 'program');
+        if ($this->hasUsersProgramColumnCache !== null) {
+            return $this->hasUsersProgramColumnCache;
+        }
+
+        $this->hasUsersProgramColumnCache = Schema::hasTable('users') && Schema::hasColumn('users', 'program');
+
+        return $this->hasUsersProgramColumnCache;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function existingEmails(): array
+    {
+        return User::query()
+            ->whereNotNull('email')
+            ->pluck('email')
+            ->filter(fn (mixed $email): bool => is_string($email) && trim($email) !== '')
+            ->map(fn (string $email): string => strtolower(trim($email)))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**
@@ -589,5 +770,59 @@ class AdminUserController extends Controller
         }
 
         return is_string($fallbackName) ? $fallbackName : '';
+    }
+
+    private function extendExecutionTimeForBulkImport(): void
+    {
+        if (function_exists('set_time_limit')) {
+            set_time_limit(0);
+        }
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function roleIdsBySlug(): array
+    {
+        return Role::query()
+            ->pluck('id', 'slug')
+            ->mapWithKeys(fn (mixed $id, mixed $slug): array => [(string) $slug => (int) $id])
+            ->all();
+    }
+
+    private function bulkImportCacheKey(string $importId): string
+    {
+        return 'bulk_user_import:'.$importId;
+    }
+
+    private function resolveEntityType(Request $request): string
+    {
+        $queryEntityType = $request->query('type');
+        if (is_string($queryEntityType) && in_array($queryEntityType, self::ENTITY_TYPES, true)) {
+            return $queryEntityType;
+        }
+
+        $entityType = $request->input('type', 'user');
+
+        if (! is_string($entityType)) {
+            return 'user';
+        }
+
+        return in_array($entityType, self::ENTITY_TYPES, true) ? $entityType : 'user';
+    }
+
+    private function resolveBulkImportQueueConnection(): string
+    {
+        $defaultQueueConnection = config('queue.default', 'database');
+
+        if (! is_string($defaultQueueConnection) || $defaultQueueConnection === '') {
+            return 'background';
+        }
+
+        if (in_array($defaultQueueConnection, ['sync', 'database'], true)) {
+            return 'background';
+        }
+
+        return $defaultQueueConnection;
     }
 }

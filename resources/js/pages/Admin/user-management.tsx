@@ -23,6 +23,7 @@ type UserRow = {
 
 type AdminUserManagementProps = {
     users?: UserRow[];
+    existingEmails?: string[];
     filters?: {
         search?: string;
         role?: UserRole | 'all';
@@ -33,7 +34,7 @@ type AdminUserManagementProps = {
 const roleOptions: Array<UserRole | 'all'> = ['all', 'admin', 'student', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 const statusOptions: Array<UserStatus | 'all'> = ['all', 'active', 'inactive'];
 
-const AdminUserManagement = ({ users = [], filters }: AdminUserManagementProps) => {
+const AdminUserManagement = ({ users = [], existingEmails = [], filters }: AdminUserManagementProps) => {
     const initialUsers = React.useMemo(() => {
         return Array.isArray(users) ? users : [];
     }, [users]);
@@ -292,7 +293,12 @@ const AdminUserManagement = ({ users = [], filters }: AdminUserManagementProps) 
                 </div>
             </motion.section>
             <AddUserModal open={isAddUserModalOpen} onClose={() => setIsAddUserModalOpen(false)} />
-            <BulkUploadModal open={isBulkUploadModalOpen} onClose={() => setIsBulkUploadModalOpen(false)} existingUsers={managedUsers} />
+            <BulkUploadModal
+                open={isBulkUploadModalOpen}
+                onClose={() => setIsBulkUploadModalOpen(false)}
+                existingUsers={managedUsers}
+                existingEmails={existingEmails}
+            />
             <ManageUserActionModal
                 open={isManageUserModalOpen}
                 user={selectedUser}
