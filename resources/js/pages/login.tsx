@@ -107,11 +107,11 @@ export default function LoginPage() {
                         <motion.div
                             layout
                             transition={paneSwitchTransition}
-                            className={`flex w-full overflow-x-hidden bg-white md:w-1/2 ${authView === 'register' ? 'md:order-1' : 'md:order-2'}`}
+                            className={`flex w-full items-center overflow-x-hidden bg-white md:w-1/2 ${authView === 'register' ? 'md:order-1' : 'md:order-2'}`}
                         >
-                            <div className="h-full w-full px-6 py-6 sm:px-8 md:px-10 md:py-7">
-                                <div className="h-full overflow-x-hidden overflow-y-hidden">
-                                    <div className="h-full overflow-x-hidden overflow-y-auto pr-1">
+                            <div className="flex min-h-[420px] w-full items-center px-6 py-6 sm:px-8 md:min-h-full md:px-10 md:py-7">
+                                <div className="w-full overflow-x-hidden">
+                                    <div className="max-h-[72vh] overflow-x-hidden overflow-y-auto pr-1 md:max-h-none md:overflow-y-hidden">
                                         <AnimatePresence mode="wait" initial={false}>
                                             {authView === 'login' ? (
                                                 <motion.div
@@ -120,7 +120,7 @@ export default function LoginPage() {
                                                     animate={{ opacity: 1, x: 0 }}
                                                     exit={{ opacity: 0, x: -18 }}
                                                     transition={{ duration: 0.22, ease: 'easeOut' }}
-                                                    className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center"
+                                                    className="mx-auto flex w-full max-w-md flex-col justify-center"
                                                 >
                                                     <div className="space-y-4">
                                                         <div className="animate-fade-in-down text-center">
@@ -283,7 +283,7 @@ export default function LoginPage() {
                                                     animate={{ opacity: 1, x: 0 }}
                                                     exit={{ opacity: 0, x: 18 }}
                                                     transition={{ duration: 0.22, ease: 'easeOut' }}
-                                                    className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center"
+                                                    className="mx-auto flex w-full max-w-md flex-col justify-center"
                                                 >
                                                     <RegisterPanel
                                                         onBack={() => setAuthView('login')}
