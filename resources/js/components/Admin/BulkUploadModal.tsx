@@ -10,6 +10,7 @@ type StudentProgram = 'BSIT' | 'BSIS';
 type EntityType = 'user' | 'faculty' | 'student';
 type CsvDelimiter = ',' | ';' | '\t';
 type UploadSource = 'file' | 'paste';
+type RowFocusGroup = 'valid' | 'invalid' | 'selected' | 'total';
 
 type PreviewRow = {
     line: number;
@@ -304,8 +305,17 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
     const [importErrorMessages, setImportErrorMessages] = React.useState<string[]>([]);
     const [importOutcome, setImportOutcome] = React.useState<ImportOutcome | null>(null);
     const [isCancellingImport, setIsCancellingImport] = React.useState(false);
+    const [highlightedRowLine, setHighlightedRowLine] = React.useState<number | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement | null>(null);
     const queueRequestAbortControllerRef = React.useRef<AbortController | null>(null);
+    const previewRowElementRefs = React.useRef<Map<number, HTMLTableRowElement>>(new Map());
+    const highlightedRowTimeoutRef = React.useRef<number | null>(null);
+    const rowFocusIndexRef = React.useRef<Record<RowFocusGroup, number>>({
+        valid: 0,
+        invalid: 0,
+        selected: 0,
+        total: 0,
+    });
     const isImportRunning = isQueueRequestRunning || activeImportId !== null;
 
     const resolveListingUrl = React.useCallback((): string => {
@@ -358,6 +368,15 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
                 };
             });
     }, [previewRows, selectedRowLinesSet, userType]);
+
+    const rowLinesByGroup = React.useMemo<Record<RowFocusGroup, number[]>>(() => {
+        return {
+            valid: previewRows.filter((row) => row.issues.length === 0).map((row) => row.line),
+            invalid: previewRows.filter((row) => row.issues.length > 0).map((row) => row.line),
+            selected: previewRows.filter((row) => row.issues.length === 0 && selectedRowLinesSet.has(row.line)).map((row) => row.line),
+            total: previewRows.map((row) => row.line),
+        };
+    }, [previewRows, selectedRowLinesSet]);
 
     useEffect(() => {
         if (!open) {
@@ -591,6 +610,24 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
             window.clearInterval(pollingTimer);
         };
     }, [activeImportId, clearUploadState, onClose, resolveListingUrl]);
+
+    useEffect(() => {
+        return () => {
+            if (highlightedRowTimeoutRef.current !== null) {
+                window.clearTimeout(highlightedRowTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        rowFocusIndexRef.current = {
+            valid: 0,
+            invalid: 0,
+            selected: 0,
+            total: 0,
+        };
+        setHighlightedRowLine(null);
+    }, [previewRows, selectedRowLines]);
 
     const cancelImport = async () => {
         if (isCancellingImport || !isImportRunning) {
@@ -883,6 +920,42 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
     const validRowsCount = previewRows.length - invalidRowsCount;
     const selectedRowsCount = selectedRows.length;
     const hasPartialImportSuccess = importOutcome !== null && importOutcome.successfulRows > 0 && importOutcome.failedRows > 0;
+
+    const focusRow = React.useCallback((line: number) => {
+        const rowElement = previewRowElementRefs.current.get(line);
+
+        if (!rowElement) {
+            return;
+        }
+
+        rowElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest',
+        });
+        setHighlightedRowLine(line);
+
+        if (highlightedRowTimeoutRef.current !== null) {
+            window.clearTimeout(highlightedRowTimeoutRef.current);
+        }
+
+        highlightedRowTimeoutRef.current = window.setTimeout(() => {
+            setHighlightedRowLine((previousLine) => (previousLine === line ? null : previousLine));
+        }, 1600);
+    }, []);
+
+    const focusNextRowByGroup = (group: RowFocusGroup) => {
+        const targetLines = rowLinesByGroup[group];
+
+        if (targetLines.length === 0) {
+            return;
+        }
+
+        const currentIndex = rowFocusIndexRef.current[group] % targetLines.length;
+        const targetLine = targetLines[currentIndex];
+        rowFocusIndexRef.current[group] = (currentIndex + 1) % targetLines.length;
+        focusRow(targetLine);
+    };
 
     const toggleRowSelection = (line: number) => {
         setSelectedRowLines((previousSelectedRows) => {
@@ -1211,18 +1284,42 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
 
                         <div className="space-y-4 p-4">
                             <div className="flex flex-wrap items-center gap-3 text-sm">
-                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">
+                                <button
+                                    type="button"
+                                    onClick={() => focusNextRowByGroup('valid')}
+                                    disabled={validRowsCount === 0}
+                                    className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    title="Click to focus valid rows one by one"
+                                >
                                     Valid: {validRowsCount}
-                                </span>
-                                <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700">
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => focusNextRowByGroup('invalid')}
+                                    disabled={invalidRowsCount === 0}
+                                    className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    title="Click to focus rows with issues one by one"
+                                >
                                     With issues: {invalidRowsCount}
-                                </span>
-                                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => focusNextRowByGroup('selected')}
+                                    disabled={selectedRowsCount === 0}
+                                    className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    title="Click to focus selected rows one by one"
+                                >
                                     Selected: {selectedRowsCount}
-                                </span>
-                                <span className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-slate-700">
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => focusNextRowByGroup('total')}
+                                    disabled={previewRows.length === 0}
+                                    className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    title="Click to focus all rows one by one"
+                                >
                                     Total rows: {previewRows.length}
-                                </span>
+                                </button>
                             </div>
 
                             <div className="max-h-[55vh] overflow-auto rounded-xl border border-slate-200">
@@ -1243,7 +1340,17 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
                                         {previewRows.map((row) => (
                                             <tr
                                                 key={`${row.line}-${row.first_name}-${row.last_name}`}
-                                                className={row.issues.length > 0 ? 'bg-rose-50' : ''}
+                                                ref={(element) => {
+                                                    if (element === null) {
+                                                        previewRowElementRefs.current.delete(row.line);
+                                                        return;
+                                                    }
+
+                                                    previewRowElementRefs.current.set(row.line, element);
+                                                }}
+                                                className={`transition-colors duration-300 ${row.issues.length > 0 ? 'bg-rose-50' : ''} ${
+                                                    highlightedRowLine === row.line ? 'bg-blue-50' : ''
+                                                }`}
                                             >
                                                 <td className="px-3 py-2">{row.first_name}</td>
                                                 <td className="px-3 py-2">{row.last_name}</td>
