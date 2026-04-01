@@ -38,6 +38,11 @@ class CrossSetStudentSearchController extends Controller
         }
 
         $hasProgramColumn = Schema::hasColumn('users', 'program');
+        $hasStudentIdNumberColumn = Schema::hasColumn('users', 'student_id_number');
+        $searchTerms = collect(preg_split('/\s+/', $search) ?: [])
+            ->map(fn ($term): string => trim((string) $term))
+            ->filter(fn (string $term): bool => $term !== '')
+            ->values();
 
         $studentsQuery = User::query()
             ->where(function (Builder $query): void {
@@ -64,7 +69,7 @@ class CrossSetStudentSearchController extends Controller
             )
             ->with([
                 'programSets' => function ($query) use ($sourceProgramSetId): void {
-                    $query->select('program_sets.id', 'program_sets.name');
+                    $query->select('program_sets.id', 'program_sets.name', 'program_sets.instructor_id');
 
                     if ($sourceProgramSetId !== null) {
                         $query->where('program_sets.id', '!=', $sourceProgramSetId);
@@ -80,8 +85,12 @@ class CrossSetStudentSearchController extends Controller
             $studentsQuery->addSelect('program');
         }
 
+        if ($hasStudentIdNumberColumn) {
+            $studentsQuery->addSelect('student_id_number');
+        }
+
         if ($search !== '') {
-            $studentsQuery->where(function (Builder $query) use ($search, $hasProgramColumn): void {
+            $studentsQuery->where(function (Builder $query) use ($search, $searchTerms, $hasProgramColumn, $hasStudentIdNumberColumn): void {
                 $likeQuery = "%{$search}%";
 
                 $query
@@ -93,10 +102,54 @@ class CrossSetStudentSearchController extends Controller
                 if ($hasProgramColumn) {
                     $query->orWhere('program', 'like', $likeQuery);
                 }
+
+                if ($hasStudentIdNumberColumn) {
+                    $query->orWhere('student_id_number', 'like', $likeQuery);
+                }
+
+                if ($searchTerms->count() > 1) {
+                    $query->orWhere(function (Builder $nameQuery) use ($searchTerms): void {
+                        foreach ($searchTerms as $term) {
+                            $termLike = "%{$term}%";
+                            $nameQuery->where(function (Builder $segmentQuery) use ($termLike): void {
+                                $segmentQuery
+                                    ->where('first_name', 'like', $termLike)
+                                    ->orWhere('last_name', 'like', $termLike)
+                                    ->orWhere('name', 'like', $termLike);
+                            });
+                        }
+                    });
+                }
             });
         }
 
-        $students = $studentsQuery->get();
+        $students = $studentsQuery->get()
+            ->map(function (User $student) use ($userId): array {
+                $programSets = $student->programSets
+                    ->map(fn (ProgramSet $programSet): array => [
+                        'id' => $programSet->id,
+                        'name' => $programSet->name,
+                    ])
+                    ->values()
+                    ->all();
+
+                $isSelfManaged = $student->programSets->contains(
+                    fn (ProgramSet $programSet): bool => (int) $programSet->instructor_id === (int) $userId,
+                );
+
+                return [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'first_name' => $student->first_name,
+                    'last_name' => $student->last_name,
+                    'email' => $student->email,
+                    'program' => $student->program ?? null,
+                    'student_id_number' => $student->student_id_number ?? null,
+                    'programSets' => $programSets,
+                    'is_self_managed' => $isSelfManaged,
+                ];
+            })
+            ->values();
 
         return response()->json([
             'students' => $students,

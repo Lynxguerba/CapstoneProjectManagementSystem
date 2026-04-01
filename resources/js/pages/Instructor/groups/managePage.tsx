@@ -42,6 +42,28 @@ type CrossSetRequestRow = {
         first_name?: string | null;
         last_name?: string | null;
     } | null;
+    fromProgramSet?: {
+        id: number;
+        name?: string | null;
+        program?: string | null;
+        academicYear?: {
+            label?: string | null;
+        } | null;
+        academic_year?: {
+            label?: string | null;
+        } | null;
+    } | null;
+    from_program_set?: {
+        id: number;
+        name?: string | null;
+        program?: string | null;
+        academicYear?: {
+            label?: string | null;
+        } | null;
+        academic_year?: {
+            label?: string | null;
+        } | null;
+    } | null;
 };
 
 type CrossSetMemberGroupRow = {
@@ -81,7 +103,22 @@ const InstructorGroupsManage = ({
     const [selectedGroupId, setSelectedGroupId] = React.useState<number | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
     const [selectedEditGroupId, setSelectedEditGroupId] = React.useState<number | null>(null);
+    const [processingCrossSetRequestId, setProcessingCrossSetRequestId] = React.useState<number | null>(null);
     const itemsPerPage = 6;
+
+    React.useEffect(() => {
+        return () => {
+            if (typeof document !== 'undefined') {
+                document.body.style.overflow = '';
+            }
+        };
+    }, []);
+
+    const releaseBodyScroll = () => {
+        if (typeof document !== 'undefined') {
+            document.body.style.overflow = '';
+        }
+    };
 
     const filteredGroups = React.useMemo(() => {
         const query = searchTerm.trim().toLowerCase();
@@ -168,12 +205,28 @@ const InstructorGroupsManage = ({
     };
 
     const submitCrossSetAction = (requestId: number, action: 'approve' | 'reject') => {
+        if (processingCrossSetRequestId !== null) {
+            return;
+        }
+
         const actionRoute =
             action === 'approve'
                 ? instructorGroups.crossSetRequest.approve.url({ crossSetRequest: requestId })
                 : instructorGroups.crossSetRequest.reject.url({ crossSetRequest: requestId });
 
-        router.patch(actionRoute, {}, { preserveScroll: true });
+        setProcessingCrossSetRequestId(requestId);
+        router.patch(actionRoute, {}, {
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: () => {
+                router.reload({
+                    only: ['crossSetRequests', 'crossSetMemberGroups', 'groups'],
+                });
+            },
+            onFinish: () => {
+                setProcessingCrossSetRequestId(null);
+            },
+        });
     };
 
     return (
@@ -445,7 +498,7 @@ const InstructorGroupsManage = ({
                     <div className="flex items-center justify-between gap-2">
                         <div>
                             <p className="text-sm font-semibold text-slate-800">Incoming Cross-Set Requests</p>
-                            <p className="text-xs text-slate-500">Requests sent to you for cross-set group membership approval.</p>
+                            <p className="text-xs text-slate-500">Only requests from other instructors appear here for approval.</p>
                         </div>
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
                             {crossSetRequests.length} pending
@@ -454,7 +507,7 @@ const InstructorGroupsManage = ({
 
                     {crossSetRequests.length === 0 ? (
                         <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
-                            No incoming cross-set requests right now.
+                            No incoming requests from other instructors right now.
                         </div>
                     ) : (
                         <div className="mt-4 space-y-2">
@@ -463,6 +516,9 @@ const InstructorGroupsManage = ({
                                 const requesterName = resolvePersonName(crossSetRequest.requestedBy);
                                 const groupName = crossSetRequest.group?.name ? formatGroupName(crossSetRequest.group.name) : '—';
                                 const status = typeof crossSetRequest.status === 'string' ? crossSetRequest.status : 'pending';
+                                const sourceProgramSet = crossSetRequest.fromProgramSet ?? crossSetRequest.from_program_set;
+                                const sourceAcademicYear = sourceProgramSet?.academicYear?.label ?? sourceProgramSet?.academic_year?.label ?? '';
+                                const sourceProgramSetMeta = [sourceProgramSet?.program, sourceAcademicYear].filter(Boolean).join(' • ');
 
                                 return (
                                     <div
@@ -480,6 +536,14 @@ const InstructorGroupsManage = ({
                                             </p>
                                             <p className="text-xs text-slate-500">Group: {groupName}</p>
                                             <p className="text-xs text-slate-500">Requested by: {requesterName}</p>
+                                            <p className="text-xs text-slate-500">
+                                                Student from set:{' '}
+                                                {sourceProgramSet?.name
+                                                    ? sourceProgramSetMeta
+                                                        ? `${sourceProgramSet.name} (${sourceProgramSetMeta})`
+                                                        : sourceProgramSet.name
+                                                    : '—'}
+                                            </p>
                                         </div>
 
                                         <div className="flex flex-wrap items-center gap-2">
@@ -494,16 +558,18 @@ const InstructorGroupsManage = ({
                                                     <button
                                                         type="button"
                                                         onClick={() => submitCrossSetAction(crossSetRequest.id, 'approve')}
+                                                        disabled={processingCrossSetRequestId !== null}
                                                         className="rounded-md bg-emerald-600 px-3 py-1 text-[11px] font-semibold text-white transition hover:bg-emerald-700"
                                                     >
-                                                        Approve
+                                                        {processingCrossSetRequestId === crossSetRequest.id ? 'Processing...' : 'Approve'}
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={() => submitCrossSetAction(crossSetRequest.id, 'reject')}
+                                                        disabled={processingCrossSetRequestId !== null}
                                                         className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100"
                                                     >
-                                                        Reject
+                                                        {processingCrossSetRequestId === crossSetRequest.id ? 'Processing...' : 'Reject'}
                                                     </button>
                                                 </>
                                             ) : null}
@@ -584,11 +650,19 @@ const InstructorGroupsManage = ({
                 </div>
             </motion.section>
 
-            <CreateGroupModal open={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} programSets={availableProgramSets} />
+            <CreateGroupModal
+                open={isCreateModalOpen}
+                onClose={() => {
+                    releaseBodyScroll();
+                    setIsCreateModalOpen(false);
+                }}
+                programSets={availableProgramSets}
+            />
             <GroupDetailsModal
                 open={isDetailsModalOpen}
                 groupId={selectedGroupId}
                 onClose={() => {
+                    releaseBodyScroll();
                     setIsDetailsModalOpen(false);
                     setSelectedGroupId(null);
                 }}
@@ -597,6 +671,7 @@ const InstructorGroupsManage = ({
                 open={isEditModalOpen}
                 groupId={selectedEditGroupId}
                 onClose={() => {
+                    releaseBodyScroll();
                     setIsEditModalOpen(false);
                     setSelectedEditGroupId(null);
                 }}

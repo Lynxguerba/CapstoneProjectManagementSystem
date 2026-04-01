@@ -849,8 +849,12 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         'student:'.implode(',', $studentColumns),
                         'group:id,name',
                         'requestedBy:id,first_name,last_name',
+                        'fromProgramSet:id,name,program,academic_year_id',
+                        'fromProgramSet.academicYear:id,label',
                     ])
                     ->where('requested_to', $userId)
+                    ->where('to_program_set_id', $programSet->id)
+                    ->whereColumn('requested_by', '!=', 'requested_to')
                     ->where('status', 'pending')
                     ->latest()
                     ->get();

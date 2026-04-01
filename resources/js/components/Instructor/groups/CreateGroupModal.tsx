@@ -33,7 +33,16 @@ type CrossSetStudentOption = {
     id: number;
     first_name?: string | null;
     last_name?: string | null;
+    email?: string | null;
     programSets?: CrossSetProgramSet[];
+    program_sets?: CrossSetProgramSet[];
+    is_self_managed?: boolean;
+    isSelfManaged?: boolean;
+};
+
+type PendingCrossSetAction = {
+    student: CrossSetStudentOption;
+    action: 'direct_add' | 'request';
 };
 
 type SelectedMember = {
@@ -80,7 +89,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
     const [crossSetSearchResults, setCrossSetSearchResults] = React.useState<CrossSetStudentOption[]>([]);
     const [isCrossSetSearching, setIsCrossSetSearching] = React.useState(false);
     const [crossSetSearchError, setCrossSetSearchError] = React.useState('');
-    const [pendingCrossSetRequests, setPendingCrossSetRequests] = React.useState<CrossSetStudentOption[]>([]);
+    const [selectedCrossSetMembers, setSelectedCrossSetMembers] = React.useState<PendingCrossSetAction[]>([]);
 
     const groupForm = useForm<CreateGroupForm>({
         program_set_id: null,
@@ -107,7 +116,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
             setCrossSetSearchResults([]);
             setIsCrossSetSearching(false);
             setCrossSetSearchError('');
-            setPendingCrossSetRequests([]);
+            setSelectedCrossSetMembers([]);
             resetGroupForm();
             return;
         }
@@ -136,12 +145,11 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
             }
         };
 
-        const originalOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
         window.addEventListener('keydown', onKeyDown);
 
         return () => {
-            document.body.style.overflow = originalOverflow;
+            document.body.style.overflow = '';
             window.removeEventListener('keydown', onKeyDown);
         };
     }, [open, onClose, isGroupFormProcessing]);
@@ -159,7 +167,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
             setStudentError('');
             setAvailableStudents([]);
             setSelectedMembers([]);
-            setPendingCrossSetRequests([]);
+            setSelectedCrossSetMembers([]);
             setCrossSetSearchQuery('');
             setCrossSetSearchResults([]);
             setCrossSetSearchError('');
@@ -314,6 +322,22 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
         return combined || 'Unknown Student';
     };
 
+    const resolveCrossSetProgramSetName = (student: CrossSetStudentOption): string => {
+        const relatedProgramSets = Array.isArray(student.programSets)
+            ? student.programSets
+            : Array.isArray(student.program_sets)
+              ? student.program_sets
+              : [];
+
+        return relatedProgramSets[0]?.name ?? 'Unassigned Set';
+    };
+
+    const resolveCrossSetActionType = (student: CrossSetStudentOption): PendingCrossSetAction['action'] => {
+        const isSelfManaged = student.is_self_managed ?? student.isSelfManaged ?? false;
+
+        return isSelfManaged ? 'direct_add' : 'request';
+    };
+
     const filteredStudents = React.useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
         if (!query) {
@@ -344,18 +368,22 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
         setSearchQuery('');
     };
 
-    const handleStageCrossSetRequest = (student: CrossSetStudentOption) => {
-        setPendingCrossSetRequests((previous) => {
-            if (previous.some((candidate) => candidate.id === student.id)) {
+    const handleStageCrossSetAction = (student: CrossSetStudentOption) => {
+        const action = resolveCrossSetActionType(student);
+
+        setSelectedCrossSetMembers((previous) => {
+            if (previous.some((candidate) => candidate.student.id === student.id)) {
                 return previous;
             }
 
-            return [...previous, student];
+            return [...previous, { student, action }];
         });
+
+        setCrossSetSearchQuery('');
     };
 
     const handleRemoveCrossSetRequest = (studentId: number) => {
-        setPendingCrossSetRequests((previous) => previous.filter((student) => student.id !== studentId));
+        setSelectedCrossSetMembers((previous) => previous.filter((item) => item.student.id !== studentId));
     };
 
     const handleRemoveMember = (studentId: number) => {
@@ -394,14 +422,14 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
     };
 
     const submitCrossSetRequests = async (groupId: number): Promise<void> => {
-        if (pendingCrossSetRequests.length === 0) {
+        if (selectedCrossSetMembers.length === 0) {
             return;
         }
 
         const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
 
         await Promise.all(
-            pendingCrossSetRequests.map(async (student) => {
+            selectedCrossSetMembers.map(async ({ student }) => {
                 const response = await fetch(instructorGroups.crossSetRequest.store.url(), {
                     method: 'POST',
                     headers: {
@@ -454,11 +482,11 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                     try {
                         await submitCrossSetRequests(createdGroupId);
                     } catch {
-                        setCrossSetSearchError('Group created, but one or more cross-set requests could not be submitted.');
+                        setCrossSetSearchError('Group created, but one or more cross-set actions could not be completed.');
                     }
                 }
 
-                router.reload({ only: ['groups', 'crossSetRequests'] });
+                router.reload({ only: ['groups', 'crossSetRequests', 'crossSetMemberGroups'] });
                 onClose();
             },
         });
@@ -607,7 +635,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                 {isCrossSetSectionOpen ? (
                                     <div className="mt-3 space-y-3">
                                         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                                            These students require approval from their managing instructor before being added to the group.
+                                            Students from your own handled sets can be added directly. Students from other instructors require approval.
                                         </p>
 
                                         <div>
@@ -638,9 +666,11 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                                     <p className="px-4 py-3 text-sm text-slate-500">No students found.</p>
                                                 ) : (
                                                     crossSetSearchResults.map((student) => {
-                                                        const isAlreadyQueued = pendingCrossSetRequests.some((pending) => pending.id === student.id);
+                                                        const isAlreadyQueued = selectedCrossSetMembers.some((pending) => pending.student.id === student.id);
                                                         const displayName = resolveCrossSetStudentName(student);
-                                                        const programSetName = student.programSets?.[0]?.name ?? 'Unassigned Set';
+                                                        const programSetName = resolveCrossSetProgramSetName(student);
+                                                        const actionType = resolveCrossSetActionType(student);
+                                                        const actionLabel = actionType === 'direct_add' ? 'Add Member' : 'Request';
 
                                                         return (
                                                             <div
@@ -649,17 +679,18 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                                             >
                                                                 <div className="min-w-0">
                                                                     <p className="truncate text-sm font-medium text-slate-800">{displayName}</p>
+                                                                    {student.email ? <p className="truncate text-[11px] text-slate-500">{student.email}</p> : null}
                                                                     <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
                                                                         {programSetName}
                                                                     </span>
                                                                 </div>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => handleStageCrossSetRequest(student)}
+                                                                    onClick={() => handleStageCrossSetAction(student)}
                                                                     disabled={isAlreadyQueued || isGroupFormProcessing}
                                                                     className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
                                                                 >
-                                                                    {isAlreadyQueued ? 'Queued' : 'Request'}
+                                                                    {isAlreadyQueued ? 'Added' : actionLabel}
                                                                 </button>
                                                             </div>
                                                         );
@@ -667,40 +698,6 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                                 )}
                                             </div>
                                         ) : null}
-
-                                        <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-xs font-semibold text-slate-700">Pending cross-set requests</p>
-                                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                                                    {pendingCrossSetRequests.length} staged
-                                                </span>
-                                            </div>
-
-                                            {pendingCrossSetRequests.length === 0 ? (
-                                                <p className="text-xs text-slate-500">No students staged for cross-set approval.</p>
-                                            ) : (
-                                                pendingCrossSetRequests.map((student) => (
-                                                    <div
-                                                        key={student.id}
-                                                        className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-2.5 py-1.5"
-                                                    >
-                                                        <div>
-                                                            <p className="text-xs font-semibold text-slate-700">
-                                                                {resolveCrossSetStudentName(student)}
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleRemoveCrossSetRequest(student.id)}
-                                                            className="rounded-full border border-rose-200 px-2 py-0.5 text-[10px] font-semibold text-rose-600 transition hover:bg-rose-50"
-                                                            aria-label="Remove pending cross-set request"
-                                                        >
-                                                            ×
-                                                        </button>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
                                     </div>
                                 ) : null}
                             </div>
@@ -713,7 +710,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                     <p className="text-xs text-slate-500">Assign roles for the group.</p>
                                 </div>
                                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                                    {selectedMembers.length} selected
+                                    {selectedMembers.length + selectedCrossSetMembers.length} selected
                                 </span>
                             </div>
 
@@ -758,6 +755,37 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                                     Leader
                                                 </span>
                                             ) : null}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {selectedCrossSetMembers.map((item) => (
+                                    <div
+                                        key={`cross-set-${item.student.id}`}
+                                        className="flex flex-col gap-2 rounded-lg border border-sky-200 bg-sky-50/40 px-3 py-2 text-xs"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="font-semibold text-slate-800">{resolveCrossSetStudentName(item.student)}</p>
+                                                <p className="text-slate-500">{item.student.email ?? '—'}</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveCrossSetRequest(item.student.id)}
+                                                className="rounded-full border border-rose-200 px-2 py-0.5 text-[10px] font-semibold text-rose-600 transition hover:bg-rose-50"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+                                                {item.action === 'direct_add' ? 'Cross-Set Member' : 'Cross-Set Request'}
+                                            </span>
+                                            <span className="text-[10px] text-slate-500">
+                                                {item.action === 'direct_add'
+                                                    ? 'Will be added right after group creation.'
+                                                    : 'Will send approval request after group creation.'}
+                                            </span>
                                         </div>
                                     </div>
                                 ))}

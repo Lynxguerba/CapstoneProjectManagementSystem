@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateGroupMembersRequest;
 use App\Models\Group;
 use App\Models\GroupMember;
+use App\Models\ProgramSet;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
 
@@ -45,21 +47,40 @@ class UpdateGroupMembersController extends Controller
         $newMemberIds = $memberIds->diff($existingMemberIds)->values();
 
         if ($newMemberIds->isNotEmpty()) {
-            $enrolledNewMemberIds = $group->programSet
-                ? $group->programSet
-                    ->students()
-                    ->whereIn('users.id', $newMemberIds->all())
-                    ->pluck('users.id')
-                    ->unique()
-                    ->values()
-                : collect();
+            $managedProgramSetIds = ProgramSet::query()
+                ->where('instructor_id', $userId)
+                ->pluck('id')
+                ->unique()
+                ->values()
+                ->all();
+
+            if (count($managedProgramSetIds) === 0) {
+                $managedProgramSetIds = [$group->program_set_id];
+            }
+
+            $enrolledNewMemberIds = User::query()
+                ->whereIn('id', $newMemberIds->all())
+                ->whereHas('programSets', fn ($query) => $query->whereIn('program_sets.id', $managedProgramSetIds))
+                ->pluck('id')
+                ->unique()
+                ->values();
 
             if ($enrolledNewMemberIds->count() !== $newMemberIds->count()) {
                 throw ValidationException::withMessages([
-                    'members' => 'Only students enrolled in this program set can be added.',
+                    'members' => 'Only students enrolled in your handled program sets can be added.',
                 ]);
             }
         }
+
+        $enrolledInCurrentProgramSetIds = $group->programSet
+            ? $group->programSet
+                ->students()
+                ->whereIn('users.id', $memberIds->all())
+                ->pluck('users.id')
+                ->unique()
+                ->values()
+                ->all()
+            : [];
 
         $alreadyGroupedInSetIds = GroupMember::query()
             ->whereIn('student_id', $memberIds->all())
@@ -78,7 +99,10 @@ class UpdateGroupMembersController extends Controller
         $group->members()->sync(
             $members
                 ->mapWithKeys(fn (array $member): array => [
-                    $member['student_id'] => ['role' => $member['role']],
+                    $member['student_id'] => [
+                        'role' => $member['role'],
+                        'is_cross_set' => ! in_array($member['student_id'], $enrolledInCurrentProgramSetIds, true),
+                    ],
                 ])
                 ->all(),
         );
@@ -110,6 +134,13 @@ class UpdateGroupMembersController extends Controller
             ->where('group_id', $group->id)
             ->whereNotIn('student_id', $memberIds->all())
             ->delete();
+
+        $group->update([
+            'is_cross_set' => GroupMember::query()
+                ->where('group_id', $group->id)
+                ->where('is_cross_set', true)
+                ->exists(),
+        ]);
 
         return back()->with('success', 'Group updated successfully.');
     }

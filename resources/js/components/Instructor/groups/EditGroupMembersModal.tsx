@@ -45,7 +45,11 @@ type CrossSetStudentOption = {
     first_name?: string | null;
     last_name?: string | null;
     email?: string | null;
+    program?: string | null;
     programSets?: CrossSetProgramSet[];
+    program_sets?: CrossSetProgramSet[];
+    is_self_managed?: boolean;
+    isSelfManaged?: boolean;
 };
 
 type EditableMember = GroupMember & {
@@ -86,8 +90,8 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
     const [crossSetSearchResults, setCrossSetSearchResults] = React.useState<CrossSetStudentOption[]>([]);
     const [isCrossSetSearching, setIsCrossSetSearching] = React.useState(false);
     const [crossSetSearchError, setCrossSetSearchError] = React.useState('');
-    const [pendingCrossSetRequests, setPendingCrossSetRequests] = React.useState<CrossSetStudentOption[]>([]);
-    const [isSubmittingCrossSetRequests, setIsSubmittingCrossSetRequests] = React.useState(false);
+    const [requestedCrossSetStudentIds, setRequestedCrossSetStudentIds] = React.useState<number[]>([]);
+    const [submittingCrossSetStudentIds, setSubmittingCrossSetStudentIds] = React.useState<number[]>([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
     const [isDeletingGroup, setIsDeletingGroup] = React.useState(false);
 
@@ -101,6 +105,7 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
         setData: setEditFormData,
     } = editForm;
 
+    const isSubmittingCrossSetRequests = submittingCrossSetStudentIds.length > 0;
     const isBusy = isSavingMembers || isDeletingGroup || isSubmittingCrossSetRequests;
 
     const loadAvailableStudents = React.useCallback(async (programSetId: number, signal?: AbortSignal): Promise<StudentOption[]> => {
@@ -145,7 +150,8 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
             setCrossSetSearchResults([]);
             setIsCrossSetSearching(false);
             setCrossSetSearchError('');
-            setPendingCrossSetRequests([]);
+            setRequestedCrossSetStudentIds([]);
+            setSubmittingCrossSetStudentIds([]);
 
             if (!loadedGroup?.program_set_id) {
                 setAvailableStudents([]);
@@ -194,7 +200,8 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
             setCrossSetSearchResults([]);
             setIsCrossSetSearching(false);
             setCrossSetSearchError('');
-            setPendingCrossSetRequests([]);
+            setRequestedCrossSetStudentIds([]);
+            setSubmittingCrossSetStudentIds([]);
 
             try {
                 await hydrateGroupDetails(groupId, controller.signal);
@@ -230,12 +237,11 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
             }
         };
 
-        const originalOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
         window.addEventListener('keydown', onKeyDown);
 
         return () => {
-            document.body.style.overflow = originalOverflow;
+            document.body.style.overflow = '';
             window.removeEventListener('keydown', onKeyDown);
         };
     }, [open, onClose, isBusy]);
@@ -341,6 +347,22 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
         return combined || 'Unknown Student';
     };
 
+    const resolveCrossSetProgramSetName = React.useCallback((student: CrossSetStudentOption): string => {
+        const relatedProgramSets = Array.isArray(student.programSets)
+            ? student.programSets
+            : Array.isArray(student.program_sets)
+              ? student.program_sets
+              : [];
+
+        return relatedProgramSets[0]?.name ?? 'Unassigned Set';
+    }, []);
+
+    const resolveCrossSetActionType = React.useCallback((student: CrossSetStudentOption): 'direct_add' | 'request' => {
+        const isSelfManaged = student.is_self_managed ?? student.isSelfManaged ?? false;
+
+        return isSelfManaged ? 'direct_add' : 'request';
+    }, []);
+
     const toggleRemove = (memberId: number) => {
         setMembers((previous) => previous.map((member) => (member.id === memberId ? { ...member, isRemoved: !member.isRemoved } : member)));
     };
@@ -378,25 +400,6 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
         setMemberSearchQuery('');
     };
 
-    const handleStageCrossSetRequest = (student: CrossSetStudentOption) => {
-        const isAlreadyActiveMember = members.some((member) => member.id === student.id && !member.isRemoved);
-        if (isAlreadyActiveMember) {
-            return;
-        }
-
-        setPendingCrossSetRequests((previous) => {
-            if (previous.some((candidate) => candidate.id === student.id)) {
-                return previous;
-            }
-
-            return [...previous, student];
-        });
-    };
-
-    const handleRemoveCrossSetRequest = (studentId: number) => {
-        setPendingCrossSetRequests((previous) => previous.filter((student) => student.id !== studentId));
-    };
-
     const submitCrossSetRequests = async (targetGroupId: number, students: CrossSetStudentOption[]): Promise<void> => {
         if (students.length === 0) {
             return;
@@ -425,6 +428,63 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                 }
             }),
         );
+    };
+
+    const handleAddCrossSetMember = (student: CrossSetStudentOption) => {
+        setMembers((previous) => {
+            const existingMember = previous.find((member) => member.id === student.id);
+
+            if (existingMember) {
+                return previous.map((member) => (member.id === student.id ? { ...member, isRemoved: false } : member));
+            }
+
+            return [
+                ...previous,
+                {
+                    id: student.id,
+                    fullName: resolveCrossSetStudentName(student),
+                    email: student.email ?? undefined,
+                    program: student.program ?? null,
+                    role: 'Programmer',
+                    isRemoved: false,
+                },
+            ];
+        });
+
+        setCrossSetSearchQuery('');
+        setCrossSetSearchError('');
+    };
+
+    const handleRequestCrossSetMember = async (student: CrossSetStudentOption) => {
+        if (!groupId) {
+            return;
+        }
+
+        setSubmittingCrossSetStudentIds((previous) => {
+            if (previous.includes(student.id)) {
+                return previous;
+            }
+
+            return [...previous, student.id];
+        });
+
+        setCrossSetSearchError('');
+
+        try {
+            await submitCrossSetRequests(groupId, [student]);
+            setRequestedCrossSetStudentIds((previous) => {
+                if (previous.includes(student.id)) {
+                    return previous;
+                }
+
+                return [...previous, student.id];
+            });
+            setCrossSetSearchQuery('');
+        } catch {
+            setCrossSetSearchError('Unable to submit cross-set request right now.');
+        } finally {
+            setSubmittingCrossSetStudentIds((previous) => previous.filter((id) => id !== student.id));
+        }
     };
 
     const activeMembers = members.filter((member) => !member.isRemoved);
@@ -461,21 +521,26 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
 
     const crossSetSearchCandidates = React.useMemo(() => {
         const activeMemberIds = new Set(activeMembers.map((member) => member.id));
-        const pendingRequestIds = new Set(pendingCrossSetRequests.map((student) => student.id));
+        const requestedIds = new Set(requestedCrossSetStudentIds);
+        const processingIds = new Set(submittingCrossSetStudentIds);
 
         return crossSetSearchResults.map((student) => {
-            const programSetName = student.programSets?.[0]?.name ?? 'Unassigned Set';
-            const isAlreadyQueued = pendingRequestIds.has(student.id);
+            const programSetName = resolveCrossSetProgramSetName(student);
+            const actionType = resolveCrossSetActionType(student);
+            const isRequested = requestedIds.has(student.id);
+            const isRequesting = processingIds.has(student.id);
             const isAlreadyActiveMember = activeMemberIds.has(student.id);
 
             return {
                 student,
                 programSetName,
-                isAlreadyQueued,
+                actionType,
+                isRequested,
+                isRequesting,
                 isAlreadyActiveMember,
             };
         });
-    }, [activeMembers, crossSetSearchResults, pendingCrossSetRequests]);
+    }, [activeMembers, crossSetSearchResults, requestedCrossSetStudentIds, submittingCrossSetStudentIds, resolveCrossSetActionType, resolveCrossSetProgramSetName]);
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -486,31 +551,12 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
 
         setErrorMessage('');
         setCrossSetSearchError('');
-        const stagedCrossSetRequests = pendingCrossSetRequests;
 
         putEditForm(instructorGroups.members.update.url({ group: groupId }), {
             preserveScroll: true,
             onSuccess: async () => {
-                if (stagedCrossSetRequests.length === 0) {
-                    router.reload({ only: ['groups', 'crossSetRequests'] });
-                    onClose();
-                    return;
-                }
-
-                setIsSubmittingCrossSetRequests(true);
-
-                try {
-                    await submitCrossSetRequests(groupId, stagedCrossSetRequests);
-                    setPendingCrossSetRequests([]);
-                    router.reload({ only: ['groups', 'crossSetRequests'] });
-                    onClose();
-                } catch {
-                    const failureMessage = 'Members saved, but one or more cross-set requests could not be submitted.';
-                    setCrossSetSearchError(failureMessage);
-                    setErrorMessage(failureMessage);
-                } finally {
-                    setIsSubmittingCrossSetRequests(false);
-                }
+                router.reload({ only: ['groups', 'crossSetRequests', 'crossSetMemberGroups'] });
+                onClose();
             },
         });
     };
@@ -720,14 +766,14 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                                                             disabled={isBusy}
                                                             className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                                                         >
-                                                            <span>Request students from other sets</span>
+                                                            <span>Add students from other sets</span>
                                                             <ChevronDown className={`h-4 w-4 transition-transform ${isCrossSetSectionOpen ? 'rotate-180' : ''}`} />
                                                         </button>
 
                                                         {isCrossSetSectionOpen ? (
                                                             <div className="mt-3 space-y-3">
                                                                 <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
-                                                                    These students need approval from their handling instructor before joining this group.
+                                                                    Students from your own handled sets can be added directly. Students from other instructors require approval.
                                                                 </p>
 
                                                                 <div>
@@ -755,7 +801,8 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                                                                         ) : crossSetSearchCandidates.length === 0 ? (
                                                                             <p className="px-3 py-2 text-[11px] text-slate-500">No students found.</p>
                                                                         ) : (
-                                                                            crossSetSearchCandidates.map(({ student, programSetName, isAlreadyQueued, isAlreadyActiveMember }) => (
+                                                                            crossSetSearchCandidates.map(
+                                                                                ({ student, programSetName, actionType, isRequested, isRequesting, isAlreadyActiveMember }) => (
                                                                                 <div
                                                                                     key={student.id}
                                                                                     className="flex items-center justify-between border-b border-slate-100 px-3 py-2 last:border-b-0"
@@ -771,52 +818,33 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                                                                                     </div>
                                                                                     <button
                                                                                         type="button"
-                                                                                        onClick={() => handleStageCrossSetRequest(student)}
-                                                                                        disabled={isBusy || isAlreadyQueued || isAlreadyActiveMember}
+                                                                                        onClick={() => {
+                                                                                            if (actionType === 'direct_add') {
+                                                                                                handleAddCrossSetMember(student);
+                                                                                                return;
+                                                                                            }
+
+                                                                                            void handleRequestCrossSetMember(student);
+                                                                                        }}
+                                                                                        disabled={isBusy || isRequesting || isRequested || isAlreadyActiveMember}
                                                                                         className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
                                                                                     >
-                                                                                        {isAlreadyActiveMember ? 'Member' : isAlreadyQueued ? 'Queued' : 'Request'}
+                                                                                        {isAlreadyActiveMember
+                                                                                            ? 'Member'
+                                                                                            : isRequesting
+                                                                                              ? 'Processing...'
+                                                                                              : isRequested
+                                                                                                ? 'Requested'
+                                                                                              : actionType === 'direct_add'
+                                                                                                ? 'Add Member'
+                                                                                                : 'Request'}
                                                                                     </button>
                                                                                 </div>
-                                                                            ))
+                                                                            ),
+                                                                        )
                                                                         )}
                                                                     </div>
                                                                 ) : null}
-
-                                                                <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                                                    <div className="flex items-center justify-between">
-                                                                        <p className="text-[11px] font-semibold text-slate-700">Pending cross-set requests</p>
-                                                                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                                                                            {pendingCrossSetRequests.length} staged
-                                                                        </span>
-                                                                    </div>
-
-                                                                    {pendingCrossSetRequests.length === 0 ? (
-                                                                        <p className="text-[11px] text-slate-500">No students staged for cross-set approval.</p>
-                                                                    ) : (
-                                                                        pendingCrossSetRequests.map((student) => (
-                                                                            <div
-                                                                                key={student.id}
-                                                                                className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-2.5 py-1.5"
-                                                                            >
-                                                                                <div>
-                                                                                    <p className="text-[11px] font-semibold text-slate-700">
-                                                                                        {resolveCrossSetStudentName(student)}
-                                                                                    </p>
-                                                                                </div>
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => handleRemoveCrossSetRequest(student.id)}
-                                                                                    disabled={isBusy}
-                                                                                    className="rounded-full border border-rose-200 px-2 py-0.5 text-[10px] font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                                                                    aria-label="Remove pending cross-set request"
-                                                                                >
-                                                                                    ×
-                                                                                </button>
-                                                                            </div>
-                                                                        ))
-                                                                    )}
-                                                                </div>
                                                             </div>
                                                         ) : null}
                                                     </div>

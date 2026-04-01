@@ -79,28 +79,16 @@ class StoreCrossSetGroupRequestController extends Controller
             ]);
         }
 
-        $existingPendingRequest = CrossSetGroupRequest::query()
-            ->where('group_id', $group->id)
-            ->where('student_id', $student->id)
-            ->where('status', 'pending')
-            ->first();
-
-        if ($existingPendingRequest) {
-            return back()->with('success', 'Cross-set request is already pending approval.');
-        }
-
         if ($isHandledByCurrentInstructor) {
-            DB::transaction(function () use ($group, $student, $targetProgramSet, $targetInstructorId, $userId): void {
-                CrossSetGroupRequest::query()->create([
-                    'group_id' => $group->id,
-                    'student_id' => $student->id,
-                    'requested_by' => $userId,
-                    'requested_to' => $targetInstructorId,
-                    'from_program_set_id' => $group->program_set_id,
-                    'to_program_set_id' => $targetProgramSet->id,
-                    'status' => 'approved',
-                    'responded_at' => now(),
-                ]);
+            DB::transaction(function () use ($group, $student): void {
+                CrossSetGroupRequest::query()
+                    ->where('group_id', $group->id)
+                    ->where('student_id', $student->id)
+                    ->where('status', 'pending')
+                    ->update([
+                        'status' => 'approved',
+                        'responded_at' => now(),
+                    ]);
 
                 GroupMember::query()->updateOrCreate(
                     [
@@ -121,6 +109,16 @@ class StoreCrossSetGroupRequestController extends Controller
             });
 
             return back()->with('success', 'Student from your other handled set added to the group.');
+        }
+
+        $existingPendingRequest = CrossSetGroupRequest::query()
+            ->where('group_id', $group->id)
+            ->where('student_id', $student->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($existingPendingRequest) {
+            return back()->with('success', 'Cross-set request is already pending approval.');
         }
 
         CrossSetGroupRequest::query()->create([

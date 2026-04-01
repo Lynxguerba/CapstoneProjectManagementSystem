@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { CheckCircle2, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
+import { CheckCircle2, Download, FileSpreadsheet, Loader2, Upload, X } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -118,6 +118,7 @@ const BulkEnrollStudentsModal = ({
     const [selectedRowLines, setSelectedRowLines] = React.useState<number[]>([]);
     const [showReviewModal, setShowReviewModal] = React.useState(false);
     const [fileError, setFileError] = React.useState('');
+    const [isImportProgressModalAppearing, setIsImportProgressModalAppearing] = React.useState(false);
 
     const { data, setData, post, processing, errors, clearErrors, reset } = useForm<BulkEnrollForm>({
         program_set_id: programSetId,
@@ -236,6 +237,22 @@ const BulkEnrollStudentsModal = ({
             window.cancelAnimationFrame(animationFrame);
         };
     }, [showReviewModal]);
+
+    useEffect(() => {
+        if (!processing) {
+            setIsImportProgressModalAppearing(false);
+            return;
+        }
+
+        setIsImportProgressModalAppearing(false);
+        const animationFrame = window.requestAnimationFrame(() => {
+            setIsImportProgressModalAppearing(true);
+        });
+
+        return () => {
+            window.cancelAnimationFrame(animationFrame);
+        };
+    }, [processing]);
 
     const clearUploadState = () => {
         setFileName('');
@@ -630,8 +647,37 @@ const BulkEnrollStudentsModal = ({
                                     disabled={processing || selectedRowsCount === 0}
                                     className="rounded-lg bg-emerald-600 px-5 py-2 font-medium text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    {processing ? 'Enrolling...' : `Approve and Enroll (${selectedRowsCount})`}
+                                    {processing ? 'Importing...' : `Approve and Enroll (${selectedRowsCount})`}
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
+            {processing ? (
+                <div
+                    className={`fixed inset-0 z-[10000] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm transition-opacity duration-200 ${
+                        isImportProgressModalAppearing ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    role="status"
+                    aria-live="polite"
+                    aria-modal="true"
+                >
+                    <div
+                        className={`w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl transition-all duration-200 ${
+                            isImportProgressModalAppearing ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-95 opacity-0'
+                        }`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            </span>
+                            <div>
+                                <p className="text-base font-semibold text-slate-900">Importing CSV file</p>
+                                <p className="text-sm text-slate-600">
+                                    Please wait while the selected students are being enrolled.
+                                </p>
                             </div>
                         </div>
                     </div>
