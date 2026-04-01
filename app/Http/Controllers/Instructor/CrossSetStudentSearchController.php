@@ -23,10 +23,20 @@ class CrossSetStudentSearchController extends Controller
         }
 
         $search = trim((string) $request->input('q', ''));
+        $sourceProgramSetId = $request->filled('program_set_id') ? (int) $request->input('program_set_id') : null;
+        if ($sourceProgramSetId !== null && $sourceProgramSetId <= 0) {
+            $sourceProgramSetId = null;
+        }
+
         $managedProgramSetIds = ProgramSet::query()
             ->where('instructor_id', $userId)
             ->pluck('id')
             ->all();
+
+        if ($sourceProgramSetId !== null && ! in_array($sourceProgramSetId, $managedProgramSetIds, true)) {
+            abort(403);
+        }
+
         $hasProgramColumn = Schema::hasColumn('users', 'program');
 
         $studentsQuery = User::query()
@@ -37,15 +47,28 @@ class CrossSetStudentSearchController extends Controller
                         $roleQuery->where('slug', 'student');
                     });
             })
+            ->when($sourceProgramSetId !== null, function (Builder $query) use ($sourceProgramSetId): void {
+                $query
+                    ->whereDoesntHave('programSets', function (Builder $programSetQuery) use ($sourceProgramSetId): void {
+                        $programSetQuery->where('program_sets.id', $sourceProgramSetId);
+                    })
+                    ->whereHas('programSets', function (Builder $programSetQuery) use ($sourceProgramSetId): void {
+                        $programSetQuery->where('program_sets.id', '!=', $sourceProgramSetId);
+                    });
+            })
             ->when(
-                count($managedProgramSetIds) > 0,
+                $sourceProgramSetId === null && count($managedProgramSetIds) > 0,
                 fn (Builder $query) => $query->whereDoesntHave('programSets', function (Builder $programSetQuery) use ($managedProgramSetIds): void {
                     $programSetQuery->whereIn('program_sets.id', $managedProgramSetIds);
                 }),
             )
             ->with([
-                'programSets' => function ($query): void {
+                'programSets' => function ($query) use ($sourceProgramSetId): void {
                     $query->select('program_sets.id', 'program_sets.name');
+
+                    if ($sourceProgramSetId !== null) {
+                        $query->where('program_sets.id', '!=', $sourceProgramSetId);
+                    }
                 },
             ])
             ->orderBy('last_name')
