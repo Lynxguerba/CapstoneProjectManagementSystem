@@ -53,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return match ($response->getStatusCode()) {
+                403 => Inertia::render('Error/Forbidden')->toResponse($request)->setStatusCode(403),
                 404 => Inertia::render('Error/NotFound')->toResponse($request)->setStatusCode(404),
                 419 => Inertia::render('Error/PageExpired')->toResponse($request)->setStatusCode(419),
                 default => $response,

@@ -199,7 +199,6 @@ const InstructorStudentsManage = ({ programSet, availableStudents = [], enrolled
                         <button
                             type="button"
                             onClick={() => {
-                                console.log('Enroll Student button clicked');
                                 setIsEnrollModalOpen(true);
                             }}
                             className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-green-800 active:scale-95"
