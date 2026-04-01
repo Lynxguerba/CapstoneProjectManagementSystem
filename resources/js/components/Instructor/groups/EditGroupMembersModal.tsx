@@ -268,6 +268,14 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
             return;
         }
 
+        const sourceProgramSetId = group?.program_set_id ?? null;
+        if (sourceProgramSetId === null) {
+            setCrossSetSearchResults([]);
+            setCrossSetSearchError('Unable to determine the current group program set.');
+            setIsCrossSetSearching(false);
+            return;
+        }
+
         const controller = new AbortController();
         const timeoutId = window.setTimeout(async () => {
             setIsCrossSetSearching(true);
@@ -276,7 +284,10 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
             try {
                 const response = await fetch(
                     crossSetSearch.url({
-                        query: { q: query },
+                        query: {
+                            q: query,
+                            program_set_id: sourceProgramSetId,
+                        },
                     }),
                     {
                         headers: {
@@ -311,7 +322,7 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
             window.clearTimeout(timeoutId);
             controller.abort();
         };
-    }, [open, isCrossSetSectionOpen, crossSetSearchQuery]);
+    }, [open, isCrossSetSectionOpen, crossSetSearchQuery, group?.program_set_id]);
 
     const resolveStudentName = (student: StudentOption): string => {
         const fallbackName = typeof student.name === 'string' ? student.name.trim() : '';

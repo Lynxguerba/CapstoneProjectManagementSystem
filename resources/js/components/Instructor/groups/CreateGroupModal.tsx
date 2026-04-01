@@ -238,6 +238,13 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
             return;
         }
 
+        if (selectedProgramSetId === null) {
+            setCrossSetSearchResults([]);
+            setCrossSetSearchError('Select a program set first to search students from other sets.');
+            setIsCrossSetSearching(false);
+            return;
+        }
+
         const controller = new AbortController();
         const timeoutId = window.setTimeout(async () => {
             setIsCrossSetSearching(true);
@@ -246,7 +253,10 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
             try {
                 const response = await fetch(
                     crossSetSearch.url({
-                        query: { q: query },
+                        query: {
+                            q: query,
+                            program_set_id: selectedProgramSetId,
+                        },
                     }),
                     {
                         headers: {
@@ -279,7 +289,7 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
             window.clearTimeout(timeoutId);
             controller.abort();
         };
-    }, [open, crossSetSearchQuery]);
+    }, [open, crossSetSearchQuery, selectedProgramSetId]);
 
     const selectedProgramSet = programSets.find((set) => set.id === selectedProgramSetId);
     const programSetLabel = selectedProgramSet
@@ -607,8 +617,9 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                                 <input
                                                     value={crossSetSearchQuery}
                                                     onChange={(event) => setCrossSetSearchQuery(event.target.value)}
+                                                    disabled={!hasSelectedProgramSet || isGroupFormProcessing}
                                                     placeholder="Search by name or email..."
-                                                    className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                                    className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-10 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                                                 />
                                             </div>
                                         </div>
