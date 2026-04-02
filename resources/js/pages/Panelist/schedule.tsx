@@ -1,215 +1,279 @@
+import ScheduleGroupDetailsModal, { type ScheduleGroupDetails } from '@/components/Panelist/ScheduleGroupDetailsModal';
+import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Calendar, Filter, Search } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import { Calendar, ChevronRight, Search, ShieldCheck } from 'lucide-react';
+import React from 'react';
 import PanelLayout from './_layout';
 
-type DefenseType = 'Outline' | 'Pre-Deployment' | 'Final';
+type PhaseKey = 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5';
 
 type ScheduleRow = {
     id: string;
+    phase: PhaseKey;
     date: string;
     time: string;
-    group: string;
-    projectTitle: string;
     room: string;
-    defenseType: DefenseType;
-    coPanelists: string;
-    documentReviewStatus: 'Not Reviewed' | 'In Progress' | 'Reviewed';
-    evaluationStatus: 'Pending' | 'Submitted' | 'Locked';
+    defenseType: string;
+    projectTitle: string;
+    defenseStatus: 'Pending' | 'In Progress' | 'Completed' | string;
+    evaluationStatus: 'Pending' | 'Submitted' | 'Locked' | string;
+    group: ScheduleGroupDetails;
+};
+
+type PanelistScheduleProps = {
+    rows?: ScheduleRow[];
+};
+
+const phaseTabs: { key: PhaseKey; label: string; shortLabel: string }[] = [
+    { key: 'phase1', label: 'Phase 1: Concept', shortLabel: 'Phase 1' },
+    { key: 'phase2', label: 'Phase 2: Outline', shortLabel: 'Phase 2' },
+    { key: 'phase3', label: 'Phase 3: Pre-Deployment', shortLabel: 'Phase 3' },
+    { key: 'phase4', label: 'Phase 4: Deployment', shortLabel: 'Phase 4' },
+    { key: 'phase5', label: 'Phase 5: Final', shortLabel: 'Phase 5' },
+];
+
+const evaluationBadgeClass = (status: string): string => {
+    if (status === 'Submitted' || status === 'Locked') {
+        return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+    }
+
+    return 'border-amber-200 bg-amber-100 text-amber-700';
+};
+
+const defenseBadgeClass = (status: string): string => {
+    if (status === 'Completed') {
+        return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+    }
+
+    if (status === 'In Progress') {
+        return 'border-indigo-200 bg-indigo-100 text-indigo-700';
+    }
+
+    return 'border-amber-200 bg-amber-100 text-amber-700';
 };
 
 const PanelistSchedule = () => {
-    const [query, setQuery] = useState('');
-    const [type, setType] = useState<'all' | DefenseType>('all');
+    const { props } = usePage<PanelistScheduleProps>();
+    const scheduleRows = React.useMemo(() => props.rows ?? [], [props.rows]);
+    const [query, setQuery] = React.useState('');
+    const [activePhase, setActivePhase] = React.useState<PhaseKey>('phase1');
+    const [selectedGroupDetails, setSelectedGroupDetails] = React.useState<ScheduleGroupDetails | null>(null);
 
-    const schedule: ScheduleRow[] = [
-        {
-            id: 's1',
-            date: '2026-03-21',
-            time: '9:00 AM',
-            group: 'Group Alpha',
-            projectTitle: 'Smart Attendance via QR',
-            room: 'Room 101',
-            defenseType: 'Outline',
-            coPanelists: 'Prof. A. Reyes, Prof. J. Ramos',
-            documentReviewStatus: 'In Progress',
-            evaluationStatus: 'Pending',
-        },
-        {
-            id: 's2',
-            date: '2026-03-28',
-            time: '1:00 PM',
-            group: 'Group Delta',
-            projectTitle: 'Library Asset Tracking',
-            room: 'Room 202',
-            defenseType: 'Final',
-            coPanelists: 'Prof. L. Cruz, Prof. A. Reyes',
-            documentReviewStatus: 'Reviewed',
-            evaluationStatus: 'Submitted',
-        },
-        {
-            id: 's3',
-            date: '2026-04-03',
-            time: '10:30 AM',
-            group: 'Group Beta',
-            projectTitle: 'Clinic Queue Management',
-            room: 'Online',
-            defenseType: 'Pre-Deployment',
-            coPanelists: 'Prof. J. Ramos, Prof. L. Cruz',
-            documentReviewStatus: 'Not Reviewed',
-            evaluationStatus: 'Pending',
-        },
-    ];
+    const phaseCounts = React.useMemo(() => {
+        const counts: Record<PhaseKey, number> = {
+            phase1: 0,
+            phase2: 0,
+            phase3: 0,
+            phase4: 0,
+            phase5: 0,
+        };
 
-    const filtered = useMemo(() => {
-        const q = query.trim().toLowerCase();
-
-        return schedule.filter((s) => {
-            const matchesType = type === 'all' || s.defenseType === type;
-            const matchesQuery =
-                !q ||
-                s.group.toLowerCase().includes(q) ||
-                s.projectTitle.toLowerCase().includes(q) ||
-                s.room.toLowerCase().includes(q) ||
-                s.coPanelists.toLowerCase().includes(q);
-
-            return matchesType && matchesQuery;
+        scheduleRows.forEach((row) => {
+            counts[row.phase] += 1;
         });
-    }, [schedule, query, type]);
 
-    const badge = (value: string): string => {
-        if (value === 'Reviewed' || value === 'Submitted' || value === 'Locked') {
-            return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        return counts;
+    }, [scheduleRows]);
+
+    const activePhaseRows = React.useMemo(() => {
+        return scheduleRows.filter((row) => row.phase === activePhase);
+    }, [activePhase, scheduleRows]);
+
+    const filteredRows = React.useMemo(() => {
+        const normalizedQuery = query.trim().toLowerCase();
+        if (!normalizedQuery) {
+            return activePhaseRows;
         }
 
-        if (value === 'In Progress') {
-            return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+        return activePhaseRows.filter((row) => {
+            const searchable = [
+                row.group.groupName,
+                row.projectTitle,
+                row.room,
+                row.group.programSetName ?? '',
+                row.group.adviser?.name ?? '',
+                ...row.group.coPanelists.map((panelist) => panelist.name ?? ''),
+            ]
+                .join(' ')
+                .toLowerCase();
+
+            return searchable.includes(normalizedQuery);
+        });
+    }, [activePhaseRows, query]);
+
+    const activePhaseLabel = React.useMemo(() => {
+        return phaseTabs.find((tab) => tab.key === activePhase)?.label ?? 'Phase';
+    }, [activePhase]);
+
+    const defenseStatus = React.useMemo(() => {
+        if (filteredRows.some((row) => row.defenseStatus === 'In Progress')) {
+            return 'In Progress';
         }
 
-        return 'bg-amber-50 text-amber-700 border-amber-200';
-    };
+        if (filteredRows.length > 0 && filteredRows.every((row) => row.defenseStatus === 'Completed')) {
+            return 'Completed';
+        }
+
+        return 'Pending';
+    }, [filteredRows]);
 
     return (
-        <PanelLayout title="Defense Schedule" subtitle="Your assigned defenses (UI only)">
-            <div className="space-y-6">
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-                >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <PanelLayout title="Defense Schedule" subtitle="Track assigned groups by phase">
+            <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="space-y-5">
+                <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+                    <Link href="/panelist/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <span className="font-semibold text-slate-800" aria-current="page">
+                        Defense Schedule
+                    </span>
+                </nav>
+
+                <div className="flex gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                    {phaseTabs.map((tab) => {
+                        const isActive = activePhase === tab.key;
+
+                        return (
+                            <button
+                                key={tab.key}
+                                type="button"
+                                onClick={() => setActivePhase(tab.key)}
+                                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all ${
+                                    isActive
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                        : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                                }`}
+                            >
+                                <span>{tab.shortLabel}</span>
+                                <span
+                                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                        isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                                    }`}
+                                >
+                                    {phaseCounts[tab.key]}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="relative">
+                        <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            value={query}
+                            onChange={(event) => setQuery(event.target.value)}
+                            placeholder={`Search ${activePhaseLabel.toLowerCase()} groups...`}
+                            className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:w-72"
+                        />
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => setQuery('')}
+                        className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                    >
+                        Clear Search
+                    </button>
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-2">
-                            <Calendar size={18} className="text-slate-700" />
+                            <Calendar className="h-4 w-4 text-emerald-600" />
                             <div>
-                                <div className="text-lg font-semibold text-slate-900">Schedule List View</div>
-                                <div className="text-sm text-slate-500">Calendar view can be added later; this is UI-only list.</div>
+                                <p className="text-sm font-semibold text-slate-900">{activePhaseLabel} Group List</p>
+                                <p className="text-xs text-slate-500">List of groups assigned to you for this phase.</p>
                             </div>
                         </div>
 
-                        <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
-                            <div className="relative w-full sm:w-72">
-                                <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500" />
-                                <input
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    placeholder="Search group, room, panelist..."
-                                    className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                                />
-                            </div>
-
-                            <div className="relative w-full sm:w-52">
-                                <Filter size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500" />
-                                <select
-                                    value={type}
-                                    onChange={(e) => setType(e.target.value as typeof type)}
-                                    className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                                >
-                                    <option value="all">All types</option>
-                                    <option value="Outline">Outline</option>
-                                    <option value="Pre-Deployment">Pre-Deployment</option>
-                                    <option value="Final">Final</option>
-                                </select>
-                            </div>
+                        <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                            <span className="text-[11px] font-semibold text-slate-500 uppercase">Defense Status</span>
+                            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${defenseBadgeClass(defenseStatus)}`}>
+                                {defenseStatus}
+                            </span>
                         </div>
                     </div>
 
-                    <div className="mt-6 overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-200 text-slate-600">
-                                    <th className="py-3 text-left font-semibold">Date & Time</th>
-                                    <th className="py-3 text-left font-semibold">Group</th>
-                                    <th className="py-3 text-left font-semibold">Project</th>
-                                    <th className="py-3 text-left font-semibold">Room</th>
-                                    <th className="py-3 text-left font-semibold">Type</th>
-                                    <th className="py-3 text-left font-semibold">Co-Panel</th>
-                                    <th className="py-3 text-left font-semibold">Docs</th>
-                                    <th className="py-3 text-left font-semibold">Evaluation</th>
-                                    <th className="py-3 text-right font-semibold">Actions</th>
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[880px] text-left text-xs">
+                            <thead className="border-b border-slate-200 bg-white text-[11px] font-bold tracking-wide text-slate-500 uppercase">
+                                <tr>
+                                    <th className="px-5 py-3">Date & Time</th>
+                                    <th className="px-5 py-3">Group</th>
+                                    <th className="px-5 py-3">Project</th>
+                                    <th className="px-5 py-3">Room</th>
+                                    <th className="px-5 py-3">Type</th>
+                                    <th className="px-5 py-3">Evaluation</th>
+                                    <th className="px-5 py-3 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filtered.map((row) => (
-                                    <tr key={row.id} className="hover:bg-slate-50">
-                                        <td className="py-3 whitespace-nowrap text-slate-700">
-                                            {row.date} • {row.time}
-                                        </td>
-                                        <td className="py-3 font-medium whitespace-nowrap text-slate-900">{row.group}</td>
-                                        <td className="min-w-[220px] py-3 text-slate-700">{row.projectTitle}</td>
-                                        <td className="py-3 text-slate-700">{row.room}</td>
-                                        <td className="py-3 whitespace-nowrap text-slate-700">{row.defenseType}</td>
-                                        <td className="min-w-[220px] py-3 text-slate-700">{row.coPanelists}</td>
-                                        <td className="py-3">
-                                            <span
-                                                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${badge(row.documentReviewStatus)}`}
-                                            >
-                                                {row.documentReviewStatus}
-                                            </span>
-                                        </td>
-                                        <td className="py-3">
-                                            <span
-                                                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${badge(row.evaluationStatus)}`}
-                                            >
-                                                {row.evaluationStatus}
-                                            </span>
-                                        </td>
-                                        <td className="py-3">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <a
-                                                    href="/panelist/group-details"
-                                                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50"
-                                                >
-                                                    Details
-                                                </a>
-                                                <a
-                                                    href="/panelist/documents"
-                                                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50"
-                                                >
-                                                    Review docs
-                                                </a>
-                                                <a
-                                                    href="/panelist/evaluation"
-                                                    className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-700 px-3 py-2 text-xs font-semibold text-white hover:shadow"
-                                                >
-                                                    Evaluate
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-
-                                {filtered.length === 0 ? (
+                                {filteredRows.length === 0 ? (
                                     <tr>
-                                        <td colSpan={9} className="py-10 text-center text-slate-600">
-                                            No schedule items match.
+                                        <td colSpan={7} className="px-5 py-10 text-center text-xs text-slate-500">
+                                            No schedule items found for this phase.
                                         </td>
                                     </tr>
-                                ) : null}
+                                ) : (
+                                    filteredRows.map((row) => (
+                                        <tr key={row.id} className="transition-colors hover:bg-emerald-50/30">
+                                            <td className="px-5 py-3.5 text-slate-700">
+                                                {row.date} · {row.time}
+                                            </td>
+                                            <td className="px-5 py-3.5">
+                                                <p className="font-semibold text-slate-800">{row.group.groupName}</p>
+                                                <p className="text-[10px] text-slate-500">{row.group.programSetName ?? 'Program set'}</p>
+                                            </td>
+                                            <td className="min-w-[220px] px-5 py-3.5 text-slate-700">{row.projectTitle}</td>
+                                            <td className="px-5 py-3.5 text-slate-700">{row.room}</td>
+                                            <td className="px-5 py-3.5 text-slate-700">{row.defenseType}</td>
+                                            <td className="px-5 py-3.5">
+                                                <span
+                                                    className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${evaluationBadgeClass(row.evaluationStatus)}`}
+                                                >
+                                                    {row.evaluationStatus}
+                                                </span>
+                                            </td>
+                                            <td className="px-5 py-3.5 text-right">
+                                                <div className="inline-flex gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedGroupDetails(row.group)}
+                                                        className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                                                    >
+                                                        Details
+                                                    </button>
+                                                    <Link
+                                                        href={`/panelist/live-defense?group=${row.group.id}`}
+                                                        className="inline-flex items-center rounded-md bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                                                    >
+                                                        Evaluate
+                                                    </Link>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
-                </motion.section>
-            </div>
+                </div>
+
+                <p className="text-center text-xs text-slate-500">
+                    Showing <span className="font-semibold text-slate-800">{filteredRows.length}</span> group
+                    {filteredRows.length === 1 ? '' : 's'} in {activePhaseLabel}.
+                </p>
+
+                <ScheduleGroupDetailsModal
+                    open={selectedGroupDetails !== null}
+                    onClose={() => setSelectedGroupDetails(null)}
+                    group={selectedGroupDetails}
+                />
+            </motion.section>
         </PanelLayout>
     );
 };

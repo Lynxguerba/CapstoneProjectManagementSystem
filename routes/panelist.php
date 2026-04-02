@@ -3,6 +3,8 @@
 use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
 use App\Http\Controllers\Panelist\PanelistDashboardController;
+use App\Http\Controllers\Panelist\PanelistLiveDefenseController;
+use App\Http\Controllers\Panelist\PanelistScheduleController;
 use App\Http\Controllers\Panelist\UpdatePanelistAvailabilityController;
 use App\Http\Controllers\Panelist\UpdatePanelistProgramUtilitiesController;
 use App\Models\Group;
@@ -47,7 +49,13 @@ Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function
                 && Schema::hasTable('group_panelists')
             ) {
                 $groupsQuery = Group::query()
-                    ->with(['programSet.academicYear', 'leader', 'panelAssignments.panelist'])
+                    ->with([
+                        'programSet.academicYear',
+                        'leader',
+                        'members',
+                        'adviserAssignment.adviser',
+                        'panelAssignments.panelist',
+                    ])
                     ->whereHas('panelAssignments', fn ($query) => $query->where('panelist_id', $panelistId))
                     ->withCount('members')
                     ->orderByDesc('updated_at');
@@ -60,6 +68,34 @@ Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function
                         $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
                         $leaderName = $resolveUserName($group->leader);
                         $currentAssignment = $group->panelAssignments->firstWhere('panelist_id', $panelistId);
+                        $adviser = $group->adviserAssignment?->adviser;
+                        $adviserName = $resolveUserName($adviser);
+                        $students = collect()
+                            ->when(
+                                $group->leader !== null,
+                                fn ($collection) => $collection->push([
+                                    'id' => $group->leader?->id,
+                                    'name' => $leaderName !== '' ? $leaderName : null,
+                                    'email' => $group->leader?->email ?? null,
+                                    'role' => 'Leader',
+                                ]),
+                            )
+                            ->merge(
+                                $group->members
+                                    ->map(function (User $member) use ($resolveUserName): array {
+                                        $memberName = $resolveUserName($member);
+
+                                        return [
+                                            'id' => $member->id,
+                                            'name' => $memberName !== '' ? $memberName : null,
+                                            'email' => $member->email ?? null,
+                                            'role' => 'Member',
+                                        ];
+                                    })
+                            )
+                            ->unique('id')
+                            ->values()
+                            ->all();
                         $panelists = $group->panelAssignments
                             ->sortBy('panel_slot')
                             ->map(function (GroupPanelist $assignment) use ($resolveUserName): array {
@@ -88,6 +124,12 @@ Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function
                             'members_count' => $group->members_count ?? 0,
                             'panel_role' => $currentAssignment?->role ?? 'member',
                             'panel_slot' => $currentAssignment?->panel_slot,
+                            'students' => $students,
+                            'adviser' => $adviser !== null ? [
+                                'id' => $adviser->id,
+                                'name' => $adviserName !== '' ? $adviserName : null,
+                                'email' => $adviser->email ?? null,
+                            ] : null,
                             'panelists' => $panelists,
                         ];
                     })
@@ -300,9 +342,8 @@ Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function
     Route::get('/group-details', function () {
         return Inertia::render('Panelist/group-details');
     })->name('panelist.group-details');
-    Route::get('/schedule', function () {
-        return Inertia::render('Panelist/schedule');
-    })->name('panelist.schedule');
+    Route::get('/schedule', PanelistScheduleController::class)->name('panelist.schedule');
+    Route::get('/live-defense', PanelistLiveDefenseController::class)->name('panelist.live-defense');
     Route::get('/documents', function () {
         return Inertia::render('Panelist/documents/document-list');
     })->name('panelist.documents');

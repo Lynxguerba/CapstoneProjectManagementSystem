@@ -1,3 +1,4 @@
+import GroupStudentsAdviserModal from '@/components/Panelist/GroupStudentsAdviserModal';
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Calendar, ChevronRight, GraduationCap, LayoutGrid, List, Search, Settings, SlidersHorizontal, User, Users } from 'lucide-react';
@@ -20,6 +21,19 @@ type AssignedPanelist = {
     role?: PanelRole | null;
 };
 
+type GroupStudent = {
+    id?: number | null;
+    name?: string | null;
+    email?: string | null;
+    role?: string | null;
+};
+
+type GroupAdviser = {
+    id?: number | null;
+    name?: string | null;
+    email?: string | null;
+} | null;
+
 type AssignedGroupRow = {
     id: number;
     name: string;
@@ -31,6 +45,8 @@ type AssignedGroupRow = {
     members_count?: number;
     panel_role?: PanelRole | null;
     panel_slot?: number | null;
+    students?: GroupStudent[];
+    adviser?: GroupAdviser;
     panelists?: AssignedPanelist[];
 };
 
@@ -124,10 +140,11 @@ const PanelistAssignedGroups = () => {
     const isAvailable = utilities?.is_available === true;
 
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [viewMode, setViewMode] = React.useState<'card' | 'list'>('card');
+    const [viewMode, setViewMode] = React.useState<'card' | 'list'>('list');
     const [statusFilter, setStatusFilter] = React.useState<'all' | 'chairman' | 'member'>('all');
     const [selectedProgramSet, setSelectedProgramSet] = React.useState('All');
     const [currentPage, setCurrentPage] = React.useState(1);
+    const [selectedGroupForModal, setSelectedGroupForModal] = React.useState<AssignedGroupRow | null>(null);
     const itemsPerPage = 6;
 
     const currentAcademicYear = academicYears.find((year) => year.is_current)?.label ?? academicYears[0]?.label ?? 'All';
@@ -568,14 +585,15 @@ const PanelistAssignedGroups = () => {
                                             </p>
                                         </div>
 
-                                        <div className="mt-4 flex gap-2">
-                                            <Link
-                                                href={`/panelist/group-details?group=${group.id}`}
+                                    <div className="mt-4 flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedGroupForModal(group)}
                                                 className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
                                             >
                                                 <Users className="h-3 w-3" />
                                                 View
-                                            </Link>
+                                            </button>
                                             <Link
                                                 href="/panelist/documents"
                                                 className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
@@ -628,13 +646,14 @@ const PanelistAssignedGroups = () => {
                                             <td className="px-6 py-3.5 text-slate-600">{groupYear}</td>
                                             <td className="px-6 py-3.5 text-right">
                                                 <div className="inline-flex gap-2">
-                                                    <Link
-                                                        href={`/panelist/group-details?group=${group.id}`}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedGroupForModal(group)}
                                                         className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
                                                     >
                                                         <Users className="h-3 w-3" />
                                                         View
-                                                    </Link>
+                                                    </button>
                                                     <Link
                                                         href="/panelist/documents"
                                                         className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
@@ -705,6 +724,12 @@ const PanelistAssignedGroups = () => {
                         </div>
                     </div>
                 )}
+
+                <GroupStudentsAdviserModal
+                    open={selectedGroupForModal !== null}
+                    onClose={() => setSelectedGroupForModal(null)}
+                    group={selectedGroupForModal}
+                />
             </motion.section>
         </PanelLayout>
     );
