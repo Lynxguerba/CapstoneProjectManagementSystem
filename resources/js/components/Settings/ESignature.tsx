@@ -581,7 +581,7 @@ const ESignature = ({
                 <button
                     type="button"
                     onClick={() => setShowESignatureModal(true)}
-                    className="mt-4 w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-800"
+                    className="mt-4 w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-800"
                 >
                     E-Sign
                 </button>
