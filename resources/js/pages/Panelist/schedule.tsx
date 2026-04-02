@@ -1,7 +1,8 @@
 import ScheduleGroupDetailsModal, { type ScheduleGroupDetails } from '@/components/Panelist/ScheduleGroupDetailsModal';
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Calendar, ChevronRight, Search, ShieldCheck } from 'lucide-react';
+import { Calendar, ChevronRight, Flag, Lightbulb, ListTree, PackageCheck, Rocket, Search, ShieldCheck } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import React from 'react';
 import PanelLayout from './_layout';
 
@@ -24,12 +25,12 @@ type PanelistScheduleProps = {
     rows?: ScheduleRow[];
 };
 
-const phaseTabs: { key: PhaseKey; label: string; shortLabel: string }[] = [
-    { key: 'phase1', label: 'Phase 1: Concept', shortLabel: 'Phase 1' },
-    { key: 'phase2', label: 'Phase 2: Outline', shortLabel: 'Phase 2' },
-    { key: 'phase3', label: 'Phase 3: Pre-Deployment', shortLabel: 'Phase 3' },
-    { key: 'phase4', label: 'Phase 4: Deployment', shortLabel: 'Phase 4' },
-    { key: 'phase5', label: 'Phase 5: Final', shortLabel: 'Phase 5' },
+const phaseTabs: { key: PhaseKey; label: string; icon: LucideIcon }[] = [
+    { key: 'phase1', label: 'Phase 1: Concept Papers', icon: Lightbulb },
+    { key: 'phase2', label: 'Phase 2: Outline', icon: ListTree },
+    { key: 'phase3', label: 'Phase 3: Pre-Deployment', icon: PackageCheck },
+    { key: 'phase4', label: 'Phase 4: Deployment', icon: Rocket },
+    { key: 'phase5', label: 'Phase 5: Finals', icon: Flag },
 ];
 
 const evaluationBadgeClass = (status: string): string => {
@@ -58,22 +59,6 @@ const PanelistSchedule = () => {
     const [query, setQuery] = React.useState('');
     const [activePhase, setActivePhase] = React.useState<PhaseKey>('phase1');
     const [selectedGroupDetails, setSelectedGroupDetails] = React.useState<ScheduleGroupDetails | null>(null);
-
-    const phaseCounts = React.useMemo(() => {
-        const counts: Record<PhaseKey, number> = {
-            phase1: 0,
-            phase2: 0,
-            phase3: 0,
-            phase4: 0,
-            phase5: 0,
-        };
-
-        scheduleRows.forEach((row) => {
-            counts[row.phase] += 1;
-        });
-
-        return counts;
-    }, [scheduleRows]);
 
     const activePhaseRows = React.useMemo(() => {
         return scheduleRows.filter((row) => row.phase === activePhase);
@@ -133,6 +118,7 @@ const PanelistSchedule = () => {
                 <div className="flex gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
                     {phaseTabs.map((tab) => {
                         const isActive = activePhase === tab.key;
+                        const PhaseIcon = tab.icon;
 
                         return (
                             <button
@@ -145,14 +131,8 @@ const PanelistSchedule = () => {
                                         : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                                 }`}
                             >
-                                <span>{tab.shortLabel}</span>
-                                <span
-                                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                        isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
-                                    }`}
-                                >
-                                    {phaseCounts[tab.key]}
-                                </span>
+                                <PhaseIcon className={`h-3.5 w-3.5 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
+                                <span>{tab.label}</span>
                             </button>
                         );
                     })}

@@ -217,64 +217,53 @@ const PanelistLiveDefense = () => {
                 </div>
 
                 <div className="grid gap-5 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-emerald-600" />
-                            <h3 className="text-sm font-semibold text-slate-800">Participants</h3>
+                            <MessageSquareText className="h-4 w-4 text-emerald-600" />
+                            <h3 className="text-sm font-semibold text-slate-800">Panelist Comments</h3>
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">
+                            Comments here are visible in the live defense stream for students, adviser, and panelists.
+                        </p>
+
+                        <div className="mt-4 flex-1 space-y-2 overflow-auto pr-1">
+                            {liveComments.length === 0 ? (
+                                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-xs text-slate-500">No live comments yet.</div>
+                            ) : (
+                                liveComments.map((comment) => (
+                                    <div key={comment.id} className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className="text-xs font-semibold text-slate-800">{comment.author}</p>
+                                            <span
+                                                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${commentRoleBadgeClass(comment.authorRole)}`}
+                                            >
+                                                {comment.authorRole}
+                                            </span>
+                                            <span className="text-[11px] text-slate-500">{comment.createdAt}</span>
+                                        </div>
+                                        <p className="mt-1 text-xs text-slate-700">{comment.message}</p>
+                                    </div>
+                                ))
+                            )}
                         </div>
 
-                        <div className="mt-4 space-y-4">
-                            <div>
-                                <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Students</p>
-                                <div className="mt-2 space-y-2">
-                                    {students.length === 0 ? (
-                                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                                            No students assigned yet.
-                                        </div>
-                                    ) : (
-                                        students.map((student) => (
-                                            <div key={student.id} className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
-                                                <p className="text-xs font-semibold text-slate-800">{student.name}</p>
-                                                <p className="text-[11px] text-slate-500">
-                                                    {student.role}
-                                                    {student.email ? ` · ${student.email}` : ''}
-                                                </p>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-
-                            <div>
-                                <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Adviser</p>
-                                <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
-                                    <p className="text-xs font-semibold text-slate-800">{adviser?.name ?? 'No adviser assigned'}</p>
-                                    <p className="text-[11px] text-slate-500">
-                                        {adviser?.role ?? 'Adviser'}
-                                        {adviser?.email ? ` · ${adviser.email}` : ''}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Panelists</p>
-                                <div className="mt-2 space-y-2">
-                                    {panelists.length === 0 ? (
-                                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                                            No panelists assigned yet.
-                                        </div>
-                                    ) : (
-                                        panelists.map((panelist) => (
-                                            <div key={panelist.id} className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
-                                                <p className="text-xs font-semibold text-slate-800">{panelist.name}</p>
-                                                <p className="text-[11px] text-slate-500">
-                                                    {panelist.role}
-                                                    {panelist.email ? ` · ${panelist.email}` : ''}
-                                                </p>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
+                        <div className="mt-4 space-y-2">
+                            <textarea
+                                value={commentInput}
+                                onChange={(event) => setCommentInput(event.target.value)}
+                                placeholder="Type your panel comment..."
+                                rows={3}
+                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                            />
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={handleSubmitComment}
+                                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                                >
+                                    <ShieldCheck className="h-3.5 w-3.5" />
+                                    Send Comment
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -302,53 +291,82 @@ const PanelistLiveDefense = () => {
                     </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div className="flex items-center gap-2">
-                        <MessageSquareText className="h-4 w-4 text-emerald-600" />
-                        <h3 className="text-sm font-semibold text-slate-800">Panelist Comments</h3>
-                    </div>
-                    <p className="mt-1 text-xs text-slate-500">Comments here are visible in the live defense stream for students, adviser, and panelists.</p>
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-emerald-600" />
+                            <h3 className="text-sm font-semibold text-slate-800">Participants</h3>
+                        </div>
 
-                    <div className="mt-4 max-h-72 space-y-2 overflow-auto pr-1">
-                        {liveComments.length === 0 ? (
-                            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-xs text-slate-500">
-                                No live comments yet.
-                            </div>
-                        ) : (
-                            liveComments.map((comment) => (
-                                <div key={comment.id} className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <p className="text-xs font-semibold text-slate-800">{comment.author}</p>
-                                        <span
-                                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${commentRoleBadgeClass(comment.authorRole)}`}
-                                        >
-                                            {comment.authorRole}
-                                        </span>
-                                        <span className="text-[11px] text-slate-500">{comment.createdAt}</span>
-                                    </div>
-                                    <p className="mt-1 text-xs text-slate-700">{comment.message}</p>
+                        <div className="mt-4 grid gap-4 md:grid-cols-2">
+                            <div>
+                                <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Students</p>
+                                <div className="mt-2 space-y-2">
+                                    {students.length === 0 ? (
+                                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                                            No students assigned yet.
+                                        </div>
+                                    ) : (
+                                        students.map((student) => (
+                                            <div key={student.id} className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
+                                                <p className="text-xs font-semibold text-slate-800">{student.name}</p>
+                                                <p className="text-[11px] text-slate-500">
+                                                    {student.role}
+                                                    {student.email ? ` · ${student.email}` : ''}
+                                                </p>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
-                            ))
-                        )}
+
+                                <div className="mt-4">
+                                    <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Adviser</p>
+                                    <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
+                                        <p className="text-xs font-semibold text-slate-800">{adviser?.name ?? 'No adviser assigned'}</p>
+                                        <p className="text-[11px] text-slate-500">
+                                            {adviser?.role ?? 'Adviser'}
+                                            {adviser?.email ? ` · ${adviser.email}` : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Panelists</p>
+                                <div className="mt-2 space-y-2">
+                                    {panelists.length === 0 ? (
+                                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                                            No panelists assigned yet.
+                                        </div>
+                                    ) : (
+                                        panelists.map((panelist) => (
+                                            <div key={panelist.id} className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
+                                                <p className="text-xs font-semibold text-slate-800">{panelist.name}</p>
+                                                <p className="text-[11px] text-slate-500">
+                                                    {panelist.role}
+                                                    {panelist.email ? ` · ${panelist.email}` : ''}
+                                                </p>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="mt-4 space-y-2">
-                        <textarea
-                            value={commentInput}
-                            onChange={(event) => setCommentInput(event.target.value)}
-                            placeholder="Type your panel comment..."
-                            rows={3}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                        />
-                        <div className="flex justify-end">
-                            <button
-                                type="button"
-                                onClick={handleSubmitComment}
-                                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                            >
-                                <ShieldCheck className="h-3.5 w-3.5" />
-                                Send Comment
-                            </button>
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Evaluation Grading</p>
+                        <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3">
+                            <p className="text-xs text-slate-600">Open scoring form for this defense panel session.</p>
+                            <div className="mt-3">
+                                <Link
+                                    href={`/panelist/evaluation?group=${group.id}`}
+                                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                                >
+                                    <ShieldCheck className="h-3.5 w-3.5" />
+                                    Evaluate
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </div>
