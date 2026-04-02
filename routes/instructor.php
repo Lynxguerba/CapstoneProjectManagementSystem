@@ -6,6 +6,7 @@ use App\Http\Controllers\AssignGroupAdviserController;
 use App\Http\Controllers\AssignGroupPanelistController;
 use App\Http\Controllers\BulkEnrollStudentsController;
 use App\Http\Controllers\DestroyDefenseRoomController;
+use App\Http\Controllers\DestroyDefenseScheduleController;
 use App\Http\Controllers\DestroyDocumentRequirementController;
 use App\Http\Controllers\DestroyGroupController;
 use App\Http\Controllers\DownloadDocumentSubmissionController;
@@ -3084,6 +3085,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
     Route::patch('/defense-rooms/{room}', UpdateDefenseRoomController::class)->name('instructor.defense-rooms.update');
     Route::delete('/defense-rooms/{room}', DestroyDefenseRoomController::class)->name('instructor.defense-rooms.destroy');
     Route::post('/defense-schedules', UpsertDefenseScheduleController::class)->name('instructor.defense-schedules.upsert');
+    Route::delete('/defense-schedules/{schedule}', DestroyDefenseScheduleController::class)->name('instructor.defense-schedules.destroy');
     Route::patch('/defense-schedules/{schedule}/status', UpdateDefenseScheduleStatusController::class)
         ->name('instructor.defense-schedules.status');
     Route::get('/titles', function () {

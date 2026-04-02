@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { ChevronRight, Search } from 'lucide-react';
 import React from 'react';
+import RemoveScheduleModal from '../../../components/Instructor/scheduling/RemoveScheduleModal';
 import ScheduleDefenseForm from '../../../components/Instructor/scheduling/ScheduleDefenseModal';
 import defenseSchedules from '../../../routes/instructor/defense-schedules';
 import InstructorLayout from '../_layout';
@@ -147,6 +148,8 @@ const ScheduleManagerPage = () => {
 
     const [searchTerm, setSearchTerm] = React.useState('');
     const [stageFilter, setStageFilter] = React.useState('All');
+    const [scheduleToRemove, setScheduleToRemove] = React.useState<ScheduleRow | null>(null);
+    const [isRemovingSchedule, setIsRemovingSchedule] = React.useState(false);
 
     const filteredSchedules = React.useMemo(() => {
         const query = searchTerm.trim().toLowerCase();
@@ -205,6 +208,36 @@ const ScheduleManagerPage = () => {
 
     const updateScheduleStatus = (schedule: ScheduleRow, status: string) => {
         router.patch(defenseSchedules.status.url({ schedule: schedule.id }), { status }, { preserveScroll: true });
+    };
+
+    const openRemoveModal = (schedule: ScheduleRow) => {
+        setScheduleToRemove(schedule);
+    };
+
+    const closeRemoveModal = () => {
+        if (isRemovingSchedule) {
+            return;
+        }
+
+        setScheduleToRemove(null);
+    };
+
+    const confirmRemoveSchedule = () => {
+        if (!scheduleToRemove || isRemovingSchedule) {
+            return;
+        }
+
+        setIsRemovingSchedule(true);
+
+        router.delete(defenseSchedules.destroy.url({ schedule: scheduleToRemove.id }), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setScheduleToRemove(null);
+            },
+            onFinish: () => {
+                setIsRemovingSchedule(false);
+            },
+        });
     };
 
     return (
@@ -284,6 +317,7 @@ const ScheduleManagerPage = () => {
                                         <th className="px-4 py-3">Room</th>
                                         <th className="px-4 py-3">Status</th>
                                         <th className="px-4 py-3">Managed By</th>
+                                        <th className="px-4 py-3 text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -331,6 +365,19 @@ const ScheduleManagerPage = () => {
                                                     </select>
                                                 </td>
                                                 <td className="px-4 py-3 text-slate-600">{managerName}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            openRemoveModal(schedule);
+                                                        }}
+                                                        disabled={!canManage || isRemovingSchedule}
+                                                        className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </td>
                                             </tr>
                                         );
                                     })}
@@ -344,6 +391,16 @@ const ScheduleManagerPage = () => {
                     </div>
                 </div>
             </section>
+            <RemoveScheduleModal
+                open={scheduleToRemove !== null}
+                processing={isRemovingSchedule}
+                groupName={scheduleToRemove?.group_name ?? null}
+                scheduledDate={formatDateLabel(scheduleToRemove?.scheduled_date) || null}
+                stage={scheduleToRemove?.stage ?? null}
+                timeRange={formatTimeRange(scheduleToRemove?.start_time, scheduleToRemove?.end_time) || null}
+                onClose={closeRemoveModal}
+                onConfirm={confirmRemoveSchedule}
+            />
         </InstructorLayout>
     );
 };

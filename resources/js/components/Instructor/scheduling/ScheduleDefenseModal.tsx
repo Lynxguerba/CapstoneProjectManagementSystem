@@ -1,5 +1,6 @@
 import { useForm } from '@inertiajs/react';
-import { Calendar, CalendarCheck, Clock, DoorOpen, FileText, Search } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AlertCircle, Calendar, CalendarCheck, CheckCircle2, Clock, DoorOpen, FileText, Search, X } from 'lucide-react';
 import React from 'react';
 import defenseSchedules from '../../../routes/instructor/defense-schedules';
 
@@ -90,6 +91,7 @@ const ScheduleDefenseForm = ({
     });
 
     const [errorMessage, setErrorMessage] = React.useState('');
+    const [successMessage, setSuccessMessage] = React.useState('');
     const [groupSearch, setGroupSearch] = React.useState('');
     const [programSetFilter, setProgramSetFilter] = React.useState('');
     const resolvedDefaultStage = React.useMemo(() => {
@@ -167,6 +169,11 @@ const ScheduleDefenseForm = ({
 
     const showFallbackGroup = Boolean(!selectedGroup && initialSchedule?.group_id && initialSchedule?.group_name);
 
+    const dismissNotification = React.useCallback(() => {
+        setErrorMessage('');
+        setSuccessMessage('');
+    }, []);
+
     React.useEffect(() => {
         if (initialSchedule) {
             form.setData({
@@ -194,6 +201,7 @@ const ScheduleDefenseForm = ({
 
         form.clearErrors();
         setErrorMessage('');
+        setSuccessMessage('');
         setGroupSearch('');
         setProgramSetFilter('');
     }, [initialSchedule, defaultDate, defaultRoomId, resolvedDefaultStage]);
@@ -234,12 +242,25 @@ const ScheduleDefenseForm = ({
         }
     }, [programSetFilter, groups, form]);
 
+    React.useEffect(() => {
+        if (!errorMessage && !successMessage) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            dismissNotification();
+        }, 4500);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [dismissNotification, errorMessage, successMessage]);
+
     const submitForm = () => {
         if (readOnly) {
             return;
         }
 
         setErrorMessage('');
+        setSuccessMessage('');
 
         form.post(defenseSchedules.upsert.url(), {
             preserveScroll: true,
@@ -253,11 +274,11 @@ const ScheduleDefenseForm = ({
                     errors.stage ||
                     errors.notes;
 
-                if (firstError) {
-                    setErrorMessage(firstError);
-                }
+                setErrorMessage(firstError ?? 'Unable to save defense schedule right now.');
             },
             onSuccess: () => {
+                setSuccessMessage(initialSchedule ? 'Schedule updated.' : 'Schedule saved.');
+
                 if (onSubmitted) {
                     onSubmitted();
                 }
@@ -267,9 +288,96 @@ const ScheduleDefenseForm = ({
 
     const submitLabel = initialSchedule ? 'Update Schedule' : 'Save Schedule';
     const isDisabled = readOnly || form.processing;
+    const notification = React.useMemo(() => {
+        if (errorMessage) {
+            return {
+                tone: 'error' as const,
+                title: 'Unable to Save Schedule',
+                message: errorMessage,
+            };
+        }
+
+        if (successMessage) {
+            return {
+                tone: 'success' as const,
+                title: 'Schedule Saved',
+                message: successMessage,
+            };
+        }
+
+        return null;
+    }, [errorMessage, successMessage]);
 
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <AnimatePresence initial={false}>
+                {notification ? (
+                    <motion.div
+                        initial={{ opacity: 0, y: -16, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -12, scale: 0.98 }}
+                        transition={{ duration: 0.22, ease: 'easeOut' }}
+                        className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-3 sm:top-4 sm:justify-end sm:px-6"
+                    >
+                        <div
+                            role="alert"
+                            className={`pointer-events-auto w-full max-w-[30rem] overflow-hidden rounded-2xl border px-4 py-3 shadow-xl ring-1 ring-black/5 sm:w-fit sm:min-w-[22rem] ${
+                                notification.tone === 'error'
+                                    ? 'border-rose-200 bg-gradient-to-r from-rose-50 to-red-50'
+                                    : 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-50'
+                            }`}
+                        >
+                            <div className="flex items-start gap-3">
+                                <span
+                                    className={`mt-0.5 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl ${
+                                        notification.tone === 'error' ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
+                                    }`}
+                                >
+                                    {notification.tone === 'error' ? (
+                                        <AlertCircle className="h-4 w-4" />
+                                    ) : (
+                                        <CheckCircle2 className="h-4 w-4" />
+                                    )}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                    <p className={`text-xs font-bold ${notification.tone === 'error' ? 'text-rose-700' : 'text-emerald-700'}`}>
+                                        {notification.title}
+                                    </p>
+                                    <p className={`mt-1 text-xs font-medium ${notification.tone === 'error' ? 'text-rose-700/90' : 'text-emerald-700/90'}`}>
+                                        {notification.message}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={dismissNotification}
+                                    className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border transition ${
+                                        notification.tone === 'error'
+                                            ? 'border-rose-200 text-rose-500 hover:bg-rose-100'
+                                            : 'border-emerald-200 text-emerald-500 hover:bg-emerald-100'
+                                    }`}
+                                    aria-label="Dismiss notification"
+                                >
+                                    <X className="h-3.5 w-3.5" />
+                                </button>
+                            </div>
+                            <div
+                                className={`mt-3 h-1 w-full overflow-hidden rounded-full ${
+                                    notification.tone === 'error' ? 'bg-rose-100' : 'bg-emerald-100'
+                                }`}
+                            >
+                                <motion.div
+                                    key={`${notification.tone}-${notification.message}`}
+                                    initial={{ width: '100%' }}
+                                    animate={{ width: '0%' }}
+                                    transition={{ duration: 4.5, ease: 'linear' }}
+                                    className={`h-full ${notification.tone === 'error' ? 'bg-rose-400' : 'bg-emerald-500'}`}
+                                />
+                            </div>
+                        </div>
+                    </motion.div>
+                ) : null}
+            </AnimatePresence>
+
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-slate-700" />
@@ -295,10 +403,6 @@ const ScheduleDefenseForm = ({
                 <p className="mt-2 text-xs text-slate-500">
                     This schedule is managed by another instructor. You can view the details, but editing is disabled.
                 </p>
-            ) : null}
-
-            {errorMessage ? (
-                <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">{errorMessage}</div>
             ) : null}
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
