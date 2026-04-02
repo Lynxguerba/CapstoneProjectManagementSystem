@@ -7,10 +7,14 @@ use App\Http\Controllers\Student\StoreStudentConceptSubmissionController;
 use App\Http\Controllers\Student\StudentConceptController;
 use App\Http\Controllers\Student\StudentDashboardController;
 use App\Http\Controllers\Student\StudentGroupController;
+use App\Http\Controllers\Student\StudentLiveDefenseController;
 use App\Http\Controllers\Student\StudentTitleRepositoryController;
 use App\Http\Controllers\Student\UpdateStudentConceptSubmissionController;
 use App\Models\AcademicYear;
 use App\Models\AdviserProgramUtility;
+use App\Models\DefenseSchedule;
+use App\Models\DocumentRequirement;
+use App\Models\DocumentSubmission;
 use App\Models\Group;
 use App\Models\GroupAdviserRequest;
 use App\Models\User;
@@ -274,8 +278,367 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
         return Inertia::render('Student/documents');
     })->name('student.documents');
     Route::get('/schedule', function () {
-        return Inertia::render('Student/schedule');
+        $studentId = Auth::guard('web')->id();
+
+        $groupSummary = null;
+        $adviserSummary = null;
+        $panelists = [];
+        $schedules = [];
+        $conceptReadiness = null;
+
+        $resolveUserName = static function (?User $user): string {
+            if (! $user) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $fullName = $firstName !== '' || $lastName !== ''
+                ? trim($firstName.' '.$lastName)
+                : (is_string($user->name) ? $user->name : '');
+
+            return $fullName;
+        };
+
+        $resolveRequirementStatus = static function (DocumentRequirement $requirement, ?DocumentSubmission $submission): string {
+            if (! $submission instanceof DocumentSubmission) {
+                return 'Missing';
+            }
+
+            if ($submission->status === 'Approved') {
+                return 'Approved';
+            }
+
+            $requirementType = strtolower(trim((string) ($requirement->requirement_type ?? '')));
+
+            if ($submission->status === 'Submitted' && str_contains($requirementType, 'recommendation')) {
+                return 'Approved';
+            }
+
+            if ($submission->status === 'Revision Required' || $submission->adviser_status === 'Revision Required') {
+                return 'Revise';
+            }
+
+            return 'For Review';
+        };
+
+        try {
+            if (class_exists(Group::class) && Schema::hasTable('groups') && $studentId !== null) {
+                $hasGroupMembersTable = Schema::hasTable('group_members');
+
+                $group = Group::query()
+                    ->with([
+                        'programSet.academicYear',
+                        'adviserAssignment.adviser:id,name,first_name,last_name,email',
+                        'panelAssignments.panelist:id,name,first_name,last_name,email',
+                    ])
+                    ->where(function (Builder $query) use ($studentId, $hasGroupMembersTable): void {
+                        $query->where('leader_id', $studentId);
+
+                        if ($hasGroupMembersTable) {
+                            $query->orWhereHas('members', function (Builder $memberQuery) use ($studentId): void {
+                                $memberQuery->where('users.id', $studentId);
+                            });
+                        }
+                    })
+                    ->first();
+
+                if ($group instanceof Group) {
+                    $programSet = $group->programSet;
+                    $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
+                    $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+
+                    $groupSummary = [
+                        'id' => $group->id,
+                        'name' => $group->name,
+                        'program_set_name' => $programSet?->name ?: $fallbackName,
+                        'program' => $programSet?->program,
+                        'school_year' => $schoolYear,
+                    ];
+
+                    $adviserUser = $group->adviserAssignment?->adviser;
+                    if ($adviserUser instanceof User) {
+                        $adviserName = $resolveUserName($adviserUser);
+
+                        $adviserSummary = [
+                            'id' => $adviserUser->id,
+                            'name' => $adviserName !== '' ? $adviserName : null,
+                            'email' => $adviserUser->email,
+                        ];
+                    }
+
+                    $panelists = $group->panelAssignments
+                        ->sortBy('panel_slot')
+                        ->map(function (\App\Models\GroupPanelist $assignment) use ($resolveUserName): array {
+                            $panelist = $assignment->panelist;
+                            $panelistName = $resolveUserName($panelist);
+
+                            return [
+                                'id' => $panelist?->id,
+                                'name' => $panelistName !== '' ? $panelistName : null,
+                                'slot' => $assignment->panel_slot,
+                                'email' => $panelist?->email,
+                            ];
+                        })
+                        ->values()
+                        ->all();
+
+                    try {
+                        if (class_exists(DefenseSchedule::class) && Schema::hasTable('defense_schedules')) {
+                            $schedules = DefenseSchedule::query()
+                                ->with('room:id,name,capacity,is_active,notes')
+                                ->where('group_id', $group->id)
+                                ->orderBy('scheduled_date')
+                                ->orderBy('start_time')
+                                ->get()
+                                ->map(function (DefenseSchedule $schedule) use ($groupSummary, $panelists): array {
+                                    return [
+                                        'id' => $schedule->id,
+                                        'group_id' => $groupSummary['id'],
+                                        'group_name' => $groupSummary['name'],
+                                        'program_set_name' => $groupSummary['program_set_name'],
+                                        'program' => $groupSummary['program'],
+                                        'school_year' => $groupSummary['school_year'],
+                                        'stage' => $schedule->stage,
+                                        'status' => $schedule->status,
+                                        'scheduled_date' => $schedule->scheduled_date?->format('Y-m-d'),
+                                        'start_time' => $schedule->start_time,
+                                        'end_time' => $schedule->end_time,
+                                        'notes' => $schedule->notes,
+                                        'room' => $schedule->room
+                                            ? [
+                                                'id' => $schedule->room->id,
+                                                'name' => $schedule->room->name,
+                                                'capacity' => $schedule->room->capacity,
+                                                'is_active' => $schedule->room->is_active,
+                                            ]
+                                            : null,
+                                        'panelists' => $panelists,
+                                    ];
+                                })
+                                ->values()
+                                ->all();
+                        }
+                    } catch (\Throwable $e) {
+                        $schedules = [];
+                    }
+
+                    try {
+                        if (
+                            class_exists(DocumentRequirement::class)
+                            && class_exists(DocumentSubmission::class)
+                            && Schema::hasTable('document_requirements')
+                            && Schema::hasTable('document_submissions')
+                        ) {
+                            $groupSchoolYear = trim((string) ($schoolYear ?? ''));
+
+                            $requirements = DocumentRequirement::query()
+                                ->with('academicYear')
+                                ->where('stage', 'Concept')
+                                ->orderBy('id')
+                                ->get(['id', 'requirement_type', 'academic_year_id']);
+
+                            $applicableRequirements = $requirements
+                                ->filter(static function (DocumentRequirement $requirement) use ($groupSchoolYear): bool {
+                                    $requirementSchoolYear = trim((string) ($requirement->academicYear?->label ?? ''));
+
+                                    if ($requirementSchoolYear === '') {
+                                        return true;
+                                    }
+
+                                    if ($groupSchoolYear === '') {
+                                        return false;
+                                    }
+
+                                    return $groupSchoolYear === $requirementSchoolYear;
+                                })
+                                ->values();
+
+                            if ($applicableRequirements->isEmpty()) {
+                                $conceptReadiness = [
+                                    'status' => 'Approved',
+                                    'approved' => true,
+                                    'requirements' => [],
+                                    'latest_submitted_at' => null,
+                                ];
+                            } else {
+                                $latestSubmissionsByRequirement = DocumentSubmission::query()
+                                    ->where('group_id', $group->id)
+                                    ->whereIn('document_requirement_id', $applicableRequirements->pluck('id')->all())
+                                    ->orderByDesc('created_at')
+                                    ->orderByDesc('id')
+                                    ->get([
+                                        'id',
+                                        'document_requirement_id',
+                                        'file_name',
+                                        'status',
+                                        'adviser_status',
+                                        'created_at',
+                                    ])
+                                    ->unique('document_requirement_id')
+                                    ->keyBy('document_requirement_id');
+
+                                $requirementRows = $applicableRequirements->map(
+                                    static function (DocumentRequirement $requirement) use ($latestSubmissionsByRequirement, $resolveRequirementStatus): array {
+                                        /** @var DocumentSubmission|null $submission */
+                                        $submission = $latestSubmissionsByRequirement->get($requirement->id);
+                                        $requirementType = (string) ($requirement->requirement_type ?? '');
+                                        $status = $resolveRequirementStatus(
+                                            $requirement,
+                                            $submission instanceof DocumentSubmission ? $submission : null
+                                        );
+
+                                        return [
+                                            'id' => $requirement->id,
+                                            'requirement_type' => $requirementType,
+                                            'is_recommendation' => str_contains(strtolower($requirementType), 'recommendation'),
+                                            'status' => $status,
+                                            'submission' => $submission instanceof DocumentSubmission
+                                                ? [
+                                                    'id' => $submission->id,
+                                                    'file_name' => $submission->file_name,
+                                                    'status' => $submission->status,
+                                                    'adviser_status' => $submission->adviser_status,
+                                                    'submitted_at' => $submission->created_at?->format('Y-m-d H:i'),
+                                                ]
+                                                : null,
+                                        ];
+                                    }
+                                );
+
+                                $hasMissingRequirement = $requirementRows->contains(fn (array $row): bool => $row['status'] === 'Missing');
+                                $hasRevisionRequirement = $requirementRows->contains(fn (array $row): bool => $row['status'] === 'Revise');
+                                $allRequirementsApproved = $requirementRows->isNotEmpty()
+                                    && $requirementRows->every(fn (array $row): bool => $row['status'] === 'Approved');
+
+                                if ($hasMissingRequirement) {
+                                    $overallStatus = 'Missing';
+                                } elseif ($hasRevisionRequirement) {
+                                    $overallStatus = 'Revise';
+                                } elseif ($allRequirementsApproved) {
+                                    $overallStatus = 'Approved';
+                                } else {
+                                    $overallStatus = 'For Review';
+                                }
+
+                                $latestSubmission = $latestSubmissionsByRequirement
+                                    ->filter(fn ($submission): bool => $submission instanceof DocumentSubmission)
+                                    ->sortByDesc(fn (DocumentSubmission $submission): int => $submission->created_at?->timestamp ?? 0)
+                                    ->first();
+
+                                $conceptReadiness = [
+                                    'status' => $overallStatus,
+                                    'approved' => $allRequirementsApproved,
+                                    'requirements' => $requirementRows->values()->all(),
+                                    'latest_submitted_at' => $latestSubmission instanceof DocumentSubmission
+                                        ? $latestSubmission->created_at?->format('Y-m-d H:i')
+                                        : null,
+                                ];
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        $conceptReadiness = null;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            $groupSummary = null;
+            $adviserSummary = null;
+            $panelists = [];
+            $schedules = [];
+            $conceptReadiness = null;
+        }
+
+        return Inertia::render('Student/schedule', [
+            'group' => $groupSummary,
+            'adviser' => $adviserSummary,
+            'panelists' => $panelists,
+            'schedules' => $schedules,
+            'conceptReadiness' => $conceptReadiness,
+        ]);
     })->name('student.schedule');
+    Route::get('/browse-schedules', function () {
+        $schedules = [];
+
+        $resolveUserName = static function (?User $user): string {
+            if (! $user) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $fullName = $firstName !== '' || $lastName !== ''
+                ? trim($firstName.' '.$lastName)
+                : (is_string($user->name) ? $user->name : '');
+
+            return $fullName;
+        };
+
+        try {
+            if (class_exists(DefenseSchedule::class) && Schema::hasTable('defense_schedules')) {
+                $schedules = DefenseSchedule::query()
+                    ->with(['group.programSet.academicYear', 'group.panelAssignments.panelist', 'room'])
+                    ->orderBy('scheduled_date')
+                    ->orderBy('start_time')
+                    ->get()
+                    ->map(function (DefenseSchedule $schedule) use ($resolveUserName): array {
+                        $group = $schedule->group;
+                        $programSet = $group?->programSet;
+                        $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
+                        $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+                        $panelists = $group?->panelAssignments
+                            ? $group->panelAssignments
+                                ->sortBy('panel_slot')
+                                ->map(function (\App\Models\GroupPanelist $assignment) use ($resolveUserName): array {
+                                    $panelist = $assignment->panelist;
+                                    $panelistName = $resolveUserName($panelist);
+
+                                    return [
+                                        'id' => $panelist?->id,
+                                        'name' => $panelistName !== '' ? $panelistName : null,
+                                        'slot' => $assignment->panel_slot,
+                                    ];
+                                })
+                                ->values()
+                                ->all()
+                            : [];
+
+                        return [
+                            'id' => $schedule->id,
+                            'group_id' => $group?->id,
+                            'group_name' => $group?->name,
+                            'program_set_name' => $programSet?->name ?: $fallbackName,
+                            'program' => $programSet?->program,
+                            'school_year' => $schoolYear,
+                            'stage' => $schedule->stage,
+                            'status' => $schedule->status,
+                            'scheduled_date' => $schedule->scheduled_date?->format('Y-m-d'),
+                            'start_time' => $schedule->start_time,
+                            'end_time' => $schedule->end_time,
+                            'notes' => $schedule->notes,
+                            'room' => $schedule->room
+                                ? [
+                                    'id' => $schedule->room->id,
+                                    'name' => $schedule->room->name,
+                                    'capacity' => $schedule->room->capacity,
+                                    'is_active' => $schedule->room->is_active,
+                                ]
+                                : null,
+                            'panelists' => $panelists,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $schedules = [];
+        }
+
+        return Inertia::render('Student/browse-schedules', [
+            'schedules' => $schedules,
+        ]);
+    })->name('student.browse-schedules');
+    Route::get('/live-defense', StudentLiveDefenseController::class)->name('student.live-defense');
     Route::get('/evaluation', function () {
         return Inertia::render('Student/evaluation');
     })->name('student.evaluation');
