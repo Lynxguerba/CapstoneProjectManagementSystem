@@ -53,9 +53,13 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return match ($response->getStatusCode()) {
+                401 => Inertia::render('Error/Unauthorized')->toResponse($request)->setStatusCode(401),
                 403 => Inertia::render('Error/Forbidden')->toResponse($request)->setStatusCode(403),
                 404 => Inertia::render('Error/NotFound')->toResponse($request)->setStatusCode(404),
                 419 => Inertia::render('Error/PageExpired')->toResponse($request)->setStatusCode(419),
+                429 => Inertia::render('Error/TooManyRequests')->toResponse($request)->setStatusCode(429),
+                500 => Inertia::render('Error/ServerError')->toResponse($request)->setStatusCode(500),
+                503 => Inertia::render('Error/ServiceUnavailable')->toResponse($request)->setStatusCode(503),
                 default => $response,
             };
         });
