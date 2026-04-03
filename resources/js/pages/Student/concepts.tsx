@@ -386,7 +386,7 @@ const StudentConcepts = () => {
                                                 <UploadCloud className="h-3.5 w-3.5 text-emerald-600" />
                                                 Upload Concept PDF
                                             </div>
-                                            <p className="mt-1 text-xs text-slate-500">Max file size: 50MB</p>
+                                            <p className="mt-1 text-xs text-slate-500">Max file size: 100MB</p>
                                         </div>
 
                                         <div className="flex items-center gap-2">

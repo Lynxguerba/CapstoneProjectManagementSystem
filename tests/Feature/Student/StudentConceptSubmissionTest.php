@@ -46,6 +46,30 @@ it('stores a concept submission against the active concept requirement', functio
     Storage::disk('public')->assertExists((string) $submission?->file_path);
 });
 
+it('rejects a concept submission pdf larger than 100MB', function (): void {
+    Storage::fake('public');
+
+    $context = createStudentConceptContext();
+    $file = UploadedFile::fake()->create('oversized-concept.pdf', 102401, 'application/pdf');
+
+    $response = $this
+        ->actingAs($context['student'], 'web')
+        ->withSession(['active_role' => 'student'])
+        ->from(route('student.concepts'))
+        ->post(route('student.concepts.submissions.store'), [
+            'title' => 'Oversized Concept',
+            'concept_file' => $file,
+        ]);
+
+    $response
+        ->assertRedirect(route('student.concepts'))
+        ->assertSessionHasErrors([
+            'concept_file' => 'Concept PDF must not exceed 100MB.',
+        ]);
+
+    expect(DocumentSubmission::query()->count())->toBe(0);
+});
+
 it('updates the concept title for a student submission', function (): void {
     $context = createStudentConceptContext();
 

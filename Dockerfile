@@ -27,6 +27,9 @@ COPY package.json package-lock.json ./
 # Install Node dependencies
 # RUN npm install
 
+# Increase PHP upload limits for large document submissions.
+COPY php.uploads.ini /usr/local/etc/php/conf.d/php.uploads.ini
+
 # Copy the rest of the project
 COPY . .
 
