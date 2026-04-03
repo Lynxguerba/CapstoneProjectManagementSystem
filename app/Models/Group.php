@@ -17,6 +17,7 @@ class Group extends Model
         'program_set_id',
         'leader_id',
         'name',
+        'approved_concept_submission_id',
         'is_cross_set',
     ];
 
@@ -65,6 +66,11 @@ class Group extends Model
     public function documentSubmissions(): HasMany
     {
         return $this->hasMany(DocumentSubmission::class);
+    }
+
+    public function approvedConceptSubmission(): BelongsTo
+    {
+        return $this->belongsTo(DocumentSubmission::class, 'approved_concept_submission_id');
     }
 
     public function adviserRecommendationDocuments(): HasMany

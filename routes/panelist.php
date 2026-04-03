@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
+use App\Http\Controllers\Panelist\ApprovePanelistConceptTitleController;
 use App\Http\Controllers\Panelist\DestroyPanelistLiveDefenseCommentController;
 use App\Http\Controllers\Panelist\PanelistDashboardController;
 use App\Http\Controllers\Panelist\PanelistLiveDefenseController;
 use App\Http\Controllers\Panelist\PanelistScheduleController;
 use App\Http\Controllers\Panelist\StorePanelistLiveDefenseCommentController;
+use App\Http\Controllers\Panelist\UndoPanelistConceptTitleApprovalController;
 use App\Http\Controllers\Panelist\UpdatePanelistAvailabilityController;
 use App\Http\Controllers\Panelist\UpdatePanelistProgramUtilitiesController;
 use App\Models\Group;
@@ -346,6 +348,8 @@ Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function
     })->name('panelist.group-details');
     Route::get('/schedule', PanelistScheduleController::class)->name('panelist.schedule');
     Route::get('/live-defense', PanelistLiveDefenseController::class)->name('panelist.live-defense');
+    Route::post('/live-defense/title-approvals', ApprovePanelistConceptTitleController::class)->name('panelist.live-defense.title-approvals.store');
+    Route::delete('/live-defense/title-approvals', UndoPanelistConceptTitleApprovalController::class)->name('panelist.live-defense.title-approvals.destroy');
     Route::post('/live-defense/comments', StorePanelistLiveDefenseCommentController::class)->name('panelist.live-defense.comments.store');
     Route::delete('/live-defense/comments/{comment}', DestroyPanelistLiveDefenseCommentController::class)->name('panelist.live-defense.comments.destroy');
     Route::get('/documents', function () {

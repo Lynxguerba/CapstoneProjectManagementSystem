@@ -1,10 +1,11 @@
-import { Link, router, usePage } from '@inertiajs/react';
-import { PdfHighlighterViewer } from '@/components/Panelist/PdfHighlighterViewer';
 import type { FormDataConvertible } from '@inertiajs/core';
+import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ChevronRight, FileText, MessageSquareText, ShieldCheck, Users, X } from 'lucide-react';
 import React from 'react';
 import type { IHighlight, NewHighlight } from 'react-pdf-highlighter';
+import { PdfHighlighterViewer } from '@/components/Panelist/PdfHighlighterViewer';
+import RecommendationLetterModal from '@/components/Student/RecommendationLetterModal';
 import PanelLayout from './_layout';
 
 type Participant = {
@@ -19,9 +20,18 @@ type ConceptSubmission = {
     title: string;
     requirementType: string;
     submittedAt?: string | null;
-    panelApprovalCount?: number | null;
-    panelApprovalTotal?: number | null;
+    instructorStatus: 'Submitted' | 'Approved' | 'Revision Required' | string;
+    adviserStatus: 'Submitted' | 'Approved' | 'Revision Required' | string;
+    panelistApprovalStatus: 'Approved' | 'Pending' | 'Rejected' | string;
     fileUrl?: string | null;
+};
+
+type RecommendationLetter = {
+    id: number;
+    fileName: string;
+    fileUrl: string | null;
+    signedAt?: string | null;
+    adviserName?: string | null;
 };
 
 type LiveComment = {
@@ -48,10 +58,16 @@ type PanelistLiveDefenseProps = {
         defenseStatus?: 'Pending' | 'In Progress' | 'Completed' | string;
     } | null;
     conceptSubmissions?: ConceptSubmission[];
+    canApproveConceptTitle?: boolean;
     participants?: {
         students?: Participant[];
         adviser?: Participant | null;
         panelists?: Participant[];
+    };
+    recommendationLetter?: RecommendationLetter | null;
+    flash?: {
+        success?: string | null;
+        error?: string | null;
     };
     commentsBySubmission?: Record<number, LiveComment[]>;
     highlightsBySubmission?: Record<number, IHighlight[]>;
@@ -70,6 +86,30 @@ const defenseStatusClass = (status: string): string => {
     return 'border-amber-200 bg-amber-100 text-amber-700';
 };
 
+const statusPillClass = (status: string): string => {
+    if (status === 'Approved') {
+        return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+    }
+
+    if (status === 'Revision Required') {
+        return 'border-amber-200 bg-amber-100 text-amber-700';
+    }
+
+    return 'border-slate-200 bg-slate-100 text-slate-600';
+};
+
+const panelistApprovalStatusClass = (status: string): string => {
+    if (status === 'Approved') {
+        return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+    }
+
+    if (status === 'Rejected') {
+        return 'border-rose-200 bg-rose-100 text-rose-700';
+    }
+
+    return 'border-amber-200 bg-amber-100 text-amber-700';
+};
+
 const commentRoleBadgeClass = (role: LiveComment['authorRole']): string => {
     if (role === 'Panelist') {
         return 'border-emerald-200 bg-emerald-100 text-emerald-700';
@@ -82,18 +122,27 @@ const commentRoleBadgeClass = (role: LiveComment['authorRole']): string => {
     return 'border-slate-200 bg-slate-100 text-slate-600';
 };
 
+const areHighlightsEqual = (currentHighlights: IHighlight[], incomingHighlights: IHighlight[]): boolean => {
+    return JSON.stringify(currentHighlights) === JSON.stringify(incomingHighlights);
+};
+
 const PanelistLiveDefense = () => {
     const { props } = usePage<PanelistLiveDefenseProps>();
     const group = props.group;
     const conceptSubmissions = React.useMemo(() => props.conceptSubmissions ?? [], [props.conceptSubmissions]);
+    const canApproveConceptTitle = props.canApproveConceptTitle === true;
     const students = React.useMemo(() => props.participants?.students ?? [], [props.participants?.students]);
     const adviser = props.participants?.adviser ?? null;
     const panelists = React.useMemo(() => props.participants?.panelists ?? [], [props.participants?.panelists]);
+    const recommendationLetter = props.recommendationLetter ?? null;
+    const flashSuccessMessage = props.flash?.success ?? null;
+    const flashErrorMessage = props.flash?.error ?? null;
     const serverCommentsBySubmission = React.useMemo(() => props.commentsBySubmission ?? {}, [props.commentsBySubmission]);
     const serverHighlightsBySubmission = React.useMemo(() => props.highlightsBySubmission ?? {}, [props.highlightsBySubmission]);
     const serverCommentHighlightTargets = React.useMemo(() => props.commentHighlightTargets ?? {}, [props.commentHighlightTargets]);
     const [selectedConceptId, setSelectedConceptId] = React.useState<number | null>(conceptSubmissions[0]?.id ?? null);
     const [commentInput, setCommentInput] = React.useState('');
+    const [isCommentFocused, setIsCommentFocused] = React.useState(false);
     const [liveCommentsMap, setLiveCommentsMap] = React.useState<Record<number, LiveComment[]>>({});
     const [highlightsMap, setHighlightsMap] = React.useState<Record<number, IHighlight[]>>({});
     const [commentHighlightTargets, setCommentHighlightTargets] = React.useState<Record<string, { submissionId: number; highlightId: string }>>({});
@@ -101,8 +150,14 @@ const PanelistLiveDefense = () => {
     const [isSubmittingComment, setIsSubmittingComment] = React.useState(false);
     const [isSubmittingHighlightComment, setIsSubmittingHighlightComment] = React.useState(false);
     const [removingCommentId, setRemovingCommentId] = React.useState<string | null>(null);
+    const [approvingSubmissionId, setApprovingSubmissionId] = React.useState<number | null>(null);
+    const [isUndoingConceptApproval, setIsUndoingConceptApproval] = React.useState(false);
+    const [approvalMessage, setApprovalMessage] = React.useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+    const [isRecommendationLetterModalOpen, setIsRecommendationLetterModalOpen] = React.useState(false);
+    const commentsContainerRef = React.useRef<HTMLDivElement | null>(null);
 
     const liveDefensePartialProps = React.useMemo(() => ['commentsBySubmission', 'highlightsBySubmission', 'commentHighlightTargets'], []);
+    const conceptApprovalPartialProps = React.useMemo(() => ['conceptSubmissions', 'flash'], []);
 
     React.useEffect(() => {
         setSelectedConceptId((currentSelectedConceptId) => {
@@ -129,26 +184,97 @@ const PanelistLiveDefense = () => {
     }, [conceptSubmissions, serverCommentsBySubmission]);
 
     React.useEffect(() => {
-        const nextHighlightsMap: Record<number, IHighlight[]> = {};
+        setHighlightsMap((currentHighlightsMap) => {
+            const nextHighlightsMap: Record<number, IHighlight[]> = {};
+            let hasChanges = Object.keys(currentHighlightsMap).length !== conceptSubmissions.length;
 
-        conceptSubmissions.forEach((submission) => {
-            nextHighlightsMap[submission.id] = serverHighlightsBySubmission[submission.id] ?? [];
+            conceptSubmissions.forEach((submission) => {
+                const submissionId = submission.id;
+                const incomingHighlights = serverHighlightsBySubmission[submissionId] ?? [];
+                const currentHighlights = currentHighlightsMap[submissionId] ?? [];
+
+                if (areHighlightsEqual(currentHighlights, incomingHighlights)) {
+                    nextHighlightsMap[submissionId] = currentHighlights;
+                    return;
+                }
+
+                hasChanges = true;
+                nextHighlightsMap[submissionId] = incomingHighlights;
+            });
+
+            if (!hasChanges) {
+                return currentHighlightsMap;
+            }
+
+            return nextHighlightsMap;
         });
-
-        setHighlightsMap(nextHighlightsMap);
     }, [conceptSubmissions, serverHighlightsBySubmission]);
 
     React.useEffect(() => {
         setCommentHighlightTargets(serverCommentHighlightTargets);
     }, [serverCommentHighlightTargets]);
 
+    React.useEffect(() => {
+        if (flashErrorMessage) {
+            setApprovalMessage({
+                tone: 'error',
+                text: flashErrorMessage,
+            });
+            return;
+        }
+
+        if (flashSuccessMessage) {
+            setApprovalMessage({
+                tone: 'success',
+                text: flashSuccessMessage,
+            });
+        }
+    }, [flashErrorMessage, flashSuccessMessage]);
+
+    React.useEffect(() => {
+        if (!group) return;
+
+        const interval = setInterval(() => {
+            if (isCommentFocused) return;
+            router.reload({
+                only: liveDefensePartialProps,
+                preserveScroll: true,
+                preserveState: true,
+            });
+        }, 4000);
+
+        return () => clearInterval(interval);
+    }, [group, liveDefensePartialProps, isCommentFocused]);
+
     const selectedConcept = React.useMemo(() => {
         return conceptSubmissions.find((submission) => submission.id === selectedConceptId) ?? null;
     }, [conceptSubmissions, selectedConceptId]);
+    const hasApprovedConceptTitle = React.useMemo(
+        () => conceptSubmissions.some((submission) => submission.panelistApprovalStatus === 'Approved'),
+        [conceptSubmissions],
+    );
 
     const getHighlights = (submissionId: number): IHighlight[] => highlightsMap[submissionId] ?? [];
-    const getLiveComments = (submissionId: number): LiveComment[] => liveCommentsMap[submissionId] ?? [];
-    const activeLiveComments = selectedConcept ? getLiveComments(selectedConcept.id) : [];
+    const activeLiveComments = React.useMemo(() => {
+        if (!selectedConcept) {
+            return [];
+        }
+
+        return liveCommentsMap[selectedConcept.id] ?? [];
+    }, [liveCommentsMap, selectedConcept]);
+    const orderedActiveLiveComments = React.useMemo(
+        () => [...activeLiveComments].sort((leftComment, rightComment) => leftComment.databaseId - rightComment.databaseId),
+        [activeLiveComments],
+    );
+
+    React.useEffect(() => {
+        const commentsContainer = commentsContainerRef.current;
+        if (!commentsContainer) {
+            return;
+        }
+
+        commentsContainer.scrollTop = commentsContainer.scrollHeight;
+    }, [orderedActiveLiveComments]);
 
     const removeLiveComment = (comment: LiveComment): void => {
         if (removingCommentId !== null || !group) {
@@ -258,6 +384,63 @@ const PanelistLiveDefense = () => {
         );
     };
 
+    const handleApproveConceptTitle = (submissionId: number): void => {
+        if (!canApproveConceptTitle || approvingSubmissionId !== null) {
+            return;
+        }
+
+        setApprovalMessage(null);
+        setApprovingSubmissionId(submissionId);
+        router.post(
+            '/panelist/live-defense/title-approvals',
+            {
+                document_submission_id: submissionId,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: conceptApprovalPartialProps,
+                onError: (errors) => {
+                    const firstError = errors.document_submission_id || Object.values(errors)[0] || 'Unable to approve the selected title.';
+                    setApprovalMessage({
+                        tone: 'error',
+                        text: String(firstError),
+                    });
+                },
+                onFinish: () => {
+                    setApprovingSubmissionId(null);
+                },
+            },
+        );
+    };
+
+    const handleUndoConceptTitleApproval = (): void => {
+        if (!canApproveConceptTitle || !group || isUndoingConceptApproval || approvingSubmissionId !== null) {
+            return;
+        }
+
+        setApprovalMessage(null);
+        setIsUndoingConceptApproval(true);
+        router.delete('/panelist/live-defense/title-approvals', {
+            preserveState: true,
+            preserveScroll: true,
+            only: conceptApprovalPartialProps,
+            data: {
+                group_id: group.id,
+            },
+            onError: (errors) => {
+                const firstError = errors.group_id || Object.values(errors)[0] || 'Unable to undo title approval.';
+                setApprovalMessage({
+                    tone: 'error',
+                    text: String(firstError),
+                });
+            },
+            onFinish: () => {
+                setIsUndoingConceptApproval(false);
+            },
+        });
+    };
+
     if (!group) {
         return (
             <PanelLayout title="Live Defense Board" subtitle="Panel live review workspace">
@@ -305,28 +488,45 @@ const PanelistLiveDefense = () => {
                             </div>
                         </div>
                     </div>
+                    {approvalMessage ? (
+                        <div
+                            className={`border-b px-4 py-2 text-xs ${
+                                approvalMessage.tone === 'error'
+                                    ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                    : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                            }`}
+                        >
+                            {approvalMessage.text}
+                        </div>
+                    ) : null}
 
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[680px] text-left text-xs">
+                        <table className={`w-full text-left text-xs ${canApproveConceptTitle ? 'min-w-[760px]' : 'min-w-[680px]'}`}>
                             <thead className="border-b border-slate-200 bg-white text-slate-600">
                                 <tr>
                                     <th className="px-4 py-3 font-semibold">Title</th>
                                     <th className="px-4 py-3 font-semibold">Submitted</th>
                                     <th className="px-4 py-3 font-semibold">Approval of Panelist</th>
+                                    {canApproveConceptTitle ? <th className="px-4 py-3 font-semibold">Action</th> : null}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {conceptSubmissions.length === 0 ? (
                                     <tr>
-                                        <td colSpan={3} className="px-4 py-10 text-center text-slate-500">
+                                        <td colSpan={canApproveConceptTitle ? 4 : 3} className="px-4 py-10 text-center text-slate-500">
                                             No concept titles are available yet.
                                         </td>
                                     </tr>
                                 ) : (
                                     conceptSubmissions.map((submission) => {
                                         const isActive = submission.id === selectedConceptId;
-                                        const panelApprovalCount = Number(submission.panelApprovalCount ?? 0);
-                                        const panelApprovalTotal = Number(submission.panelApprovalTotal ?? 0);
+                                        const panelistApprovalStatus = submission.panelistApprovalStatus ?? 'Pending';
+                                        const isApprovedConcept = panelistApprovalStatus === 'Approved';
+                                        const isApprovingConcept = approvingSubmissionId === submission.id;
+                                        const isUndoingConcept = isUndoingConceptApproval && isApprovedConcept;
+                                        const isActionInProgress = approvingSubmissionId !== null || isUndoingConceptApproval;
+                                        const isApproveDisabled =
+                                            isActionInProgress || isApprovedConcept || (hasApprovedConceptTitle && !isApprovedConcept);
 
                                         return (
                                             <tr
@@ -340,10 +540,41 @@ const PanelistLiveDefense = () => {
                                                 </td>
                                                 <td className="px-4 py-3 whitespace-nowrap text-slate-600">{submission.submittedAt ?? '—'}</td>
                                                 <td className="px-4 py-3">
-                                                    <span className="inline-flex rounded-full border border-amber-200 bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                                                        {panelApprovalCount}/{panelApprovalTotal} panelists
+                                                    <span
+                                                        className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${panelistApprovalStatusClass(panelistApprovalStatus)}`}
+                                                    >
+                                                        {panelistApprovalStatus}
                                                     </span>
                                                 </td>
+                                                {canApproveConceptTitle ? (
+                                                    <td className="px-4 py-3">
+                                                        {isApprovedConcept ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(event) => {
+                                                                    event.stopPropagation();
+                                                                    handleUndoConceptTitleApproval();
+                                                                }}
+                                                                disabled={isActionInProgress}
+                                                                className="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            >
+                                                                {isUndoingConcept ? 'Undoing...' : 'Undo'}
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(event) => {
+                                                                    event.stopPropagation();
+                                                                    handleApproveConceptTitle(submission.id);
+                                                                }}
+                                                                disabled={isApproveDisabled}
+                                                                className="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            >
+                                                                {isApprovingConcept ? 'Approving...' : 'Approve'}
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                ) : null}
                                             </tr>
                                         );
                                     })
@@ -354,7 +585,7 @@ const PanelistLiveDefense = () => {
                 </div>
 
                 <div className="grid gap-5 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-                    <div className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="flex h-[65vh] flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:h-[72vh]">
                         <div className="flex items-center gap-2">
                             <MessageSquareText className="h-4 w-4 text-emerald-600" />
                             <h3 className="text-sm font-semibold text-slate-800">Panelist Comments</h3>
@@ -363,13 +594,13 @@ const PanelistLiveDefense = () => {
                             Comments here are visible in the live defense stream for students, adviser, and panelists.
                         </p>
 
-                        <div className="mt-4 flex-1 space-y-2 overflow-auto pr-1">
-                            {activeLiveComments.length === 0 ? (
+                        <div ref={commentsContainerRef} className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                            {orderedActiveLiveComments.length === 0 ? (
                                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-xs text-slate-500">
                                     No live comments yet.
                                 </div>
                             ) : (
-                                activeLiveComments.map((comment) => {
+                                orderedActiveLiveComments.map((comment) => {
                                     const highlightTarget = commentHighlightTargets[comment.id];
                                     const isRemoving = removingCommentId === comment.id;
                                     const cardContent = (
@@ -441,10 +672,12 @@ const PanelistLiveDefense = () => {
                             )}
                         </div>
 
-                        <div className="mt-4 space-y-2">
+                        <div className="mt-4 shrink-0 space-y-2">
                             <textarea
                                 value={commentInput}
                                 onChange={(event) => setCommentInput(event.target.value)}
+                                onFocus={() => setIsCommentFocused(true)}
+                                onBlur={() => setIsCommentFocused(false)}
                                 placeholder="Type your panel comment..."
                                 rows={3}
                                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
@@ -463,7 +696,7 @@ const PanelistLiveDefense = () => {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-slate-100 p-4 shadow-sm lg:p-5">
+                    <div className="flex h-[65vh] flex-col rounded-xl border border-slate-200 bg-slate-100 p-4 shadow-sm lg:h-[72vh] lg:p-5">
                         <div className="mb-3">
                             <p className="text-sm font-semibold text-slate-900">PDF Viewer</p>
                             <p className="mt-1 text-xs text-slate-500">
@@ -471,38 +704,41 @@ const PanelistLiveDefense = () => {
                             </p>
                         </div>
 
-                        {!selectedConcept || !selectedConcept.fileUrl ? (
-                            <div className="flex min-h-[24rem] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-                                PDF preview is not available for this selected concept submission.
-                            </div>
-                        ) : (
-                            <PdfHighlighterViewer
-                                key={selectedConcept.fileUrl}
-                                pdfUrl={selectedConcept.fileUrl}
-                                highlights={getHighlights(selectedConcept.id)}
-                                onAddHighlight={handleAddHighlight(selectedConcept.id)}
-                                activeHighlightId={
-                                    pendingHighlightFocus?.submissionId === selectedConcept.id ? pendingHighlightFocus.highlightId : null
-                                }
-                                onHighlightFocused={(highlightId) => {
-                                    setPendingHighlightFocus((currentTarget) => {
-                                        if (!currentTarget) {
+                        <div className="min-h-0 flex-1">
+                            {!selectedConcept || !selectedConcept.fileUrl ? (
+                                <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
+                                    PDF preview is not available for this selected concept submission.
+                                </div>
+                            ) : (
+                                <PdfHighlighterViewer
+                                    key={selectedConcept.fileUrl}
+                                    pdfUrl={selectedConcept.fileUrl}
+                                    highlights={getHighlights(selectedConcept.id)}
+                                    onAddHighlight={handleAddHighlight(selectedConcept.id)}
+                                    activeHighlightId={
+                                        pendingHighlightFocus?.submissionId === selectedConcept.id ? pendingHighlightFocus.highlightId : null
+                                    }
+                                    onHighlightFocused={(highlightId) => {
+                                        setPendingHighlightFocus((currentTarget) => {
+                                            if (!currentTarget) {
+                                                return null;
+                                            }
+
+                                            if (currentTarget.highlightId !== highlightId || currentTarget.submissionId !== selectedConcept.id) {
+                                                return currentTarget;
+                                            }
+
                                             return null;
-                                        }
-
-                                        if (currentTarget.highlightId !== highlightId || currentTarget.submissionId !== selectedConcept.id) {
-                                            return currentTarget;
-                                        }
-
-                                        return null;
-                                    });
-                                }}
-                            />
-                        )}
+                                        });
+                                    }}
+                                    containerClassName="h-full"
+                                />
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px_300px]">
                     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-emerald-600" />
@@ -566,9 +802,12 @@ const PanelistLiveDefense = () => {
                     </div>
 
                     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Evaluation Grading</p>
-                        <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3">
-                            <p className="text-xs text-slate-600">Open scoring form for this defense panel session.</p>
+                        <div className="flex items-center gap-2">
+                            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                            <h3 className="text-sm font-semibold text-slate-800">Evaluation Grading</h3>
+                        </div>
+                        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3">
+                            <p className="text-xs font-semibold text-slate-700">Open scoring form for this defense panel session.</p>
                             <div className="mt-3">
                                 <Link
                                     href={`/panelist/evaluation?group=${group.id}`}
@@ -580,7 +819,60 @@ const PanelistLiveDefense = () => {
                             </div>
                         </div>
                     </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                            <h3 className="text-sm font-semibold text-slate-800">Defense Approval</h3>
+                        </div>
+                        <div className="mt-3 space-y-2 text-xs text-slate-600">
+                            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">Presentation: {defenseStatus}</p>
+                            {recommendationLetter?.fileUrl ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsRecommendationLetterModalOpen(true)}
+                                    className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-left transition-colors hover:bg-emerald-100"
+                                >
+                                    <p className="text-[11px] font-semibold tracking-wide text-emerald-700 uppercase">Recommendation Letter</p>
+                                    <p className="mt-1 text-xs font-semibold text-emerald-900">{recommendationLetter.fileName}</p>
+                                    <p className="mt-0.5 text-[11px] text-emerald-700">
+                                        Signed at: {recommendationLetter.signedAt ?? 'Not available'} · Click to view
+                                    </p>
+                                </button>
+                            ) : (
+                                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">Recommendation Letter: Not available yet.</p>
+                            )}
+                            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                <p className="text-[11px] text-slate-500">Instructor Status</p>
+                                <span
+                                    className={`mt-1 inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold ${statusPillClass(
+                                        selectedConcept?.instructorStatus ?? 'Submitted',
+                                    )}`}
+                                >
+                                    {selectedConcept?.instructorStatus ?? 'Submitted'}
+                                </span>
+                            </div>
+                            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                <p className="text-[11px] text-slate-500">Adviser Status</p>
+                                <span
+                                    className={`mt-1 inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold ${statusPillClass(
+                                        selectedConcept?.adviserStatus ?? 'Submitted',
+                                    )}`}
+                                >
+                                    {selectedConcept?.adviserStatus ?? 'Submitted'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                {recommendationLetter ? (
+                    <RecommendationLetterModal
+                        open={isRecommendationLetterModalOpen}
+                        onClose={() => setIsRecommendationLetterModalOpen(false)}
+                        recommendationLetter={recommendationLetter}
+                    />
+                ) : null}
             </motion.section>
         </PanelLayout>
     );

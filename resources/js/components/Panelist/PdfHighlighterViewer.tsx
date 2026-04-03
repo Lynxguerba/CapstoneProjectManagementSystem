@@ -1,6 +1,7 @@
 import React from 'react';
 import 'react-pdf-highlighter/dist/style.css';
-import { AreaHighlight, Highlight, IHighlight, NewHighlight, PdfHighlighter, PdfLoader, Popup } from 'react-pdf-highlighter';
+import { AreaHighlight, Highlight, PdfHighlighter, PdfLoader, Popup } from 'react-pdf-highlighter';
+import type { IHighlight, NewHighlight } from 'react-pdf-highlighter';
 
 type PdfHighlighterViewerProps = {
     pdfUrl: string;
@@ -8,6 +9,7 @@ type PdfHighlighterViewerProps = {
     onAddHighlight: (highlight: NewHighlight) => void;
     activeHighlightId?: string | null;
     onHighlightFocused?: (highlightId: string) => void;
+    containerClassName?: string;
 };
 
 type HighlightPopupProps = {
@@ -105,10 +107,24 @@ export const PdfHighlighterViewer = ({
     onAddHighlight,
     activeHighlightId = null,
     onHighlightFocused,
+    containerClassName = 'h-[65vh] lg:h-[72vh]',
 }: PdfHighlighterViewerProps): React.JSX.Element => {
     const hideTipCallbackRef = React.useRef<(() => void) | null>(null);
     const pendingHighlightRef = React.useRef<NewHighlight | null>(null);
     const scrollToHighlightRef = React.useRef<((highlight: IHighlight) => void) | null>(null);
+    const [isFallbackViewer, setIsFallbackViewer] = React.useState(false);
+    const [viewerErrorMessage, setViewerErrorMessage] = React.useState<string | null>(null);
+
+    const isBenignViewerWarning = React.useCallback((message: string): boolean => {
+        return message.includes('offsetParent is not set')
+            || message.includes('Transport destroyed')
+            || message.includes('Unable to get page');
+    }, []);
+
+    const enableFallbackViewer = React.useCallback((message: string): void => {
+        setViewerErrorMessage(message);
+        setIsFallbackViewer(true);
+    }, []);
 
     const resetPendingState = (): void => {
         hideTipCallbackRef.current = null;
@@ -143,16 +159,98 @@ export const PdfHighlighterViewer = ({
             return;
         }
 
-        scrollToHighlightRef.current(targetHighlight);
+        try {
+            scrollToHighlightRef.current(targetHighlight);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (isBenignViewerWarning(message)) {
+                onHighlightFocused?.(activeHighlightId);
+                return;
+            }
+
+            enableFallbackViewer(message);
+        }
+
         onHighlightFocused?.(activeHighlightId);
-    }, [activeHighlightId, highlights, onHighlightFocused]);
+    }, [activeHighlightId, enableFallbackViewer, highlights, isBenignViewerWarning, onHighlightFocused]);
+
+    React.useEffect(() => {
+        const handleWindowError = (event: ErrorEvent): void => {
+            const message = typeof event.message === 'string' ? event.message : '';
+            if (isBenignViewerWarning(message)) {
+                event.preventDefault();
+                return;
+            }
+
+            const isPdfHighlighterError = message === '!'
+                || message.toLowerCase().includes('pdfhighlighter')
+                || String(event.filename ?? '').includes('react-pdf-highlighter');
+
+            if (isPdfHighlighterError) {
+                enableFallbackViewer(message || 'PDF highlighter failed to initialize.');
+            }
+        };
+
+        const handleUnhandledRejection = (event: PromiseRejectionEvent): void => {
+            const reason = event.reason;
+            const message = reason instanceof Error ? reason.message : String(reason ?? '');
+            if (!message) {
+                return;
+            }
+
+            if (isBenignViewerWarning(message)) {
+                event.preventDefault();
+                return;
+            }
+
+            const isPdfHighlighterRejection = message === '!' || message.toLowerCase().includes('pdfhighlighter');
+            if (!isPdfHighlighterRejection) {
+                return;
+            }
+
+            event.preventDefault();
+            enableFallbackViewer(message);
+        };
+
+        window.addEventListener('error', handleWindowError);
+        window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+        return () => {
+            window.removeEventListener('error', handleWindowError);
+            window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+        };
+    }, [enableFallbackViewer, isBenignViewerWarning]);
+
+    if (isFallbackViewer) {
+        return (
+            <div className={`relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white ${containerClassName}`}>
+                <iframe
+                    src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+                    title="PDF Preview"
+                    className="h-full w-full"
+                />
+                <div className="pointer-events-none absolute top-2 right-2 left-2 rounded-lg border border-amber-200 bg-amber-50/95 px-3 py-2 text-[11px] text-amber-800 shadow-sm">
+                    PDF highlighter is temporarily unavailable. Preview mode is active.
+                    {viewerErrorMessage ? ` (${viewerErrorMessage})` : ''}
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="relative h-[65vh] w-full overflow-auto rounded-2xl border border-slate-200 bg-white lg:h-[72vh]">
+        <div className={`relative w-full overflow-auto rounded-2xl border border-slate-200 bg-white ${containerClassName}`}>
             <PdfLoader
                 url={pdfUrl}
                 workerSrc={PDF_WORKER_SRC}
                 beforeLoad={<div className="flex h-full items-center justify-center text-xs text-slate-500">Loading PDF...</div>}
+                errorMessage={
+                    <div className="flex h-full items-center justify-center p-4 text-center text-xs text-slate-500">
+                        Unable to load the interactive highlighter for this PDF.
+                    </div>
+                }
+                onError={(error) => {
+                    enableFallbackViewer(error.message || 'Unable to load PDF highlighter.');
+                }}
             >
                 {(pdfDocument) => (
                     <PdfHighlighter<IHighlight>
@@ -188,10 +286,16 @@ export const PdfHighlighterViewer = ({
                         highlightTransform={(highlight, index, setTip, hideTip, _viewportToScaled, _screenshot, isScrolledTo) => {
                             const popupContent = <HighlightPopup comment={highlight.comment} />;
                             const hasComment = Boolean(highlight.comment?.text?.trim());
+                            const highlightKey = highlight.id && highlight.id !== '' ? highlight.id : `hl-${index}`;
                             const highlightElement = highlight.content?.image ? (
-                                <AreaHighlight key={index} highlight={highlight} onChange={() => {}} isScrolledTo={isScrolledTo} />
+                                <AreaHighlight key={highlightKey} highlight={highlight} onChange={() => {}} isScrolledTo={isScrolledTo} />
                             ) : (
-                                <Highlight key={index} isScrolledTo={isScrolledTo} position={highlight.position} comment={highlight.comment} />
+                                <Highlight
+                                    key={highlightKey}
+                                    isScrolledTo={isScrolledTo}
+                                    position={highlight.position}
+                                    comment={highlight.comment}
+                                />
                             );
 
                             if (!hasComment || !popupContent) {
@@ -199,7 +303,12 @@ export const PdfHighlighterViewer = ({
                             }
 
                             return (
-                                <Popup onMouseOver={(content) => setTip(highlight, () => content)} onMouseOut={hideTip} popupContent={popupContent}>
+                                <Popup
+                                    key={highlightKey}
+                                    onMouseOver={(content) => setTip(highlight, () => content)}
+                                    onMouseOut={hideTip}
+                                    popupContent={popupContent}
+                                >
                                     {highlightElement}
                                 </Popup>
                             );

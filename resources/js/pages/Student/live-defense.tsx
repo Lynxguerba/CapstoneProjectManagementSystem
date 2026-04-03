@@ -285,7 +285,7 @@ const StudentLiveDefense = () => {
                     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div className="flex items-center gap-2">
                             <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                            <h3 className="text-sm font-semibold text-slate-800">Defense Status</h3>
+                            <h3 className="text-sm font-semibold text-slate-800">Defense Approval</h3>
                         </div>
                         <div className="mt-3 space-y-2 text-xs text-slate-600">
                             <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">Presentation: In Progress</p>
