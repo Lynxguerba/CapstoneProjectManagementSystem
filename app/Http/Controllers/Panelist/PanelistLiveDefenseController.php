@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Panelist;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdviserRecommendationDocument;
 use App\Models\DefenseSchedule;
 use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
@@ -34,9 +35,12 @@ class PanelistLiveDefenseController extends Controller
             $selectedGroup?->id,
             $conceptRequirements->pluck('id')->values(),
         );
+        $currentPanelAssignment = $this->resolveCurrentPanelAssignment($selectedGroup, $panelistId);
+        $canApproveConceptTitle = $this->isChairmanAssignment($currentPanelAssignment);
+        $approvedConceptSubmissionId = $this->resolveApprovedConceptSubmissionId($selectedGroup, $conceptSubmissions);
         $panelists = $this->resolvePanelists($selectedGroup);
-        $panelApprovalTotal = count($panelists);
         $liveDefenseWorkspace = $this->resolveLiveDefenseWorkspace($selectedGroup, $conceptSubmissions, $panelistId);
+        $recommendationLetter = $this->resolveLatestRecommendationLetter($selectedGroup);
 
         return Inertia::render('Panelist/live-defense', [
             'group' => $selectedGroup ? [
@@ -52,12 +56,14 @@ class PanelistLiveDefenseController extends Controller
                     'title' => (string) $submission->file_name,
                     'requirementType' => (string) ($submission->requirement?->requirement_type ?? 'Concept Paper'),
                     'submittedAt' => $submission->created_at?->format('Y-m-d H:i'),
-                    'panelApprovalCount' => $this->resolvePanelApprovalCount($submission, $panelApprovalTotal),
-                    'panelApprovalTotal' => $panelApprovalTotal,
+                    'instructorStatus' => (string) ($submission->status ?? 'Submitted'),
+                    'adviserStatus' => (string) ($submission->adviser_status ?? 'Submitted'),
+                    'panelistApprovalStatus' => $this->resolvePanelistApprovalStatus((int) $submission->id, $approvedConceptSubmissionId),
                     'fileUrl' => $submission->file_path !== null ? Storage::disk('public')->url($submission->file_path) : null,
                 ])
                 ->values()
                 ->all(),
+            'canApproveConceptTitle' => $canApproveConceptTitle,
             'participants' => [
                 'students' => $this->resolveStudents($selectedGroup),
                 'adviser' => $this->resolveAdviser($selectedGroup),
@@ -66,6 +72,7 @@ class PanelistLiveDefenseController extends Controller
             'commentsBySubmission' => $liveDefenseWorkspace['commentsBySubmission'],
             'highlightsBySubmission' => $liveDefenseWorkspace['highlightsBySubmission'],
             'commentHighlightTargets' => $liveDefenseWorkspace['commentHighlightTargets'],
+            'recommendationLetter' => $recommendationLetter,
         ]);
     }
 
@@ -82,6 +89,11 @@ class PanelistLiveDefenseController extends Controller
             return collect();
         }
 
+        $groupColumns = ['id', 'name', 'program_set_id', 'leader_id'];
+        if (Schema::hasColumn('groups', 'approved_concept_submission_id')) {
+            $groupColumns[] = 'approved_concept_submission_id';
+        }
+
         return Group::query()
             ->with([
                 'programSet.academicYear',
@@ -92,7 +104,7 @@ class PanelistLiveDefenseController extends Controller
             ])
             ->whereHas('panelAssignments', fn (Builder $query): Builder => $query->where('panelist_id', $panelistId))
             ->orderBy('name')
-            ->get(['id', 'name', 'program_set_id', 'leader_id']);
+            ->get($groupColumns);
     }
 
     /**
@@ -326,6 +338,76 @@ class PanelistLiveDefenseController extends Controller
     }
 
     /**
+     * @param  Collection<int, DocumentSubmission>  $conceptSubmissions
+     */
+    private function resolveApprovedConceptSubmissionId(?Group $group, Collection $conceptSubmissions): ?int
+    {
+        if (! $group instanceof Group || ! Schema::hasColumn('groups', 'approved_concept_submission_id')) {
+            return null;
+        }
+
+        $approvedConceptSubmissionId = is_numeric($group->approved_concept_submission_id)
+            ? (int) $group->approved_concept_submission_id
+            : null;
+
+        if ($approvedConceptSubmissionId === null) {
+            return null;
+        }
+
+        $isApprovedSubmissionStillAvailable = $conceptSubmissions
+            ->contains(fn (DocumentSubmission $submission): bool => (int) $submission->id === $approvedConceptSubmissionId);
+
+        return $isApprovedSubmissionStillAvailable ? $approvedConceptSubmissionId : null;
+    }
+
+    private function resolvePanelistApprovalStatus(int $submissionId, ?int $approvedConceptSubmissionId): string
+    {
+        if ($approvedConceptSubmissionId === null) {
+            return 'Pending';
+        }
+
+        return $approvedConceptSubmissionId === $submissionId ? 'Approved' : 'Rejected';
+    }
+
+    /**
+     * @return array{id: int, fileName: string, fileUrl: string|null, signedAt: string|null, adviserName: string|null}|null
+     */
+    private function resolveLatestRecommendationLetter(?Group $group): ?array
+    {
+        if (! $group instanceof Group || ! Schema::hasTable('adviser_recommendation_documents')) {
+            return null;
+        }
+
+        $latestRecommendation = AdviserRecommendationDocument::query()
+            ->with('adviser:id,name,first_name,last_name,email')
+            ->where('group_id', $group->id)
+            ->orderByDesc('signed_at')
+            ->orderByDesc('id')
+            ->first([
+                'id',
+                'adviser_id',
+                'file_name',
+                'file_path',
+                'signed_at',
+            ]);
+
+        if (! $latestRecommendation instanceof AdviserRecommendationDocument) {
+            return null;
+        }
+
+        $filePath = is_string($latestRecommendation->file_path) ? trim($latestRecommendation->file_path) : '';
+        $fileUrl = $filePath !== '' ? Storage::disk('public')->url($filePath) : null;
+
+        return [
+            'id' => $latestRecommendation->id,
+            'fileName' => (string) $latestRecommendation->file_name,
+            'fileUrl' => $fileUrl,
+            'signedAt' => $latestRecommendation->signed_at?->format('Y-m-d H:i'),
+            'adviserName' => $this->resolveUserName($latestRecommendation->adviser),
+        ];
+    }
+
+    /**
      * @return array<int, array{id: int, name: string, role: string, email: string|null}>
      */
     private function resolveStudents(?Group $group): array
@@ -396,11 +478,35 @@ class PanelistLiveDefenseController extends Controller
                 return [
                     'id' => (int) $assignment->panelist_id,
                     'name' => $this->resolveUserName($panelist),
-                    'role' => $assignment->role === 'chairman' ? 'Panel Chairman' : 'Panel Member',
+                    'role' => $this->isChairmanAssignment($assignment) ? 'Panel Chairman' : 'Panel Member',
                     'email' => $panelist?->email,
                 ];
             })
             ->all();
+    }
+
+    private function resolveCurrentPanelAssignment(?Group $group, ?int $panelistId): ?GroupPanelist
+    {
+        if (! $group instanceof Group || $panelistId === null) {
+            return null;
+        }
+
+        $assignment = $group->panelAssignments->first(
+            fn (GroupPanelist $panelAssignment): bool => (int) $panelAssignment->panelist_id === $panelistId
+        );
+
+        return $assignment instanceof GroupPanelist ? $assignment : null;
+    }
+
+    private function isChairmanAssignment(?GroupPanelist $panelAssignment): bool
+    {
+        if (! $panelAssignment instanceof GroupPanelist) {
+            return false;
+        }
+
+        $role = is_string($panelAssignment->role) ? strtolower(trim($panelAssignment->role)) : '';
+
+        return $role === 'chairman' || (int) $panelAssignment->panel_slot === 1;
     }
 
     private function resolveConceptDefenseStatus(int $groupId): string
@@ -425,17 +531,6 @@ class PanelistLiveDefenseController extends Controller
         }
 
         return 'Pending';
-    }
-
-    private function resolvePanelApprovalCount(DocumentSubmission $submission, int $panelApprovalTotal): int
-    {
-        if ($panelApprovalTotal < 1) {
-            return 0;
-        }
-
-        $isFullyApproved = $submission->status === 'Approved' && $submission->adviser_status === 'Approved';
-
-        return $isFullyApproved ? $panelApprovalTotal : 0;
     }
 
     private function resolveProgramSetName(Group $group): string
