@@ -238,8 +238,6 @@ const PanelistLiveDefense = () => {
             if (isCommentFocused) return;
             router.reload({
                 only: liveDefensePartialProps,
-                preserveScroll: true,
-                preserveState: true,
             });
         }, 4000);
 
