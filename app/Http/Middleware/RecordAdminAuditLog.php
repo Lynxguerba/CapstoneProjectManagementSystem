@@ -23,10 +23,11 @@ class RecordAdminAuditLog
         $routeName = $request->route()?->getName();
         $user = $request->user();
         $writeMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
-        $excludedRoutes = ['login.store', 'logout'];
+        $excludedRoutes = ['login.store', 'logout', 'switch-role'];
         $shouldRecord = $user instanceof User
             && in_array($request->method(), $writeMethods, true)
-            && ! in_array((string) $routeName, $excludedRoutes, true);
+            && ! in_array((string) $routeName, $excludedRoutes, true)
+            && $request->path() !== 'switch-role';
 
         if (! $shouldRecord || ! Schema::hasTable('audit_logs')) {
             return $response;
