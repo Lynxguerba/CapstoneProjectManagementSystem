@@ -1,9 +1,13 @@
 <?php
 
+use App\Http\Controllers\Adviser\AdviserLiveDefenseController;
+use App\Http\Controllers\Adviser\AdviserScheduleController;
 use App\Http\Controllers\Adviser\ApproveGroupAdviserRequestController;
 use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
+use App\Http\Controllers\Adviser\DestroyAdviserLiveDefenseCommentController;
 use App\Http\Controllers\Adviser\DismissGroupAdviserRequestController;
 use App\Http\Controllers\Adviser\GenerateRecommendationForTitleDefenseController;
+use App\Http\Controllers\Adviser\StoreAdviserLiveDefenseCommentController;
 use App\Http\Controllers\Adviser\UpdateAdviserAvailabilityController;
 use App\Http\Controllers\Adviser\UpdateAdviserConceptSubmissionStatusController;
 use App\Http\Controllers\Adviser\UpdateAdviserPasswordController;
@@ -883,9 +887,10 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
     Route::get('/evaluations', function () {
         return Inertia::render('Adviser/evaluations');
     })->name('adviser.evaluations');
-    Route::get('/schedule', function () {
-        return Inertia::render('Adviser/schedule');
-    })->name('adviser.schedule');
+    Route::get('/schedule', AdviserScheduleController::class)->name('adviser.schedule');
+    Route::get('/live-defense', AdviserLiveDefenseController::class)->name('adviser.live-defense');
+    Route::post('/live-defense/comments', StoreAdviserLiveDefenseCommentController::class)->name('adviser.live-defense.comments.store');
+    Route::delete('/live-defense/comments/{comment}', DestroyAdviserLiveDefenseCommentController::class)->name('adviser.live-defense.comments.destroy');
     Route::get('/verdict', function () {
         return Inertia::render('Adviser/verdict');
     })->name('adviser.verdict');

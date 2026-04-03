@@ -11,6 +11,9 @@ type PdfHighlighterViewerProps = {
     onHighlightFocused?: (highlightId: string) => void;
     containerClassName?: string;
     isReadOnly?: boolean;
+    selectionControls?: React.ReactNode;
+    isSelectionSendDisabled?: boolean;
+    selectionSendDisabledReason?: string;
 };
 
 type HighlightPopupProps = {
@@ -23,6 +26,64 @@ type HighlightPopupProps = {
 const PDF_WORKER_SRC = 'https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs';
 const HIGHLIGHT_SCROLL_RETRY_MS = 120;
 const MAX_HIGHLIGHT_SCROLL_RETRIES = 8;
+
+const toPositiveInteger = (value: unknown): number | null => {
+    if (typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value) && value > 0) {
+        return value;
+    }
+
+    if (typeof value === 'string' && value.trim() !== '') {
+        const parsed = Number(value);
+        if (Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0) {
+            return parsed;
+        }
+    }
+
+    return null;
+};
+
+const collectPositionPageNumbers = (position: unknown): number[] => {
+    if (!position || typeof position !== 'object') {
+        return [];
+    }
+
+    const candidatePosition = position as {
+        pageNumber?: unknown;
+        boundingRect?: { pageNumber?: unknown } | null;
+        rects?: Array<{ pageNumber?: unknown }> | null;
+    };
+
+    const pageNumbers = new Set<number>();
+    const directPageNumber = toPositiveInteger(candidatePosition.pageNumber);
+    if (directPageNumber !== null) {
+        pageNumbers.add(directPageNumber);
+    }
+
+    const boundingRectPageNumber = toPositiveInteger(candidatePosition.boundingRect?.pageNumber);
+    if (boundingRectPageNumber !== null) {
+        pageNumbers.add(boundingRectPageNumber);
+    }
+
+    if (Array.isArray(candidatePosition.rects)) {
+        candidatePosition.rects.forEach((rect) => {
+            const rectPageNumber = toPositiveInteger(rect?.pageNumber);
+            if (rectPageNumber !== null) {
+                pageNumbers.add(rectPageNumber);
+            }
+        });
+    }
+
+    return Array.from(pageNumbers);
+};
+
+const isHighlightCompatibleWithDocument = (highlight: IHighlight, pageCount: number): boolean => {
+    const highlightPageNumbers = collectPositionPageNumbers(highlight.position);
+    if (highlightPageNumbers.length === 0) {
+        return false;
+    }
+
+    return highlightPageNumbers.every((pageNumber) => pageNumber <= pageCount);
+};
 
 const buildConsoleMessage = (args: unknown[]): string => {
     return args
@@ -60,10 +121,16 @@ const SelectionCommentPopup = ({
     previewText,
     onCancel,
     onSend,
+    controls,
+    isSendDisabled = false,
+    sendDisabledReason,
 }: {
     previewText?: string;
     onCancel: () => void;
     onSend: (commentText: string) => void;
+    controls?: React.ReactNode;
+    isSendDisabled?: boolean;
+    sendDisabledReason?: string;
 }): React.JSX.Element => {
     const [draftComment, setDraftComment] = React.useState('');
     const trimmedDraftComment = draftComment.trim();
@@ -78,7 +145,7 @@ const SelectionCommentPopup = ({
     };
 
     const handleSend = (): void => {
-        if (trimmedDraftComment === '') {
+        if (trimmedDraftComment === '' || isSendDisabled) {
             return;
         }
 
@@ -93,6 +160,7 @@ const SelectionCommentPopup = ({
                     &quot;{previewText}&quot;
                 </p>
             ) : null}
+            {controls ? <div className="mt-2">{controls}</div> : null}
             <textarea
                 autoFocus
                 rows={3}
@@ -107,6 +175,7 @@ const SelectionCommentPopup = ({
                 }}
                 className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
             />
+            {isSendDisabled && sendDisabledReason ? <p className="mt-1 text-[11px] text-amber-700">{sendDisabledReason}</p> : null}
             <div className="mt-2 flex items-center justify-end gap-2">
                 <button type="button" onClick={handleCancel} className="text-[11px] font-medium text-slate-500 transition hover:text-slate-700">
                     Cancel
@@ -114,7 +183,7 @@ const SelectionCommentPopup = ({
                 <button
                     type="button"
                     onClick={handleSend}
-                    disabled={trimmedDraftComment === ''}
+                    disabled={trimmedDraftComment === '' || isSendDisabled}
                     className="rounded-lg bg-emerald-600 px-3 py-1 text-[11px] font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-40"
                 >
                     Send
@@ -132,6 +201,9 @@ export const PdfHighlighterViewer = ({
     onHighlightFocused,
     containerClassName = 'h-[65vh] lg:h-[72vh]',
     isReadOnly = false,
+    selectionControls,
+    isSelectionSendDisabled = false,
+    selectionSendDisabledReason,
 }: PdfHighlighterViewerProps): React.JSX.Element => {
     const hideTipCallbackRef = React.useRef<(() => void) | null>(null);
     const pendingHighlightRef = React.useRef<NewHighlight | null>(null);
@@ -374,8 +446,11 @@ export const PdfHighlighterViewer = ({
                     enableFallbackViewer(error.message || 'Unable to load PDF highlighter.');
                 }}
             >
-                {(pdfDocument) => (
-                    <PdfHighlighter<IHighlight>
+                {(pdfDocument) => {
+                    const safeHighlights = highlights.filter((highlight) => isHighlightCompatibleWithDocument(highlight, pdfDocument.numPages));
+
+                    return (
+                        <PdfHighlighter<IHighlight>
                         pdfDocument={pdfDocument}
                         pdfScaleValue="page-width"
                         enableAreaSelection={(event) => !isReadOnly && event.altKey}
@@ -383,7 +458,7 @@ export const PdfHighlighterViewer = ({
                         scrollRef={(scrollTo) => {
                             scrollToHighlightRef.current = scrollTo;
                         }}
-                        highlights={highlights}
+                        highlights={safeHighlights}
                         onSelectionFinished={(position, content, hideTipAndSelection, transformSelection) => {
                             if (isReadOnly) {
                                 hideTipAndSelection();
@@ -404,6 +479,9 @@ export const PdfHighlighterViewer = ({
                             return (
                                 <SelectionCommentPopup
                                     previewText={content.text}
+                                    controls={selectionControls}
+                                    isSendDisabled={isSelectionSendDisabled}
+                                    sendDisabledReason={selectionSendDisabledReason}
                                     onCancel={() => {
                                         hideTipAndSelection();
                                         resetPendingState();
@@ -443,7 +521,8 @@ export const PdfHighlighterViewer = ({
                             );
                         }}
                     />
-                )}
+                    );
+                }}
             </PdfLoader>
         </div>
     );

@@ -231,6 +231,7 @@ class PanelistLiveDefenseController extends Controller
             ])
             ->where('group_id', $group->id)
             ->whereIn('document_submission_id', $submissionIds->all())
+            ->where('author_role', '!=', 'Adviser')
             ->orderBy('created_at')
             ->orderBy('id')
             ->get([

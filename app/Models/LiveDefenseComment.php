@@ -14,7 +14,15 @@ class LiveDefenseComment extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = ['group_id', 'document_submission_id', 'author_id', 'author_role', 'message', 'is_highlight_comment'];
+    protected $fillable = [
+        'group_id',
+        'document_submission_id',
+        'author_id',
+        'referenced_panelist_id',
+        'author_role',
+        'message',
+        'is_highlight_comment',
+    ];
 
     /**
      * @return array<string, string>
@@ -39,6 +47,11 @@ class LiveDefenseComment extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');
+    }
+
+    public function referencedPanelist(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'referenced_panelist_id');
     }
 
     public function highlight(): HasOne

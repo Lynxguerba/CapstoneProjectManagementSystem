@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Student;
+namespace App\Http\Controllers\Adviser;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdviserRecommendationDocument;
@@ -12,7 +12,7 @@ use App\Models\GroupPanelist;
 use App\Models\LiveDefenseComment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -21,31 +21,32 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class StudentLiveDefenseController extends Controller
+class AdviserLiveDefenseController extends Controller
 {
-    public function __invoke(): Response
+    public function __invoke(Request $request): Response
     {
-        /** @var User|null $student */
-        $student = Auth::guard('web')->user();
-        $group = $this->resolveStudentGroup($student?->id);
-        $panelists = $this->resolveGroupPanelists($group);
-        $recommendationLetter = $this->resolveLatestRecommendationLetter($group);
-        $academicYearId = $group?->programSet?->academic_year_id;
-        $conceptRequirements = $this->resolveConceptRequirements($academicYearId);
+        /** @var User|null $adviser */
+        $adviser = Auth::guard('web')->user();
+        $adviserId = $adviser?->id;
+        $assignedGroups = $this->resolveAssignedGroups($adviserId);
+        $selectedGroup = $this->resolveSelectedGroup($assignedGroups, $request->query('group'));
+        $conceptRequirements = $this->resolveConceptRequirements($selectedGroup?->programSet?->academic_year_id);
         $conceptSubmissions = $this->resolveConceptSubmissions(
-            $group?->id,
+            $selectedGroup?->id,
             $conceptRequirements->pluck('id')->values(),
         );
-        $approvedConceptSubmissionId = $this->resolveApprovedConceptSubmissionId($group, $conceptSubmissions);
-        $liveDefenseWorkspace = $this->resolveLiveDefenseWorkspace($group, $conceptSubmissions);
+        $approvedConceptSubmissionId = $this->resolveApprovedConceptSubmissionId($selectedGroup, $conceptSubmissions);
+        $panelists = $this->resolvePanelists($selectedGroup);
+        $liveDefenseWorkspace = $this->resolveLiveDefenseWorkspace($selectedGroup, $conceptSubmissions, $adviserId);
+        $recommendationLetter = $this->resolveLatestRecommendationLetter($selectedGroup);
 
-        return Inertia::render('Student/live-defense', [
-            'group' => $group ? [
-                'id' => $group->id,
-                'name' => $group->name,
-                'programSetName' => $group->programSet?->name,
-                'academicYear' => $group->programSet?->academicYear?->label,
-                'defenseStatus' => $this->resolveConceptDefenseStatus($group->id),
+        return Inertia::render('Adviser/live-defense', [
+            'group' => $selectedGroup ? [
+                'id' => $selectedGroup->id,
+                'name' => $this->formatGroupName($selectedGroup->name),
+                'programSetName' => $this->resolveProgramSetName($selectedGroup),
+                'academicYear' => $selectedGroup->programSet?->academicYear?->label ?? $selectedGroup->programSet?->school_year,
+                'defenseStatus' => $this->resolveConceptDefenseStatus($selectedGroup->id),
             ] : null,
             'conceptSubmissions' => $conceptSubmissions
                 ->map(fn (DocumentSubmission $submission): array => [
@@ -60,11 +61,10 @@ class StudentLiveDefenseController extends Controller
                 ])
                 ->values()
                 ->all(),
-            'panelists' => $panelists,
             'participants' => [
-                'students' => $this->resolveStudents($group),
-                'adviser' => $this->resolveAdviser($group),
-                'panelists' => $this->resolveParticipantPanelists($group),
+                'students' => $this->resolveStudents($selectedGroup),
+                'adviser' => $this->resolveAdviser($selectedGroup),
+                'panelists' => $panelists,
             ],
             'commentsBySubmission' => $liveDefenseWorkspace['commentsBySubmission'],
             'highlightsBySubmission' => $liveDefenseWorkspace['highlightsBySubmission'],
@@ -73,67 +73,59 @@ class StudentLiveDefenseController extends Controller
         ]);
     }
 
-    private function resolveStudentGroup(?int $studentId): ?Group
+    /**
+     * @return Collection<int, Group>
+     */
+    private function resolveAssignedGroups(?int $adviserId): Collection
     {
-        if ($studentId === null || ! Schema::hasTable('groups')) {
-            return null;
+        if (
+            $adviserId === null
+            || ! Schema::hasTable('groups')
+            || ! Schema::hasTable('group_advisers')
+        ) {
+            return collect();
         }
-
-        $hasGroupMembersTable = Schema::hasTable('group_members');
-        $hasProgramSetsTable = Schema::hasTable('program_sets');
-        $hasAcademicYearsTable = Schema::hasTable('academic_years');
-        $hasGroupAdvisersTable = Schema::hasTable('group_advisers');
-        $hasGroupPanelistsTable = Schema::hasTable('group_panelists');
-        $hasUsersTable = Schema::hasTable('users');
-
-        $query = Group::query();
-
-        if ($hasProgramSetsTable) {
-            $query->with('programSet:id,name,academic_year_id');
-
-            if ($hasAcademicYearsTable) {
-                $query->with('programSet.academicYear:id,label');
-            }
-        }
-
-        if ($hasUsersTable) {
-            $query->with('leader:id,name,first_name,last_name,email');
-        }
-
-        if ($hasGroupMembersTable && $hasUsersTable) {
-            $query->with('members:id,name,first_name,last_name,email');
-        }
-
-        if ($hasGroupAdvisersTable && $hasUsersTable) {
-            $query->with('adviserAssignment.adviser:id,name,first_name,last_name,email');
-        }
-
-        if ($hasGroupPanelistsTable && $hasUsersTable) {
-            $query->with([
-                'panelAssignments' => function (HasMany $assignmentQuery): void {
-                    $assignmentQuery
-                        ->with('panelist:id,name,first_name,last_name,email')
-                        ->orderBy('panel_slot');
-                },
-            ]);
-        }
-
-        $query->where(function (Builder $groupQuery) use ($studentId, $hasGroupMembersTable): void {
-            $groupQuery->where('leader_id', $studentId);
-
-            if ($hasGroupMembersTable) {
-                $groupQuery->orWhereHas('members', function (Builder $memberQuery) use ($studentId): void {
-                    $memberQuery->where('users.id', $studentId);
-                });
-            }
-        });
 
         $groupColumns = ['id', 'name', 'program_set_id', 'leader_id'];
         if (Schema::hasColumn('groups', 'approved_concept_submission_id')) {
             $groupColumns[] = 'approved_concept_submission_id';
         }
 
-        return $query->first($groupColumns);
+        return Group::query()
+            ->with([
+                'programSet.academicYear',
+                'leader',
+                'members',
+                'adviserAssignment.adviser',
+                'panelAssignments.panelist',
+            ])
+            ->whereHas('adviserAssignment', fn (Builder $query): Builder => $query->where('adviser_id', $adviserId))
+            ->orderBy('name')
+            ->get($groupColumns);
+    }
+
+    /**
+     * @param  Collection<int, Group>  $assignedGroups
+     */
+    private function resolveSelectedGroup(Collection $assignedGroups, mixed $rawGroupId): ?Group
+    {
+        if ($assignedGroups->isEmpty()) {
+            return null;
+        }
+
+        $groupId = is_numeric($rawGroupId) ? (int) $rawGroupId : null;
+        if ($groupId !== null) {
+            /** @var Group|null $matched */
+            $matched = $assignedGroups->first(fn (Group $group): bool => $group->id === $groupId);
+            if ($matched instanceof Group) {
+                return $matched;
+            }
+        }
+
+        /** @var Group|null $first */
+        $first = $assignedGroups->first();
+
+        return $first;
     }
 
     /**
@@ -168,7 +160,11 @@ class StudentLiveDefenseController extends Controller
      */
     private function resolveConceptSubmissions(?int $groupId, Collection $requirementIds): Collection
     {
-        if ($groupId === null || $requirementIds->isEmpty() || ! Schema::hasTable('document_submissions')) {
+        if (
+            $groupId === null
+            || $requirementIds->isEmpty()
+            || ! Schema::hasTable('document_submissions')
+        ) {
             return collect();
         }
 
@@ -190,146 +186,6 @@ class StudentLiveDefenseController extends Controller
     }
 
     /**
-     * @return array<int, array{id: int, name: string, email: string|null, slot: int|null, role: string|null}>
-     */
-    private function resolveGroupPanelists(?Group $group): array
-    {
-        if (! $group instanceof Group || ! $group->relationLoaded('panelAssignments')) {
-            return [];
-        }
-
-        return $group->panelAssignments
-            ->sortBy('panel_slot')
-            ->values()
-            ->map(function (GroupPanelist $assignment): array {
-                $panelist = $assignment->panelist;
-
-                return [
-                    'id' => (int) $assignment->panelist_id,
-                    'name' => $this->resolveUserName($panelist),
-                    'email' => $panelist?->email ?? null,
-                    'slot' => $assignment->panel_slot !== null ? (int) $assignment->panel_slot : null,
-                    'role' => $assignment->role !== null ? (string) $assignment->role : null,
-                ];
-            })
-            ->all();
-    }
-
-    /**
-     * @return array<int, array{id: int, name: string, role: string, email: string|null}>
-     */
-    private function resolveStudents(?Group $group): array
-    {
-        if (! $group instanceof Group) {
-            return [];
-        }
-
-        $students = collect();
-
-        if ($group->leader instanceof User) {
-            $students->push([
-                'id' => (int) $group->leader->id,
-                'name' => $this->resolveUserName($group->leader),
-                'role' => 'Leader',
-                'email' => $group->leader->email,
-            ]);
-        }
-
-        $students = $students->merge(
-            $group->members
-                ->map(fn (User $member): array => [
-                    'id' => (int) $member->id,
-                    'name' => $this->resolveUserName($member),
-                    'role' => 'Member',
-                    'email' => $member->email,
-                ]),
-        );
-
-        return $students
-            ->unique('id')
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @return array{id: int, name: string, role: string, email: string|null}|null
-     */
-    private function resolveAdviser(?Group $group): ?array
-    {
-        $adviser = $group?->adviserAssignment?->adviser;
-
-        if (! $adviser instanceof User) {
-            return null;
-        }
-
-        return [
-            'id' => (int) $adviser->id,
-            'name' => $this->resolveUserName($adviser),
-            'role' => 'Adviser',
-            'email' => $adviser->email,
-        ];
-    }
-
-    /**
-     * @return array<int, array{id: int, name: string, role: string, email: string|null}>
-     */
-    private function resolveParticipantPanelists(?Group $group): array
-    {
-        if (! $group instanceof Group || ! $group->relationLoaded('panelAssignments')) {
-            return [];
-        }
-
-        return $group->panelAssignments
-            ->sortBy('panel_slot')
-            ->values()
-            ->map(function (GroupPanelist $assignment): array {
-                $panelist = $assignment->panelist;
-                $normalizedRole = is_string($assignment->role) ? strtolower(trim($assignment->role)) : '';
-                $isChairman = $normalizedRole === 'chairman' || (int) ($assignment->panel_slot ?? 0) === 1;
-
-                return [
-                    'id' => (int) $assignment->panelist_id,
-                    'name' => $this->resolveUserName($panelist),
-                    'role' => $isChairman ? 'Panel Chairman' : 'Panel Member',
-                    'email' => $panelist?->email ?? null,
-                ];
-            })
-            ->all();
-    }
-
-    /**
-     * @param  Collection<int, DocumentSubmission>  $conceptSubmissions
-     */
-    private function resolveApprovedConceptSubmissionId(?Group $group, Collection $conceptSubmissions): ?int
-    {
-        if (! $group instanceof Group || ! Schema::hasColumn('groups', 'approved_concept_submission_id')) {
-            return null;
-        }
-
-        $approvedConceptSubmissionId = is_numeric($group->approved_concept_submission_id)
-            ? (int) $group->approved_concept_submission_id
-            : null;
-
-        if ($approvedConceptSubmissionId === null) {
-            return null;
-        }
-
-        $isApprovedSubmissionStillAvailable = $conceptSubmissions
-            ->contains(fn (DocumentSubmission $submission): bool => (int) $submission->id === $approvedConceptSubmissionId);
-
-        return $isApprovedSubmissionStillAvailable ? $approvedConceptSubmissionId : null;
-    }
-
-    private function resolvePanelistApprovalStatus(int $submissionId, ?int $approvedConceptSubmissionId): string
-    {
-        if ($approvedConceptSubmissionId === null) {
-            return 'Pending';
-        }
-
-        return $approvedConceptSubmissionId === $submissionId ? 'Approved' : 'Rejected';
-    }
-
-    /**
      * @param  Collection<int, DocumentSubmission>  $conceptSubmissions
      * @return array{
      *     commentsBySubmission: array<int, array<int, array{id: string, databaseId: int, author: string, authorRole: string, attributedPanelistName: string|null, message: string, createdAt: string, canDelete: bool}>>,
@@ -337,7 +193,7 @@ class StudentLiveDefenseController extends Controller
      *     commentHighlightTargets: array<string, array{submissionId: int, highlightId: string}>
      * }
      */
-    private function resolveLiveDefenseWorkspace(?Group $group, Collection $conceptSubmissions): array
+    private function resolveLiveDefenseWorkspace(?Group $group, Collection $conceptSubmissions, ?int $adviserId): array
     {
         $commentsBySubmission = [];
         $highlightsBySubmission = [];
@@ -422,7 +278,7 @@ class StudentLiveDefenseController extends Controller
                     : null,
                 'message' => $highlightPrefix.(string) $comment->message,
                 'createdAt' => $comment->created_at?->toIso8601String() ?? '',
-                'canDelete' => false,
+                'canDelete' => (int) ($comment->author_id ?? 0) === (int) ($adviserId ?? 0),
             ];
 
             if ($highlight === null) {
@@ -492,18 +348,36 @@ class StudentLiveDefenseController extends Controller
         return $trimmedEmoji !== '' ? $trimmedEmoji : '💬';
     }
 
-    private function resolveConceptDefenseStatus(int $groupId): string
+    /**
+     * @param  Collection<int, DocumentSubmission>  $conceptSubmissions
+     */
+    private function resolveApprovedConceptSubmissionId(?Group $group, Collection $conceptSubmissions): ?int
     {
-        if (! Schema::hasTable('defense_schedules')) {
+        if (! $group instanceof Group || ! Schema::hasColumn('groups', 'approved_concept_submission_id')) {
+            return null;
+        }
+
+        $approvedConceptSubmissionId = is_numeric($group->approved_concept_submission_id)
+            ? (int) $group->approved_concept_submission_id
+            : null;
+
+        if ($approvedConceptSubmissionId === null) {
+            return null;
+        }
+
+        $isApprovedSubmissionStillAvailable = $conceptSubmissions
+            ->contains(fn (DocumentSubmission $submission): bool => (int) $submission->id === $approvedConceptSubmissionId);
+
+        return $isApprovedSubmissionStillAvailable ? $approvedConceptSubmissionId : null;
+    }
+
+    private function resolvePanelistApprovalStatus(int $submissionId, ?int $approvedConceptSubmissionId): string
+    {
+        if ($approvedConceptSubmissionId === null) {
             return 'Pending';
         }
 
-        $status = DefenseSchedule::query()
-            ->where('group_id', $groupId)
-            ->whereRaw('LOWER(stage) = ?', ['concept'])
-            ->value('status');
-
-        return is_string($status) && $status !== '' ? $status : 'Pending';
+        return $approvedConceptSubmissionId === $submissionId ? 'Approved' : 'Rejected';
     }
 
     /**
@@ -544,27 +418,153 @@ class StudentLiveDefenseController extends Controller
         ];
     }
 
+    /**
+     * @return array<int, array{id: int, name: string, role: string, email: string|null}>
+     */
+    private function resolveStudents(?Group $group): array
+    {
+        if (! $group instanceof Group) {
+            return [];
+        }
+
+        $students = collect();
+        if ($group->leader instanceof User) {
+            $students->push([
+                'id' => $group->leader->id,
+                'name' => $this->resolveUserName($group->leader),
+                'role' => 'Leader',
+                'email' => $group->leader->email,
+            ]);
+        }
+
+        $students = $students->merge(
+            $group->members
+                ->map(fn (User $member): array => [
+                    'id' => $member->id,
+                    'name' => $this->resolveUserName($member),
+                    'role' => 'Member',
+                    'email' => $member->email,
+                ]),
+        );
+
+        return $students
+            ->unique('id')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{id: int, name: string, role: string, email: string|null}|null
+     */
+    private function resolveAdviser(?Group $group): ?array
+    {
+        $adviser = $group?->adviserAssignment?->adviser;
+        if (! $adviser instanceof User) {
+            return null;
+        }
+
+        return [
+            'id' => $adviser->id,
+            'name' => $this->resolveUserName($adviser),
+            'role' => 'Adviser',
+            'email' => $adviser->email,
+        ];
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string, role: string, email: string|null}>
+     */
+    private function resolvePanelists(?Group $group): array
+    {
+        if (! $group instanceof Group) {
+            return [];
+        }
+
+        return $group->panelAssignments
+            ->sortBy('panel_slot')
+            ->values()
+            ->map(function (GroupPanelist $assignment): array {
+                $panelist = $assignment->panelist;
+                $normalizedRole = is_string($assignment->role) ? strtolower(trim($assignment->role)) : '';
+                $isChairman = $normalizedRole === 'chairman' || (int) ($assignment->panel_slot ?? 0) === 1;
+
+                return [
+                    'id' => (int) $assignment->panelist_id,
+                    'name' => $this->resolveUserName($panelist),
+                    'role' => $isChairman ? 'Panel Chairman' : 'Panel Member',
+                    'email' => $panelist?->email,
+                ];
+            })
+            ->all();
+    }
+
+    private function resolveConceptDefenseStatus(int $groupId): string
+    {
+        if (! Schema::hasTable('defense_schedules')) {
+            return 'Pending';
+        }
+
+        $conceptSchedule = DefenseSchedule::query()
+            ->where('group_id', $groupId)
+            ->where('stage', 'Concept')
+            ->orderByDesc('scheduled_date')
+            ->first(['id', 'status']);
+
+        $status = is_string($conceptSchedule?->status) ? trim($conceptSchedule->status) : '';
+        if ($status === 'Completed') {
+            return 'Completed';
+        }
+
+        if ($status === 'Scheduled') {
+            return 'In Progress';
+        }
+
+        return 'Pending';
+    }
+
+    private function resolveProgramSetName(Group $group): string
+    {
+        $programSetName = is_string($group->programSet?->name) ? trim($group->programSet->name) : '';
+        if ($programSetName !== '') {
+            return $programSetName;
+        }
+
+        $program = is_string($group->programSet?->program) ? trim($group->programSet->program) : '';
+        $schoolYear = is_string($group->programSet?->school_year) ? trim($group->programSet->school_year) : '';
+        $fallback = trim($program.' '.$schoolYear);
+
+        return $fallback !== '' ? $fallback : 'Program set';
+    }
+
+    private function formatGroupName(string $name): string
+    {
+        $trimmed = trim($name);
+        if ($trimmed === '') {
+            return 'Group';
+        }
+
+        return str_ends_with(strtolower($trimmed), ' group') ? $trimmed : $trimmed.' Group';
+    }
+
     private function resolveUserName(?User $user): string
     {
         if (! $user instanceof User) {
-            return 'Unassigned panelist';
+            return 'Unassigned';
         }
 
         $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
         $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
         $fullName = trim($firstName.' '.$lastName);
-
         if ($fullName !== '') {
             return $fullName;
         }
 
         $name = is_string($user->name) ? trim($user->name) : '';
-
         if ($name !== '') {
             return $name;
         }
 
-        return $user->email ?? 'Unassigned panelist';
+        return $user->email ?? 'Unassigned';
     }
 
     private function resolveOptionalUserName(?User $user): ?string
