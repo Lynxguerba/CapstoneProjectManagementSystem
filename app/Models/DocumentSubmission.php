@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class DocumentSubmission extends Model
@@ -68,5 +69,10 @@ class DocumentSubmission extends Model
     public function adviserRecommendationDocument(): HasOne
     {
         return $this->hasOne(AdviserRecommendationDocument::class, 'document_submission_id');
+    }
+
+    public function liveDefenseComments(): HasMany
+    {
+        return $this->hasMany(LiveDefenseComment::class);
     }
 }

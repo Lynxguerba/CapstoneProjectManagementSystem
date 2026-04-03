@@ -126,6 +126,11 @@ class User extends Authenticatable
         return $this->hasMany(TitleRepository::class, 'adviser_id');
     }
 
+    public function liveDefenseComments(): HasMany
+    {
+        return $this->hasMany(LiveDefenseComment::class, 'author_id');
+    }
+
     public function hasRole(string $role): bool
     {
         $normalizedRole = Role::normalizeRole($role);

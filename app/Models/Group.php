@@ -72,6 +72,11 @@ class Group extends Model
         return $this->hasMany(AdviserRecommendationDocument::class);
     }
 
+    public function liveDefenseComments(): HasMany
+    {
+        return $this->hasMany(LiveDefenseComment::class);
+    }
+
     public function panelists(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'group_panelists', 'group_id', 'panelist_id')

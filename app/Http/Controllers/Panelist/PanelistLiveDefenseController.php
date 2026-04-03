@@ -8,6 +8,7 @@ use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
 use App\Models\GroupPanelist;
+use App\Models\LiveDefenseComment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,6 +36,7 @@ class PanelistLiveDefenseController extends Controller
         );
         $panelists = $this->resolvePanelists($selectedGroup);
         $panelApprovalTotal = count($panelists);
+        $liveDefenseWorkspace = $this->resolveLiveDefenseWorkspace($selectedGroup, $conceptSubmissions, $panelistId);
 
         return Inertia::render('Panelist/live-defense', [
             'group' => $selectedGroup ? [
@@ -60,7 +63,9 @@ class PanelistLiveDefenseController extends Controller
                 'adviser' => $this->resolveAdviser($selectedGroup),
                 'panelists' => $panelists,
             ],
-            'comments' => [],
+            'commentsBySubmission' => $liveDefenseWorkspace['commentsBySubmission'],
+            'highlightsBySubmission' => $liveDefenseWorkspace['highlightsBySubmission'],
+            'commentHighlightTargets' => $liveDefenseWorkspace['commentHighlightTargets'],
         ]);
     }
 
@@ -169,6 +174,155 @@ class PanelistLiveDefenseController extends Controller
                 'adviser_status',
                 'created_at',
             ]);
+    }
+
+    /**
+     * @param  Collection<int, DocumentSubmission>  $conceptSubmissions
+     * @return array{
+     *     commentsBySubmission: array<int, array<int, array{id: string, databaseId: int, author: string, authorRole: string, message: string, createdAt: string, canDelete: bool}>>,
+     *     highlightsBySubmission: array<int, array<int, array<string, mixed>>>,
+     *     commentHighlightTargets: array<string, array{submissionId: int, highlightId: string}>
+     * }
+     */
+    private function resolveLiveDefenseWorkspace(?Group $group, Collection $conceptSubmissions, ?int $panelistId): array
+    {
+        $commentsBySubmission = [];
+        $highlightsBySubmission = [];
+        $commentHighlightTargets = [];
+
+        $conceptSubmissions->each(function (DocumentSubmission $submission) use (&$commentsBySubmission, &$highlightsBySubmission): void {
+            $commentsBySubmission[(int) $submission->id] = [];
+            $highlightsBySubmission[(int) $submission->id] = [];
+        });
+
+        if (
+            ! $group instanceof Group
+            || $conceptSubmissions->isEmpty()
+            || ! Schema::hasTable('live_defense_comments')
+            || ! Schema::hasTable('live_defense_comment_highlights')
+        ) {
+            return [
+                'commentsBySubmission' => $commentsBySubmission,
+                'highlightsBySubmission' => $highlightsBySubmission,
+                'commentHighlightTargets' => $commentHighlightTargets,
+            ];
+        }
+
+        $submissionIds = $conceptSubmissions
+            ->map(fn (DocumentSubmission $submission): int => (int) $submission->id)
+            ->values();
+
+        $comments = LiveDefenseComment::query()
+            ->with([
+                'author:id,name,first_name,last_name,email',
+                'highlight:id,live_defense_comment_id,highlight_id,quote_text,comment_emoji,content,position',
+            ])
+            ->where('group_id', $group->id)
+            ->whereIn('document_submission_id', $submissionIds->all())
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get([
+                'id',
+                'group_id',
+                'document_submission_id',
+                'author_id',
+                'author_role',
+                'message',
+                'is_highlight_comment',
+                'created_at',
+            ]);
+
+        foreach ($comments as $comment) {
+            $submissionId = (int) $comment->document_submission_id;
+            if (! array_key_exists($submissionId, $commentsBySubmission)) {
+                $commentsBySubmission[$submissionId] = [];
+                $highlightsBySubmission[$submissionId] = [];
+            }
+
+            $commentId = 'c-'.$comment->id;
+            $highlight = $comment->highlight;
+            $highlightPrefix = $highlight !== null
+                ? $this->buildHighlightedQuotePrefix($highlight->quote_text)
+                : '';
+            $authorName = $comment->author instanceof User
+                ? $this->resolveUserName($comment->author)
+                : (string) $comment->author_role;
+
+            $commentsBySubmission[$submissionId][] = [
+                'id' => $commentId,
+                'databaseId' => (int) $comment->id,
+                'author' => $authorName !== '' ? $authorName : (string) $comment->author_role,
+                'authorRole' => (string) $comment->author_role,
+                'message' => $highlightPrefix.(string) $comment->message,
+                'createdAt' => $comment->created_at?->format('M j, Y, h:i A') ?? '',
+                'canDelete' => (int) ($comment->author_id ?? 0) === (int) ($panelistId ?? 0),
+            ];
+
+            if ($highlight === null) {
+                continue;
+            }
+
+            $highlightId = trim((string) $highlight->highlight_id);
+            $position = is_array($highlight->position) ? $highlight->position : null;
+
+            if ($highlightId === '' || $position === null) {
+                continue;
+            }
+
+            $highlightsBySubmission[$submissionId][] = [
+                'id' => $highlightId,
+                'content' => $this->resolveHighlightContent($highlight->content, $highlight->quote_text),
+                'position' => $position,
+                'comment' => [
+                    'text' => (string) $comment->message,
+                    'emoji' => $this->resolveHighlightEmoji($highlight->comment_emoji),
+                ],
+            ];
+
+            $commentHighlightTargets[$commentId] = [
+                'submissionId' => $submissionId,
+                'highlightId' => $highlightId,
+            ];
+        }
+
+        return [
+            'commentsBySubmission' => $commentsBySubmission,
+            'highlightsBySubmission' => $highlightsBySubmission,
+            'commentHighlightTargets' => $commentHighlightTargets,
+        ];
+    }
+
+    private function buildHighlightedQuotePrefix(?string $quoteText): string
+    {
+        $trimmedQuote = is_string($quoteText) ? trim($quoteText) : '';
+        if ($trimmedQuote === '') {
+            return '';
+        }
+
+        return '"'.Str::limit($trimmedQuote, 80, '…').'" — ';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function resolveHighlightContent(mixed $content, ?string $quoteText): array
+    {
+        if (is_array($content)) {
+            return $content;
+        }
+
+        $trimmedQuote = is_string($quoteText) ? trim($quoteText) : '';
+
+        return [
+            'text' => $trimmedQuote,
+        ];
+    }
+
+    private function resolveHighlightEmoji(?string $emoji): string
+    {
+        $trimmedEmoji = is_string($emoji) ? trim($emoji) : '';
+
+        return $trimmedEmoji !== '' ? $trimmedEmoji : '💬';
     }
 
     /**
