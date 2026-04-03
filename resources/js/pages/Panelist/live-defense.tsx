@@ -110,6 +110,25 @@ const panelistApprovalStatusClass = (status: string): string => {
     return 'border-amber-200 bg-amber-100 text-amber-700';
 };
 
+const formatCommentCreatedAt = (createdAt: string): string => {
+    if (createdAt.trim() === '') {
+        return '';
+    }
+
+    const commentDate = new Date(createdAt);
+    if (Number.isNaN(commentDate.getTime())) {
+        return createdAt;
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+    }).format(commentDate);
+};
+
 const commentRoleBadgeClass = (role: LiveComment['authorRole']): string => {
     if (role === 'Panelist') {
         return 'border-emerald-200 bg-emerald-100 text-emerald-700';
@@ -122,8 +141,17 @@ const commentRoleBadgeClass = (role: LiveComment['authorRole']): string => {
     return 'border-slate-200 bg-slate-100 text-slate-600';
 };
 
+const areLiveCommentsEqual = (currentComments: LiveComment[], incomingComments: LiveComment[]): boolean => {
+    return JSON.stringify(currentComments) === JSON.stringify(incomingComments);
+};
+
 const areHighlightsEqual = (currentHighlights: IHighlight[], incomingHighlights: IHighlight[]): boolean => {
     return JSON.stringify(currentHighlights) === JSON.stringify(incomingHighlights);
+};
+
+const isScrolledNearBottom = (element: HTMLDivElement): boolean => {
+    const distanceFromBottom = element.scrollHeight - (element.scrollTop + element.clientHeight);
+    return distanceFromBottom <= 24;
 };
 
 const PanelistLiveDefense = () => {
@@ -154,9 +182,14 @@ const PanelistLiveDefense = () => {
     const [isUndoingConceptApproval, setIsUndoingConceptApproval] = React.useState(false);
     const [approvalMessage, setApprovalMessage] = React.useState<{ tone: 'success' | 'error'; text: string } | null>(null);
     const [isRecommendationLetterModalOpen, setIsRecommendationLetterModalOpen] = React.useState(false);
+    const [isReadingCommentHistory, setIsReadingCommentHistory] = React.useState(false);
     const commentsContainerRef = React.useRef<HTMLDivElement | null>(null);
+    const shouldStickCommentsToBottomRef = React.useRef(true);
+    const latestCommentDatabaseIdRef = React.useRef<number | null>(null);
 
     const liveDefensePartialProps = React.useMemo(() => ['commentsBySubmission', 'highlightsBySubmission', 'commentHighlightTargets'], []);
+    const liveDefenseCommentPollingProps = React.useMemo(() => ['commentsBySubmission', 'commentHighlightTargets'], []);
+    const liveDefenseHighlightPartialProps = React.useMemo(() => ['highlightsBySubmission'], []);
     const conceptApprovalPartialProps = React.useMemo(() => ['conceptSubmissions', 'flash'], []);
 
     React.useEffect(() => {
@@ -174,13 +207,30 @@ const PanelistLiveDefense = () => {
     }, [conceptSubmissions]);
 
     React.useEffect(() => {
-        const nextLiveCommentsMap: Record<number, LiveComment[]> = {};
+        setLiveCommentsMap((currentLiveCommentsMap) => {
+            const nextLiveCommentsMap: Record<number, LiveComment[]> = {};
+            let hasChanges = Object.keys(currentLiveCommentsMap).length !== conceptSubmissions.length;
 
-        conceptSubmissions.forEach((submission) => {
-            nextLiveCommentsMap[submission.id] = serverCommentsBySubmission[submission.id] ?? [];
+            conceptSubmissions.forEach((submission) => {
+                const submissionId = submission.id;
+                const incomingComments = serverCommentsBySubmission[submissionId] ?? [];
+                const currentComments = currentLiveCommentsMap[submissionId] ?? [];
+
+                if (areLiveCommentsEqual(currentComments, incomingComments)) {
+                    nextLiveCommentsMap[submissionId] = currentComments;
+                    return;
+                }
+
+                hasChanges = true;
+                nextLiveCommentsMap[submissionId] = incomingComments;
+            });
+
+            if (!hasChanges) {
+                return currentLiveCommentsMap;
+            }
+
+            return nextLiveCommentsMap;
         });
-
-        setLiveCommentsMap(nextLiveCommentsMap);
     }, [conceptSubmissions, serverCommentsBySubmission]);
 
     React.useEffect(() => {
@@ -235,14 +285,14 @@ const PanelistLiveDefense = () => {
         if (!group) return;
 
         const interval = setInterval(() => {
-            if (isCommentFocused) return;
+            if (isCommentFocused || isReadingCommentHistory || document.hidden) return;
             router.reload({
-                only: liveDefensePartialProps,
+                only: liveDefenseCommentPollingProps,
             });
         }, 4000);
 
         return () => clearInterval(interval);
-    }, [group, liveDefensePartialProps, isCommentFocused]);
+    }, [group, isCommentFocused, isReadingCommentHistory, liveDefenseCommentPollingProps]);
 
     const selectedConcept = React.useMemo(() => {
         return conceptSubmissions.find((submission) => submission.id === selectedConceptId) ?? null;
@@ -266,13 +316,33 @@ const PanelistLiveDefense = () => {
     );
 
     React.useEffect(() => {
+        shouldStickCommentsToBottomRef.current = true;
+        setIsReadingCommentHistory(false);
+        latestCommentDatabaseIdRef.current = null;
+    }, [selectedConceptId]);
+
+    React.useEffect(() => {
         const commentsContainer = commentsContainerRef.current;
         if (!commentsContainer) {
             return;
         }
 
+        const latestCommentDatabaseId = orderedActiveLiveComments.at(-1)?.databaseId ?? null;
+        const hasNewLatestComment = latestCommentDatabaseIdRef.current !== latestCommentDatabaseId;
+        latestCommentDatabaseIdRef.current = latestCommentDatabaseId;
+
+        if (!shouldStickCommentsToBottomRef.current || (!hasNewLatestComment && latestCommentDatabaseId !== null)) {
+            return;
+        }
+
         commentsContainer.scrollTop = commentsContainer.scrollHeight;
     }, [orderedActiveLiveComments]);
+
+    const handleCommentsScroll = (event: React.UIEvent<HTMLDivElement>): void => {
+        const isNearBottom = isScrolledNearBottom(event.currentTarget);
+        shouldStickCommentsToBottomRef.current = isNearBottom;
+        setIsReadingCommentHistory(!isNearBottom);
+    };
 
     const removeLiveComment = (comment: LiveComment): void => {
         if (removingCommentId !== null || !group) {
@@ -303,6 +373,27 @@ const PanelistLiveDefense = () => {
             },
             onFinish: () => {
                 setRemovingCommentId(null);
+            },
+        });
+    };
+
+    const focusHighlightedComment = (highlightTarget: { submissionId: number; highlightId: string }): void => {
+        setSelectedConceptId(highlightTarget.submissionId);
+
+        const hasHighlight = (highlightsMap[highlightTarget.submissionId] ?? []).some(
+            (highlight) => highlight.id === highlightTarget.highlightId,
+        );
+
+        setPendingHighlightFocus(highlightTarget);
+
+        if (hasHighlight) {
+            return;
+        }
+
+        router.reload({
+            only: liveDefenseHighlightPartialProps,
+            onSuccess: () => {
+                setPendingHighlightFocus(highlightTarget);
             },
         });
     };
@@ -592,7 +683,11 @@ const PanelistLiveDefense = () => {
                             Comments here are visible in the live defense stream for students, adviser, and panelists.
                         </p>
 
-                        <div ref={commentsContainerRef} className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                        <div
+                            ref={commentsContainerRef}
+                            onScroll={handleCommentsScroll}
+                            className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1"
+                        >
                             {orderedActiveLiveComments.length === 0 ? (
                                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-xs text-slate-500">
                                     No live comments yet.
@@ -610,7 +705,7 @@ const PanelistLiveDefense = () => {
                                                 >
                                                     {comment.authorRole}
                                                 </span>
-                                                <span className="text-[11px] text-slate-500">{comment.createdAt}</span>
+                                                <span className="text-[11px] text-slate-500">{formatCommentCreatedAt(comment.createdAt)}</span>
                                             </div>
                                             <p className="mt-1 text-xs text-slate-700">{comment.message}</p>
                                         </>
@@ -642,10 +737,7 @@ const PanelistLiveDefense = () => {
                                         <div key={comment.id} className="relative rounded-lg border border-slate-200 bg-slate-50/70">
                                             <button
                                                 type="button"
-                                                onClick={() => {
-                                                    setSelectedConceptId(highlightTarget.submissionId);
-                                                    setPendingHighlightFocus(highlightTarget);
-                                                }}
+                                                onClick={() => focusHighlightedComment(highlightTarget)}
                                                 className="w-full px-3 py-2 pr-8 text-left transition hover:bg-slate-100"
                                             >
                                                 {cardContent}
@@ -709,7 +801,7 @@ const PanelistLiveDefense = () => {
                                 </div>
                             ) : (
                                 <PdfHighlighterViewer
-                                    key={selectedConcept.fileUrl}
+                                    key={selectedConcept.id}
                                     pdfUrl={selectedConcept.fileUrl}
                                     highlights={getHighlights(selectedConcept.id)}
                                     onAddHighlight={handleAddHighlight(selectedConcept.id)}

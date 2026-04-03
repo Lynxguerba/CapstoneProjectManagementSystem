@@ -266,7 +266,7 @@ class PanelistLiveDefenseController extends Controller
                 'author' => $authorName !== '' ? $authorName : (string) $comment->author_role,
                 'authorRole' => (string) $comment->author_role,
                 'message' => $highlightPrefix.(string) $comment->message,
-                'createdAt' => $comment->created_at?->format('M j, Y, h:i A') ?? '',
+                'createdAt' => $comment->created_at?->toIso8601String() ?? '',
                 'canDelete' => (int) ($comment->author_id ?? 0) === (int) ($panelistId ?? 0),
             ];
 

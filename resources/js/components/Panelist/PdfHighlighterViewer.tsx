@@ -115,10 +115,14 @@ export const PdfHighlighterViewer = ({
     const [isFallbackViewer, setIsFallbackViewer] = React.useState(false);
     const [viewerErrorMessage, setViewerErrorMessage] = React.useState<string | null>(null);
 
-    const isBenignViewerWarning = React.useCallback((message: string): boolean => {
-        return message.includes('offsetParent is not set')
-            || message.includes('Transport destroyed')
-            || message.includes('Unable to get page');
+    const isOffsetParentWarning = React.useCallback((message: string): boolean => {
+        return message.includes('offsetParent is not set');
+    }, []);
+
+    const isCriticalViewerError = React.useCallback((message: string): boolean => {
+        return message.includes('Transport destroyed')
+            || message.includes('Unable to get page')
+            || message.includes('sendWithPromise');
     }, []);
 
     const enableFallbackViewer = React.useCallback((message: string): void => {
@@ -163,8 +167,13 @@ export const PdfHighlighterViewer = ({
             scrollToHighlightRef.current(targetHighlight);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            if (isBenignViewerWarning(message)) {
+            if (isOffsetParentWarning(message)) {
                 onHighlightFocused?.(activeHighlightId);
+                return;
+            }
+
+            if (isCriticalViewerError(message)) {
+                enableFallbackViewer(message);
                 return;
             }
 
@@ -172,13 +181,19 @@ export const PdfHighlighterViewer = ({
         }
 
         onHighlightFocused?.(activeHighlightId);
-    }, [activeHighlightId, enableFallbackViewer, highlights, isBenignViewerWarning, onHighlightFocused]);
+    }, [activeHighlightId, enableFallbackViewer, highlights, isCriticalViewerError, isOffsetParentWarning, onHighlightFocused]);
 
     React.useEffect(() => {
         const handleWindowError = (event: ErrorEvent): void => {
             const message = typeof event.message === 'string' ? event.message : '';
-            if (isBenignViewerWarning(message)) {
+            if (isOffsetParentWarning(message)) {
                 event.preventDefault();
+                return;
+            }
+
+            if (isCriticalViewerError(message)) {
+                event.preventDefault();
+                enableFallbackViewer(message);
                 return;
             }
 
@@ -198,8 +213,14 @@ export const PdfHighlighterViewer = ({
                 return;
             }
 
-            if (isBenignViewerWarning(message)) {
+            if (isOffsetParentWarning(message)) {
                 event.preventDefault();
+                return;
+            }
+
+            if (isCriticalViewerError(message)) {
+                event.preventDefault();
+                enableFallbackViewer(message);
                 return;
             }
 
@@ -219,7 +240,7 @@ export const PdfHighlighterViewer = ({
             window.removeEventListener('error', handleWindowError);
             window.removeEventListener('unhandledrejection', handleUnhandledRejection);
         };
-    }, [enableFallbackViewer, isBenignViewerWarning]);
+    }, [enableFallbackViewer, isCriticalViewerError, isOffsetParentWarning]);
 
     if (isFallbackViewer) {
         return (
