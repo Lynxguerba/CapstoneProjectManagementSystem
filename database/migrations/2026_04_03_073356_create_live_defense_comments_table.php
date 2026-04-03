@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('live_defense_comments')) {
+            return;
+        }
+
         Schema::create('live_defense_comments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('group_id')->constrained('groups')->cascadeOnDelete();
@@ -32,6 +36,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasTable('live_defense_comments')) {
+            return;
+        }
+
         Schema::dropIfExists('live_defense_comments');
     }
 };

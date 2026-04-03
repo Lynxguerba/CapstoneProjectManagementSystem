@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('live_defense_comment_highlights')) {
+            return;
+        }
+
         Schema::create('live_defense_comment_highlights', function (Blueprint $table) {
             $table->id();
             $table->foreignId('live_defense_comment_id')
@@ -33,6 +37,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasTable('live_defense_comment_highlights')) {
+            return;
+        }
+
         Schema::dropIfExists('live_defense_comment_highlights');
     }
 };
