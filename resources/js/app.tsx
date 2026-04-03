@@ -1,7 +1,10 @@
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { GlobalWorkerOptions } from 'pdfjs-dist';
 import { createRoot } from 'react-dom/client';
 import '../css/app.css';
+
+GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 

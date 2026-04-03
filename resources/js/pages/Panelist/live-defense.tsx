@@ -1,7 +1,9 @@
 import { Link, usePage } from '@inertiajs/react';
+import { PdfHighlighterViewer } from '@/components/Panelist/PdfHighlighterViewer';
 import { motion } from 'framer-motion';
-import { ChevronRight, FileText, MessageSquareText, ShieldCheck, Users } from 'lucide-react';
+import { ChevronRight, FileText, MessageSquareText, ShieldCheck, Users, X } from 'lucide-react';
 import React from 'react';
+import type { IHighlight, NewHighlight } from 'react-pdf-highlighter';
 import PanelLayout from './_layout';
 
 type Participant = {
@@ -30,6 +32,11 @@ type LiveComment = {
 };
 
 type PanelistLiveDefenseProps = {
+    auth?: {
+        user?: {
+            name?: string;
+        };
+    };
     group: {
         id: number;
         name: string;
@@ -80,23 +87,132 @@ const PanelistLiveDefense = () => {
     const serverComments = React.useMemo(() => props.comments ?? [], [props.comments]);
     const [selectedConceptId, setSelectedConceptId] = React.useState<number | null>(conceptSubmissions[0]?.id ?? null);
     const [commentInput, setCommentInput] = React.useState('');
-    const [liveComments, setLiveComments] = React.useState<LiveComment[]>(serverComments);
+    const [liveCommentsMap, setLiveCommentsMap] = React.useState<Record<number, LiveComment[]>>({});
+    const [highlightsMap, setHighlightsMap] = React.useState<Record<number, IHighlight[]>>({});
+    const [commentHighlightTargets, setCommentHighlightTargets] = React.useState<Record<string, { submissionId: number; highlightId: string }>>({});
+    const [pendingHighlightFocus, setPendingHighlightFocus] = React.useState<{ submissionId: number; highlightId: string } | null>(null);
+    const currentPanelistName = props.auth?.user?.name?.trim() || 'Panelist';
 
     React.useEffect(() => {
         setSelectedConceptId(conceptSubmissions[0]?.id ?? null);
     }, [conceptSubmissions]);
 
     React.useEffect(() => {
-        setLiveComments(serverComments);
-    }, [serverComments]);
+        if (conceptSubmissions.length === 0) {
+            setLiveCommentsMap({});
+            return;
+        }
+
+        setLiveCommentsMap((previousCommentsMap) => {
+            const nextCommentsMap: Record<number, LiveComment[]> = {};
+
+            conceptSubmissions.forEach((submission) => {
+                nextCommentsMap[submission.id] = previousCommentsMap[submission.id] ?? [];
+            });
+
+            const firstSubmissionId = conceptSubmissions[0]?.id;
+            if (serverComments.length > 0 && typeof firstSubmissionId === 'number' && nextCommentsMap[firstSubmissionId].length === 0) {
+                nextCommentsMap[firstSubmissionId] = serverComments;
+            }
+
+            return nextCommentsMap;
+        });
+    }, [conceptSubmissions, serverComments]);
 
     const selectedConcept = React.useMemo(() => {
         return conceptSubmissions.find((submission) => submission.id === selectedConceptId) ?? null;
     }, [conceptSubmissions, selectedConceptId]);
 
+    const getHighlights = (submissionId: number): IHighlight[] => highlightsMap[submissionId] ?? [];
+    const getLiveComments = (submissionId: number): LiveComment[] => liveCommentsMap[submissionId] ?? [];
+    const activeLiveComments = selectedConcept ? getLiveComments(selectedConcept.id) : [];
+
+    const appendLiveComment = (submissionId: number, comment: LiveComment): void => {
+        setLiveCommentsMap((previousCommentsMap) => ({
+            ...previousCommentsMap,
+            [submissionId]: [...(previousCommentsMap[submissionId] ?? []), comment],
+        }));
+    };
+
+    const removeLiveComment = (submissionId: number, commentId: string): void => {
+        const highlightTarget = commentHighlightTargets[commentId];
+
+        setLiveCommentsMap((previousCommentsMap) => ({
+            ...previousCommentsMap,
+            [submissionId]: (previousCommentsMap[submissionId] ?? []).filter((comment) => comment.id !== commentId),
+        }));
+
+        if (highlightTarget) {
+            setHighlightsMap((previousHighlightsMap) => ({
+                ...previousHighlightsMap,
+                [highlightTarget.submissionId]: (previousHighlightsMap[highlightTarget.submissionId] ?? []).filter(
+                    (highlight) => highlight.id !== highlightTarget.highlightId,
+                ),
+            }));
+            setCommentHighlightTargets((previousTargets) => {
+                if (!(commentId in previousTargets)) {
+                    return previousTargets;
+                }
+
+                const nextTargets = { ...previousTargets };
+                delete nextTargets[commentId];
+
+                return nextTargets;
+            });
+        }
+
+        setPendingHighlightFocus((currentTarget) => {
+            if (
+                !currentTarget ||
+                !highlightTarget ||
+                currentTarget.highlightId !== highlightTarget.highlightId ||
+                currentTarget.submissionId !== highlightTarget.submissionId
+            ) {
+                return currentTarget;
+            }
+
+            return null;
+        });
+    };
+
+    const handleAddHighlight =
+        (submissionId: number) =>
+        (highlight: NewHighlight): void => {
+            const id = `hl-${Date.now()}`;
+
+            setHighlightsMap((previousHighlights) => ({
+                ...previousHighlights,
+                [submissionId]: [...(previousHighlights[submissionId] ?? []), { ...highlight, id }],
+            }));
+            setCommentHighlightTargets((previousTargets) => ({
+                ...previousTargets,
+                [id]: { submissionId, highlightId: id },
+            }));
+
+            const quotedText = highlight.content?.text
+                ? `"${highlight.content.text.slice(0, 80)}${highlight.content.text.length > 80 ? '…' : ''}" — `
+                : '';
+
+            const timestamp = new Date().toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+
+            appendLiveComment(submissionId, {
+                id,
+                author: currentPanelistName,
+                authorRole: 'Panelist',
+                message: `${quotedText}${highlight.comment.text}`,
+                createdAt: timestamp,
+            });
+        };
+
     const handleSubmitComment = (): void => {
         const message = commentInput.trim();
-        if (message === '') {
+        if (message === '' || !selectedConcept) {
             return;
         }
 
@@ -108,16 +224,13 @@ const PanelistLiveDefense = () => {
             minute: '2-digit',
         });
 
-        setLiveComments((previousComments) => [
-            ...previousComments,
-            {
-                id: `c-${Date.now()}`,
-                author: 'You',
-                authorRole: 'Panelist',
-                message,
-                createdAt: timestamp,
-            },
-        ]);
+        appendLiveComment(selectedConcept.id, {
+            id: `c-${Date.now()}`,
+            author: currentPanelistName,
+            authorRole: 'Panelist',
+            message,
+            createdAt: timestamp,
+        });
         setCommentInput('');
     };
 
@@ -227,23 +340,80 @@ const PanelistLiveDefense = () => {
                         </p>
 
                         <div className="mt-4 flex-1 space-y-2 overflow-auto pr-1">
-                            {liveComments.length === 0 ? (
-                                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-xs text-slate-500">No live comments yet.</div>
+                            {activeLiveComments.length === 0 ? (
+                                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-xs text-slate-500">
+                                    No live comments yet.
+                                </div>
                             ) : (
-                                liveComments.map((comment) => (
-                                    <div key={comment.id} className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <p className="text-xs font-semibold text-slate-800">{comment.author}</p>
-                                            <span
-                                                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${commentRoleBadgeClass(comment.authorRole)}`}
+                                activeLiveComments.map((comment) => {
+                                    const highlightTarget = commentHighlightTargets[comment.id];
+                                    const submissionId = selectedConcept?.id;
+                                    const cardContent = (
+                                        <>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="text-xs font-semibold text-slate-800">{comment.author}</p>
+                                                <span
+                                                    className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${commentRoleBadgeClass(comment.authorRole)}`}
+                                                >
+                                                    {comment.authorRole}
+                                                </span>
+                                                <span className="text-[11px] text-slate-500">{comment.createdAt}</span>
+                                            </div>
+                                            <p className="mt-1 text-xs text-slate-700">{comment.message}</p>
+                                        </>
+                                    );
+
+                                    if (!highlightTarget) {
+                                        return (
+                                            <div
+                                                key={comment.id}
+                                                className="relative rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2 pr-8"
                                             >
-                                                {comment.authorRole}
-                                            </span>
-                                            <span className="text-[11px] text-slate-500">{comment.createdAt}</span>
+                                                {cardContent}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (typeof submissionId === 'number') {
+                                                            removeLiveComment(submissionId, comment.id);
+                                                        }
+                                                    }}
+                                                    className="absolute top-2 right-2 rounded p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
+                                                    aria-label="Remove comment"
+                                                >
+                                                    <X className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                        );
+                                    }
+
+                                    return (
+                                        <div key={comment.id} className="relative rounded-lg border border-slate-200 bg-slate-50/70">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedConceptId(highlightTarget.submissionId);
+                                                    setPendingHighlightFocus(highlightTarget);
+                                                }}
+                                                className="w-full px-3 py-2 pr-8 text-left transition hover:bg-slate-100"
+                                            >
+                                                {cardContent}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    if (typeof submissionId === 'number') {
+                                                        removeLiveComment(submissionId, comment.id);
+                                                    }
+                                                }}
+                                                className="absolute top-2 right-2 rounded p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
+                                                aria-label="Remove comment"
+                                            >
+                                                <X className="h-3.5 w-3.5" />
+                                            </button>
                                         </div>
-                                        <p className="mt-1 text-xs text-slate-700">{comment.message}</p>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
 
@@ -253,7 +423,7 @@ const PanelistLiveDefense = () => {
                                 onChange={(event) => setCommentInput(event.target.value)}
                                 placeholder="Type your panel comment..."
                                 rows={3}
-                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                             />
                             <div className="flex justify-end">
                                 <button
@@ -281,11 +451,27 @@ const PanelistLiveDefense = () => {
                                 PDF preview is not available for this selected concept submission.
                             </div>
                         ) : (
-                            <iframe
+                            <PdfHighlighterViewer
                                 key={selectedConcept.fileUrl}
-                                src={`${selectedConcept.fileUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
-                                title={selectedConcept.title}
-                                className="h-[65vh] w-full rounded-2xl border border-slate-200 bg-white lg:h-[72vh]"
+                                pdfUrl={selectedConcept.fileUrl}
+                                highlights={getHighlights(selectedConcept.id)}
+                                onAddHighlight={handleAddHighlight(selectedConcept.id)}
+                                activeHighlightId={
+                                    pendingHighlightFocus?.submissionId === selectedConcept.id ? pendingHighlightFocus.highlightId : null
+                                }
+                                onHighlightFocused={(highlightId) => {
+                                    setPendingHighlightFocus((currentTarget) => {
+                                        if (!currentTarget) {
+                                            return null;
+                                        }
+
+                                        if (currentTarget.highlightId !== highlightId || currentTarget.submissionId !== selectedConcept.id) {
+                                            return currentTarget;
+                                        }
+
+                                        return null;
+                                    });
+                                }}
                             />
                         )}
                     </div>
