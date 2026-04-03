@@ -11,17 +11,7 @@ class DefenseSchedule extends Model
     /** @use HasFactory<\Database\Factories\DefenseScheduleFactory> */
     use HasFactory;
 
-    protected $fillable = [
-        'group_id',
-        'room_id',
-        'scheduled_date',
-        'start_time',
-        'end_time',
-        'stage',
-        'status',
-        'notes',
-        'scheduled_by',
-    ];
+    protected $fillable = ['group_id', 'room_id', 'scheduled_date', 'start_time', 'end_time', 'stage', 'status', 'notes', 'scheduled_by'];
 
     /**
      * @return array<string, string>

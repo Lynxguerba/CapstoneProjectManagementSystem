@@ -10,11 +10,7 @@ class GroupAdviser extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'group_id',
-        'adviser_id',
-        'assigned_by',
-    ];
+    protected $fillable = ['group_id', 'adviser_id', 'assigned_by'];
 
     public function group(): BelongsTo
     {

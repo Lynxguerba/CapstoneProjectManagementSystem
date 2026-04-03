@@ -14,12 +14,7 @@ class ProgramSet extends Model
 
     protected $table = 'program_sets';
 
-    protected $fillable = [
-        'name',
-        'program',
-        'academic_year_id',
-        'instructor_id',
-    ];
+    protected $fillable = ['name', 'program', 'academic_year_id', 'instructor_id'];
 
     public function academicYear(): BelongsTo
     {

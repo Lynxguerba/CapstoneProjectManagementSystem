@@ -13,10 +13,7 @@ class Program extends Model
     /**
      * @var list<string>
      */
-    protected $fillable = [
-        'code',
-        'name',
-    ];
+    protected $fillable = ['code', 'name'];
 
     public function users(): HasMany
     {

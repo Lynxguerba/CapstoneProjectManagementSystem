@@ -13,14 +13,7 @@ class TitleRepository extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'title',
-        'title_category_id',
-        'academic_year_id',
-        'adviser_id',
-        'status',
-        'created_by',
-    ];
+    protected $fillable = ['title', 'title_category_id', 'academic_year_id', 'adviser_id', 'status', 'created_by'];
 
     public function category(): BelongsTo
     {

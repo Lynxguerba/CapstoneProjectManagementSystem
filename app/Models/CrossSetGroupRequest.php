@@ -13,17 +13,7 @@ class CrossSetGroupRequest extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'group_id',
-        'student_id',
-        'requested_by',
-        'requested_to',
-        'from_program_set_id',
-        'to_program_set_id',
-        'status',
-        'remarks',
-        'responded_at',
-    ];
+    protected $fillable = ['group_id', 'student_id', 'requested_by', 'requested_to', 'from_program_set_id', 'to_program_set_id', 'status', 'remarks', 'responded_at'];
 
     /**
      * @return array<string, string>

@@ -10,10 +10,7 @@ class AdviserAvailability extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'adviser_id',
-        'is_available',
-    ];
+    protected $fillable = ['adviser_id', 'is_available'];
 
     protected function casts(): array
     {

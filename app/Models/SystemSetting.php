@@ -9,8 +9,5 @@ class SystemSetting extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'key',
-        'value',
-    ];
+    protected $fillable = ['key', 'value'];
 }

@@ -13,11 +13,7 @@ class TitleCategory extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'program',
-        'name',
-        'description',
-    ];
+    protected $fillable = ['program', 'name', 'description'];
 
     public function titleRepositories(): HasMany
     {

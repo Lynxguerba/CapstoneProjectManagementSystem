@@ -10,11 +10,7 @@ class AdviserProgramUtility extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'adviser_id',
-        'program',
-        'max_groups',
-    ];
+    protected $fillable = ['adviser_id', 'program', 'max_groups'];
 
     protected function casts(): array
     {

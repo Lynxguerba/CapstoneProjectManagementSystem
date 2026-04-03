@@ -25,15 +25,7 @@ class GroupAdviserRequest extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'group_id',
-        'adviser_id',
-        'requested_by',
-        'request_type',
-        'status',
-        'responded_by',
-        'responded_at',
-    ];
+    protected $fillable = ['group_id', 'adviser_id', 'requested_by', 'request_type', 'status', 'responded_by', 'responded_at'];
 
     /**
      * @return array<string, string>

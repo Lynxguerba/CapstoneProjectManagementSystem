@@ -10,11 +10,7 @@ class ESignature extends Model
     /**
      * @var list<string>
      */
-    protected $fillable = [
-        'user_id',
-        'signature_data',
-        'mime_type',
-    ];
+    protected $fillable = ['user_id', 'signature_data', 'mime_type'];
 
     public function user(): BelongsTo
     {

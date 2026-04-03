@@ -13,13 +13,7 @@ class Group extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'program_set_id',
-        'leader_id',
-        'name',
-        'approved_concept_submission_id',
-        'is_cross_set',
-    ];
+    protected $fillable = ['program_set_id', 'leader_id', 'name', 'approved_concept_submission_id', 'is_cross_set'];
 
     /**
      * @return array<string, string>

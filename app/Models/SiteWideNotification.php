@@ -16,7 +16,5 @@ class SiteWideNotification extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'message',
-    ];
+    protected $fillable = ['message'];
 }

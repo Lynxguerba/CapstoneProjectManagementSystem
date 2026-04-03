@@ -13,12 +13,7 @@ class AcademicYear extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'start_year',
-        'end_year',
-        'label',
-        'is_current',
-    ];
+    protected $fillable = ['start_year', 'end_year', 'label', 'is_current'];
 
     /**
      * @return array<string, string>

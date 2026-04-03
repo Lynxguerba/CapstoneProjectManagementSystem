@@ -13,11 +13,5 @@ class Faculty extends Model
     /**
      * @var list<string>
      */
-    protected $fillable = [
-        'first_name',
-        'last_name',
-        'email',
-        'roles',
-        'status',
-    ];
+    protected $fillable = ['first_name', 'last_name', 'email', 'roles', 'status'];
 }

@@ -10,17 +10,7 @@ class AdviserRecommendationDocument extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'group_id',
-        'adviser_id',
-        'document_requirement_id',
-        'document_submission_id',
-        'file_name',
-        'file_path',
-        'approved_titles',
-        'submitted_by_names',
-        'signed_at',
-    ];
+    protected $fillable = ['group_id', 'adviser_id', 'document_requirement_id', 'document_submission_id', 'file_name', 'file_path', 'approved_titles', 'submitted_by_names', 'signed_at'];
 
     /**
      * @return array<string, string>

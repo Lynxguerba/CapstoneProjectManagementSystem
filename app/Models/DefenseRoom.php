@@ -11,12 +11,7 @@ class DefenseRoom extends Model
     /** @use HasFactory<\Database\Factories\DefenseRoomFactory> */
     use HasFactory;
 
-    protected $fillable = [
-        'name',
-        'capacity',
-        'is_active',
-        'notes',
-    ];
+    protected $fillable = ['name', 'capacity', 'is_active', 'notes'];
 
     /**
      * @return array<string, string>

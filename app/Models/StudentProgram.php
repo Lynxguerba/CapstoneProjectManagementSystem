@@ -15,10 +15,7 @@ class StudentProgram extends Model
     /**
      * @var list<string>
      */
-    protected $fillable = [
-        'student_id',
-        'program',
-    ];
+    protected $fillable = ['student_id', 'program'];
 
     public function student(): BelongsTo
     {

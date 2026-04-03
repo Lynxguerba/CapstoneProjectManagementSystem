@@ -11,13 +11,7 @@ class GroupPanelist extends Model
     /** @use HasFactory<\Database\Factories\GroupPanelistFactory> */
     use HasFactory;
 
-    protected $fillable = [
-        'group_id',
-        'panelist_id',
-        'panel_slot',
-        'role',
-        'assigned_by',
-    ];
+    protected $fillable = ['group_id', 'panelist_id', 'panel_slot', 'role', 'assigned_by'];
 
     public function group(): BelongsTo
     {

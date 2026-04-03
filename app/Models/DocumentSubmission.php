@@ -15,20 +15,7 @@ class DocumentSubmission extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'group_id',
-        'document_requirement_id',
-        'title_category_id',
-        'file_name',
-        'file_path',
-        'mime_type',
-        'file_size',
-        'status',
-        'adviser_status',
-        'submitted_by',
-        'adviser_reviewed_by',
-        'adviser_reviewed_at',
-    ];
+    protected $fillable = ['group_id', 'document_requirement_id', 'title_category_id', 'file_name', 'file_path', 'mime_type', 'file_size', 'status', 'adviser_status', 'submitted_by', 'adviser_reviewed_by', 'adviser_reviewed_at'];
 
     /**
      * @return array<string, string>

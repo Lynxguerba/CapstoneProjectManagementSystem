@@ -10,12 +10,7 @@ class GroupMember extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'group_id',
-        'student_id',
-        'role',
-        'is_cross_set',
-    ];
+    protected $fillable = ['group_id', 'student_id', 'role', 'is_cross_set'];
 
     /**
      * @return array<string, string>

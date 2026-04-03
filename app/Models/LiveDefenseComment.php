@@ -14,14 +14,7 @@ class LiveDefenseComment extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'group_id',
-        'document_submission_id',
-        'author_id',
-        'author_role',
-        'message',
-        'is_highlight_comment',
-    ];
+    protected $fillable = ['group_id', 'document_submission_id', 'author_id', 'author_role', 'message', 'is_highlight_comment'];
 
     /**
      * @return array<string, string>

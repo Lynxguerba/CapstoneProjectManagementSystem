@@ -11,10 +11,7 @@ class PanelistAvailability extends Model
     /** @use HasFactory<\Database\Factories\PanelistAvailabilityFactory> */
     use HasFactory;
 
-    protected $fillable = [
-        'panelist_id',
-        'is_available',
-    ];
+    protected $fillable = ['panelist_id', 'is_available'];
 
     protected function casts(): array
     {

@@ -15,14 +15,7 @@ class DocumentRequirement extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'requirement_type',
-        'due_date',
-        'stage',
-        'is_mandatory',
-        'academic_year_id',
-        'created_by',
-    ];
+    protected $fillable = ['requirement_type', 'due_date', 'stage', 'is_mandatory', 'academic_year_id', 'created_by'];
 
     /**
      * @return array<string, string>

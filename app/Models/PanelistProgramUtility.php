@@ -11,11 +11,7 @@ class PanelistProgramUtility extends Model
     /** @use HasFactory<\Database\Factories\PanelistProgramUtilityFactory> */
     use HasFactory;
 
-    protected $fillable = [
-        'panelist_id',
-        'program',
-        'max_groups',
-    ];
+    protected $fillable = ['panelist_id', 'program', 'max_groups'];
 
     protected function casts(): array
     {

@@ -13,14 +13,7 @@ class LiveDefenseCommentHighlight extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'live_defense_comment_id',
-        'highlight_id',
-        'quote_text',
-        'comment_emoji',
-        'content',
-        'position',
-    ];
+    protected $fillable = ['live_defense_comment_id', 'highlight_id', 'quote_text', 'comment_emoji', 'content', 'position'];
 
     /**
      * @return array<string, string>
