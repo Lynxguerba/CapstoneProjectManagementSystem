@@ -10,6 +10,7 @@ type PdfHighlighterViewerProps = {
     activeHighlightId?: string | null;
     onHighlightFocused?: (highlightId: string) => void;
     containerClassName?: string;
+    isReadOnly?: boolean;
 };
 
 type HighlightPopupProps = {
@@ -20,6 +21,28 @@ type HighlightPopupProps = {
 };
 
 const PDF_WORKER_SRC = 'https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs';
+const HIGHLIGHT_SCROLL_RETRY_MS = 120;
+const MAX_HIGHLIGHT_SCROLL_RETRIES = 8;
+
+const buildConsoleMessage = (args: unknown[]): string => {
+    return args
+        .map((value) => {
+            if (typeof value === 'string') {
+                return value;
+            }
+
+            if (value instanceof Error) {
+                return value.message;
+            }
+
+            try {
+                return JSON.stringify(value);
+            } catch {
+                return String(value);
+            }
+        })
+        .join(' ');
+};
 
 const HighlightPopup = ({ comment }: HighlightPopupProps): React.JSX.Element | null => {
     if (!comment.text.trim()) {
@@ -108,10 +131,12 @@ export const PdfHighlighterViewer = ({
     activeHighlightId = null,
     onHighlightFocused,
     containerClassName = 'h-[65vh] lg:h-[72vh]',
+    isReadOnly = false,
 }: PdfHighlighterViewerProps): React.JSX.Element => {
     const hideTipCallbackRef = React.useRef<(() => void) | null>(null);
     const pendingHighlightRef = React.useRef<NewHighlight | null>(null);
     const scrollToHighlightRef = React.useRef<((highlight: IHighlight) => void) | null>(null);
+    const viewerContainerRef = React.useRef<HTMLDivElement | null>(null);
     const [isFallbackViewer, setIsFallbackViewer] = React.useState(false);
     const [viewerErrorMessage, setViewerErrorMessage] = React.useState<string | null>(null);
 
@@ -163,25 +188,101 @@ export const PdfHighlighterViewer = ({
             return;
         }
 
-        try {
-            scrollToHighlightRef.current(targetHighlight);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            if (isOffsetParentWarning(message)) {
+        let isCancelled = false;
+        let retryTimeout: number | null = null;
+        let retryCount = 0;
+
+        const tryScrollToHighlight = (): void => {
+            if (isCancelled) {
+                return;
+            }
+
+            const viewerContainer = viewerContainerRef.current;
+            if (!viewerContainer || viewerContainer.offsetParent === null || !scrollToHighlightRef.current) {
+                if (retryCount < MAX_HIGHLIGHT_SCROLL_RETRIES) {
+                    retryCount += 1;
+                    retryTimeout = window.setTimeout(tryScrollToHighlight, HIGHLIGHT_SCROLL_RETRY_MS);
+                }
+                return;
+            }
+
+            try {
+                scrollToHighlightRef.current(targetHighlight);
                 onHighlightFocused?.(activeHighlightId);
-                return;
-            }
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                if (isOffsetParentWarning(message) && retryCount < MAX_HIGHLIGHT_SCROLL_RETRIES) {
+                    retryCount += 1;
+                    retryTimeout = window.setTimeout(tryScrollToHighlight, HIGHLIGHT_SCROLL_RETRY_MS);
+                    return;
+                }
 
-            if (isCriticalViewerError(message)) {
+                if (isOffsetParentWarning(message)) {
+                    return;
+                }
+
+                if (isCriticalViewerError(message)) {
+                    enableFallbackViewer(message);
+                    return;
+                }
+
                 enableFallbackViewer(message);
+            }
+        };
+
+        tryScrollToHighlight();
+
+        return () => {
+            isCancelled = true;
+            if (retryTimeout !== null) {
+                window.clearTimeout(retryTimeout);
+            }
+        };
+    }, [activeHighlightId, enableFallbackViewer, highlights, isCriticalViewerError, isOffsetParentWarning, onHighlightFocused]);
+
+    React.useEffect(() => {
+        const originalConsoleWarn = console.warn;
+        const originalConsoleError = console.error;
+
+        const shouldSuppressPdfNoise = (message: string): boolean => {
+            return message.includes('offsetParent is not set -- cannot scroll')
+                || message.includes('getOperatorList - ignoring XObject')
+                || message.includes('getOperatorList - ignoring errors during "GetOperatorList')
+                || message.includes('GlobalImageCache.setData - expected "shouldCache"')
+                || message.includes('Worker task was terminated');
+        };
+
+        const patchedConsoleWarn: typeof console.warn = (...args: unknown[]): void => {
+            const message = buildConsoleMessage(args);
+            if (shouldSuppressPdfNoise(message)) {
                 return;
             }
 
-            enableFallbackViewer(message);
-        }
+            originalConsoleWarn(...args);
+        };
 
-        onHighlightFocused?.(activeHighlightId);
-    }, [activeHighlightId, enableFallbackViewer, highlights, isCriticalViewerError, isOffsetParentWarning, onHighlightFocused]);
+        const patchedConsoleError: typeof console.error = (...args: unknown[]): void => {
+            const message = buildConsoleMessage(args);
+            if (shouldSuppressPdfNoise(message)) {
+                return;
+            }
+
+            originalConsoleError(...args);
+        };
+
+        console.warn = patchedConsoleWarn;
+        console.error = patchedConsoleError;
+
+        return () => {
+            if (console.warn === patchedConsoleWarn) {
+                console.warn = originalConsoleWarn;
+            }
+
+            if (console.error === patchedConsoleError) {
+                console.error = originalConsoleError;
+            }
+        };
+    }, []);
 
     React.useEffect(() => {
         const handleWindowError = (event: ErrorEvent): void => {
@@ -244,7 +345,7 @@ export const PdfHighlighterViewer = ({
 
     if (isFallbackViewer) {
         return (
-            <div className={`relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white ${containerClassName}`}>
+            <div ref={viewerContainerRef} className={`relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white ${containerClassName}`}>
                 <iframe
                     src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
                     title="PDF Preview"
@@ -259,7 +360,7 @@ export const PdfHighlighterViewer = ({
     }
 
     return (
-        <div className={`relative w-full overflow-auto rounded-2xl border border-slate-200 bg-white ${containerClassName}`}>
+        <div ref={viewerContainerRef} className={`relative w-full overflow-auto rounded-2xl border border-slate-200 bg-white ${containerClassName}`}>
             <PdfLoader
                 url={pdfUrl}
                 workerSrc={PDF_WORKER_SRC}
@@ -277,13 +378,20 @@ export const PdfHighlighterViewer = ({
                     <PdfHighlighter<IHighlight>
                         pdfDocument={pdfDocument}
                         pdfScaleValue="page-width"
-                        enableAreaSelection={(event) => event.altKey}
+                        enableAreaSelection={(event) => !isReadOnly && event.altKey}
                         onScrollChange={() => {}}
                         scrollRef={(scrollTo) => {
                             scrollToHighlightRef.current = scrollTo;
                         }}
                         highlights={highlights}
                         onSelectionFinished={(position, content, hideTipAndSelection, transformSelection) => {
+                            if (isReadOnly) {
+                                hideTipAndSelection();
+                                resetPendingState();
+
+                                return <></>;
+                            }
+
                             transformSelection();
 
                             pendingHighlightRef.current = {

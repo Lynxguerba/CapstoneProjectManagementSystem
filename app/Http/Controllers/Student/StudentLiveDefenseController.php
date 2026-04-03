@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdviserRecommendationDocument;
+use App\Models\DefenseSchedule;
 use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
 use App\Models\GroupPanelist;
+use App\Models\LiveDefenseComment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,6 +17,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,7 +29,6 @@ class StudentLiveDefenseController extends Controller
         $student = Auth::guard('web')->user();
         $group = $this->resolveStudentGroup($student?->id);
         $panelists = $this->resolveGroupPanelists($group);
-        $panelApprovalTotal = count($panelists);
         $recommendationLetter = $this->resolveLatestRecommendationLetter($group);
         $academicYearId = $group?->programSet?->academic_year_id;
         $conceptRequirements = $this->resolveConceptRequirements($academicYearId);
@@ -34,6 +36,8 @@ class StudentLiveDefenseController extends Controller
             $group?->id,
             $conceptRequirements->pluck('id')->values(),
         );
+        $approvedConceptSubmissionId = $this->resolveApprovedConceptSubmissionId($group, $conceptSubmissions);
+        $liveDefenseWorkspace = $this->resolveLiveDefenseWorkspace($group, $conceptSubmissions);
 
         return Inertia::render('Student/live-defense', [
             'group' => $group ? [
@@ -41,6 +45,7 @@ class StudentLiveDefenseController extends Controller
                 'name' => $group->name,
                 'programSetName' => $group->programSet?->name,
                 'academicYear' => $group->programSet?->academicYear?->label,
+                'defenseStatus' => $this->resolveConceptDefenseStatus($group->id),
             ] : null,
             'conceptSubmissions' => $conceptSubmissions
                 ->map(fn (DocumentSubmission $submission): array => [
@@ -50,13 +55,20 @@ class StudentLiveDefenseController extends Controller
                     'submittedAt' => $submission->created_at?->format('Y-m-d H:i'),
                     'instructorStatus' => (string) ($submission->status ?? 'Submitted'),
                     'adviserStatus' => (string) ($submission->adviser_status ?? 'Submitted'),
-                    'panelApprovalCount' => $this->resolvePanelApprovalCount($submission, $panelApprovalTotal),
-                    'panelApprovalTotal' => $panelApprovalTotal,
+                    'panelistApprovalStatus' => $this->resolvePanelistApprovalStatus((int) $submission->id, $approvedConceptSubmissionId),
                     'fileUrl' => $submission->file_path !== null ? Storage::disk('public')->url($submission->file_path) : null,
                 ])
                 ->values()
                 ->all(),
             'panelists' => $panelists,
+            'participants' => [
+                'students' => $this->resolveStudents($group),
+                'adviser' => $this->resolveAdviser($group),
+                'panelists' => $this->resolveParticipantPanelists($group),
+            ],
+            'commentsBySubmission' => $liveDefenseWorkspace['commentsBySubmission'],
+            'highlightsBySubmission' => $liveDefenseWorkspace['highlightsBySubmission'],
+            'commentHighlightTargets' => $liveDefenseWorkspace['commentHighlightTargets'],
             'recommendationLetter' => $recommendationLetter,
         ]);
     }
@@ -70,6 +82,7 @@ class StudentLiveDefenseController extends Controller
         $hasGroupMembersTable = Schema::hasTable('group_members');
         $hasProgramSetsTable = Schema::hasTable('program_sets');
         $hasAcademicYearsTable = Schema::hasTable('academic_years');
+        $hasGroupAdvisersTable = Schema::hasTable('group_advisers');
         $hasGroupPanelistsTable = Schema::hasTable('group_panelists');
         $hasUsersTable = Schema::hasTable('users');
 
@@ -81,6 +94,18 @@ class StudentLiveDefenseController extends Controller
             if ($hasAcademicYearsTable) {
                 $query->with('programSet.academicYear:id,label');
             }
+        }
+
+        if ($hasUsersTable) {
+            $query->with('leader:id,name,first_name,last_name,email');
+        }
+
+        if ($hasGroupMembersTable && $hasUsersTable) {
+            $query->with('members:id,name,first_name,last_name,email');
+        }
+
+        if ($hasGroupAdvisersTable && $hasUsersTable) {
+            $query->with('adviserAssignment.adviser:id,name,first_name,last_name,email');
         }
 
         if ($hasGroupPanelistsTable && $hasUsersTable) {
@@ -103,7 +128,12 @@ class StudentLiveDefenseController extends Controller
             }
         });
 
-        return $query->first(['id', 'name', 'program_set_id', 'leader_id']);
+        $groupColumns = ['id', 'name', 'program_set_id', 'leader_id'];
+        if (Schema::hasColumn('groups', 'approved_concept_submission_id')) {
+            $groupColumns[] = 'approved_concept_submission_id';
+        }
+
+        return $query->first($groupColumns);
     }
 
     /**
@@ -185,15 +215,281 @@ class StudentLiveDefenseController extends Controller
             ->all();
     }
 
-    private function resolvePanelApprovalCount(DocumentSubmission $submission, int $panelApprovalTotal): int
+    /**
+     * @return array<int, array{id: int, name: string, role: string, email: string|null}>
+     */
+    private function resolveStudents(?Group $group): array
     {
-        if ($panelApprovalTotal < 1) {
-            return 0;
+        if (! $group instanceof Group) {
+            return [];
         }
 
-        $isFullyApproved = $submission->status === 'Approved' && $submission->adviser_status === 'Approved';
+        $students = collect();
 
-        return $isFullyApproved ? $panelApprovalTotal : 0;
+        if ($group->leader instanceof User) {
+            $students->push([
+                'id' => (int) $group->leader->id,
+                'name' => $this->resolveUserName($group->leader),
+                'role' => 'Leader',
+                'email' => $group->leader->email,
+            ]);
+        }
+
+        $students = $students->merge(
+            $group->members
+                ->map(fn (User $member): array => [
+                    'id' => (int) $member->id,
+                    'name' => $this->resolveUserName($member),
+                    'role' => 'Member',
+                    'email' => $member->email,
+                ]),
+        );
+
+        return $students
+            ->unique('id')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{id: int, name: string, role: string, email: string|null}|null
+     */
+    private function resolveAdviser(?Group $group): ?array
+    {
+        $adviser = $group?->adviserAssignment?->adviser;
+
+        if (! $adviser instanceof User) {
+            return null;
+        }
+
+        return [
+            'id' => (int) $adviser->id,
+            'name' => $this->resolveUserName($adviser),
+            'role' => 'Adviser',
+            'email' => $adviser->email,
+        ];
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string, role: string, email: string|null}>
+     */
+    private function resolveParticipantPanelists(?Group $group): array
+    {
+        if (! $group instanceof Group || ! $group->relationLoaded('panelAssignments')) {
+            return [];
+        }
+
+        return $group->panelAssignments
+            ->sortBy('panel_slot')
+            ->values()
+            ->map(function (GroupPanelist $assignment): array {
+                $panelist = $assignment->panelist;
+                $normalizedRole = is_string($assignment->role) ? strtolower(trim($assignment->role)) : '';
+                $isChairman = $normalizedRole === 'chairman' || (int) ($assignment->panel_slot ?? 0) === 1;
+
+                return [
+                    'id' => (int) $assignment->panelist_id,
+                    'name' => $this->resolveUserName($panelist),
+                    'role' => $isChairman ? 'Panel Chairman' : 'Panel Member',
+                    'email' => $panelist?->email ?? null,
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * @param  Collection<int, DocumentSubmission>  $conceptSubmissions
+     */
+    private function resolveApprovedConceptSubmissionId(?Group $group, Collection $conceptSubmissions): ?int
+    {
+        if (! $group instanceof Group || ! Schema::hasColumn('groups', 'approved_concept_submission_id')) {
+            return null;
+        }
+
+        $approvedConceptSubmissionId = is_numeric($group->approved_concept_submission_id)
+            ? (int) $group->approved_concept_submission_id
+            : null;
+
+        if ($approvedConceptSubmissionId === null) {
+            return null;
+        }
+
+        $isApprovedSubmissionStillAvailable = $conceptSubmissions
+            ->contains(fn (DocumentSubmission $submission): bool => (int) $submission->id === $approvedConceptSubmissionId);
+
+        return $isApprovedSubmissionStillAvailable ? $approvedConceptSubmissionId : null;
+    }
+
+    private function resolvePanelistApprovalStatus(int $submissionId, ?int $approvedConceptSubmissionId): string
+    {
+        if ($approvedConceptSubmissionId === null) {
+            return 'Pending';
+        }
+
+        return $approvedConceptSubmissionId === $submissionId ? 'Approved' : 'Rejected';
+    }
+
+    /**
+     * @param  Collection<int, DocumentSubmission>  $conceptSubmissions
+     * @return array{
+     *     commentsBySubmission: array<int, array<int, array{id: string, databaseId: int, author: string, authorRole: string, message: string, createdAt: string, canDelete: bool}>>,
+     *     highlightsBySubmission: array<int, array<int, array<string, mixed>>>,
+     *     commentHighlightTargets: array<string, array{submissionId: int, highlightId: string}>
+     * }
+     */
+    private function resolveLiveDefenseWorkspace(?Group $group, Collection $conceptSubmissions): array
+    {
+        $commentsBySubmission = [];
+        $highlightsBySubmission = [];
+        $commentHighlightTargets = [];
+
+        $conceptSubmissions->each(function (DocumentSubmission $submission) use (&$commentsBySubmission, &$highlightsBySubmission): void {
+            $commentsBySubmission[(int) $submission->id] = [];
+            $highlightsBySubmission[(int) $submission->id] = [];
+        });
+
+        if (
+            ! $group instanceof Group
+            || $conceptSubmissions->isEmpty()
+            || ! Schema::hasTable('live_defense_comments')
+            || ! Schema::hasTable('live_defense_comment_highlights')
+        ) {
+            return [
+                'commentsBySubmission' => $commentsBySubmission,
+                'highlightsBySubmission' => $highlightsBySubmission,
+                'commentHighlightTargets' => $commentHighlightTargets,
+            ];
+        }
+
+        $submissionIds = $conceptSubmissions
+            ->map(fn (DocumentSubmission $submission): int => (int) $submission->id)
+            ->values();
+
+        $comments = LiveDefenseComment::query()
+            ->with([
+                'author:id,name,first_name,last_name,email',
+                'highlight:id,live_defense_comment_id,highlight_id,quote_text,comment_emoji,content,position',
+            ])
+            ->where('group_id', $group->id)
+            ->whereIn('document_submission_id', $submissionIds->all())
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get([
+                'id',
+                'group_id',
+                'document_submission_id',
+                'author_id',
+                'author_role',
+                'message',
+                'is_highlight_comment',
+                'created_at',
+            ]);
+
+        foreach ($comments as $comment) {
+            $submissionId = (int) $comment->document_submission_id;
+            if (! array_key_exists($submissionId, $commentsBySubmission)) {
+                $commentsBySubmission[$submissionId] = [];
+                $highlightsBySubmission[$submissionId] = [];
+            }
+
+            $commentId = 'c-'.$comment->id;
+            $highlight = $comment->highlight;
+            $highlightPrefix = $highlight !== null
+                ? $this->buildHighlightedQuotePrefix($highlight->quote_text)
+                : '';
+            $authorName = $comment->author instanceof User
+                ? $this->resolveUserName($comment->author)
+                : (string) $comment->author_role;
+
+            $commentsBySubmission[$submissionId][] = [
+                'id' => $commentId,
+                'databaseId' => (int) $comment->id,
+                'author' => $authorName !== '' ? $authorName : (string) $comment->author_role,
+                'authorRole' => (string) $comment->author_role,
+                'message' => $highlightPrefix.(string) $comment->message,
+                'createdAt' => $comment->created_at?->toIso8601String() ?? '',
+                'canDelete' => false,
+            ];
+
+            if ($highlight === null) {
+                continue;
+            }
+
+            $highlightId = trim((string) $highlight->highlight_id);
+            $position = is_array($highlight->position) ? $highlight->position : null;
+
+            if ($highlightId === '' || $position === null) {
+                continue;
+            }
+
+            $highlightsBySubmission[$submissionId][] = [
+                'id' => $highlightId,
+                'content' => $this->resolveHighlightContent($highlight->content, $highlight->quote_text),
+                'position' => $position,
+                'comment' => [
+                    'text' => (string) $comment->message,
+                    'emoji' => $this->resolveHighlightEmoji($highlight->comment_emoji),
+                ],
+            ];
+
+            $commentHighlightTargets[$commentId] = [
+                'submissionId' => $submissionId,
+                'highlightId' => $highlightId,
+            ];
+        }
+
+        return [
+            'commentsBySubmission' => $commentsBySubmission,
+            'highlightsBySubmission' => $highlightsBySubmission,
+            'commentHighlightTargets' => $commentHighlightTargets,
+        ];
+    }
+
+    private function buildHighlightedQuotePrefix(?string $quoteText): string
+    {
+        $trimmedQuote = is_string($quoteText) ? trim($quoteText) : '';
+        if ($trimmedQuote === '') {
+            return '';
+        }
+
+        return '"'.Str::limit($trimmedQuote, 80, '…').'" — ';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function resolveHighlightContent(mixed $content, ?string $quoteText): array
+    {
+        if (is_array($content)) {
+            return $content;
+        }
+
+        $trimmedQuote = is_string($quoteText) ? trim($quoteText) : '';
+
+        return [
+            'text' => $trimmedQuote,
+        ];
+    }
+
+    private function resolveHighlightEmoji(?string $emoji): string
+    {
+        $trimmedEmoji = is_string($emoji) ? trim($emoji) : '';
+
+        return $trimmedEmoji !== '' ? $trimmedEmoji : '💬';
+    }
+
+    private function resolveConceptDefenseStatus(int $groupId): string
+    {
+        if (! Schema::hasTable('defense_schedules')) {
+            return 'Pending';
+        }
+
+        $status = DefenseSchedule::query()
+            ->where('group_id', $groupId)
+            ->whereRaw('LOWER(stage) = ?', ['concept'])
+            ->value('status');
+
+        return is_string($status) && $status !== '' ? $status : 'Pending';
     }
 
     /**
