@@ -822,7 +822,7 @@ const PanelistLiveDefense = () => {
                                             return null;
                                         });
                                     }}
-                                    containerClassName="h-full"
+                                    containerClassName="h-full pdf-viewer-page-borders"
                                 />
                             )}
                         </div>

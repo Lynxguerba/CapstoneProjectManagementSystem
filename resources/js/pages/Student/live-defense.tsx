@@ -519,7 +519,7 @@ const StudentLiveDefense = () => {
                                             return null;
                                         });
                                     }}
-                                    containerClassName="h-full"
+                                    containerClassName="h-full pdf-viewer-page-borders"
                                     isReadOnly
                                 />
                             )}

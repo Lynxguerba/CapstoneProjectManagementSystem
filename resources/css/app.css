@@ -13,3 +13,14 @@
         font-size: 15px;
     }
 }
+
+@layer components {
+    .pdf-viewer-page-borders .pdfViewer {
+        --page-margin: 10px auto;
+        --page-border: 1px solid rgb(203 213 225);
+    }
+
+    .pdf-viewer-page-borders .pdfViewer .page {
+        box-shadow: 0 1px 2px rgb(15 23 42 / 8%);
+    }
+}

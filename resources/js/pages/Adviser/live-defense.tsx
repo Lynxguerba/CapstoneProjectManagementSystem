@@ -158,7 +158,7 @@ const AdviserLiveDefense = () => {
     const serverCommentHighlightTargets = React.useMemo(() => props.commentHighlightTargets ?? {}, [props.commentHighlightTargets]);
 
     const [selectedConceptId, setSelectedConceptId] = React.useState<number | null>(conceptSubmissions[0]?.id ?? null);
-    const [selectedPanelistId, setSelectedPanelistId] = React.useState<number | null>(null);
+    const [selectedCommentPanelistId, setSelectedCommentPanelistId] = React.useState<number | null>(null);
     const [commentInput, setCommentInput] = React.useState('');
     const [isCommentFocused, setIsCommentFocused] = React.useState(false);
     const [liveCommentsMap, setLiveCommentsMap] = React.useState<Record<number, LiveComment[]>>({});
@@ -194,11 +194,11 @@ const AdviserLiveDefense = () => {
 
     React.useEffect(() => {
         if (panelists.length === 0) {
-            setSelectedPanelistId(null);
+            setSelectedCommentPanelistId(null);
             return;
         }
 
-        setSelectedPanelistId((currentSelectedPanelistId) => {
+        setSelectedCommentPanelistId((currentSelectedPanelistId) => {
             if (currentSelectedPanelistId !== null && panelists.some((panelist) => panelist.id === currentSelectedPanelistId)) {
                 return currentSelectedPanelistId;
             }
@@ -391,7 +391,7 @@ const AdviserLiveDefense = () => {
     const handleAddHighlight =
         (submissionId: number) =>
         (highlight: NewHighlight): void => {
-            if (isSubmittingHighlightComment || selectedPanelistId === null) {
+            if (isSubmittingHighlightComment || selectedCommentPanelistId === null) {
                 return;
             }
 
@@ -414,7 +414,7 @@ const AdviserLiveDefense = () => {
                 '/adviser/live-defense/comments',
                 {
                     document_submission_id: submissionId,
-                    panelist_id: selectedPanelistId,
+                    panelist_id: selectedCommentPanelistId,
                     message: highlightComment,
                     is_highlight_comment: true,
                     highlight: {
@@ -438,7 +438,7 @@ const AdviserLiveDefense = () => {
 
     const handleSubmitComment = (): void => {
         const message = commentInput.trim();
-        if (message === '' || !selectedConcept || isSubmittingComment || selectedPanelistId === null) {
+        if (message === '' || !selectedConcept || isSubmittingComment || selectedCommentPanelistId === null) {
             return;
         }
 
@@ -447,7 +447,7 @@ const AdviserLiveDefense = () => {
             '/adviser/live-defense/comments',
             {
                 document_submission_id: selectedConcept.id,
-                panelist_id: selectedPanelistId,
+                panelist_id: selectedCommentPanelistId,
                 message,
                 is_highlight_comment: false,
             },
@@ -596,7 +596,7 @@ const AdviserLiveDefense = () => {
                                                 </span>
                                                 <span className="text-[11px] text-slate-500">{formatCommentCreatedAt(comment.createdAt)}</span>
                                             </div>
-                                            {comment.authorRole === 'Adviser' && comment.attributedPanelistName ? (
+                                            {comment.attributedPanelistName ? (
                                                 <p className="mt-1 text-[11px] font-semibold text-indigo-700">
                                                     Source Panelist: {comment.attributedPanelistName}
                                                 </p>
@@ -663,16 +663,16 @@ const AdviserLiveDefense = () => {
                                 </label>
                                 <select
                                     id="adviser-comment-panelist"
-                                    value={selectedPanelistId ?? ''}
+                                    value={selectedCommentPanelistId ?? ''}
                                     onChange={(event) => {
                                         const rawValue = event.target.value;
                                         if (rawValue === '') {
-                                            setSelectedPanelistId(null);
+                                            setSelectedCommentPanelistId(null);
                                             return;
                                         }
 
                                         const nextPanelistId = Number(rawValue);
-                                        setSelectedPanelistId(Number.isNaN(nextPanelistId) ? null : nextPanelistId);
+                                        setSelectedCommentPanelistId(Number.isNaN(nextPanelistId) ? null : nextPanelistId);
                                     }}
                                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                                 >
@@ -697,7 +697,7 @@ const AdviserLiveDefense = () => {
                                 <button
                                     type="button"
                                     onClick={handleSubmitComment}
-                                    disabled={isSubmittingComment || commentInput.trim() === '' || !selectedConcept || selectedPanelistId === null}
+                                    disabled={isSubmittingComment || commentInput.trim() === '' || !selectedConcept || selectedCommentPanelistId === null}
                                     className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-40"
                                 >
                                     <ShieldCheck className="h-3.5 w-3.5" />
@@ -726,35 +726,11 @@ const AdviserLiveDefense = () => {
                                     pdfUrl={selectedConcept.fileUrl}
                                     highlights={getHighlights(selectedConcept.id)}
                                     onAddHighlight={handleAddHighlight(selectedConcept.id)}
-                                    selectionControls={
-                                        <div className="space-y-1">
-                                            <label className="text-[11px] font-semibold text-slate-600">Source panelist for this highlight</label>
-                                            <select
-                                                value={selectedPanelistId ?? ''}
-                                                onChange={(event) => {
-                                                    const rawValue = event.target.value;
-                                                    if (rawValue === '') {
-                                                        setSelectedPanelistId(null);
-                                                        return;
-                                                    }
-
-                                                    const nextPanelistId = Number(rawValue);
-                                                    setSelectedPanelistId(Number.isNaN(nextPanelistId) ? null : nextPanelistId);
-                                                }}
-                                                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                                            >
-                                                {panelists.length === 0 ? <option value="">No assigned panelists</option> : null}
-                                                {panelists.map((panelist) => (
-                                                    <option key={panelist.id} value={panelist.id}>
-                                                        {panelist.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    }
-                                    isSelectionSendDisabled={selectedPanelistId === null}
+                                    isSelectionSendDisabled={selectedCommentPanelistId === null}
                                     selectionSendDisabledReason={
-                                        selectedPanelistId === null ? 'Select a source panelist before sending this highlight note.' : undefined
+                                        selectedCommentPanelistId === null
+                                            ? 'Select a source panelist in Adviser Comments before sending this highlight note.'
+                                            : undefined
                                     }
                                     activeHighlightId={
                                         pendingHighlightFocus?.submissionId === selectedConcept.id ? pendingHighlightFocus.highlightId : null
@@ -772,7 +748,7 @@ const AdviserLiveDefense = () => {
                                             return null;
                                         });
                                     }}
-                                    containerClassName="h-full"
+                                    containerClassName="h-full pdf-viewer-page-borders"
                                 />
                             )}
                         </div>

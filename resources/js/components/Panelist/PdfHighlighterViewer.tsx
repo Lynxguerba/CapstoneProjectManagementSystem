@@ -134,6 +134,9 @@ const SelectionCommentPopup = ({
 }): React.JSX.Element => {
     const [draftComment, setDraftComment] = React.useState('');
     const trimmedDraftComment = draftComment.trim();
+    const stopInteractionPropagation = (event: React.SyntheticEvent): void => {
+        event.stopPropagation();
+    };
 
     const handleCommentChange = (event: React.ChangeEvent<HTMLTextAreaElement>): void => {
         setDraftComment(event.target.value);
@@ -153,7 +156,13 @@ const SelectionCommentPopup = ({
     };
 
     return (
-        <div className="z-50 w-64 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+        <div
+            className="z-50 w-64 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
+            onPointerDown={stopInteractionPropagation}
+            onMouseDown={stopInteractionPropagation}
+            onMouseUp={stopInteractionPropagation}
+            onClick={stopInteractionPropagation}
+        >
             <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase">Add Comment</p>
             {previewText ? (
                 <p className="mt-2 line-clamp-2 rounded border border-yellow-200 bg-yellow-50 px-2 py-1 text-[11px] text-slate-700 italic">
