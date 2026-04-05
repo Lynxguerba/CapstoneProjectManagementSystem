@@ -1,8 +1,8 @@
-import GroupStudentsAdviserModal from '@/components/Panelist/GroupStudentsAdviserModal';
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Calendar, ChevronRight, GraduationCap, LayoutGrid, List, Search, Settings, SlidersHorizontal, User, Users } from 'lucide-react';
 import React from 'react';
+import GroupStudentsAdviserModal from '@/components/Panelist/GroupStudentsAdviserModal';
 import PanelLayout from './_layout';
 
 type AcademicYearOption = {

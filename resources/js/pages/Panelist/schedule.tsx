@@ -1,9 +1,9 @@
-import ScheduleGroupDetailsModal, { type ScheduleGroupDetails } from '@/components/Panelist/ScheduleGroupDetailsModal';
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Calendar, ChevronRight, Flag, Lightbulb, ListTree, PackageCheck, Rocket, Search, ShieldCheck } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import React from 'react';
+import ScheduleGroupDetailsModal, { type ScheduleGroupDetails } from '@/components/Panelist/ScheduleGroupDetailsModal';
 import PanelLayout from './_layout';
 
 type PhaseKey = 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5';

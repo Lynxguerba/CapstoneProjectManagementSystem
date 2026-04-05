@@ -40,6 +40,336 @@ class RecommendationForTitleDefensePdfGenerator
     }
 
     /**
+     * @param  array<int, string>  $proponentNames
+     * @param  array<int, string>  $memberPanelistNames
+     * @param  array<int, array{panelist: string, comments: array<int, string>}>  $commentsByPanelist
+     */
+    public function generateAdviserConceptVerdictMinutes(
+        string $signatureDataUrl,
+        string $adviserName,
+        CarbonInterface $signedAt,
+        string $defenseDate,
+        string $timeStarted,
+        string $timeEnded,
+        array $proponentNames,
+        ?string $chairmanName,
+        array $memberPanelistNames,
+        array $commentsByPanelist,
+        string $verdict,
+        ?string $approvedTitle
+    ): string {
+        $workingDirectory = storage_path('app/private/tmp/concept-verdict-minutes-'.Str::uuid()->toString());
+        File::ensureDirectoryExists($workingDirectory);
+        $outputPdfPath = $workingDirectory.'/concept-verdict-minutes.pdf';
+
+        $this->generateAdviserConceptVerdictMinutesFallbackPdf(
+            $outputPdfPath,
+            $signatureDataUrl,
+            $adviserName,
+            $signedAt,
+            $defenseDate,
+            $timeStarted,
+            $timeEnded,
+            $proponentNames,
+            $chairmanName,
+            $memberPanelistNames,
+            $commentsByPanelist,
+            $verdict,
+            $approvedTitle,
+        );
+
+        return $outputPdfPath;
+    }
+
+    /**
+     * @param  array<int, string>  $proponentNames
+     * @param  array<int, string>  $memberPanelistNames
+     * @param  array<int, array{panelist: string, comments: array<int, string>}>  $commentsByPanelist
+     */
+    private function generateAdviserConceptVerdictMinutesFallbackPdf(
+        string $outputPdfPath,
+        string $signatureDataUrl,
+        string $adviserName,
+        CarbonInterface $signedAt,
+        string $defenseDate,
+        string $timeStarted,
+        string $timeEnded,
+        array $proponentNames,
+        ?string $chairmanName,
+        array $memberPanelistNames,
+        array $commentsByPanelist,
+        string $verdict,
+        ?string $approvedTitle
+    ): void {
+        $lines = [];
+        $headerImage = $this->loadTemplateImage(storage_path('app/private/templates/header.png'));
+        $footerImage = $this->loadTemplateImage(storage_path('app/private/templates/footer.png'));
+        $signatureImage = $this->extractSignatureImage($signatureDataUrl);
+        $imageMap = [];
+
+        $titleY = 696;
+        if (is_array($headerImage)) {
+            $headerSize = $this->calculateImageDrawSize($headerImage, 595.0, 140.0);
+            $headerY = 842.0 - $headerSize['height'];
+            $this->appendPdfImageCommand($lines, 'HEADER', 0.0, $headerY, $headerSize['width'], $headerSize['height']);
+            $imageMap['HEADER'] = $headerImage;
+            $titleY = max(684, (int) floor($headerY - 24.0));
+        }
+
+        $footerTopEdgeY = 0.0;
+        if (is_array($footerImage)) {
+            $footerSize = $this->calculateImageDrawSize($footerImage, 595.0, 112.0);
+            $this->appendPdfImageCommand($lines, 'FOOTER', 0.0, 0.0, $footerSize['width'], $footerSize['height']);
+            $imageMap['FOOTER'] = $footerImage;
+            $footerTopEdgeY = $footerSize['height'];
+        }
+
+        $dateRowY = $titleY - 30;
+        $proponentsLabelY = $dateRowY - 22;
+        $proponentRowOneY = $proponentsLabelY - 20;
+        $proponentRowTwoY = $proponentsLabelY - 37;
+        $panelistsLabelY = $proponentRowTwoY - 30;
+        $chairmanRowY = $panelistsLabelY - 18;
+        $membersLabelY = $chairmanRowY - 17;
+        $memberRowOneY = $membersLabelY - 18;
+        $memberRowTwoY = $memberRowOneY - 17;
+        $commentsHeadingY = $memberRowTwoY - 28;
+        $commentsStartY = $commentsHeadingY - 18;
+        $verdictRowY = 360;
+        $deferredHeadingY = 332;
+        $deferredFirstLineY = 304;
+        $deferredSecondLineY = 286;
+        $approvedTitleLabelY = 266;
+        $approvedTitleFirstLineY = 243;
+        $approvedTitleSecondLineY = 227;
+        $preparedByLabelY = max(160, (int) ceil($footerTopEdgeY + 62.0));
+        $preparedByNameY = max(118, (int) ceil($footerTopEdgeY + 20.0));
+        $preparedByRoleY = $preparedByNameY - 16;
+        $signatureY = $preparedByNameY + 18.0;
+        $signatureBlockCenterX = 148.0;
+
+        $this->appendPdfCenteredTextLine($lines, 'F2', 14, $titleY, 'MINUTES OF THE OUTLINE DEFENSE');
+
+        $this->appendPdfTextLine($lines, 'F2', 11, 94, $dateRowY, 'Date:');
+        $this->appendPdfTextLine($lines, 'F2', 11, 215, $dateRowY, 'Time Started:');
+        $this->appendPdfTextLine($lines, 'F2', 11, 385, $dateRowY, 'Time Ended:');
+        $this->appendPdfHorizontalLine($lines, 126.0, 202.0, $dateRowY - 4, 0.8);
+        $this->appendPdfHorizontalLine($lines, 292.0, 360.0, $dateRowY - 4, 0.8);
+        $this->appendPdfHorizontalLine($lines, 451.0, 510.0, $dateRowY - 4, 0.8);
+        $this->appendPdfTextLine($lines, 'F2', 11, 128, $dateRowY, $this->shortenLineText($defenseDate, 20));
+        $this->appendPdfTextLine($lines, 'F2', 11, 294, $dateRowY, $this->shortenLineText($timeStarted, 12));
+        $this->appendPdfTextLine($lines, 'F2', 11, 453, $dateRowY, $this->shortenLineText($timeEnded, 12));
+
+        $this->appendPdfTextLine($lines, 'F2', 11, 94, $proponentsLabelY, 'Proponents:');
+        $this->appendPdfHorizontalLine($lines, 176.0, 281.0, $proponentRowOneY - 4, 0.9);
+        $this->appendPdfHorizontalLine($lines, 176.0, 281.0, $proponentRowTwoY - 4, 0.9);
+        $this->appendPdfHorizontalLine($lines, 383.0, 488.0, $proponentRowOneY - 4, 0.9);
+        $this->appendPdfHorizontalLine($lines, 383.0, 488.0, $proponentRowTwoY - 4, 0.9);
+
+        $normalizedProponents = collect($proponentNames)
+            ->map(fn (string $name): string => trim($name))
+            ->filter(fn (string $name): bool => $name !== '')
+            ->values()
+            ->take(4)
+            ->all();
+
+        $proponentRowPositions = [
+            ['index' => 0, 'number' => 1, 'numberX' => 128, 'nameX' => 176, 'y' => $proponentRowOneY],
+            ['index' => 1, 'number' => 2, 'numberX' => 128, 'nameX' => 176, 'y' => $proponentRowTwoY],
+            ['index' => 2, 'number' => 3, 'numberX' => 340, 'nameX' => 383, 'y' => $proponentRowOneY],
+            ['index' => 3, 'number' => 4, 'numberX' => 340, 'nameX' => 383, 'y' => $proponentRowTwoY],
+        ];
+
+        foreach ($proponentRowPositions as $position) {
+            $this->appendPdfTextLine($lines, 'F1', 11, $position['numberX'], $position['y'], $position['number'].'.');
+
+            $nameIndex = (int) $position['index'];
+            $rawName = is_string($normalizedProponents[$nameIndex] ?? null) ? $normalizedProponents[$nameIndex] : '';
+            if ($rawName === '') {
+                continue;
+            }
+
+            $this->appendPdfTextLine(
+                $lines,
+                'F2',
+                10,
+                $position['nameX'],
+                $position['y'],
+                $this->shortenLineText($rawName, 26)
+            );
+        }
+
+        $this->appendPdfTextLine($lines, 'F2', 11, 94, $panelistsLabelY, 'Panelists:');
+        $this->appendPdfTextLine($lines, 'F1', 11, 130, $chairmanRowY, 'Chairman:');
+        $this->appendPdfTextLine($lines, 'F1', 11, 463, $chairmanRowY, 'Signature:');
+        $this->appendPdfTextLine($lines, 'F1', 11, 130, $membersLabelY, 'Members:');
+        $this->appendPdfTextLine($lines, 'F1', 11, 173, $memberRowOneY, '1.');
+        $this->appendPdfTextLine($lines, 'F1', 11, 173, $memberRowTwoY, '2.');
+        $this->appendPdfTextLine($lines, 'F1', 11, 463, $memberRowOneY, 'Signature:');
+        $this->appendPdfTextLine($lines, 'F1', 11, 463, $memberRowTwoY, 'Signature:');
+        $this->appendPdfHorizontalLine($lines, 259.0, 433.0, $chairmanRowY - 4, 0.9);
+        $this->appendPdfHorizontalLine($lines, 259.0, 433.0, $memberRowOneY - 4, 0.9);
+        $this->appendPdfHorizontalLine($lines, 259.0, 433.0, $memberRowTwoY - 4, 0.9);
+
+        $normalizedChairmanName = is_string($chairmanName) ? trim($chairmanName) : '';
+        if ($normalizedChairmanName !== '') {
+            $this->appendPdfTextLine($lines, 'F2', 10, 262, $chairmanRowY, $this->shortenLineText($normalizedChairmanName, 30));
+        }
+
+        $normalizedMemberNames = collect($memberPanelistNames)
+            ->map(fn (string $name): string => trim($name))
+            ->filter(fn (string $name): bool => $name !== '')
+            ->values()
+            ->take(2)
+            ->all();
+
+        $memberNameSlots = [
+            ['name' => is_string($normalizedMemberNames[0] ?? null) ? $normalizedMemberNames[0] : '', 'y' => $memberRowOneY],
+            ['name' => is_string($normalizedMemberNames[1] ?? null) ? $normalizedMemberNames[1] : '', 'y' => $memberRowTwoY],
+        ];
+
+        foreach ($memberNameSlots as $memberNameSlot) {
+            if ($memberNameSlot['name'] === '') {
+                continue;
+            }
+
+            $this->appendPdfTextLine(
+                $lines,
+                'F2',
+                10,
+                262,
+                $memberNameSlot['y'],
+                $this->shortenLineText($memberNameSlot['name'], 30)
+            );
+        }
+
+        $this->appendPdfTextLine($lines, 'F2', 11, 94, $commentsHeadingY, 'COMMENTS');
+        $this->appendPdfTextLine($lines, 'F1', 10, 162, $commentsHeadingY, '(Separate comments per panel)');
+
+        $currentCommentY = $commentsStartY;
+        $minimumCommentY = $verdictRowY + 24;
+        $hasCommentRows = false;
+        $commentsTruncated = false;
+
+        foreach ($commentsByPanelist as $commentGroup) {
+            if ($currentCommentY <= $minimumCommentY) {
+                $commentsTruncated = true;
+                break;
+            }
+
+            $panelistName = trim((string) ($commentGroup['panelist'] ?? ''));
+            $panelComments = collect($commentGroup['comments'] ?? [])
+                ->map(fn (string $comment): string => trim($comment))
+                ->filter(fn (string $comment): bool => $comment !== '')
+                ->values()
+                ->all();
+
+            if ($panelistName === '' || $panelComments === []) {
+                continue;
+            }
+
+            $hasCommentRows = true;
+            $this->appendPdfTextLine($lines, 'F2', 10, 104, $currentCommentY, $this->shortenLineText($panelistName.':', 72));
+            $currentCommentY -= 12;
+
+            foreach ($panelComments as $panelComment) {
+                $wrappedCommentLines = $this->wrapText($panelComment, 84);
+                foreach ($wrappedCommentLines as $lineIndex => $wrappedCommentLine) {
+                    if ($currentCommentY <= $minimumCommentY) {
+                        $commentsTruncated = true;
+                        break 3;
+                    }
+
+                    $prefix = $lineIndex === 0 ? '- ' : '  ';
+                    $this->appendPdfTextLine($lines, 'F1', 9, 112, $currentCommentY, $prefix.$wrappedCommentLine);
+                    $currentCommentY -= 10;
+                }
+            }
+
+            $currentCommentY -= 4;
+        }
+
+        if (! $hasCommentRows) {
+            $this->appendPdfTextLine($lines, 'F1', 10, 104, $commentsStartY, 'No adviser or panelist comments recorded.');
+        } elseif ($commentsTruncated) {
+            $this->appendPdfTextLine($lines, 'F1', 9, 104, max($minimumCommentY + 6, 388), 'Additional comments were omitted due to page space.');
+        }
+
+        $normalizedVerdict = strtolower(trim($verdict));
+        $isPassWithRevisions = in_array($normalizedVerdict, ['pass with revision', 'conditional pass'], true);
+        $isDeferred = $normalizedVerdict === 'deffered';
+        $isFailed = $normalizedVerdict === 'failed';
+
+        $this->appendPdfTextLine($lines, 'F2', 11, 94, $verdictRowY, 'Verdict:');
+        $this->appendPdfTextLine(
+            $lines,
+            'F1',
+            11,
+            166,
+            $verdictRowY,
+            sprintf(
+                '[%s] Passed with Revisions   [%s] Deferred until %s   [%s] Failed',
+                $isPassWithRevisions ? 'x' : ' ',
+                $isDeferred ? 'x' : ' ',
+                $isDeferred ? 'Re-defense' : '__________',
+                $isFailed ? 'x' : ' '
+            )
+        );
+
+        if ($normalizedVerdict === 'conditional pass') {
+            $this->appendPdfTextLine($lines, 'F1', 9, 104, $verdictRowY - 14, 'Conditional Pass is recorded under Passed with Revisions.');
+        }
+
+        $this->appendPdfTextLine($lines, 'F1', 11, 94, $deferredHeadingY, 'The following are the requirements for students with Deferred verdicts.');
+        $this->appendPdfHorizontalLine($lines, 103.0, 491.0, $deferredFirstLineY, 3.0);
+        $this->appendPdfHorizontalLine($lines, 103.0, 491.0, $deferredSecondLineY, 3.0);
+
+        if ($isDeferred) {
+            $deferredRequirement = 'Re-defense with revised outline and new title options is required.';
+            $this->appendPdfTextLine($lines, 'F1', 9, 108, $deferredFirstLineY + 10, $this->shortenLineText($deferredRequirement, 86));
+        }
+
+        $this->appendPdfTextLine($lines, 'F2', 11, 94, $approvedTitleLabelY, 'Approved Title:');
+        $this->appendPdfHorizontalLine($lines, 103.0, 491.0, $approvedTitleFirstLineY, 3.0);
+        $this->appendPdfHorizontalLine($lines, 103.0, 491.0, $approvedTitleSecondLineY, 3.0);
+
+        $normalizedApprovedTitle = is_string($approvedTitle) ? trim($approvedTitle) : '';
+        if ($isPassWithRevisions && $normalizedApprovedTitle !== '') {
+            $approvedTitleLines = $this->wrapText($normalizedApprovedTitle, 86);
+            $this->appendPdfTextLine($lines, 'F2', 10, 108, $approvedTitleFirstLineY + 2, $approvedTitleLines[0] ?? '');
+
+            if (is_string($approvedTitleLines[1] ?? null)) {
+                $this->appendPdfTextLine($lines, 'F2', 10, 108, $approvedTitleSecondLineY + 2, $approvedTitleLines[1]);
+            }
+        }
+
+        $this->appendPdfTextLine($lines, 'F2', 11, 94, $preparedByLabelY, 'Prepared by:');
+        $this->appendPdfHorizontalLine($lines, 103.0, 193.0, $preparedByNameY + 15, 4.5);
+
+        if (is_array($signatureImage)) {
+            $signatureSize = $this->calculateImageDrawSize($signatureImage, 120.0, 34.0);
+            $signatureX = $signatureBlockCenterX - ($signatureSize['width'] / 2.0);
+            $this->appendPdfImageCommand($lines, 'SIG', $signatureX, $signatureY, $signatureSize['width'], $signatureSize['height']);
+            $imageMap['SIG'] = $signatureImage;
+        }
+
+        $this->appendPdfTextLine($lines, 'F2', 11, 103, $preparedByNameY, $this->shortenLineText(Str::upper(trim($adviserName)), 24));
+        $this->appendPdfTextLine($lines, 'F1', 11, 103, $preparedByRoleY, 'Adviser');
+        $this->appendPdfRightAlignedTextLine(
+            $lines,
+            'F1',
+            9,
+            492.0,
+            max((int) ceil($footerTopEdgeY + 10.0), 86),
+            'Generated: '.$signedAt->format('M d, Y h:i A')
+        );
+
+        $pdfContent = implode("\n", $lines);
+        $pdfDocument = $this->buildSimplePdfDocument($pdfContent, $imageMap);
+        File::put($outputPdfPath, $pdfDocument);
+    }
+
+    /**
      * @param  array<int, string>  $approvedTitles
      */
     private function generateFromTemplate(
@@ -348,6 +678,20 @@ class RecommendationForTitleDefensePdfGenerator
             $this->formatPdfNumber($y),
         );
         $lines[] = '/'.$imageKey.' Do';
+        $lines[] = 'Q';
+    }
+
+    private function appendPdfHorizontalLine(array &$lines, float $startX, float $endX, float $y, float $lineWidth = 1.0): void
+    {
+        $lines[] = 'q';
+        $lines[] = sprintf('%s w', $this->formatPdfNumber($lineWidth));
+        $lines[] = sprintf(
+            '%s %s m %s %s l S',
+            $this->formatPdfNumber($startX),
+            $this->formatPdfNumber($y),
+            $this->formatPdfNumber($endX),
+            $this->formatPdfNumber($y),
+        );
         $lines[] = 'Q';
     }
 
@@ -923,6 +1267,16 @@ class RecommendationForTitleDefensePdfGenerator
             ->filter(fn (?string $line): bool => is_string($line) && trim($line) !== '')
             ->values()
             ->all();
+    }
+
+    private function shortenLineText(string $value, int $maxCharacters): string
+    {
+        $normalized = trim(preg_replace('/\s+/', ' ', $value) ?? '');
+        if ($normalized === '') {
+            return '';
+        }
+
+        return Str::limit($normalized, $maxCharacters, '...');
     }
 
     /**

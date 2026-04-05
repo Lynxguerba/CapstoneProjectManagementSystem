@@ -4,10 +4,12 @@ import { motion } from 'framer-motion';
 import { ChevronRight, FileText, MessageSquareText, Scale, ShieldCheck, Users, X } from 'lucide-react';
 import React from 'react';
 import type { IHighlight, NewHighlight } from 'react-pdf-highlighter';
-import ConceptVerdictModal, { type ConceptVerdictValue } from '@/components/Panelist/ConceptVerdictModal';
+import ConceptVerdictMinutesModal, { type ConceptVerdictMinutesDocument } from '@/components/Adviser/ConceptVerdictMinutesModal';
 import { PdfHighlighterViewer } from '@/components/Panelist/PdfHighlighterViewer';
 import RecommendationLetterModal from '@/components/Student/RecommendationLetterModal';
 import AdviserLayout from './_layout';
+
+type ConceptVerdictValue = 'Pass with revision' | 'Conditional Pass' | 'Deffered' | 'Failed';
 
 type Participant = {
     id: number;
@@ -70,6 +72,17 @@ type AdviserLiveDefenseProps = {
         decidedAt?: string | null;
         decidedBy?: string | null;
     } | null;
+    conceptDefenseSchedule?: {
+        scheduledDate?: string | null;
+        startTime?: string | null;
+        endTime?: string | null;
+    } | null;
+    conceptVerdictMinutes?: {
+        fileName: string;
+        fileUrl: string;
+        signedAt?: string | null;
+    } | null;
+    hasESignature?: boolean;
 };
 
 const defenseStatusClass = (status: string): string => {
@@ -152,6 +165,19 @@ const isScrolledNearBottom = (element: HTMLDivElement): boolean => {
     return distanceFromBottom <= 24;
 };
 
+const withCacheBuster = (url: string, token: string): string => {
+    const normalizedUrl = url.trim();
+    if (normalizedUrl === '') {
+        return normalizedUrl;
+    }
+
+    const [baseUrl, hashFragment] = normalizedUrl.split('#', 2);
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    const cacheBustedUrl = `${baseUrl}${separator}v=${encodeURIComponent(token)}`;
+
+    return hashFragment ? `${cacheBustedUrl}#${hashFragment}` : cacheBustedUrl;
+};
+
 const AdviserLiveDefense = () => {
     const { props } = usePage<AdviserLiveDefenseProps>();
     const group = props.group;
@@ -161,6 +187,8 @@ const AdviserLiveDefense = () => {
     const panelists = React.useMemo(() => props.participants?.panelists ?? [], [props.participants?.panelists]);
     const recommendationLetter = props.recommendationLetter ?? null;
     const conceptVerdict = props.conceptVerdict ?? null;
+    const conceptDefenseSchedule = props.conceptDefenseSchedule ?? null;
+    const hasESignature = props.hasESignature === true;
     const serverCommentsBySubmission = React.useMemo(() => props.commentsBySubmission ?? {}, [props.commentsBySubmission]);
     const serverHighlightsBySubmission = React.useMemo(() => props.highlightsBySubmission ?? {}, [props.highlightsBySubmission]);
     const serverCommentHighlightTargets = React.useMemo(() => props.commentHighlightTargets ?? {}, [props.commentHighlightTargets]);
@@ -178,6 +206,9 @@ const AdviserLiveDefense = () => {
     const [removingCommentId, setRemovingCommentId] = React.useState<string | null>(null);
     const [isRecommendationLetterModalOpen, setIsRecommendationLetterModalOpen] = React.useState(false);
     const [isConceptVerdictModalOpen, setIsConceptVerdictModalOpen] = React.useState(false);
+    const [isGeneratingConceptVerdictMinutes, setIsGeneratingConceptVerdictMinutes] = React.useState(false);
+    const [conceptVerdictMinutesError, setConceptVerdictMinutesError] = React.useState<string | null>(null);
+    const [conceptVerdictMinutesDocument, setConceptVerdictMinutesDocument] = React.useState<ConceptVerdictMinutesDocument | null>(null);
     const [isReadingCommentHistory, setIsReadingCommentHistory] = React.useState(false);
     const commentsContainerRef = React.useRef<HTMLDivElement | null>(null);
     const shouldStickCommentsToBottomRef = React.useRef(true);
@@ -215,6 +246,29 @@ const AdviserLiveDefense = () => {
             return panelists[0]?.id ?? null;
         });
     }, [panelists]);
+
+    React.useEffect(() => {
+        const minutesDocument = props.conceptVerdictMinutes
+            ? {
+                  file_name: props.conceptVerdictMinutes.fileName,
+                  file_url: withCacheBuster(
+                      props.conceptVerdictMinutes.fileUrl,
+                      props.conceptVerdictMinutes.signedAt ?? `${Date.now()}`,
+                  ),
+                  signed_at: props.conceptVerdictMinutes.signedAt ?? null,
+              }
+            : null;
+
+        setConceptVerdictMinutesDocument(minutesDocument);
+    }, [props.conceptVerdictMinutes]);
+
+    React.useEffect(() => {
+        if (isConceptVerdictModalOpen) {
+            return;
+        }
+
+        setConceptVerdictMinutesError(null);
+    }, [isConceptVerdictModalOpen]);
 
     React.useEffect(() => {
         setLiveCommentsMap((currentLiveCommentsMap) => {
@@ -297,6 +351,38 @@ const AdviserLiveDefense = () => {
     const selectedConcept = React.useMemo(() => {
         return conceptSubmissions.find((submission) => submission.id === selectedConceptId) ?? null;
     }, [conceptSubmissions, selectedConceptId]);
+
+    const approvedConceptTitle = React.useMemo(() => {
+        if (!conceptVerdict?.approvedConceptSubmissionId) {
+            return null;
+        }
+
+        const approvedConcept = conceptSubmissions.find((submission) => submission.id === conceptVerdict.approvedConceptSubmissionId);
+
+        return approvedConcept?.title ?? null;
+    }, [conceptSubmissions, conceptVerdict?.approvedConceptSubmissionId]);
+
+    const canGenerateConceptVerdictMinutes = conceptVerdict?.value !== undefined && conceptVerdict?.value !== null;
+    const conceptVerdictMinutesDisabledReason = canGenerateConceptVerdictMinutes
+        ? null
+        : 'Concept verdict must be set by the panel chairman before generating minutes.';
+    const proponentNames = React.useMemo(() => {
+        return [...students]
+            .map((student) => student.name.trim())
+            .filter((name) => name !== '')
+            .sort((leftName, rightName) => {
+                const leftTokens = leftName.split(/\s+/);
+                const rightTokens = rightName.split(/\s+/);
+                const leftLastName = leftTokens[leftTokens.length - 1]?.toLowerCase() ?? '';
+                const rightLastName = rightTokens[rightTokens.length - 1]?.toLowerCase() ?? '';
+
+                if (leftLastName === rightLastName) {
+                    return leftName.localeCompare(rightName);
+                }
+
+                return leftLastName.localeCompare(rightLastName);
+            });
+    }, [students]);
 
     const getHighlights = (submissionId: number): IHighlight[] => {
         return highlightsMap[submissionId] ?? [];
@@ -472,6 +558,69 @@ const AdviserLiveDefense = () => {
                 },
             },
         );
+    };
+
+    const handleGenerateConceptVerdictMinutes = async (): Promise<void> => {
+        if (!group) {
+            return;
+        }
+
+        if (!canGenerateConceptVerdictMinutes) {
+            setConceptVerdictMinutesError(conceptVerdictMinutesDisabledReason ?? 'Set the concept verdict first.');
+            return;
+        }
+
+        if (!hasESignature) {
+            setConceptVerdictMinutesError('Register your e-signature in Adviser Settings before generating minutes.');
+            return;
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (!csrfToken) {
+            setConceptVerdictMinutesError('Unable to validate request. Refresh the page and try again.');
+            return;
+        }
+
+        setConceptVerdictMinutesError(null);
+        setIsGeneratingConceptVerdictMinutes(true);
+
+        try {
+            const response = await fetch(`/adviser/live-defense/groups/${group.id}/concept-verdict-minutes`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({}),
+            });
+
+            const payload = (await response.json().catch(() => null)) as
+                | {
+                      message?: string;
+                      minutes_document?: ConceptVerdictMinutesDocument;
+                  }
+                | null;
+
+            if (!response.ok) {
+                setConceptVerdictMinutesError(payload?.message ?? 'Unable to generate concept verdict minutes PDF.');
+                return;
+            }
+
+            const nextMinutesDocument = payload?.minutes_document ?? null;
+            if (nextMinutesDocument) {
+                setConceptVerdictMinutesDocument({
+                    ...nextMinutesDocument,
+                    file_url: withCacheBuster(nextMinutesDocument.file_url, `${Date.now()}`),
+                });
+            }
+        } catch {
+            setConceptVerdictMinutesError('An unexpected error occurred while generating concept verdict minutes.');
+        } finally {
+            setIsGeneratingConceptVerdictMinutes(false);
+        }
     };
 
     if (!group) {
@@ -833,8 +982,13 @@ const AdviserLiveDefense = () => {
                                 <h3 className="text-sm font-semibold text-slate-800">Verdict</h3>
                             </div>
                             <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3">
-                                <p className="text-xs font-semibold text-slate-700">View the concept verdict selected by the panel chairman.</p>
+                                <p className="text-xs font-semibold text-slate-700">
+                                    View the concept verdict selected by the panel chairman and generate adviser verdict minutes.
+                                </p>
                                 <p className="mt-1 text-[11px] text-slate-500">Current Verdict: {conceptVerdict?.value ?? 'Not set yet'}</p>
+                                <p className="mt-1 text-[11px] text-slate-500">
+                                    Minutes PDF: {conceptVerdictMinutesDocument ? `Generated (${conceptVerdictMinutesDocument.signed_at ?? '—'})` : 'Not generated'}
+                                </p>
                                 <div className="mt-3">
                                     <button
                                         type="button"
@@ -922,17 +1076,26 @@ const AdviserLiveDefense = () => {
                     />
                 ) : null}
 
-                <ConceptVerdictModal
+                <ConceptVerdictMinutesModal
                     open={isConceptVerdictModalOpen}
                     onClose={() => setIsConceptVerdictModalOpen(false)}
-                    groupId={group.id}
-                    groupLabel={groupLabel}
-                    conceptSubmissions={conceptSubmissions}
-                    canEdit={false}
-                    initialVerdict={conceptVerdict?.value ?? null}
-                    initialApprovedSubmissionId={conceptVerdict?.approvedConceptSubmissionId ?? null}
+                    groupName={groupLabel}
+                    verdict={conceptVerdict?.value ?? null}
+                    approvedTitle={approvedConceptTitle}
                     decidedBy={conceptVerdict?.decidedBy ?? null}
                     decidedAt={conceptVerdict?.decidedAt ?? null}
+                    schedule={conceptDefenseSchedule}
+                    proponents={proponentNames}
+                    panelists={panelists}
+                    hasESignature={hasESignature}
+                    canGenerate={canGenerateConceptVerdictMinutes}
+                    disabledReason={conceptVerdictMinutesDisabledReason}
+                    processing={isGeneratingConceptVerdictMinutes}
+                    errorMessage={conceptVerdictMinutesError}
+                    minutesDocument={conceptVerdictMinutesDocument}
+                    onGenerate={() => {
+                        void handleGenerateConceptVerdictMinutes();
+                    }}
                 />
             </motion.section>
         </AdviserLayout>

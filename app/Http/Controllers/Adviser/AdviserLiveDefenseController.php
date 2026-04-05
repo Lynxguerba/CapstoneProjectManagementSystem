@@ -11,6 +11,7 @@ use App\Models\Group;
 use App\Models\GroupPanelist;
 use App\Models\LiveDefenseComment;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class AdviserLiveDefenseController extends Controller
 {
@@ -27,6 +29,9 @@ class AdviserLiveDefenseController extends Controller
     {
         /** @var User|null $adviser */
         $adviser = Auth::guard('web')->user();
+        if ($adviser instanceof User) {
+            $adviser->loadMissing('eSignature');
+        }
         $adviserId = $adviser?->id;
         $assignedGroups = $this->resolveAssignedGroups($adviserId);
         $selectedGroup = $this->resolveSelectedGroup($assignedGroups, $request->query('group'));
@@ -40,6 +45,9 @@ class AdviserLiveDefenseController extends Controller
         $panelists = $this->resolvePanelists($selectedGroup);
         $liveDefenseWorkspace = $this->resolveLiveDefenseWorkspace($selectedGroup, $conceptSubmissions, $adviserId);
         $recommendationLetter = $this->resolveLatestRecommendationLetter($selectedGroup);
+        $conceptDefenseSchedule = $this->resolveConceptDefenseSchedule($selectedGroup);
+        $conceptVerdictMinutesDocument = $this->resolveConceptVerdictMinutesDocument($selectedGroup);
+        $hasESignature = $adviser instanceof User && $adviser->eSignature !== null;
 
         return Inertia::render('Adviser/live-defense', [
             'group' => $selectedGroup ? [
@@ -72,6 +80,9 @@ class AdviserLiveDefenseController extends Controller
             'highlightsBySubmission' => $liveDefenseWorkspace['highlightsBySubmission'],
             'commentHighlightTargets' => $liveDefenseWorkspace['commentHighlightTargets'],
             'recommendationLetter' => $recommendationLetter,
+            'conceptDefenseSchedule' => $conceptDefenseSchedule,
+            'conceptVerdictMinutes' => $conceptVerdictMinutesDocument,
+            'hasESignature' => $hasESignature,
         ]);
     }
 
@@ -472,6 +483,86 @@ class AdviserLiveDefenseController extends Controller
             'fileUrl' => $fileUrl,
             'signedAt' => $latestRecommendation->signed_at?->format('Y-m-d H:i'),
             'adviserName' => $this->resolveUserName($latestRecommendation->adviser),
+        ];
+    }
+
+    /**
+     * @return array{scheduledDate: string|null, startTime: string|null, endTime: string|null}|null
+     */
+    private function resolveConceptDefenseSchedule(?Group $group): ?array
+    {
+        if (! $group instanceof Group || ! Schema::hasTable('defense_schedules')) {
+            return null;
+        }
+
+        $schedule = DefenseSchedule::query()
+            ->where('group_id', $group->id)
+            ->where('stage', 'Concept')
+            ->orderByDesc('scheduled_date')
+            ->orderByDesc('start_time')
+            ->orderByDesc('id')
+            ->first([
+                'id',
+                'scheduled_date',
+                'start_time',
+                'end_time',
+            ]);
+
+        if (! $schedule instanceof DefenseSchedule) {
+            return null;
+        }
+
+        $startTime = is_string($schedule->start_time) ? trim($schedule->start_time) : '';
+        $endTime = is_string($schedule->end_time) ? trim($schedule->end_time) : '';
+
+        return [
+            'scheduledDate' => $schedule->scheduled_date?->format('Y-m-d'),
+            'startTime' => $startTime !== '' ? $startTime : null,
+            'endTime' => $endTime !== '' ? $endTime : null,
+        ];
+    }
+
+    /**
+     * @return array{fileName: string, fileUrl: string, signedAt: string|null}|null
+     */
+    private function resolveConceptVerdictMinutesDocument(?Group $group): ?array
+    {
+        if (! $group instanceof Group) {
+            return null;
+        }
+
+        $disk = Storage::disk('public');
+        $directory = "concept-verdict-minutes/group-{$group->id}";
+
+        try {
+            $files = collect($disk->files($directory))
+                ->filter(fn (string $path): bool => str_ends_with(strtolower($path), '.pdf'))
+                ->values();
+        } catch (Throwable) {
+            return null;
+        }
+
+        if ($files->isEmpty()) {
+            return null;
+        }
+
+        $latestPath = $files
+            ->sortByDesc(fn (string $path): int => (int) $disk->lastModified($path))
+            ->first();
+
+        if (! is_string($latestPath) || trim($latestPath) === '') {
+            return null;
+        }
+
+        $lastModifiedTimestamp = (int) $disk->lastModified($latestPath);
+        $signedAt = $lastModifiedTimestamp > 0
+            ? Carbon::createFromTimestamp($lastModifiedTimestamp)->format('Y-m-d H:i')
+            : null;
+
+        return [
+            'fileName' => basename($latestPath),
+            'fileUrl' => $disk->url($latestPath),
+            'signedAt' => $signedAt,
         ];
     }
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Adviser\ApproveGroupAdviserRequestController;
 use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\DestroyAdviserLiveDefenseCommentController;
 use App\Http\Controllers\Adviser\DismissGroupAdviserRequestController;
+use App\Http\Controllers\Adviser\GenerateAdviserConceptVerdictMinutesController;
 use App\Http\Controllers\Adviser\GenerateRecommendationForTitleDefenseController;
 use App\Http\Controllers\Adviser\StoreAdviserLiveDefenseCommentController;
 use App\Http\Controllers\Adviser\UpdateAdviserAvailabilityController;
@@ -889,6 +890,8 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
     })->name('adviser.evaluations');
     Route::get('/schedule', AdviserScheduleController::class)->name('adviser.schedule');
     Route::get('/live-defense', AdviserLiveDefenseController::class)->name('adviser.live-defense');
+    Route::post('/live-defense/groups/{group}/concept-verdict-minutes', GenerateAdviserConceptVerdictMinutesController::class)
+        ->name('adviser.live-defense.groups.concept-verdict-minutes');
     Route::post('/live-defense/comments', StoreAdviserLiveDefenseCommentController::class)->name('adviser.live-defense.comments.store');
     Route::delete('/live-defense/comments/{comment}', DestroyAdviserLiveDefenseCommentController::class)->name('adviser.live-defense.comments.destroy');
     Route::get('/verdict', function () {
