@@ -1,9 +1,10 @@
 import type { FormDataConvertible } from '@inertiajs/core';
 import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ChevronRight, FileText, MessageSquareText, ShieldCheck, Users, X } from 'lucide-react';
+import { ChevronRight, FileText, MessageSquareText, Scale, ShieldCheck, Users, X } from 'lucide-react';
 import React from 'react';
 import type { IHighlight, NewHighlight } from 'react-pdf-highlighter';
+import ConceptVerdictModal, { type ConceptVerdictValue } from '@/components/Panelist/ConceptVerdictModal';
 import { PdfHighlighterViewer } from '@/components/Panelist/PdfHighlighterViewer';
 import RecommendationLetterModal from '@/components/Student/RecommendationLetterModal';
 import PanelLayout from './_layout';
@@ -72,6 +73,12 @@ type PanelistLiveDefenseProps = {
     commentsBySubmission?: Record<number, LiveComment[]>;
     highlightsBySubmission?: Record<number, IHighlight[]>;
     commentHighlightTargets?: Record<string, { submissionId: number; highlightId: string }>;
+    conceptVerdict?: {
+        value?: ConceptVerdictValue | null;
+        approvedConceptSubmissionId?: number | null;
+        decidedAt?: string | null;
+        decidedBy?: string | null;
+    } | null;
 };
 
 const defenseStatusClass = (status: string): string => {
@@ -158,13 +165,12 @@ const PanelistLiveDefense = () => {
     const { props } = usePage<PanelistLiveDefenseProps>();
     const group = props.group;
     const conceptSubmissions = React.useMemo(() => props.conceptSubmissions ?? [], [props.conceptSubmissions]);
-    const canApproveConceptTitle = props.canApproveConceptTitle === true;
     const students = React.useMemo(() => props.participants?.students ?? [], [props.participants?.students]);
     const adviser = props.participants?.adviser ?? null;
     const panelists = React.useMemo(() => props.participants?.panelists ?? [], [props.participants?.panelists]);
     const recommendationLetter = props.recommendationLetter ?? null;
-    const flashSuccessMessage = props.flash?.success ?? null;
-    const flashErrorMessage = props.flash?.error ?? null;
+    const canManageConceptVerdict = props.canApproveConceptTitle === true;
+    const conceptVerdict = props.conceptVerdict ?? null;
     const serverCommentsBySubmission = React.useMemo(() => props.commentsBySubmission ?? {}, [props.commentsBySubmission]);
     const serverHighlightsBySubmission = React.useMemo(() => props.highlightsBySubmission ?? {}, [props.highlightsBySubmission]);
     const serverCommentHighlightTargets = React.useMemo(() => props.commentHighlightTargets ?? {}, [props.commentHighlightTargets]);
@@ -178,10 +184,8 @@ const PanelistLiveDefense = () => {
     const [isSubmittingComment, setIsSubmittingComment] = React.useState(false);
     const [isSubmittingHighlightComment, setIsSubmittingHighlightComment] = React.useState(false);
     const [removingCommentId, setRemovingCommentId] = React.useState<string | null>(null);
-    const [approvingSubmissionId, setApprovingSubmissionId] = React.useState<number | null>(null);
-    const [isUndoingConceptApproval, setIsUndoingConceptApproval] = React.useState(false);
-    const [approvalMessage, setApprovalMessage] = React.useState<{ tone: 'success' | 'error'; text: string } | null>(null);
     const [isRecommendationLetterModalOpen, setIsRecommendationLetterModalOpen] = React.useState(false);
+    const [isConceptVerdictModalOpen, setIsConceptVerdictModalOpen] = React.useState(false);
     const [isReadingCommentHistory, setIsReadingCommentHistory] = React.useState(false);
     const commentsContainerRef = React.useRef<HTMLDivElement | null>(null);
     const shouldStickCommentsToBottomRef = React.useRef(true);
@@ -190,7 +194,6 @@ const PanelistLiveDefense = () => {
     const liveDefensePartialProps = React.useMemo(() => ['commentsBySubmission', 'highlightsBySubmission', 'commentHighlightTargets'], []);
     const liveDefenseCommentPollingProps = React.useMemo(() => ['commentsBySubmission', 'commentHighlightTargets'], []);
     const liveDefenseHighlightPartialProps = React.useMemo(() => ['highlightsBySubmission'], []);
-    const conceptApprovalPartialProps = React.useMemo(() => ['conceptSubmissions', 'flash'], []);
 
     React.useEffect(() => {
         setSelectedConceptId((currentSelectedConceptId) => {
@@ -265,23 +268,6 @@ const PanelistLiveDefense = () => {
     }, [serverCommentHighlightTargets]);
 
     React.useEffect(() => {
-        if (flashErrorMessage) {
-            setApprovalMessage({
-                tone: 'error',
-                text: flashErrorMessage,
-            });
-            return;
-        }
-
-        if (flashSuccessMessage) {
-            setApprovalMessage({
-                tone: 'success',
-                text: flashSuccessMessage,
-            });
-        }
-    }, [flashErrorMessage, flashSuccessMessage]);
-
-    React.useEffect(() => {
         if (!group) return;
 
         const interval = setInterval(() => {
@@ -297,11 +283,6 @@ const PanelistLiveDefense = () => {
     const selectedConcept = React.useMemo(() => {
         return conceptSubmissions.find((submission) => submission.id === selectedConceptId) ?? null;
     }, [conceptSubmissions, selectedConceptId]);
-    const hasApprovedConceptTitle = React.useMemo(
-        () => conceptSubmissions.some((submission) => submission.panelistApprovalStatus === 'Approved'),
-        [conceptSubmissions],
-    );
-    const canEvaluateDefense = hasApprovedConceptTitle;
 
     const getHighlights = (submissionId: number): IHighlight[] => highlightsMap[submissionId] ?? [];
     const activeLiveComments = React.useMemo(() => {
@@ -474,63 +455,6 @@ const PanelistLiveDefense = () => {
         );
     };
 
-    const handleApproveConceptTitle = (submissionId: number): void => {
-        if (!canApproveConceptTitle || approvingSubmissionId !== null) {
-            return;
-        }
-
-        setApprovalMessage(null);
-        setApprovingSubmissionId(submissionId);
-        router.post(
-            '/panelist/live-defense/title-approvals',
-            {
-                document_submission_id: submissionId,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                only: conceptApprovalPartialProps,
-                onError: (errors) => {
-                    const firstError = errors.document_submission_id || Object.values(errors)[0] || 'Unable to approve the selected title.';
-                    setApprovalMessage({
-                        tone: 'error',
-                        text: String(firstError),
-                    });
-                },
-                onFinish: () => {
-                    setApprovingSubmissionId(null);
-                },
-            },
-        );
-    };
-
-    const handleUndoConceptTitleApproval = (): void => {
-        if (!canApproveConceptTitle || !group || isUndoingConceptApproval || approvingSubmissionId !== null) {
-            return;
-        }
-
-        setApprovalMessage(null);
-        setIsUndoingConceptApproval(true);
-        router.delete('/panelist/live-defense/title-approvals', {
-            preserveState: true,
-            preserveScroll: true,
-            only: conceptApprovalPartialProps,
-            data: {
-                group_id: group.id,
-            },
-            onError: (errors) => {
-                const firstError = errors.group_id || Object.values(errors)[0] || 'Unable to undo title approval.';
-                setApprovalMessage({
-                    tone: 'error',
-                    text: String(firstError),
-                });
-            },
-            onFinish: () => {
-                setIsUndoingConceptApproval(false);
-            },
-        });
-    };
-
     if (!group) {
         return (
             <PanelLayout title="Live Defense Board" subtitle="Panel live review workspace">
@@ -578,32 +502,19 @@ const PanelistLiveDefense = () => {
                             </div>
                         </div>
                     </div>
-                    {approvalMessage ? (
-                        <div
-                            className={`border-b px-4 py-2 text-xs ${
-                                approvalMessage.tone === 'error'
-                                    ? 'border-rose-200 bg-rose-50 text-rose-700'
-                                    : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                            }`}
-                        >
-                            {approvalMessage.text}
-                        </div>
-                    ) : null}
-
                     <div className="overflow-x-auto">
-                        <table className={`w-full text-left text-xs ${canApproveConceptTitle ? 'min-w-[760px]' : 'min-w-[680px]'}`}>
+                        <table className="min-w-[680px] w-full text-left text-xs">
                             <thead className="border-b border-slate-200 bg-white text-slate-600">
                                 <tr>
                                     <th className="px-4 py-3 font-semibold">Title</th>
                                     <th className="px-4 py-3 font-semibold">Submitted</th>
                                     <th className="px-4 py-3 font-semibold">Approval of Panelist</th>
-                                    {canApproveConceptTitle ? <th className="px-4 py-3 font-semibold">Action</th> : null}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {conceptSubmissions.length === 0 ? (
                                     <tr>
-                                        <td colSpan={canApproveConceptTitle ? 4 : 3} className="px-4 py-10 text-center text-slate-500">
+                                        <td colSpan={3} className="px-4 py-10 text-center text-slate-500">
                                             No concept titles are available yet.
                                         </td>
                                     </tr>
@@ -611,12 +522,6 @@ const PanelistLiveDefense = () => {
                                     conceptSubmissions.map((submission) => {
                                         const isActive = submission.id === selectedConceptId;
                                         const panelistApprovalStatus = submission.panelistApprovalStatus ?? 'Pending';
-                                        const isApprovedConcept = panelistApprovalStatus === 'Approved';
-                                        const isApprovingConcept = approvingSubmissionId === submission.id;
-                                        const isUndoingConcept = isUndoingConceptApproval && isApprovedConcept;
-                                        const isActionInProgress = approvingSubmissionId !== null || isUndoingConceptApproval;
-                                        const isApproveDisabled =
-                                            isActionInProgress || isApprovedConcept || (hasApprovedConceptTitle && !isApprovedConcept);
 
                                         return (
                                             <tr
@@ -636,35 +541,6 @@ const PanelistLiveDefense = () => {
                                                         {panelistApprovalStatus}
                                                     </span>
                                                 </td>
-                                                {canApproveConceptTitle ? (
-                                                    <td className="px-4 py-3">
-                                                        {isApprovedConcept ? (
-                                                            <button
-                                                                type="button"
-                                                                onClick={(event) => {
-                                                                    event.stopPropagation();
-                                                                    handleUndoConceptTitleApproval();
-                                                                }}
-                                                                disabled={isActionInProgress}
-                                                                className="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                                            >
-                                                                {isUndoingConcept ? 'Undoing...' : 'Undo'}
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                type="button"
-                                                                onClick={(event) => {
-                                                                    event.stopPropagation();
-                                                                    handleApproveConceptTitle(submission.id);
-                                                                }}
-                                                                disabled={isApproveDisabled}
-                                                                className="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                                            >
-                                                                {isApprovingConcept ? 'Approving...' : 'Approve'}
-                                                            </button>
-                                                        )}
-                                                    </td>
-                                                ) : null}
                                             </tr>
                                         );
                                     })
@@ -892,15 +768,36 @@ const PanelistLiveDefense = () => {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div className="flex items-center gap-2">
-                            <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                            <h3 className="text-sm font-semibold text-slate-800">Evaluation Grading</h3>
+                    <div className="space-y-4">
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <Scale className="h-4 w-4 text-emerald-600" />
+                                <h3 className="text-sm font-semibold text-slate-800">Verdict</h3>
+                            </div>
+                            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3">
+                                <p className="text-xs font-semibold text-slate-700">Open verdict recommendation form for this defense panel session.</p>
+                                <p className="mt-1 text-[11px] text-slate-500">Current Verdict: {conceptVerdict?.value ?? 'Not set yet'}</p>
+                                <div className="mt-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsConceptVerdictModalOpen(true)}
+                                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                                    >
+                                        <Scale className="h-3.5 w-3.5" />
+                                        Verdict
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3">
-                            <p className="text-xs font-semibold text-slate-700">Open scoring form for this defense panel session.</p>
-                            <div className="mt-3">
-                                {canEvaluateDefense ? (
+
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                                <h3 className="text-sm font-semibold text-slate-800">Evaluation Grading</h3>
+                            </div>
+                            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3">
+                                <p className="text-xs font-semibold text-slate-700">Open scoring form for this defense panel session.</p>
+                                <div className="mt-3">
                                     <Link
                                         href={`/panelist/evaluation?group=${group.id}`}
                                         className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
@@ -908,17 +805,7 @@ const PanelistLiveDefense = () => {
                                         <ShieldCheck className="h-3.5 w-3.5" />
                                         Evaluate
                                     </Link>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        disabled
-                                        title="Approve at least one concept title first."
-                                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        <ShieldCheck className="h-3.5 w-3.5" />
-                                        Evaluate
-                                    </button>
-                                )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -976,6 +863,19 @@ const PanelistLiveDefense = () => {
                         recommendationLetter={recommendationLetter}
                     />
                 ) : null}
+
+                <ConceptVerdictModal
+                    open={isConceptVerdictModalOpen}
+                    onClose={() => setIsConceptVerdictModalOpen(false)}
+                    groupId={group.id}
+                    groupLabel={groupLabel}
+                    conceptSubmissions={conceptSubmissions}
+                    canEdit={canManageConceptVerdict}
+                    initialVerdict={conceptVerdict?.value ?? null}
+                    initialApprovedSubmissionId={conceptVerdict?.approvedConceptSubmissionId ?? null}
+                    decidedBy={conceptVerdict?.decidedBy ?? null}
+                    decidedAt={conceptVerdict?.decidedAt ?? null}
+                />
             </motion.section>
         </PanelLayout>
     );

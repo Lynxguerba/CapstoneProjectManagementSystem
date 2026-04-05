@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\RecommendationForTitleDefensePdfGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -138,39 +139,179 @@ class GenerateRecommendationForTitleDefenseController extends Controller
             ], 500);
         }
 
-        $timestamp = $signedAt->format('Ymd-His');
-        $fileName = Str::slug($group->name !== '' ? $group->name : 'group')."-recommendation-title-defense-{$timestamp}.pdf";
+        $fileName = Str::slug($group->name !== '' ? $group->name : 'group').'-recommendation-title-defense.pdf';
         $relativePath = "recommendations/group-{$group->id}/{$fileName}";
         $disk = Storage::disk('public');
 
         $disk->put($relativePath, File::get($generatedPdfPath));
         $fileSize = $disk->size($relativePath);
 
-        $submission = DocumentSubmission::query()->create([
-            'group_id' => $group->id,
-            'document_requirement_id' => $recommendationRequirement->id,
-            'file_name' => $fileName,
-            'file_path' => $relativePath,
-            'mime_type' => 'application/pdf',
-            'file_size' => is_int($fileSize) ? $fileSize : null,
-            'status' => 'Submitted',
-            'adviser_status' => 'Approved',
-            'submitted_by' => $adviser->id,
-            'adviser_reviewed_by' => $adviser->id,
-            'adviser_reviewed_at' => $signedAt,
-        ]);
+        $pathsToDeleteFromStorage = [];
+        $statusCode = 201;
+        $submissionId = null;
 
-        $recommendationRecord = AdviserRecommendationDocument::query()->create([
-            'group_id' => $group->id,
-            'adviser_id' => $adviser->id,
-            'document_requirement_id' => $recommendationRequirement->id,
-            'document_submission_id' => $submission->id,
-            'file_name' => $fileName,
-            'file_path' => $relativePath,
-            'approved_titles' => $approvedTitles,
-            'submitted_by_names' => $submittedByNames,
-            'signed_at' => $signedAt,
-        ]);
+        [$recommendationRecord, $submissionId, $statusCode, $pathsToDeleteFromStorage] = DB::transaction(function () use (
+            $adviser,
+            $approvedTitles,
+            $fileName,
+            $fileSize,
+            $group,
+            $recommendationRequirement,
+            $relativePath,
+            $signedAt,
+            $submittedByNames
+        ): array {
+            $existingRecommendations = AdviserRecommendationDocument::query()
+                ->where('group_id', $group->id)
+                ->orderByDesc('signed_at')
+                ->orderByDesc('id')
+                ->get([
+                    'id',
+                    'document_submission_id',
+                    'file_path',
+                ]);
+
+            /** @var AdviserRecommendationDocument|null $primaryRecommendation */
+            $primaryRecommendation = $existingRecommendations->first();
+            $primarySubmissionId = is_numeric($primaryRecommendation?->document_submission_id)
+                ? (int) $primaryRecommendation->document_submission_id
+                : null;
+
+            /** @var DocumentSubmission|null $primarySubmission */
+            $primarySubmission = $primarySubmissionId !== null
+                ? DocumentSubmission::query()->find($primarySubmissionId, [
+                    'id',
+                    'group_id',
+                    'document_requirement_id',
+                    'file_path',
+                ])
+                : null;
+
+            $pathsToDelete = collect();
+            if (
+                $primarySubmission instanceof DocumentSubmission
+                && is_string($primarySubmission->file_path)
+                && trim($primarySubmission->file_path) !== ''
+                && trim($primarySubmission->file_path) !== $relativePath
+            ) {
+                $pathsToDelete->push(trim($primarySubmission->file_path));
+            }
+
+            if (
+                $primaryRecommendation instanceof AdviserRecommendationDocument
+                && is_string($primaryRecommendation->file_path)
+                && trim($primaryRecommendation->file_path) !== ''
+                && trim($primaryRecommendation->file_path) !== $relativePath
+            ) {
+                $pathsToDelete->push(trim($primaryRecommendation->file_path));
+            }
+
+            $submissionData = [
+                'group_id' => $group->id,
+                'document_requirement_id' => $recommendationRequirement->id,
+                'file_name' => $fileName,
+                'file_path' => $relativePath,
+                'mime_type' => 'application/pdf',
+                'file_size' => is_int($fileSize) ? $fileSize : null,
+                'status' => 'Submitted',
+                'adviser_status' => 'Approved',
+                'submitted_by' => $adviser->id,
+                'adviser_reviewed_by' => $adviser->id,
+                'adviser_reviewed_at' => $signedAt,
+            ];
+
+            if ($primarySubmission instanceof DocumentSubmission) {
+                $primarySubmission->update($submissionData);
+                $submission = $primarySubmission->fresh();
+            } else {
+                $submission = DocumentSubmission::query()->create($submissionData);
+            }
+
+            $recommendationData = [
+                'group_id' => $group->id,
+                'adviser_id' => $adviser->id,
+                'document_requirement_id' => $recommendationRequirement->id,
+                'document_submission_id' => $submission->id,
+                'file_name' => $fileName,
+                'file_path' => $relativePath,
+                'approved_titles' => $approvedTitles,
+                'submitted_by_names' => $submittedByNames,
+                'signed_at' => $signedAt,
+            ];
+
+            if ($primaryRecommendation instanceof AdviserRecommendationDocument) {
+                $primaryRecommendation->update($recommendationData);
+                $recommendationRecord = $primaryRecommendation->fresh();
+                $responseStatusCode = 200;
+            } else {
+                $recommendationRecord = AdviserRecommendationDocument::query()->create($recommendationData);
+                $responseStatusCode = 201;
+            }
+
+            $duplicateRecommendationIds = $existingRecommendations
+                ->skip(1)
+                ->pluck('id')
+                ->filter(fn ($id): bool => is_numeric($id))
+                ->map(fn ($id): int => (int) $id)
+                ->values()
+                ->all();
+
+            $duplicateSubmissionIds = $existingRecommendations
+                ->skip(1)
+                ->pluck('document_submission_id')
+                ->filter(fn ($id): bool => is_numeric($id))
+                ->map(fn ($id): int => (int) $id)
+                ->unique()
+                ->reject(fn (int $id): bool => $id === (int) $submission->id)
+                ->values()
+                ->all();
+
+            if ($duplicateRecommendationIds !== []) {
+                $duplicateRecommendationPaths = AdviserRecommendationDocument::query()
+                    ->whereIn('id', $duplicateRecommendationIds)
+                    ->pluck('file_path')
+                    ->filter(fn ($path): bool => is_string($path) && trim($path) !== '')
+                    ->map(fn (string $path): string => trim($path))
+                    ->values();
+
+                $pathsToDelete = $pathsToDelete->merge($duplicateRecommendationPaths);
+
+                AdviserRecommendationDocument::query()
+                    ->whereIn('id', $duplicateRecommendationIds)
+                    ->delete();
+            }
+
+            if ($duplicateSubmissionIds !== []) {
+                $duplicateSubmissionPaths = DocumentSubmission::query()
+                    ->whereIn('id', $duplicateSubmissionIds)
+                    ->pluck('file_path')
+                    ->filter(fn ($path): bool => is_string($path) && trim($path) !== '')
+                    ->map(fn (string $path): string => trim($path))
+                    ->values();
+
+                $pathsToDelete = $pathsToDelete->merge($duplicateSubmissionPaths);
+
+                DocumentSubmission::query()
+                    ->whereIn('id', $duplicateSubmissionIds)
+                    ->delete();
+            }
+
+            /** @var AdviserRecommendationDocument $recommendationRecord */
+            return [
+                $recommendationRecord,
+                (int) $submission->id,
+                $responseStatusCode,
+                $pathsToDelete
+                    ->unique()
+                    ->reject(fn (string $path): bool => $path === $relativePath)
+                    ->values()
+                    ->all(),
+            ];
+        });
+
+        collect($pathsToDeleteFromStorage)
+            ->filter(fn ($path): bool => is_string($path) && trim($path) !== '')
+            ->each(fn (string $path): bool => $disk->delete($path));
 
         File::deleteDirectory(dirname($generatedPdfPath));
 
@@ -181,9 +322,9 @@ class GenerateRecommendationForTitleDefenseController extends Controller
                 'file_name' => $fileName,
                 'file_url' => $disk->url($relativePath),
                 'signed_at' => $signedAt->format('Y-m-d H:i'),
-                'document_submission_id' => $submission->id,
+                'document_submission_id' => $submissionId,
             ],
-        ], 201);
+        ], $statusCode);
     }
 
     private function resolveUserName(User $user): string

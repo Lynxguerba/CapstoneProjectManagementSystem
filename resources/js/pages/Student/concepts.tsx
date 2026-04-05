@@ -1,8 +1,20 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, BellRing, CheckCircle2, ChevronRight, Clock3, FileText, FolderOpen, UploadCloud } from 'lucide-react';
+import {
+    AlertTriangle,
+    BellRing,
+    CheckCircle2,
+    ChevronRight,
+    Clock3,
+    ExternalLink,
+    FileText,
+    FolderOpen,
+    Trash2,
+    UploadCloud,
+} from 'lucide-react';
 import React from 'react';
 import ConceptSubmitConfirmationModal from '@/components/Student/ConceptSubmitConfirmationModal';
+import RemoveConceptSubmissionModal from '@/components/Student/RemoveConceptSubmissionModal';
 import StudentLayout from './_layout';
 
 type ConceptRequirement = {
@@ -100,6 +112,7 @@ const StudentConcepts = () => {
     const { props } = usePage<StudentConceptProps>();
     const fileInputRef = React.useRef<HTMLInputElement | null>(null);
     const [isSubmitConfirmationOpen, setIsSubmitConfirmationOpen] = React.useState(false);
+    const [submissionPendingDeletion, setSubmissionPendingDeletion] = React.useState<ConceptSubmission | null>(null);
     const group = props.group;
     const isGroupLeader = props.isGroupLeader ?? false;
     const readiness = props.readiness;
@@ -112,6 +125,7 @@ const StudentConcepts = () => {
         title: '',
         concept_file: null,
     });
+    const deleteForm = useForm({});
 
     const requirementLabel = activeRequirement?.type ?? 'Concept Paper';
     const deadlineLabel = activeRequirement?.deadlineLabel ?? notifications.deadline ?? 'No deadline declared yet.';
@@ -179,6 +193,39 @@ const StudentConcepts = () => {
         });
     };
 
+    const handleAskDeleteSubmission = (submission: ConceptSubmission) => {
+        if (!isGroupLeader || deleteForm.processing) {
+            return;
+        }
+
+        setSubmissionPendingDeletion(submission);
+    };
+
+    const handleCloseDeleteSubmissionModal = () => {
+        if (deleteForm.processing) {
+            return;
+        }
+
+        setSubmissionPendingDeletion(null);
+    };
+
+    const handleConfirmDeleteSubmission = () => {
+        if (submissionPendingDeletion === null) {
+            return;
+        }
+
+        deleteForm.delete(`/student/concepts/submissions/${submissionPendingDeletion.id}`, {
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: () => {
+                setSubmissionPendingDeletion(null);
+            },
+            onError: () => {
+                setSubmissionPendingDeletion(null);
+            },
+        });
+    };
+
     const groupLabel = group
         ? `${group.name}${group.programSetName ? ` · ${group.programSetName}` : ''}${group.academicYear ? ` · ${group.academicYear}` : ''}`
         : 'No active group assignment yet.';
@@ -242,18 +289,36 @@ const StudentConcepts = () => {
                                             </span>
                                         </td>
                                         <td className="px-3 py-3 text-xs text-slate-600">
-                                            <Link
-                                                href={submission.viewUrl ?? '#'}
-                                                preserveScroll
-                                                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                                                    submission.viewUrl
-                                                        ? 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50'
-                                                        : 'pointer-events-none cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                                                }`}
-                                            >
-                                                Open File
-                                            </Link>
-                                            {submission.fileSizeLabel ? <div className="mt-1 text-slate-500">{submission.fileSizeLabel}</div> : null}
+                                            <div className="flex flex-nowrap items-center gap-2">
+                                                <Link
+                                                    href={submission.viewUrl ?? '#'}
+                                                    preserveScroll
+                                                    className={`inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                                                        submission.viewUrl
+                                                            ? 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50'
+                                                            : 'pointer-events-none cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                                                    }`}
+                                                >
+                                                    <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                                                    <span className="max-w-[6.75rem] whitespace-normal text-center leading-tight">Open File</span>
+                                                </Link>
+
+                                                {isGroupLeader ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleAskDeleteSubmission(submission)}
+                                                        disabled={deleteForm.processing}
+                                                        className="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                                                        <span className="max-w-[6.75rem] whitespace-normal text-center leading-tight">
+                                                            {deleteForm.processing && submissionPendingDeletion?.id === submission.id
+                                                                ? 'Removing File...'
+                                                                : 'Remove File'}
+                                                        </span>
+                                                    </button>
+                                                ) : null}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -543,6 +608,14 @@ const StudentConcepts = () => {
                 progressPercentage={form.progress?.percentage ?? null}
                 onClose={() => setIsSubmitConfirmationOpen(false)}
                 onConfirm={handleConfirmedSubmit}
+            />
+
+            <RemoveConceptSubmissionModal
+                open={submissionPendingDeletion !== null}
+                title={submissionPendingDeletion?.title ?? 'Untitled Submission'}
+                processing={deleteForm.processing}
+                onClose={handleCloseDeleteSubmissionModal}
+                onConfirm={handleConfirmDeleteSubmission}
             />
         </StudentLayout>
     );

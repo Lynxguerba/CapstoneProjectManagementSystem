@@ -13,7 +13,16 @@ class Group extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['program_set_id', 'leader_id', 'name', 'approved_concept_submission_id', 'is_cross_set'];
+    protected $fillable = [
+        'program_set_id',
+        'leader_id',
+        'name',
+        'approved_concept_submission_id',
+        'concept_verdict',
+        'concept_verdict_by_panelist_id',
+        'concept_verdict_decided_at',
+        'is_cross_set',
+    ];
 
     /**
      * @return array<string, string>
@@ -22,6 +31,7 @@ class Group extends Model
     {
         return [
             'is_cross_set' => 'boolean',
+            'concept_verdict_decided_at' => 'datetime',
         ];
     }
 
@@ -65,6 +75,11 @@ class Group extends Model
     public function approvedConceptSubmission(): BelongsTo
     {
         return $this->belongsTo(DocumentSubmission::class, 'approved_concept_submission_id');
+    }
+
+    public function conceptVerdictPanelist(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'concept_verdict_by_panelist_id');
     }
 
     public function adviserRecommendationDocuments(): HasMany

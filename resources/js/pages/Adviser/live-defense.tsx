@@ -1,9 +1,10 @@
 import type { FormDataConvertible } from '@inertiajs/core';
 import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ChevronRight, FileText, MessageSquareText, Mic, ShieldCheck, Users, X } from 'lucide-react';
+import { ChevronRight, FileText, MessageSquareText, Scale, ShieldCheck, Users, X } from 'lucide-react';
 import React from 'react';
 import type { IHighlight, NewHighlight } from 'react-pdf-highlighter';
+import ConceptVerdictModal, { type ConceptVerdictValue } from '@/components/Panelist/ConceptVerdictModal';
 import { PdfHighlighterViewer } from '@/components/Panelist/PdfHighlighterViewer';
 import RecommendationLetterModal from '@/components/Student/RecommendationLetterModal';
 import AdviserLayout from './_layout';
@@ -63,6 +64,12 @@ type AdviserLiveDefenseProps = {
     commentsBySubmission?: Record<number, LiveComment[]>;
     highlightsBySubmission?: Record<number, IHighlight[]>;
     commentHighlightTargets?: Record<string, { submissionId: number; highlightId: string }>;
+    conceptVerdict?: {
+        value?: ConceptVerdictValue | null;
+        approvedConceptSubmissionId?: number | null;
+        decidedAt?: string | null;
+        decidedBy?: string | null;
+    } | null;
 };
 
 const defenseStatusClass = (status: string): string => {
@@ -153,6 +160,7 @@ const AdviserLiveDefense = () => {
     const adviser = props.participants?.adviser ?? null;
     const panelists = React.useMemo(() => props.participants?.panelists ?? [], [props.participants?.panelists]);
     const recommendationLetter = props.recommendationLetter ?? null;
+    const conceptVerdict = props.conceptVerdict ?? null;
     const serverCommentsBySubmission = React.useMemo(() => props.commentsBySubmission ?? {}, [props.commentsBySubmission]);
     const serverHighlightsBySubmission = React.useMemo(() => props.highlightsBySubmission ?? {}, [props.highlightsBySubmission]);
     const serverCommentHighlightTargets = React.useMemo(() => props.commentHighlightTargets ?? {}, [props.commentHighlightTargets]);
@@ -169,6 +177,7 @@ const AdviserLiveDefense = () => {
     const [isSubmittingHighlightComment, setIsSubmittingHighlightComment] = React.useState(false);
     const [removingCommentId, setRemovingCommentId] = React.useState<string | null>(null);
     const [isRecommendationLetterModalOpen, setIsRecommendationLetterModalOpen] = React.useState(false);
+    const [isConceptVerdictModalOpen, setIsConceptVerdictModalOpen] = React.useState(false);
     const [isReadingCommentHistory, setIsReadingCommentHistory] = React.useState(false);
     const commentsContainerRef = React.useRef<HTMLDivElement | null>(null);
     const shouldStickCommentsToBottomRef = React.useRef(true);
@@ -476,7 +485,6 @@ const AdviserLiveDefense = () => {
     }
 
     const groupLabel = `${group.name}${group.programSetName ? ` · ${group.programSetName}` : ''}${group.academicYear ? ` · ${group.academicYear}` : ''}`;
-    const activeGroupName = group?.name ?? 'Assigned Group';
     const defenseStatus = group?.defenseStatus ?? 'Pending';
 
     return (
@@ -818,17 +826,45 @@ const AdviserLiveDefense = () => {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div className="flex items-center gap-2">
-                            <Mic className="h-4 w-4 text-emerald-600" />
-                            <h3 className="text-sm font-semibold text-slate-800">Adviser Session</h3>
+                    <div className="space-y-4">
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <Scale className="h-4 w-4 text-emerald-600" />
+                                <h3 className="text-sm font-semibold text-slate-800">Verdict</h3>
+                            </div>
+                            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3">
+                                <p className="text-xs font-semibold text-slate-700">View the concept verdict selected by the panel chairman.</p>
+                                <p className="mt-1 text-[11px] text-slate-500">Current Verdict: {conceptVerdict?.value ?? 'Not set yet'}</p>
+                                <div className="mt-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsConceptVerdictModalOpen(true)}
+                                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                                    >
+                                        <Scale className="h-3.5 w-3.5" />
+                                        Verdict
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div className="mt-3 space-y-2 text-xs text-slate-600">
-                            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">Live Defense · {activeGroupName}</p>
-                            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">Panelists assigned: {panelists.length}</p>
-                            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                                Selected title: {selectedConcept?.title ?? 'None selected'}
-                            </p>
+
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                                <h3 className="text-sm font-semibold text-slate-800">Evaluation Grading</h3>
+                            </div>
+                            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3">
+                                <p className="text-xs font-semibold text-slate-700">Open evaluation results for this defense panel session.</p>
+                                <div className="mt-3">
+                                    <Link
+                                        href={`/adviser/evaluations?group=${group.id}`}
+                                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                                    >
+                                        <ShieldCheck className="h-3.5 w-3.5" />
+                                        Evaluate
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -885,6 +921,19 @@ const AdviserLiveDefense = () => {
                         recommendationLetter={recommendationLetter}
                     />
                 ) : null}
+
+                <ConceptVerdictModal
+                    open={isConceptVerdictModalOpen}
+                    onClose={() => setIsConceptVerdictModalOpen(false)}
+                    groupId={group.id}
+                    groupLabel={groupLabel}
+                    conceptSubmissions={conceptSubmissions}
+                    canEdit={false}
+                    initialVerdict={conceptVerdict?.value ?? null}
+                    initialApprovedSubmissionId={conceptVerdict?.approvedConceptSubmissionId ?? null}
+                    decidedBy={conceptVerdict?.decidedBy ?? null}
+                    decidedAt={conceptVerdict?.decidedAt ?? null}
+                />
             </motion.section>
         </AdviserLayout>
     );

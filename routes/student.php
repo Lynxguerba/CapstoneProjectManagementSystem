@@ -2,10 +2,13 @@
 
 use App\Http\Controllers\Student\AdviserRequestController;
 use App\Http\Controllers\Student\DestroyStudentConceptSubmissionController;
+use App\Http\Controllers\Student\DestroyStudentDocumentSubmissionController;
 use App\Http\Controllers\Student\ShowStudentConceptSubmissionController;
+use App\Http\Controllers\Student\ShowStudentDocumentController;
 use App\Http\Controllers\Student\StoreStudentConceptSubmissionController;
 use App\Http\Controllers\Student\StudentConceptController;
 use App\Http\Controllers\Student\StudentDashboardController;
+use App\Http\Controllers\Student\StudentDocumentsController;
 use App\Http\Controllers\Student\StudentGroupController;
 use App\Http\Controllers\Student\StudentLiveDefenseController;
 use App\Http\Controllers\Student\StudentTitleRepositoryController;
@@ -274,9 +277,13 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
     Route::get('/concepts/submissions/{submission}', ShowStudentConceptSubmissionController::class)->name('student.concepts.submissions.show');
     Route::patch('/concepts/submissions/{submission}', UpdateStudentConceptSubmissionController::class)->name('student.concepts.submissions.update');
     Route::delete('/concepts/submissions/{submission}', DestroyStudentConceptSubmissionController::class)->name('student.concepts.submissions.destroy');
-    Route::get('/documents', function () {
-        return Inertia::render('Student/documents');
-    })->name('student.documents');
+    Route::get('/documents', StudentDocumentsController::class)->name('student.documents');
+    Route::get('/documents/files/{type}/{id}', ShowStudentDocumentController::class)
+        ->whereIn('type', ['submission', 'recommendation'])
+        ->whereNumber('id')
+        ->name('student.documents.show');
+    Route::delete('/documents/submissions/{submission}', DestroyStudentDocumentSubmissionController::class)
+        ->name('student.documents.submissions.destroy');
     Route::get('/schedule', function () {
         $studentId = Auth::guard('web')->id();
 
