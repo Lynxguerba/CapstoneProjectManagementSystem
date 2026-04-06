@@ -143,15 +143,5 @@ CPSM TO DO:
     Instructor and Adviser approval concept[]
 
 
-
-let's work with the resources/js/pages/Panelist/assigned-groups.tsx concept, the UI/Layout, Logic and Database
-  connection must be similar to the resources/js/pages/Adviser/groups.tsx, so work with this thing. and also Panelist
-  also have cutomize the utilities similar to the resources/js/pages/Adviser/utilities also. so that it track how
-  many panelist can handle BSIS and BSIT student groups. Since the panelist handle groups are now change  then the
-  resources/js/pages/Instructor/panelist-assignment UI elements are now change becauese there is program capacity
-  display on each groups. Then for the resources/js/components/Instructor/panelist/AssignPanelistModal.tsx and the
-  resources/js/pages/Instructor/panelist-assignment/panelist-assignment-groups.tsx must  change the logic also,  the
-  modal set into the table  form with Program Capacity. and the  Layout grid/table type in the @panelist/assigned-
-  groups must be  same  in the resources/js/pages/Instructor/groups/managePage.tsx with  filters and  capacity
-  settings button, for another page of utilities  in the panelist must be similar to the resources/js/pages/Adviser/
-  utilities with notification message. don't forge the bread-crumbs link. Create now.
+#Date April 6, 2026
+  Status Badge in the Defense Status (Exclusive for Panelist, Adviser and Students) []
