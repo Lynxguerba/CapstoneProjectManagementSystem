@@ -978,6 +978,14 @@ const AdviserLiveDefense = () => {
                                         ))
                                     )}
                                 </div>
+                                <div className="mt-3">
+                                    <Link
+                                        href={`/adviser/live-defense/acknowledgement?group=${group.id}`}
+                                        className="block rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-center text-xs font-semibold tracking-wide text-emerald-700 uppercase transition hover:bg-emerald-100"
+                                    >
+                                        Acknowledgement
+                                    </Link>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -14,6 +14,8 @@ use App\Http\Controllers\Adviser\UpdateAdviserConceptSubmissionStatusController;
 use App\Http\Controllers\Adviser\UpdateAdviserPasswordController;
 use App\Http\Controllers\Adviser\UpdateAdviserProgramUtilitiesController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
+use App\Http\Controllers\Panelist\DeleteGroupAcknowledgementReceiptSignatureController;
+use App\Http\Controllers\Panelist\UpsertGroupAcknowledgementReceiptSignatureController;
 use App\Models\AdviserAvailability;
 use App\Models\AdviserProgramUtility;
 use App\Models\AdviserRecommendationDocument;
@@ -21,11 +23,14 @@ use App\Models\DefenseSchedule;
 use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
+use App\Models\GroupAcknowledgementReceipt;
 use App\Models\GroupAdviser;
 use App\Models\GroupAdviserRequest;
+use App\Models\GroupPanelist;
 use App\Models\ProgramSet;
 use App\Models\StudentProgram;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -890,6 +895,254 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
     })->name('adviser.evaluations');
     Route::get('/schedule', AdviserScheduleController::class)->name('adviser.schedule');
     Route::get('/live-defense', AdviserLiveDefenseController::class)->name('adviser.live-defense');
+    Route::get('/live-defense/acknowledgement', function () {
+        $adviserUser = Auth::guard('web')->user();
+        $adviserUser?->loadMissing(['eSignature', 'roles']);
+        $adviserId = $adviserUser?->id;
+        $selectedGroupId = request()->query('group');
+        $selectedGroupId = is_numeric($selectedGroupId) ? (int) $selectedGroupId : null;
+
+        if (
+            $adviserId === null
+            || $selectedGroupId === null
+            || ! class_exists(Group::class)
+            || ! Schema::hasTable('groups')
+            || ! Schema::hasTable('group_advisers')
+        ) {
+            abort(403);
+        }
+
+        $selectedGroup = Group::query()
+            ->with([
+                'programSet.academicYear',
+                'programSet.instructor.eSignature',
+                'leader:id,name,first_name,last_name',
+                'members:id,name,first_name,last_name',
+                'adviserAssignment.adviser.eSignature',
+                'panelAssignments.panelist.eSignature',
+            ])
+            ->where('id', $selectedGroupId)
+            ->whereHas('adviserAssignment', fn ($query) => $query->where('adviser_id', $adviserId))
+            ->first();
+
+        if (! $selectedGroup instanceof Group) {
+            abort(403);
+        }
+
+        $resolveUserName = static function (?User $user): string {
+            if (! $user instanceof User) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $fullName = trim($firstName.' '.$lastName);
+
+            if ($fullName !== '') {
+                return $fullName;
+            }
+
+            return is_string($user->name) ? trim($user->name) : '';
+        };
+
+        $resolveSignaturePayload = static function (?User $user): ?array {
+            if (! $user instanceof User || ! $user->relationLoaded('eSignature') || $user->eSignature === null) {
+                return null;
+            }
+
+            return [
+                'signatureData' => $user->eSignature->signature_data,
+                'mimeType' => $user->eSignature->mime_type,
+            ];
+        };
+
+        $requestedStage = request()->query('stage');
+        $requestedStage = is_string($requestedStage) && trim($requestedStage) !== '' ? trim($requestedStage) : null;
+        $selectedSchedule = null;
+
+        if (Schema::hasTable('defense_schedules')) {
+            $baseScheduleQuery = DefenseSchedule::query()->where('group_id', $selectedGroup->id);
+
+            if ($requestedStage !== null) {
+                $selectedSchedule = (clone $baseScheduleQuery)
+                    ->whereRaw('LOWER(stage) = ?', [strtolower($requestedStage)])
+                    ->orderByRaw(
+                        "CASE
+                            WHEN status = 'Scheduled' THEN 0
+                            WHEN status = 'Pending' THEN 1
+                            WHEN status = 'Completed' THEN 2
+                            ELSE 3
+                        END"
+                    )
+                    ->orderByDesc('scheduled_date')
+                    ->orderByDesc('start_time')
+                    ->first(['id', 'group_id', 'stage', 'status', 'scheduled_date', 'start_time']);
+            }
+
+            if (! $selectedSchedule instanceof DefenseSchedule) {
+                $selectedSchedule = (clone $baseScheduleQuery)
+                    ->orderByRaw(
+                        "CASE
+                            WHEN status = 'Scheduled' THEN 0
+                            WHEN status = 'Pending' THEN 1
+                            WHEN status = 'Completed' THEN 2
+                            ELSE 3
+                        END"
+                    )
+                    ->orderByDesc('scheduled_date')
+                    ->orderByDesc('start_time')
+                    ->first(['id', 'group_id', 'stage', 'status', 'scheduled_date', 'start_time']);
+            }
+        }
+
+        $resolvedStage = is_string($selectedSchedule?->stage) && trim($selectedSchedule->stage) !== ''
+            ? trim($selectedSchedule->stage)
+            : ($requestedStage ?? 'Concept');
+        $normalizedStage = strtolower($resolvedStage);
+
+        $defenseTypeKey = match ($normalizedStage) {
+            'concept', 'concept paper', 'concept papers' => 'concept_presentation',
+            'outline' => 'outline_defense',
+            'pre-deployment', 'pre deployment' => 'pre_deployment_defense',
+            'final', 'final defense', 'finals' => 'final_defense',
+            default => 'concept_presentation',
+        };
+
+        $defenseDateLabel = $selectedSchedule?->scheduled_date?->format('F d, Y') ?? now()->format('F d, Y');
+        $defenseTimeLabel = 'TBD';
+        if (is_string($selectedSchedule?->start_time) && trim($selectedSchedule->start_time) !== '') {
+            $startTime = Carbon::createFromFormat('H:i:s', $selectedSchedule->start_time);
+            $defenseTimeLabel = $startTime !== false ? $startTime->format('g:i A') : $selectedSchedule->start_time;
+        }
+
+        $projectLeader = $resolveUserName($selectedGroup->leader);
+        $memberNames = $selectedGroup->members
+            ->map(fn (User $member): string => $resolveUserName($member))
+            ->filter(fn (string $name): bool => $name !== '')
+            ->values()
+            ->all();
+
+        $dateReceivedLabel = now()->format('F d, Y');
+        $receiptRowsByFacultyUserId = collect();
+        if (Schema::hasTable('group_acknowledgement_receipts')) {
+            $receiptRowsByFacultyUserId = GroupAcknowledgementReceipt::query()
+                ->where('group_id', $selectedGroup->id)
+                ->where('defense_type_key', $defenseTypeKey)
+                ->get([
+                    'id',
+                    'faculty_user_id',
+                    'faculty_role',
+                    'amount_received',
+                    'date_received',
+                    'signed_at',
+                ])
+                ->keyBy('faculty_user_id');
+        }
+
+        $resolveDateReceivedLabel = static function (mixed $value, string $fallback): string {
+            if ($value instanceof \DateTimeInterface) {
+                return Carbon::instance($value)->format('F d, Y');
+            }
+
+            if (is_string($value) && trim($value) !== '') {
+                try {
+                    return Carbon::parse($value)->format('F d, Y');
+                } catch (\Throwable $e) {
+                    return $fallback;
+                }
+            }
+
+            return $fallback;
+        };
+
+        $formatAmountLabel = static function (mixed $amount, int $fallback): string {
+            $resolvedAmount = is_numeric($amount) ? (int) $amount : $fallback;
+
+            return 'P '.number_format($resolvedAmount, 0);
+        };
+
+        $facultyRows = collect();
+        $adviser = $selectedGroup->adviserAssignment?->adviser;
+        if ($adviser instanceof User) {
+            $receiptRow = $receiptRowsByFacultyUserId->get($adviser->id);
+            $facultyRows->push([
+                'id' => 'adviser-'.$adviser->id,
+                'userId' => $adviser->id,
+                'name' => strtoupper($resolveUserName($adviser)),
+                'role' => is_string($receiptRow?->faculty_role) && trim($receiptRow->faculty_role) !== '' ? $receiptRow->faculty_role : 'ADVISER',
+                'amountReceived' => $formatAmountLabel($receiptRow?->amount_received, 500),
+                'dateReceived' => $resolveDateReceivedLabel($receiptRow?->date_received, $dateReceivedLabel),
+                'signedAt' => $receiptRow?->signed_at?->toIso8601String(),
+                'eSignature' => $resolveSignaturePayload($adviser),
+            ]);
+        }
+
+        $selectedGroup->panelAssignments
+            ->sortBy('panel_slot')
+            ->each(function (GroupPanelist $assignment) use (
+                $facultyRows,
+                $resolveUserName,
+                $resolveSignaturePayload,
+                $dateReceivedLabel,
+                $receiptRowsByFacultyUserId,
+                $resolveDateReceivedLabel,
+                $formatAmountLabel
+            ): void {
+                $panelist = $assignment->panelist;
+                if (! $panelist instanceof User) {
+                    return;
+                }
+
+                $receiptRow = $receiptRowsByFacultyUserId->get($panelist->id);
+                $roleValue = strtolower(trim((string) $assignment->role));
+                $roleLabel = is_string($receiptRow?->faculty_role) && trim($receiptRow->faculty_role) !== ''
+                    ? trim($receiptRow->faculty_role)
+                    : (($roleValue === 'chairman' || (int) $assignment->panel_slot === 1)
+                    ? 'PANEL CHAIRMAN'
+                    : 'PANEL MEMBER');
+
+                $facultyRows->push([
+                    'id' => 'panel-'.$panelist->id,
+                    'userId' => $panelist->id,
+                    'name' => strtoupper($resolveUserName($panelist)),
+                    'role' => $roleLabel,
+                    'amountReceived' => $formatAmountLabel($receiptRow?->amount_received, 300),
+                    'dateReceived' => $resolveDateReceivedLabel($receiptRow?->date_received, $dateReceivedLabel),
+                    'signedAt' => $receiptRow?->signed_at?->toIso8601String(),
+                    'eSignature' => $resolveSignaturePayload($panelist),
+                ]);
+            });
+
+        $instructor = $selectedGroup->programSet?->instructor;
+
+        return Inertia::render('Adviser/evaluation/acknowledgement-receipt', [
+            'group' => [
+                'id' => $selectedGroup->id,
+                'name' => (string) $selectedGroup->name,
+                'programSetName' => $selectedGroup->programSet?->program,
+                'academicYear' => $selectedGroup->programSet?->academicYear?->label ?? $selectedGroup->programSet?->school_year,
+            ],
+            'defense' => [
+                'typeKey' => $defenseTypeKey,
+                'program' => strtoupper(trim((string) ($selectedGroup->programSet?->program ?? ''))),
+                'dateLabel' => $defenseDateLabel,
+                'timeLabel' => $defenseTimeLabel,
+            ],
+            'project' => [
+                'leaderName' => $projectLeader,
+                'memberNames' => $memberNames,
+            ],
+            'facultyRows' => $facultyRows->values()->all(),
+            'instructor' => [
+                'name' => $resolveUserName($instructor),
+                'eSignature' => $resolveSignaturePayload($instructor),
+            ],
+        ]);
+    })->name('adviser.live-defense.acknowledgement');
+    Route::put('/live-defense/acknowledgement/signature', UpsertGroupAcknowledgementReceiptSignatureController::class)
+        ->name('adviser.live-defense.acknowledgement.signature.upsert');
+    Route::delete('/live-defense/acknowledgement/signature', DeleteGroupAcknowledgementReceiptSignatureController::class)
+        ->name('adviser.live-defense.acknowledgement.signature.delete');
     Route::post('/live-defense/groups/{group}/concept-verdict-minutes', GenerateAdviserConceptVerdictMinutesController::class)
         ->name('adviser.live-defense.groups.concept-verdict-minutes');
     Route::post('/live-defense/comments', StoreAdviserLiveDefenseCommentController::class)->name('adviser.live-defense.comments.store');

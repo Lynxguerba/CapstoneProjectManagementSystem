@@ -120,6 +120,16 @@ class User extends Authenticatable
         return $this->hasMany(LiveDefenseComment::class, 'author_id');
     }
 
+    public function acknowledgementReceiptRows(): HasMany
+    {
+        return $this->hasMany(GroupAcknowledgementReceipt::class, 'faculty_user_id');
+    }
+
+    public function acknowledgementReceiptSignatures(): HasMany
+    {
+        return $this->hasMany(GroupAcknowledgementReceipt::class, 'signed_by_user_id');
+    }
+
     public function hasRole(string $role): bool
     {
         $normalizedRole = Role::normalizeRole($role);

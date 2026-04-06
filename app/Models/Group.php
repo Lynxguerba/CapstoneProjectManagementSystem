@@ -92,6 +92,11 @@ class Group extends Model
         return $this->hasMany(LiveDefenseComment::class);
     }
 
+    public function acknowledgementReceipts(): HasMany
+    {
+        return $this->hasMany(GroupAcknowledgementReceipt::class);
+    }
+
     public function panelists(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'group_panelists', 'group_id', 'panelist_id')
