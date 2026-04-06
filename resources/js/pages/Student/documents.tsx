@@ -349,15 +349,13 @@ const StudentDocuments = () => {
                                         <th className="px-3 py-2.5">File</th>
                                         <th className="px-3 py-2.5">Requirement</th>
                                         <th className="px-3 py-2.5">Signed</th>
-                                        <th className="px-3 py-2.5">Instructor</th>
-                                        <th className="px-3 py-2.5">Adviser</th>
                                         <th className="px-3 py-2.5">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {filteredGeneratedFiles.length === 0 ? (
                                         <tr>
-                                            <td colSpan={6} className="px-3 py-7 text-center text-xs text-slate-500">
+                                            <td colSpan={4} className="px-3 py-7 text-center text-xs text-slate-500">
                                                 No system-generated document is available for {activePhaseLabel}.
                                             </td>
                                         </tr>
@@ -374,21 +372,7 @@ const StudentDocuments = () => {
                                                 </td>
                                                 <td className="px-3 py-2.5 text-slate-600">
                                                     <p>{file.signedAt ?? '—'}</p>
-                                                    <p className="text-[11px] text-slate-500">{file.adviserName ?? 'Adviser'}</p>
-                                                </td>
-                                                <td className="px-3 py-2.5">
-                                                    <span
-                                                        className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusPillClass(file.instructorStatus)}`}
-                                                    >
-                                                        {file.instructorStatus}
-                                                    </span>
-                                                </td>
-                                                <td className="px-3 py-2.5">
-                                                    <span
-                                                        className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusPillClass(file.adviserStatus)}`}
-                                                    >
-                                                        {file.adviserStatus}
-                                                    </span>
+                                                    <p className="text-[11px] text-slate-500">Adviser - {file.adviserName ?? 'Unassigned'}</p>
                                                 </td>
                                                 <td className="px-3 py-2.5">
                                                     <Link

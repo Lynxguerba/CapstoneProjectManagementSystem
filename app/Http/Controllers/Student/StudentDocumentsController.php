@@ -93,7 +93,7 @@ class StudentDocumentsController extends Controller
                             'instructorStatus' => 'Approved',
                             'adviserStatus' => 'Approved',
                             'fileSizeLabel' => $minutesDocument['fileSizeLabel'],
-                            'adviserName' => null,
+                            'adviserName' => $this->resolveUserName($group->adviserAssignment?->adviser),
                             'viewUrl' => route('student.documents.show', [
                                 'type' => 'minutes',
                                 'id' => $group->id,
@@ -115,6 +115,7 @@ class StudentDocumentsController extends Controller
         $hasGroupMembersTable = Schema::hasTable('group_members');
         $hasProgramSetsTable = Schema::hasTable('program_sets');
         $hasAcademicYearsTable = Schema::hasTable('academic_years');
+        $hasGroupAdvisersTable = Schema::hasTable('group_advisers');
 
         $query = Group::query();
 
@@ -124,6 +125,11 @@ class StudentDocumentsController extends Controller
             if ($hasAcademicYearsTable) {
                 $query->with('programSet.academicYear:id,label');
             }
+        }
+
+        if ($hasGroupAdvisersTable) {
+            $query->with('adviserAssignment:group_id,adviser_id');
+            $query->with('adviserAssignment.adviser:id,name,first_name,last_name,email');
         }
 
         $query->where(function (Builder $groupQuery) use ($studentId, $hasGroupMembersTable): void {

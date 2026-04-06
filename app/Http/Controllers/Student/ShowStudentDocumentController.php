@@ -191,7 +191,7 @@ class ShowStudentDocumentController extends Controller
             'mimeType' => 'application/pdf',
             'fileSizeLabel' => $minutesDocument['fileSizeLabel'],
             'fileUrl' => $minutesDocument['fileUrl'],
-            'signedBy' => null,
+            'signedBy' => $this->resolveUserName($group->adviserAssignment?->adviser),
             'canRemove' => false,
             'removeUrl' => null,
         ];
@@ -206,6 +206,7 @@ class ShowStudentDocumentController extends Controller
         $hasGroupMembersTable = Schema::hasTable('group_members');
         $hasProgramSetsTable = Schema::hasTable('program_sets');
         $hasAcademicYearsTable = Schema::hasTable('academic_years');
+        $hasGroupAdvisersTable = Schema::hasTable('group_advisers');
 
         $query = Group::query();
 
@@ -215,6 +216,11 @@ class ShowStudentDocumentController extends Controller
             if ($hasAcademicYearsTable) {
                 $query->with('programSet.academicYear:id,label');
             }
+        }
+
+        if ($hasGroupAdvisersTable) {
+            $query->with('adviserAssignment:group_id,adviser_id');
+            $query->with('adviserAssignment.adviser:id,name,first_name,last_name,email');
         }
 
         $query->where(function (Builder $groupQuery) use ($studentId, $hasGroupMembersTable): void {
