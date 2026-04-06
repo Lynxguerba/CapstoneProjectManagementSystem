@@ -799,7 +799,7 @@ const PanelistLiveDefense = () => {
                                 <p className="text-xs font-semibold text-slate-700">Open scoring form for this defense panel session.</p>
                                 <div className="mt-3">
                                     <Link
-                                        href={`/panelist/evaluation?group=${group.id}`}
+                                        href={`/panelist/live-defense/evaluation-sheet?group=${group.id}`}
                                         className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                                     >
                                         <ShieldCheck className="h-3.5 w-3.5" />

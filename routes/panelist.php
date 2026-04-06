@@ -12,6 +12,7 @@ use App\Http\Controllers\Panelist\StorePanelistLiveDefenseCommentController;
 use App\Http\Controllers\Panelist\UndoPanelistConceptTitleApprovalController;
 use App\Http\Controllers\Panelist\UpdatePanelistAvailabilityController;
 use App\Http\Controllers\Panelist\UpdatePanelistProgramUtilitiesController;
+use App\Models\DefenseSchedule;
 use App\Models\Group;
 use App\Models\GroupPanelist;
 use App\Models\PanelistAvailability;
@@ -349,6 +350,113 @@ Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function
     })->name('panelist.group-details');
     Route::get('/schedule', PanelistScheduleController::class)->name('panelist.schedule');
     Route::get('/live-defense', PanelistLiveDefenseController::class)->name('panelist.live-defense');
+    Route::get('/live-defense/evaluation-sheet', function () {
+        $panelistUser = Auth::guard('web')->user();
+        $panelistUser?->loadMissing('eSignature');
+        $panelistId = $panelistUser?->id;
+        $selectedGroupId = request()->query('group');
+        $selectedGroupId = is_numeric($selectedGroupId) ? (int) $selectedGroupId : null;
+
+        if (
+            $panelistId === null
+            || $selectedGroupId === null
+            || ! class_exists(Group::class)
+            || ! Schema::hasTable('groups')
+            || ! Schema::hasTable('group_panelists')
+        ) {
+            abort(403);
+        }
+
+        $selectedGroup = Group::query()
+            ->with([
+                'programSet.academicYear',
+                'leader:id,name,first_name,last_name',
+                'members:id,name,first_name,last_name',
+            ])
+            ->where('id', $selectedGroupId)
+            ->whereHas('panelAssignments', fn ($query) => $query->where('panelist_id', $panelistId))
+            ->first();
+
+        if (! $selectedGroup instanceof Group) {
+            abort(403);
+        }
+
+        $resolveUserName = static function (?User $user): string {
+            if (! $user instanceof User) {
+                return '';
+            }
+
+            $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+            $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+            $fullName = trim($firstName.' '.$lastName);
+
+            if ($fullName !== '') {
+                return $fullName;
+            }
+
+            return is_string($user->name) ? trim($user->name) : '';
+        };
+
+        $presenters = collect([$selectedGroup->leader])
+            ->merge($selectedGroup->members)
+            ->map(fn ($student): string => $resolveUserName($student instanceof User ? $student : null))
+            ->filter(fn (string $name): bool => $name !== '')
+            ->unique()
+            ->values()
+            ->all();
+        $conceptVerdict = null;
+        $requestedStage = request()->query('stage');
+        $defenseStage = is_string($requestedStage) && trim($requestedStage) !== '' ? trim($requestedStage) : null;
+
+        if ($defenseStage === null && Schema::hasTable('defense_schedules')) {
+            $latestSchedule = DefenseSchedule::query()
+                ->where('group_id', $selectedGroup->id)
+                ->orderByDesc('scheduled_date')
+                ->orderByDesc('start_time')
+                ->first(['stage']);
+
+            $defenseStage = is_string($latestSchedule?->stage) && trim($latestSchedule->stage) !== '' ? trim($latestSchedule->stage) : null;
+        }
+
+        $resolveDefenseHeaderTitle = static function (?string $stage): string {
+            $normalizedStage = strtolower(trim((string) $stage));
+
+            return match ($normalizedStage) {
+                'concept', 'concept paper', 'concept papers' => 'CONCEPT TITLE DEFENSE',
+                'outline' => 'OUTLINE DEFENSE',
+                'pre-deployment', 'pre deployment' => 'PRE-DEPLOYMENT DEFENSE',
+                'deployment' => 'DEPLOYMENT DEFENSE',
+                'final', 'finals', 'final defense' => 'FINAL DEFENSE',
+                default => $normalizedStage !== ''
+                    ? strtoupper(trim((string) $stage)).' DEFENSE'
+                    : 'CONCEPT TITLE DEFENSE',
+            };
+        };
+
+        if (Schema::hasColumn('groups', 'concept_verdict')) {
+            $rawConceptVerdict = is_string($selectedGroup->concept_verdict) ? trim($selectedGroup->concept_verdict) : '';
+            $conceptVerdict = $rawConceptVerdict !== '' ? $rawConceptVerdict : null;
+        }
+
+        return Inertia::render('Panelist/live-defense/evaluation-sheet', [
+            'group' => $selectedGroup ? [
+                'id' => $selectedGroup->id,
+                'name' => (string) $selectedGroup->name,
+                'programSetName' => $selectedGroup->programSet?->program,
+                'academicYear' => $selectedGroup->programSet?->academicYear?->label ?? $selectedGroup->programSet?->school_year,
+            ] : null,
+            'presenters' => $presenters,
+            'conceptVerdict' => $conceptVerdict,
+            'panelistName' => $resolveUserName($panelistUser),
+            'eSignature' => $panelistUser?->eSignature !== null
+                ? [
+                    'signatureData' => $panelistUser->eSignature->signature_data,
+                    'mimeType' => $panelistUser->eSignature->mime_type,
+                ]
+                : null,
+            'defenseHeaderTitle' => $resolveDefenseHeaderTitle($defenseStage),
+        ]);
+    })->name('panelist.live-defense.evaluation-sheet');
     Route::post('/live-defense/title-approvals', ApprovePanelistConceptTitleController::class)->name('panelist.live-defense.title-approvals.store');
     Route::delete('/live-defense/title-approvals', UndoPanelistConceptTitleApprovalController::class)->name('panelist.live-defense.title-approvals.destroy');
     Route::post('/live-defense/verdict', StorePanelistConceptVerdictController::class)->name('panelist.live-defense.verdict.store');

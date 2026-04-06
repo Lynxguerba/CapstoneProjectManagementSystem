@@ -296,7 +296,13 @@ class RecommendationForTitleDefensePdfGenerator
         }
 
         $normalizedVerdict = strtolower(trim($verdict));
-        $isPassWithRevisions = in_array($normalizedVerdict, ['pass with revision', 'conditional pass'], true);
+        $isPassWithRevisions = in_array($normalizedVerdict, [
+            'passed (no revisions needed)',
+            'passed (with revisions needed)',
+            'pass with revision',
+            'conditional pass',
+            'conditional passed',
+        ], true);
         $isDeferred = $normalizedVerdict === 'deffered';
         $isFailed = $normalizedVerdict === 'failed';
 
@@ -316,8 +322,17 @@ class RecommendationForTitleDefensePdfGenerator
             )
         );
 
-        if ($normalizedVerdict === 'conditional pass') {
-            $this->appendPdfTextLine($lines, 'F1', 9, 104, $verdictRowY - 14, 'Conditional Pass is recorded under Passed with Revisions.');
+        if (in_array($normalizedVerdict, ['conditional pass', 'conditional passed'], true)) {
+            $this->appendPdfTextLine($lines, 'F1', 9, 104, $verdictRowY - 14, 'Conditional Passed is recorded under Passed with Revisions.');
+        } elseif ($normalizedVerdict === 'passed (no revisions needed)') {
+            $this->appendPdfTextLine(
+                $lines,
+                'F1',
+                9,
+                104,
+                $verdictRowY - 14,
+                'Passed (No revisions needed) is recorded under Passed with Revisions.'
+            );
         }
 
         $this->appendPdfTextLine($lines, 'F1', 11, 94, $deferredHeadingY, 'The following are the requirements for students with Deferred verdicts.');

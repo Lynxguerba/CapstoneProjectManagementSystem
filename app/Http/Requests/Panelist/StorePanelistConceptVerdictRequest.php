@@ -29,14 +29,21 @@ class StorePanelistConceptVerdictRequest extends FormRequest
                 'required',
                 'string',
                 Rule::in([
-                    'Pass with revision',
-                    'Conditional Pass',
+                    'Passed (No revisions needed)',
+                    'Passed (With revisions needed)',
+                    'Conditional Passed',
                     'Deffered',
                     'Failed',
+                    'Pass with revision',
+                    'Conditional Pass',
                 ]),
             ],
             'approved_document_submission_id' => [
-                Rule::requiredIf($this->input('verdict') === 'Pass with revision'),
+                Rule::requiredIf(in_array((string) $this->input('verdict'), [
+                    'Passed (No revisions needed)',
+                    'Passed (With revisions needed)',
+                    'Pass with revision',
+                ], true)),
                 'nullable',
                 'integer',
                 Rule::exists('document_submissions', 'id'),
@@ -54,7 +61,7 @@ class StorePanelistConceptVerdictRequest extends FormRequest
             'group_id.exists' => 'Selected group does not exist.',
             'verdict.required' => 'Select a concept verdict first.',
             'verdict.in' => 'Selected concept verdict is invalid.',
-            'approved_document_submission_id.required' => 'Select the approved concept title when verdict is Pass with revision.',
+            'approved_document_submission_id.required' => 'Select the approved concept title when verdict is a Passed option.',
             'approved_document_submission_id.exists' => 'Selected approved concept title is not valid.',
         ];
     }

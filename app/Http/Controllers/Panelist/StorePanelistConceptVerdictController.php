@@ -35,9 +35,19 @@ class StorePanelistConceptVerdictController extends Controller
         $validated = $request->validated();
         $groupId = (int) $validated['group_id'];
         $verdict = trim((string) $validated['verdict']);
+        if ($verdict === 'Pass with revision') {
+            $verdict = 'Passed (With revisions needed)';
+        }
+        if ($verdict === 'Conditional Pass') {
+            $verdict = 'Conditional Passed';
+        }
         $approvedSubmissionId = is_numeric($validated['approved_document_submission_id'] ?? null)
             ? (int) $validated['approved_document_submission_id']
             : null;
+        $isPassedVerdict = in_array($verdict, [
+            'Passed (No revisions needed)',
+            'Passed (With revisions needed)',
+        ], true);
 
         $panelAssignment = GroupPanelist::query()
             ->where('group_id', $groupId)
@@ -62,13 +72,13 @@ class StorePanelistConceptVerdictController extends Controller
             abort(404);
         }
 
-        if ($verdict === 'Pass with revision' && $approvedSubmissionId === null) {
+        if ($isPassedVerdict && $approvedSubmissionId === null) {
             throw ValidationException::withMessages([
-                'approved_document_submission_id' => 'Select the approved concept title when verdict is Pass with revision.',
+                'approved_document_submission_id' => 'Select the approved concept title when verdict is a Passed option.',
             ]);
         }
 
-        if ($verdict !== 'Pass with revision') {
+        if (! $isPassedVerdict) {
             $approvedSubmissionId = null;
         }
 

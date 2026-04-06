@@ -328,17 +328,23 @@ class AdviserConceptVerdictMinutesPdfGenerator
         $currentY -= 36;
 
         $normalizedVerdict = strtolower(trim($verdict));
-        $isPassWithRevisions = in_array($normalizedVerdict, ['pass with revision', 'conditional pass'], true);
+        $isPassWithRevisions = in_array($normalizedVerdict, [
+            'passed (no revisions needed)',
+            'passed (with revisions needed)',
+            'pass with revision',
+            'conditional pass',
+            'conditional passed',
+        ], true);
         $isDeferred = $normalizedVerdict === 'deffered';
         $isFailed = $normalizedVerdict === 'failed';
 
-        $conditionalNoteHeight = $normalizedVerdict === 'conditional pass' ? 14 : 0;
+        $verdictNoteHeight = in_array($normalizedVerdict, ['conditional pass', 'conditional passed', 'passed (no revisions needed)'], true) ? 14 : 0;
 
         $this->ensureCursorHasSpace(
             $pages,
             $pageIndex,
             $currentY,
-            22 + $conditionalNoteHeight,
+            22 + $verdictNoteHeight,
             $minimumContentY,
             $titleY,
             $headerPlacement,
@@ -364,8 +370,18 @@ class AdviserConceptVerdictMinutesPdfGenerator
             $verdictLineText
         );
 
-        if ($normalizedVerdict === 'conditional pass') {
-            $this->appendPdfTextLine($pages[$pageIndex], 'F1', 9, 104, $verdictRowY - 14, 'Conditional Pass is recorded under Passed with Revisions.');
+        if (in_array($normalizedVerdict, ['conditional pass', 'conditional passed'], true)) {
+            $this->appendPdfTextLine($pages[$pageIndex], 'F1', 9, 104, $verdictRowY - 14, 'Conditional Passed is recorded under Passed with Revisions.');
+            $currentY = $verdictRowY - 24;
+        } elseif ($normalizedVerdict === 'passed (no revisions needed)') {
+            $this->appendPdfTextLine(
+                $pages[$pageIndex],
+                'F1',
+                9,
+                104,
+                $verdictRowY - 14,
+                'Passed (No revisions needed) is recorded under Passed with Revisions.'
+            );
             $currentY = $verdictRowY - 24;
         } else {
             $currentY = $verdictRowY - 16;

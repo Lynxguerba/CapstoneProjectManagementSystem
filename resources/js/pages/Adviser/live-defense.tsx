@@ -9,7 +9,14 @@ import { PdfHighlighterViewer } from '@/components/Panelist/PdfHighlighterViewer
 import RecommendationLetterModal from '@/components/Student/RecommendationLetterModal';
 import AdviserLayout from './_layout';
 
-type ConceptVerdictValue = 'Pass with revision' | 'Conditional Pass' | 'Deffered' | 'Failed';
+type ConceptVerdictValue =
+    | 'Passed (No revisions needed)'
+    | 'Passed (With revisions needed)'
+    | 'Conditional Passed'
+    | 'Deffered'
+    | 'Failed'
+    | 'Pass with revision'
+    | 'Conditional Pass';
 
 type Participant = {
     id: number;

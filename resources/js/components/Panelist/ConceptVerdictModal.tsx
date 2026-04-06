@@ -3,7 +3,21 @@ import { CheckCircle2, Scale, ShieldCheck, X } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-export type ConceptVerdictValue = 'Pass with revision' | 'Conditional Pass' | 'Deffered' | 'Failed';
+export type ConceptVerdictValue =
+    | 'Passed (No revisions needed)'
+    | 'Passed (With revisions needed)'
+    | 'Conditional Passed'
+    | 'Deffered'
+    | 'Failed'
+    | 'Pass with revision'
+    | 'Conditional Pass';
+
+type ConceptVerdictOptionValue =
+    | 'Passed (No revisions needed)'
+    | 'Passed (With revisions needed)'
+    | 'Conditional Passed'
+    | 'Deffered'
+    | 'Failed';
 
 type ConceptSubmission = {
     id: number;
@@ -26,12 +40,37 @@ type ConceptVerdictModalProps = {
     decidedAt?: string | null;
 };
 
-const verdictOptions: Array<{ value: ConceptVerdictValue; label: string }> = [
-    { value: 'Pass with revision', label: 'Pass with revision' },
-    { value: 'Conditional Pass', label: 'Conditional Pass' },
+const verdictOptions: Array<{ value: ConceptVerdictOptionValue; label: string }> = [
+    { value: 'Passed (No revisions needed)', label: 'Passed (No revisions needed)' },
+    { value: 'Passed (With revisions needed)', label: 'Passed (With revisions needed)' },
+    { value: 'Conditional Passed', label: 'Conditional Passed' },
     { value: 'Deffered', label: 'Deffered (Re-defense)' },
     { value: 'Failed', label: 'Failed' },
 ];
+
+const normalizeConceptVerdictValue = (verdict: ConceptVerdictValue | null | undefined): ConceptVerdictOptionValue | '' => {
+    if (verdict === null || verdict === undefined || verdict === '') {
+        return '';
+    }
+
+    if (verdict === 'Pass with revision') {
+        return 'Passed (With revisions needed)';
+    }
+
+    if (verdict === 'Conditional Pass') {
+        return 'Conditional Passed';
+    }
+
+    if (verdictOptions.some((option) => option.value === verdict)) {
+        return verdict as ConceptVerdictOptionValue;
+    }
+
+    return '';
+};
+
+const isPassedVerdict = (verdict: ConceptVerdictOptionValue | ''): boolean => {
+    return verdict === 'Passed (No revisions needed)' || verdict === 'Passed (With revisions needed)';
+};
 
 const panelistApprovalStatusClass = (status: string): string => {
     if (status === 'Approved') {
@@ -57,7 +96,7 @@ const ConceptVerdictModal = ({
     decidedBy = null,
     decidedAt = null,
 }: ConceptVerdictModalProps) => {
-    const [selectedVerdict, setSelectedVerdict] = useState<ConceptVerdictValue | ''>('');
+    const [selectedVerdict, setSelectedVerdict] = useState<ConceptVerdictOptionValue | ''>('');
     const [selectedApprovedSubmissionId, setSelectedApprovedSubmissionId] = useState<number | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
@@ -66,7 +105,7 @@ const ConceptVerdictModal = ({
     const selectedApprovedTitle = useMemo(() => {
         return conceptSubmissions.find((submission) => submission.id === selectedApprovedSubmissionId) ?? null;
     }, [conceptSubmissions, selectedApprovedSubmissionId]);
-    const isPassWithRevision = selectedVerdict === 'Pass with revision';
+    const isPassedVerdictSelected = isPassedVerdict(selectedVerdict);
 
     useEffect(() => {
         if (!open) {
@@ -78,7 +117,7 @@ const ConceptVerdictModal = ({
             return;
         }
 
-        setSelectedVerdict(initialVerdict ?? '');
+        setSelectedVerdict(normalizeConceptVerdictValue(initialVerdict));
         setSelectedApprovedSubmissionId(initialApprovedSubmissionId ?? null);
         setFormError(null);
         setIsSaving(false);
@@ -122,11 +161,11 @@ const ConceptVerdictModal = ({
     }, [open, onClose, isSaving]);
 
     const handleVerdictChange = (event: React.ChangeEvent<HTMLSelectElement>): void => {
-        const nextVerdict = event.target.value as ConceptVerdictValue | '';
+        const nextVerdict = event.target.value as ConceptVerdictOptionValue | '';
         setSelectedVerdict(nextVerdict);
         setFormError(null);
 
-        if (nextVerdict !== 'Pass with revision') {
+        if (!isPassedVerdict(nextVerdict)) {
             setSelectedApprovedSubmissionId(null);
         }
     };
@@ -141,8 +180,8 @@ const ConceptVerdictModal = ({
             return;
         }
 
-        if (selectedVerdict === 'Pass with revision' && selectedApprovedSubmissionId === null) {
-            setFormError('Select the approved concept title when verdict is Pass with revision.');
+        if (isPassedVerdict(selectedVerdict) && selectedApprovedSubmissionId === null) {
+            setFormError('Select the approved concept title when verdict is a Passed option.');
             return;
         }
 
@@ -153,7 +192,7 @@ const ConceptVerdictModal = ({
             {
                 group_id: groupId,
                 verdict: selectedVerdict,
-                approved_document_submission_id: selectedVerdict === 'Pass with revision' ? selectedApprovedSubmissionId : null,
+                approved_document_submission_id: isPassedVerdict(selectedVerdict) ? selectedApprovedSubmissionId : null,
             },
             {
                 preserveScroll: true,
@@ -257,7 +296,7 @@ const ConceptVerdictModal = ({
                             </div>
 
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                                {isPassWithRevision ? (
+                                {isPassedVerdictSelected ? (
                                     <p>
                                         Approved title selection is required.
                                         <span className="block text-[11px] text-slate-500">
@@ -265,7 +304,7 @@ const ConceptVerdictModal = ({
                                         </span>
                                     </p>
                                 ) : (
-                                    <p>Approved title action is enabled only when verdict is Pass with revision.</p>
+                                    <p>Approved title action is enabled only when verdict is a Passed option.</p>
                                 )}
                             </div>
                         </div>
@@ -293,7 +332,7 @@ const ConceptVerdictModal = ({
                                         conceptSubmissions.map((submission) => {
                                             const panelistApprovalStatus = submission.panelistApprovalStatus ?? 'Pending';
                                             const isSelectedSubmission = submission.id === selectedApprovedSubmissionId;
-                                            const isActionEnabled = canEdit && isPassWithRevision && !isSaving;
+                                            const isActionEnabled = canEdit && isPassedVerdictSelected && !isSaving;
 
                                             return (
                                                 <tr key={submission.id} className={isSelectedSubmission ? 'bg-emerald-50/70' : ''}>
