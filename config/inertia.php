@@ -24,6 +24,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Pages
+    |--------------------------------------------------------------------------
+    |
+    | Keep page lookup paths aligned with the actual frontend structure.
+    | This prevents false "component not found" errors when page existence
+    | checks are enabled.
+    |
+    */
+
+    'ensure_pages_exist' => false,
+
+    'page_paths' => [
+        resource_path('js/pages'),
+    ],
+
+    'page_extensions' => [
+        'js',
+        'jsx',
+        'svelte',
+        'ts',
+        'tsx',
+        'vue',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Testing
     |--------------------------------------------------------------------------
     |

@@ -31,7 +31,11 @@ class StudentDocumentsController extends Controller
         $uploadedFiles = $this->resolveUploadedFiles($group?->id);
         $generatedFiles = $this->resolveGeneratedFiles($group?->id);
 
-        return Inertia::render('Student/documents', [
+        $documentsComponent = file_exists(resource_path('js/pages/Student/documents.tsx'))
+            ? 'Student/documents'
+            : 'Student/documents/index';
+
+        return Inertia::render($documentsComponent, [
             'group' => $group ? [
                 'id' => $group->id,
                 'name' => $group->name,
@@ -103,7 +107,7 @@ class StudentDocumentsController extends Controller
                 )
                 ->values()
                 ->all(),
-        ]);
+        ])->rootView('app');
     }
 
     private function resolveStudentGroup(?int $studentId): ?Group
