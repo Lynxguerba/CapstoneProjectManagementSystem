@@ -338,6 +338,10 @@ const StudentConcepts = () => {
                         Dashboard
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <Link href="/student/documents" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Documents &amp; Uploads
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
                     <span className="font-semibold text-slate-800" aria-current="page">
                         Concept Submission
                     </span>

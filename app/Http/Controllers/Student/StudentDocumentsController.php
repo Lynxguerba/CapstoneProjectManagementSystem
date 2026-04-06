@@ -7,12 +7,15 @@ use App\Models\AdviserRecommendationDocument;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class StudentDocumentsController extends Controller
 {
@@ -72,6 +75,32 @@ class StudentDocumentsController extends Controller
                         'id' => $recommendation->id,
                     ]),
                 ])
+                ->when(
+                    $group !== null,
+                    function (Collection $rows) use ($group): Collection {
+                        $minutesDocument = $this->resolveConceptVerdictMinutesDocument($group->id);
+
+                        if ($minutesDocument === null) {
+                            return $rows;
+                        }
+
+                        return $rows->push([
+                            'id' => 900000000 + $group->id,
+                            'title' => $minutesDocument['fileName'],
+                            'requirementType' => 'Minutes of Adviser Verdict',
+                            'stage' => 'Concept',
+                            'signedAt' => $minutesDocument['signedAt'],
+                            'instructorStatus' => 'Approved',
+                            'adviserStatus' => 'Approved',
+                            'fileSizeLabel' => $minutesDocument['fileSizeLabel'],
+                            'adviserName' => null,
+                            'viewUrl' => route('student.documents.show', [
+                                'type' => 'minutes',
+                                'id' => $group->id,
+                            ]),
+                        ]);
+                    }
+                )
                 ->values()
                 ->all(),
         ]);
@@ -193,6 +222,55 @@ class StudentDocumentsController extends Controller
         }
 
         return $status !== '' ? $status : 'Approved';
+    }
+
+    /**
+     * @return array{fileName: string, fileUrl: string, signedAt: string|null, fileSizeLabel: string|null}|null
+     */
+    private function resolveConceptVerdictMinutesDocument(int $groupId): ?array
+    {
+        $disk = Storage::disk('public');
+        $directory = "concept-verdict-minutes/group-{$groupId}";
+
+        try {
+            $files = collect($disk->files($directory))
+                ->filter(fn (string $path): bool => str_ends_with(strtolower($path), '.pdf'))
+                ->values();
+        } catch (Throwable) {
+            return null;
+        }
+
+        if ($files->isEmpty()) {
+            return null;
+        }
+
+        $latestPath = $files
+            ->sortByDesc(fn (string $path): int => (int) $disk->lastModified($path))
+            ->first();
+
+        if (! is_string($latestPath) || trim($latestPath) === '') {
+            return null;
+        }
+
+        $lastModifiedTimestamp = (int) $disk->lastModified($latestPath);
+        $signedAt = $lastModifiedTimestamp > 0
+            ? Carbon::createFromTimestamp($lastModifiedTimestamp)->format('Y-m-d H:i')
+            : null;
+
+        $fileSizeLabel = null;
+        try {
+            $fileSize = (int) $disk->size($latestPath);
+            $fileSizeLabel = $fileSize > 0 ? $this->formatFileSize($fileSize) : null;
+        } catch (Throwable) {
+            $fileSizeLabel = null;
+        }
+
+        return [
+            'fileName' => basename($latestPath),
+            'fileUrl' => $disk->url($latestPath),
+            'signedAt' => $signedAt,
+            'fileSizeLabel' => $fileSizeLabel,
+        ];
     }
 
     private function resolveUserName(?User $user): ?string

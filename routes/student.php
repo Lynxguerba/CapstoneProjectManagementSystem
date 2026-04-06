@@ -279,7 +279,7 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
     Route::delete('/concepts/submissions/{submission}', DestroyStudentConceptSubmissionController::class)->name('student.concepts.submissions.destroy');
     Route::get('/documents', StudentDocumentsController::class)->name('student.documents');
     Route::get('/documents/files/{type}/{id}', ShowStudentDocumentController::class)
-        ->whereIn('type', ['submission', 'recommendation'])
+        ->whereIn('type', ['submission', 'recommendation', 'minutes'])
         ->whereNumber('id')
         ->name('student.documents.show');
     Route::delete('/documents/submissions/{submission}', DestroyStudentDocumentSubmissionController::class)

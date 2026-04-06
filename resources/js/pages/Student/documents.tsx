@@ -1,6 +1,7 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ChevronRight, ExternalLink, FileCheck2, FolderOpen, Trash2 } from 'lucide-react';
+import { ChevronRight, ExternalLink, FileCheck2, Flag, FolderOpen, Lightbulb, ListTree, PackageCheck, Rocket, Trash2, Upload } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import React from 'react';
 import ConfirmConceptSubmissionActionModal from '@/components/Student/ConfirmConceptSubmissionActionModal';
 import StudentLayout from './_layout';
@@ -48,6 +49,16 @@ type StudentDocumentsProps = {
     };
 };
 
+type PhaseKey = 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5';
+
+const phaseTabs: { key: PhaseKey; label: string; icon: LucideIcon }[] = [
+    { key: 'phase1', label: 'Phase 1: Concept Papers', icon: Lightbulb },
+    { key: 'phase2', label: 'Phase 2: Outline', icon: ListTree },
+    { key: 'phase3', label: 'Phase 3: Pre-Deployment', icon: PackageCheck },
+    { key: 'phase4', label: 'Phase 4: Deployment', icon: Rocket },
+    { key: 'phase5', label: 'Phase 5: Finals', icon: Flag },
+];
+
 const statusPillClass = (status: string): string => {
     if (status === 'Approved') {
         return 'border-emerald-300 bg-emerald-100 text-emerald-800';
@@ -60,6 +71,28 @@ const statusPillClass = (status: string): string => {
     return 'border-slate-200 bg-slate-100 text-slate-700';
 };
 
+const resolvePhaseKey = (stage: string): PhaseKey => {
+    const normalizedStage = stage.toLowerCase().trim();
+
+    if (normalizedStage.includes('outline')) {
+        return 'phase2';
+    }
+
+    if (normalizedStage.includes('pre') && normalizedStage.includes('deploy')) {
+        return 'phase3';
+    }
+
+    if (normalizedStage.includes('deploy')) {
+        return 'phase4';
+    }
+
+    if (normalizedStage.includes('final')) {
+        return 'phase5';
+    }
+
+    return 'phase1';
+};
+
 const StudentDocuments = () => {
     const { props } = usePage<StudentDocumentsProps>();
     const group = props.group;
@@ -69,7 +102,20 @@ const StudentDocuments = () => {
     const successMessage = props.flash?.success ?? '';
 
     const deleteForm = useForm({});
+    const [activePhase, setActivePhase] = React.useState<PhaseKey>('phase1');
     const [submissionPendingRemoval, setSubmissionPendingRemoval] = React.useState<UploadedFileRow | null>(null);
+
+    const activePhaseLabel = React.useMemo(() => {
+        return phaseTabs.find((tab) => tab.key === activePhase)?.label ?? 'Phase';
+    }, [activePhase]);
+
+    const filteredUploadedFiles = React.useMemo(() => {
+        return uploadedFiles.filter((file) => resolvePhaseKey(file.stage) === activePhase);
+    }, [activePhase, uploadedFiles]);
+
+    const filteredGeneratedFiles = React.useMemo(() => {
+        return generatedFiles.filter((file) => resolvePhaseKey(file.stage) === activePhase);
+    }, [activePhase, generatedFiles]);
 
     const groupLabel = group
         ? `${group.name}${group.programSetName ? ` · ${group.programSetName}` : ''}${group.academicYear ? ` · ${group.academicYear}` : ''}`
@@ -136,10 +182,10 @@ const StudentDocuments = () => {
 
                         <div className="flex flex-wrap gap-2">
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                                Uploaded: {uploadedFiles.length}
+                                Uploaded: {filteredUploadedFiles.length}
                             </span>
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                                Generated: {generatedFiles.length}
+                                Generated: {filteredGeneratedFiles.length}
                             </span>
                         </div>
                     </div>
@@ -150,6 +196,29 @@ const StudentDocuments = () => {
                         </div>
                     ) : null}
                 </motion.section>
+
+                <div className="flex gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                    {phaseTabs.map((tab) => {
+                        const isActive = activePhase === tab.key;
+                        const PhaseIcon = tab.icon;
+
+                        return (
+                            <button
+                                key={tab.key}
+                                type="button"
+                                onClick={() => setActivePhase(tab.key)}
+                                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all ${
+                                    isActive
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                        : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                                }`}
+                            >
+                                <PhaseIcon className={`h-3.5 w-3.5 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
+                                <span>{tab.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
 
                 <motion.section
                     initial={{ opacity: 0, y: 8 }}
@@ -162,9 +231,18 @@ const StudentDocuments = () => {
                             <FileCheck2 className="h-4 w-4 text-emerald-700" />
                             <h3 className="text-sm font-semibold text-slate-900">Uploaded Files</h3>
                         </div>
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                            {uploadedFiles.length} record{uploadedFiles.length === 1 ? '' : 's'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                                {filteredUploadedFiles.length} record{filteredUploadedFiles.length === 1 ? '' : 's'} in {activePhaseLabel}
+                            </span>
+                            <Link
+                                href="/student/concepts"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+                            >
+                                <Upload className="h-3.5 w-3.5" />
+                                Upload
+                            </Link>
+                        </div>
                     </div>
 
                     <div className="mt-3 overflow-hidden rounded-xl border border-slate-100">
@@ -181,14 +259,14 @@ const StudentDocuments = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {uploadedFiles.length === 0 ? (
+                                    {filteredUploadedFiles.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="px-3 py-7 text-center text-xs text-slate-500">
-                                                No uploaded files found for your group yet.
+                                                No uploaded files found for {activePhaseLabel}.
                                             </td>
                                         </tr>
                                     ) : (
-                                        uploadedFiles.map((file) => (
+                                        filteredUploadedFiles.map((file) => (
                                             <tr key={file.id} className="hover:bg-slate-50/80">
                                                 <td className="px-3 py-2.5 font-semibold text-slate-900">{file.title}</td>
                                                 <td className="px-3 py-2.5 text-slate-600">
@@ -259,7 +337,7 @@ const StudentDocuments = () => {
                             <h3 className="text-sm font-semibold text-slate-900">System Generated Files</h3>
                         </div>
                         <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-                            {generatedFiles.length} record{generatedFiles.length === 1 ? '' : 's'}
+                            {filteredGeneratedFiles.length} record{filteredGeneratedFiles.length === 1 ? '' : 's'} in {activePhaseLabel}
                         </span>
                     </div>
 
@@ -277,14 +355,14 @@ const StudentDocuments = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {generatedFiles.length === 0 ? (
+                                    {filteredGeneratedFiles.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="px-3 py-7 text-center text-xs text-slate-500">
-                                                No system-generated document is available for your group yet.
+                                                No system-generated document is available for {activePhaseLabel}.
                                             </td>
                                         </tr>
                                     ) : (
-                                        generatedFiles.map((file) => (
+                                        filteredGeneratedFiles.map((file) => (
                                             <tr key={file.id} className="hover:bg-slate-50/80">
                                                 <td className="px-3 py-2.5 font-semibold text-slate-900">
                                                     <p>{file.title}</p>
