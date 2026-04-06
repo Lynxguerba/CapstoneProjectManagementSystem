@@ -1,8 +1,9 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { FileText, MessageSquareText, Mic, ShieldCheck, Users } from 'lucide-react';
+import { FileText, MessageSquareText, Scale, ShieldCheck, Users } from 'lucide-react';
 import React from 'react';
 import type { IHighlight } from 'react-pdf-highlighter';
+import ConceptVerdictModal, { type ConceptVerdictValue } from '@/components/Panelist/ConceptVerdictModal';
 import { PdfHighlighterViewer } from '@/components/Panelist/PdfHighlighterViewer';
 import RecommendationLetterModal from '@/components/Student/RecommendationLetterModal';
 import studentRoutes from '../../routes/student';
@@ -72,6 +73,12 @@ type StudentLiveDefenseProps = {
     highlightsBySubmission?: Record<number, IHighlight[]>;
     commentHighlightTargets?: Record<string, { submissionId: number; highlightId: string }>;
     recommendationLetter?: RecommendationLetter | null;
+    conceptVerdict?: {
+        value?: ConceptVerdictValue | null;
+        approvedConceptSubmissionId?: number | null;
+        decidedAt?: string | null;
+        decidedBy?: string | null;
+    } | null;
 };
 
 const statusPillClass = (status: string): string => {
@@ -146,17 +153,18 @@ const StudentLiveDefense = () => {
     const { props } = usePage<StudentLiveDefenseProps>();
     const group = props.group;
     const conceptSubmissions = React.useMemo(() => props.conceptSubmissions ?? [], [props.conceptSubmissions]);
-    const assignedPanelists = React.useMemo(() => props.panelists ?? [], [props.panelists]);
     const students = React.useMemo(() => props.participants?.students ?? [], [props.participants?.students]);
     const adviser = props.participants?.adviser ?? null;
     const participantPanelists = React.useMemo(() => props.participants?.panelists ?? [], [props.participants?.panelists]);
     const recommendationLetter = props.recommendationLetter ?? null;
+    const conceptVerdict = props.conceptVerdict ?? null;
     const serverCommentsBySubmission = React.useMemo(() => props.commentsBySubmission ?? {}, [props.commentsBySubmission]);
     const serverHighlightsBySubmission = React.useMemo(() => props.highlightsBySubmission ?? {}, [props.highlightsBySubmission]);
     const serverCommentHighlightTargets = React.useMemo(() => props.commentHighlightTargets ?? {}, [props.commentHighlightTargets]);
 
     const [selectedConceptId, setSelectedConceptId] = React.useState<number | null>(null);
     const [isRecommendationLetterModalOpen, setIsRecommendationLetterModalOpen] = React.useState(false);
+    const [isConceptVerdictModalOpen, setIsConceptVerdictModalOpen] = React.useState(false);
     const [liveCommentsMap, setLiveCommentsMap] = React.useState<Record<number, LiveComment[]>>({});
     const [highlightsMap, setHighlightsMap] = React.useState<Record<number, IHighlight[]>>({});
     const [commentHighlightTargets, setCommentHighlightTargets] = React.useState<Record<string, { submissionId: number; highlightId: string }>>({});
@@ -336,7 +344,6 @@ const StudentLiveDefense = () => {
         ? `${group.name}${group.programSetName ? ` · ${group.programSetName}` : ''}${group.academicYear ? ` · ${group.academicYear}` : ''}`
         : 'No active group assignment yet.';
 
-    const activeGroupName = group?.name ?? 'Your Group';
     const defenseStatus = group?.defenseStatus ?? 'Pending';
 
     return (
@@ -586,19 +593,49 @@ const StudentLiveDefense = () => {
                                         ))
                                     )}
                                 </div>
+                                <div className="mt-3">
+                                    {group ? (
+                                        <Link
+                                            href={`/student/live-defense/acknowledgement?group=${group.id}`}
+                                            className="block rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-center text-xs font-semibold tracking-wide text-emerald-700 uppercase transition hover:bg-emerald-100"
+                                        >
+                                            Acknowledgement
+                                        </Link>
+                                    ) : (
+                                        <div className="block rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-center text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                                            Acknowledgement
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div className="flex items-center gap-2">
-                            <Mic className="h-4 w-4 text-emerald-600" />
-                            <h3 className="text-sm font-semibold text-slate-800">Active Session</h3>
+                            <Scale className="h-4 w-4 text-emerald-600" />
+                            <h3 className="text-sm font-semibold text-slate-800">Verdict</h3>
                         </div>
-                        <div className="mt-3 space-y-2 text-xs text-slate-600">
-                            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">Outline Defense · {activeGroupName}</p>
-                            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">Panelists assigned: {assignedPanelists.length}</p>
-                            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">Selected title: {selectedConcept?.title ?? 'None selected'}</p>
+                        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3">
+                            <p className="text-xs font-semibold text-slate-700">Open verdict details for this defense session (view-only).</p>
+                            <p className="mt-1 text-[11px] text-slate-500">Current Verdict: {conceptVerdict?.value ?? 'Not set yet'}</p>
+                            <div className="mt-3">
+                                {group ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsConceptVerdictModalOpen(true)}
+                                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                                    >
+                                        <Scale className="h-3.5 w-3.5" />
+                                        Verdict
+                                    </button>
+                                ) : (
+                                    <span className="inline-flex items-center gap-2 rounded-lg bg-slate-300 px-3 py-2 text-[11px] font-semibold text-white">
+                                        <Scale className="h-3.5 w-3.5" />
+                                        Verdict
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -655,6 +692,21 @@ const StudentLiveDefense = () => {
                         open={isRecommendationLetterModalOpen}
                         onClose={() => setIsRecommendationLetterModalOpen(false)}
                         recommendationLetter={recommendationLetter}
+                    />
+                ) : null}
+
+                {group ? (
+                    <ConceptVerdictModal
+                        open={isConceptVerdictModalOpen}
+                        onClose={() => setIsConceptVerdictModalOpen(false)}
+                        groupId={group.id}
+                        groupLabel={groupLabel}
+                        conceptSubmissions={conceptSubmissions}
+                        canEdit={false}
+                        initialVerdict={conceptVerdict?.value ?? null}
+                        initialApprovedSubmissionId={conceptVerdict?.approvedConceptSubmissionId ?? null}
+                        decidedBy={conceptVerdict?.decidedBy ?? null}
+                        decidedAt={conceptVerdict?.decidedAt ?? null}
                     />
                 ) : null}
             </motion.section>

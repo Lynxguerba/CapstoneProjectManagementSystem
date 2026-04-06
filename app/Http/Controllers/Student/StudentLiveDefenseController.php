@@ -37,6 +37,7 @@ class StudentLiveDefenseController extends Controller
             $conceptRequirements->pluck('id')->values(),
         );
         $approvedConceptSubmissionId = $this->resolveApprovedConceptSubmissionId($group, $conceptSubmissions);
+        $conceptVerdict = $this->resolveConceptVerdict($group, $approvedConceptSubmissionId);
         $liveDefenseWorkspace = $this->resolveLiveDefenseWorkspace($group, $conceptSubmissions);
 
         return Inertia::render('Student/live-defense', [
@@ -70,6 +71,7 @@ class StudentLiveDefenseController extends Controller
             'highlightsBySubmission' => $liveDefenseWorkspace['highlightsBySubmission'],
             'commentHighlightTargets' => $liveDefenseWorkspace['commentHighlightTargets'],
             'recommendationLetter' => $recommendationLetter,
+            'conceptVerdict' => $conceptVerdict,
         ]);
     }
 
@@ -131,6 +133,15 @@ class StudentLiveDefenseController extends Controller
         $groupColumns = ['id', 'name', 'program_set_id', 'leader_id'];
         if (Schema::hasColumn('groups', 'approved_concept_submission_id')) {
             $groupColumns[] = 'approved_concept_submission_id';
+        }
+        if (Schema::hasColumn('groups', 'concept_verdict')) {
+            $groupColumns[] = 'concept_verdict';
+        }
+        if (Schema::hasColumn('groups', 'concept_verdict_by_panelist_id')) {
+            $groupColumns[] = 'concept_verdict_by_panelist_id';
+        }
+        if (Schema::hasColumn('groups', 'concept_verdict_decided_at')) {
+            $groupColumns[] = 'concept_verdict_decided_at';
         }
 
         return $query->first($groupColumns);
@@ -327,6 +338,52 @@ class StudentLiveDefenseController extends Controller
         }
 
         return $approvedConceptSubmissionId === $submissionId ? 'Approved' : 'Rejected';
+    }
+
+    /**
+     * @return array{
+     *     value: string|null,
+     *     approvedConceptSubmissionId: int|null,
+     *     decidedAt: string|null,
+     *     decidedBy: string|null
+     * }|null
+     */
+    private function resolveConceptVerdict(?Group $group, ?int $approvedConceptSubmissionId): ?array
+    {
+        if (
+            ! $group instanceof Group
+            || ! Schema::hasColumn('groups', 'concept_verdict')
+            || ! Schema::hasColumn('groups', 'concept_verdict_by_panelist_id')
+            || ! Schema::hasColumn('groups', 'concept_verdict_decided_at')
+        ) {
+            return null;
+        }
+
+        $verdict = is_string($group->concept_verdict) ? trim($group->concept_verdict) : '';
+        $decidedByPanelistId = is_numeric($group->concept_verdict_by_panelist_id)
+            ? (int) $group->concept_verdict_by_panelist_id
+            : null;
+        $decidedBy = null;
+
+        if ($decidedByPanelistId !== null) {
+            $panelAssignment = $group->panelAssignments
+                ->first(fn (GroupPanelist $assignment): bool => (int) $assignment->panelist_id === $decidedByPanelistId);
+
+            if ($panelAssignment instanceof GroupPanelist) {
+                $decidedBy = $this->resolveUserName($panelAssignment->panelist);
+            } else {
+                $decidedBy = $this->resolveUserName(
+                    User::query()->whereKey($decidedByPanelistId)->first(['id', 'name', 'first_name', 'last_name', 'email'])
+                );
+            }
+        }
+
+        return [
+            'value' => $verdict !== '' ? $verdict : null,
+            'approvedConceptSubmissionId' => $approvedConceptSubmissionId,
+            'decidedAt' => $group->concept_verdict_decided_at?->format('Y-m-d H:i'),
+            'decidedBy' => $decidedBy,
+        ];
     }
 
     /**
