@@ -4,6 +4,7 @@ use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
 use App\Http\Controllers\Panelist\ApprovePanelistConceptTitleController;
 use App\Http\Controllers\Panelist\DeleteGroupAcknowledgementReceiptSignatureController;
+use App\Http\Controllers\Panelist\DeletePanelistEvaluationSheetSignatureController;
 use App\Http\Controllers\Panelist\DestroyPanelistLiveDefenseCommentController;
 use App\Http\Controllers\Panelist\PanelistDashboardController;
 use App\Http\Controllers\Panelist\PanelistLiveDefenseController;
@@ -14,11 +15,13 @@ use App\Http\Controllers\Panelist\UndoPanelistConceptTitleApprovalController;
 use App\Http\Controllers\Panelist\UpdatePanelistAvailabilityController;
 use App\Http\Controllers\Panelist\UpdatePanelistProgramUtilitiesController;
 use App\Http\Controllers\Panelist\UpsertGroupAcknowledgementReceiptSignatureController;
+use App\Http\Controllers\Panelist\UpsertPanelistEvaluationSheetSignatureController;
 use App\Models\DefenseSchedule;
 use App\Models\Group;
 use App\Models\GroupAcknowledgementReceipt;
 use App\Models\GroupPanelist;
 use App\Models\PanelistAvailability;
+use App\Models\PanelistEvaluationSheetSignature;
 use App\Models\PanelistProgramUtility;
 use App\Models\ProgramSet;
 use App\Models\StudentProgram;
@@ -436,10 +439,65 @@ Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function
                     : 'CONCEPT TITLE DEFENSE',
             };
         };
+        $normalizeDefenseTypeKey = static function (?string $stage): string {
+            $normalizedStage = strtolower(trim((string) $stage));
+
+            return match ($normalizedStage) {
+                'concept', 'concept paper', 'concept papers' => 'concept_presentation',
+                'outline' => 'outline_defense',
+                'pre-deployment', 'pre deployment' => 'pre_deployment_defense',
+                'final', 'finals', 'final defense' => 'final_defense',
+                default => 'concept_presentation',
+            };
+        };
 
         if (Schema::hasColumn('groups', 'concept_verdict')) {
             $rawConceptVerdict = is_string($selectedGroup->concept_verdict) ? trim($selectedGroup->concept_verdict) : '';
             $conceptVerdict = $rawConceptVerdict !== '' ? $rawConceptVerdict : null;
+        }
+
+        $defenseTypeKey = $normalizeDefenseTypeKey($defenseStage);
+        $evaluationSheetSignature = null;
+        $evaluationSheetData = null;
+        if (Schema::hasTable('panelist_evaluation_sheet_signatures')) {
+            $hasPayloadColumns = Schema::hasColumns('panelist_evaluation_sheet_signatures', [
+                'defense_date',
+                'presenters',
+                'individual_scores',
+                'group_scores',
+                'passing_grade_date',
+            ]);
+            $selectColumns = ['id', 'signed_at'];
+            if ($hasPayloadColumns) {
+                $selectColumns = [
+                    ...$selectColumns,
+                    'defense_date',
+                    'presenters',
+                    'individual_scores',
+                    'group_scores',
+                    'passing_grade_date',
+                ];
+            }
+
+            $signatureRow = PanelistEvaluationSheetSignature::query()
+                ->where('group_id', $selectedGroup->id)
+                ->where('defense_type_key', $defenseTypeKey)
+                ->where('panelist_user_id', $panelistId)
+                ->first($selectColumns);
+            if ($signatureRow !== null) {
+                $evaluationSheetSignature = [
+                    'signedAt' => $signatureRow->signed_at?->toIso8601String(),
+                ];
+                if ($hasPayloadColumns) {
+                    $evaluationSheetData = [
+                        'defenseDate' => $signatureRow->defense_date?->format('Y-m-d'),
+                        'presenters' => is_array($signatureRow->presenters) ? $signatureRow->presenters : [],
+                        'individualScores' => is_array($signatureRow->individual_scores) ? $signatureRow->individual_scores : [],
+                        'groupScores' => is_array($signatureRow->group_scores) ? $signatureRow->group_scores : [],
+                        'passingGradeDate' => $signatureRow->passing_grade_date?->format('Y-m-d'),
+                    ];
+                }
+            }
         }
 
         return Inertia::render('Panelist/live-defense/evaluation-sheet', [
@@ -458,9 +516,17 @@ Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function
                     'mimeType' => $panelistUser->eSignature->mime_type,
                 ]
                 : null,
+            'panelistUserId' => $panelistId,
+            'defenseTypeKey' => $defenseTypeKey,
+            'evaluationSheetSignature' => $evaluationSheetSignature,
+            'evaluationSheetData' => $evaluationSheetData,
             'defenseHeaderTitle' => $resolveDefenseHeaderTitle($defenseStage),
         ]);
     })->name('panelist.live-defense.evaluation-sheet');
+    Route::put('/live-defense/evaluation-sheet/signature', UpsertPanelistEvaluationSheetSignatureController::class)
+        ->name('panelist.live-defense.evaluation-sheet.signature.upsert');
+    Route::delete('/live-defense/evaluation-sheet/signature', DeletePanelistEvaluationSheetSignatureController::class)
+        ->name('panelist.live-defense.evaluation-sheet.signature.delete');
     Route::post('/live-defense/title-approvals', ApprovePanelistConceptTitleController::class)->name('panelist.live-defense.title-approvals.store');
     Route::delete('/live-defense/title-approvals', UndoPanelistConceptTitleApprovalController::class)->name('panelist.live-defense.title-approvals.destroy');
     Route::post('/live-defense/verdict', StorePanelistConceptVerdictController::class)->name('panelist.live-defense.verdict.store');

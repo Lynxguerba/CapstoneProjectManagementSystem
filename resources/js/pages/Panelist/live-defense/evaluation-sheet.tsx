@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { CalendarDays, ChevronRight, Users } from 'lucide-react';
 import React from 'react';
@@ -17,6 +17,18 @@ type PanelistEvaluationSheetProps = {
     conceptVerdict?: string | null;
     panelistName?: string | null;
     defenseHeaderTitle?: string | null;
+    panelistUserId?: number | null;
+    defenseTypeKey?: string | null;
+    evaluationSheetSignature?: {
+        signedAt?: string | null;
+    } | null;
+    evaluationSheetData?: {
+        defenseDate?: string | null;
+        presenters?: string[];
+        individualScores?: Record<string, number | null>;
+        groupScores?: Record<string, number | string | null>;
+        passingGradeDate?: string | null;
+    } | null;
     eSignature?: {
         signatureData: string;
         mimeType?: string | null;
@@ -194,24 +206,74 @@ const PanelistEvaluationSheet = () => {
 
         return normalizedName !== '' ? normalizedName : 'Panelist';
     }, [props.panelistName]);
+    const panelistUserId = props.panelistUserId ?? null;
+    const defenseTypeKey = (props.defenseTypeKey ?? '').trim();
+    const signedAt = props.evaluationSheetSignature?.signedAt ?? null;
+    const isSigned = typeof signedAt === 'string' && signedAt.trim() !== '';
+    const [pendingSignatureAction, setPendingSignatureAction] = React.useState<'sign' | 'clear' | null>(null);
     const signatureDataUrl = React.useMemo(() => resolveSignatureDataUrl(props.eSignature), [props.eSignature]);
-    const initialPresenters = React.useMemo(() => buildPresenterRows(props.presenters ?? []), [props.presenters]);
-    const [defenseDate, setDefenseDate] = React.useState<string>(() => getLocalDateInputValue());
-    const [presenters, setPresenters] = React.useState<string[]>(initialPresenters);
-    const [individualScores, setIndividualScores] = React.useState<Record<string, number | null>>(
-        Object.fromEntries(individualCriteria.map((criterion) => [criterion.id, null])),
+    const savedEvaluationData = props.evaluationSheetData ?? null;
+    const initialDefenseDate = React.useMemo(() => {
+        const savedDefenseDate = (savedEvaluationData?.defenseDate ?? '').trim();
+
+        return savedDefenseDate !== '' ? savedDefenseDate : getLocalDateInputValue();
+    }, [savedEvaluationData?.defenseDate]);
+    const initialPresenters = React.useMemo(() => {
+        const savedPresenters = savedEvaluationData?.presenters ?? [];
+        const hasSavedPresenters = savedPresenters.some((presenter) => presenter.trim() !== '');
+
+        return buildPresenterRows(hasSavedPresenters ? savedPresenters : (props.presenters ?? []));
+    }, [props.presenters, savedEvaluationData?.presenters]);
+    const initialIndividualScores = React.useMemo(
+        () =>
+            Object.fromEntries(
+                individualCriteria.map((criterion) => {
+                    const savedScore = savedEvaluationData?.individualScores?.[criterion.id];
+                    const normalizedScore = typeof savedScore === 'number' ? savedScore : null;
+
+                    return [criterion.id, normalizedScore];
+                }),
+            ) as Record<string, number | null>,
+        [savedEvaluationData?.individualScores],
     );
-    const [groupScores, setGroupScores] = React.useState<Record<string, string>>({
-        system: '',
-        documentation: '',
-        total: '',
-    });
+    const initialGroupScores = React.useMemo(() => {
+        const systemScore = savedEvaluationData?.groupScores?.system;
+        const documentationScore = savedEvaluationData?.groupScores?.documentation;
+        const totalScore = savedEvaluationData?.groupScores?.total;
+
+        return {
+            system: systemScore !== null && systemScore !== undefined && `${systemScore}` !== '' ? `${systemScore}` : '',
+            documentation: documentationScore !== null && documentationScore !== undefined && `${documentationScore}` !== '' ? `${documentationScore}` : '',
+            total: totalScore !== null && totalScore !== undefined && `${totalScore}` !== '' ? `${totalScore}` : '',
+        };
+    }, [savedEvaluationData?.groupScores]);
+    const initialPassingGradeDate = React.useMemo(() => (savedEvaluationData?.passingGradeDate ?? '').trim(), [savedEvaluationData?.passingGradeDate]);
+    const [defenseDate, setDefenseDate] = React.useState<string>(initialDefenseDate);
+    const [presenters, setPresenters] = React.useState<string[]>(initialPresenters);
+    const [individualScores, setIndividualScores] = React.useState<Record<string, number | null>>(initialIndividualScores);
+    const [groupScores, setGroupScores] = React.useState<Record<string, string>>(initialGroupScores);
     const lockedVerdictOption = React.useMemo(() => mapConceptVerdictToSheetVerdict(props.conceptVerdict), [props.conceptVerdict]);
-    const [passingGradeDate, setPassingGradeDate] = React.useState('');
+    const [passingGradeDate, setPassingGradeDate] = React.useState(initialPassingGradeDate);
+
+    React.useEffect(() => {
+        setDefenseDate(initialDefenseDate);
+    }, [initialDefenseDate]);
 
     React.useEffect(() => {
         setPresenters(initialPresenters);
     }, [initialPresenters]);
+
+    React.useEffect(() => {
+        setIndividualScores(initialIndividualScores);
+    }, [initialIndividualScores]);
+
+    React.useEffect(() => {
+        setGroupScores(initialGroupScores);
+    }, [initialGroupScores]);
+
+    React.useEffect(() => {
+        setPassingGradeDate(initialPassingGradeDate);
+    }, [initialPassingGradeDate]);
 
     const handleGroupScoreChange = (field: keyof typeof groupScores) => (event: React.ChangeEvent<HTMLInputElement>) => {
         const nextValue = event.target.value;
@@ -223,6 +285,67 @@ const PanelistEvaluationSheet = () => {
             ...currentScores,
             [field]: nextValue,
         }));
+    };
+    const canSignEvaluationSheet =
+        group !== null &&
+        panelistUserId !== null &&
+        signatureDataUrl !== null &&
+        defenseTypeKey !== '' &&
+        defenseDate.trim() !== '' &&
+        presenters.some((presenter) => presenter.trim() !== '') &&
+        pendingSignatureAction === null;
+
+    const signEvaluationSheet = (): void => {
+        if (!group || panelistUserId === null || defenseTypeKey === '') {
+            return;
+        }
+
+        const normalizedPresenters = presenters.map((presenter) => presenter.trim()).filter((presenter) => presenter !== '');
+        const normalizedGroupScores = {
+            system: groupScores.system !== '' ? Number(groupScores.system) : null,
+            documentation: groupScores.documentation !== '' ? Number(groupScores.documentation) : null,
+            total: groupScores.total !== '' ? Number(groupScores.total) : null,
+        };
+
+        setPendingSignatureAction('sign');
+        router.put(
+            '/panelist/live-defense/evaluation-sheet/signature',
+            {
+                group_id: group.id,
+                panelist_user_id: panelistUserId,
+                defense_type_key: defenseTypeKey,
+                defense_date: defenseDate,
+                presenters: normalizedPresenters,
+                individual_scores: individualScores,
+                group_scores: normalizedGroupScores,
+                passing_grade_date: passingGradeDate !== '' ? passingGradeDate : null,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['evaluationSheetSignature', 'evaluationSheetData', 'flash'],
+                onFinish: () => setPendingSignatureAction(null),
+            },
+        );
+    };
+
+    const clearSignedEvaluationSheet = (): void => {
+        if (!group || panelistUserId === null || defenseTypeKey === '') {
+            return;
+        }
+
+        setPendingSignatureAction('clear');
+        router.delete('/panelist/live-defense/evaluation-sheet/signature', {
+            data: {
+                group_id: group.id,
+                panelist_user_id: panelistUserId,
+                defense_type_key: defenseTypeKey,
+            },
+            preserveState: true,
+            preserveScroll: true,
+            only: ['evaluationSheetSignature', 'flash'],
+            onFinish: () => setPendingSignatureAction(null),
+        });
     };
 
     return (
@@ -505,20 +628,48 @@ const PanelistEvaluationSheet = () => {
 
                     <div className="mt-10 max-w-sm">
                         <div className="relative h-20">
-                            {signatureDataUrl ? (
-                                <img
-                                    src={signatureDataUrl}
-                                    alt={`${printedPanelistName} e-signature`}
-                                    className="pointer-events-none absolute top-0 left-1/2 max-h-14 w-auto -translate-x-1/2 object-contain opacity-90"
-                                />
-                            ) : null}
+                            {isSigned && signatureDataUrl ? (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={clearSignedEvaluationSheet}
+                                        disabled={pendingSignatureAction !== null}
+                                        className="absolute top-0 right-0 inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 bg-white text-[10px] text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        aria-label="Clear signature"
+                                    >
+                                        x
+                                    </button>
+                                    <img
+                                        src={signatureDataUrl}
+                                        alt={`${printedPanelistName} e-signature`}
+                                        className="pointer-events-none absolute top-0 left-1/2 max-h-14 w-auto -translate-x-1/2 object-contain opacity-90"
+                                    />
+                                </>
+                            ) : (
+                                <div className="mt-1 flex items-center justify-center">
+                                    <button
+                                        type="button"
+                                        onClick={signEvaluationSheet}
+                                        disabled={!canSignEvaluationSheet}
+                                        className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-100 disabled:text-slate-500"
+                                    >
+                                        {pendingSignatureAction === 'sign' ? 'Signing...' : 'Sign'}
+                                    </button>
+                                </div>
+                            )}
                             <p className="absolute inset-x-0 bottom-1 text-center text-sm font-semibold text-slate-800">{printedPanelistName}</p>
                             <div className="absolute inset-x-0 bottom-0 border-b border-slate-400" aria-hidden="true" />
                         </div>
                         <p className="mt-2 text-xs text-slate-700">Name and Signature of Panelist</p>
                         {!signatureDataUrl ? (
                             <p className="mt-1 text-[11px] text-amber-700">No registered e-signature found. Add one in Panelist Settings.</p>
-                        ) : null}
+                        ) : !isSigned ? (
+                            <p className="mt-1 text-[11px] text-slate-500">
+                                {pendingSignatureAction === 'clear' ? 'Removing signature...' : 'Click Sign to attach your e-signature to this sheet.'}
+                            </p>
+                        ) : (
+                            <p className="mt-1 text-[11px] text-emerald-700">Evaluation sheet signed.</p>
+                        )}
                     </div>
 
                    
