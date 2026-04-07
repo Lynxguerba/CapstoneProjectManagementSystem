@@ -3151,6 +3151,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
         try {
             if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups')) {
+                $hasConceptVerdictColumn = Schema::hasColumn('groups', 'concept_verdict');
+
                 $groups = \App\Models\Group::query()
                     ->with(['programSet.academicYear', 'leader', 'members'])
                     ->when($userId !== null, function ($query) use ($userId) {
@@ -3159,7 +3161,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     ->withCount('members')
                     ->orderByDesc('created_at')
                     ->get()
-                    ->map(function (\App\Models\Group $group) use ($resolveUserName): array {
+                    ->map(function (\App\Models\Group $group) use ($resolveUserName, $hasConceptVerdictColumn): array {
                         $programSet = $group->programSet;
                         $schoolYear = $programSet?->academicYear?->label;
 
@@ -3187,6 +3189,9 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             'program_set_name' => $programSet?->name ?: $fallbackName,
                             'program' => $programSet?->program,
                             'school_year' => $schoolYear,
+                            'concept_verdict' => $hasConceptVerdictColumn && is_string($group->concept_verdict) && trim($group->concept_verdict) !== ''
+                                ? trim($group->concept_verdict)
+                                : null,
                             'leader_name' => $leaderName !== '' ? $leaderName : null,
                             'members' => $members,
                             'members_count' => $group->members_count ?? 0,

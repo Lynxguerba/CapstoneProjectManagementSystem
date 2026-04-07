@@ -17,7 +17,7 @@ type ScheduleRow = {
     defenseType: string;
     projectTitle: string;
     defenseStatus: 'Pending' | 'In Progress' | 'Completed' | string;
-    evaluationStatus: 'Pending' | 'Submitted' | 'Locked' | string;
+    evaluationStatus: 'Pending' | 'Defended' | 'Conditional' | 'Failed' | string;
     group: ScheduleGroupDetails;
 };
 
@@ -34,8 +34,16 @@ const phaseTabs: { key: PhaseKey; label: string; icon: LucideIcon }[] = [
 ];
 
 const evaluationBadgeClass = (status: string): string => {
-    if (status === 'Submitted' || status === 'Locked') {
+    if (status === 'Defended') {
         return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+    }
+
+    if (status === 'Conditional') {
+        return 'border-blue-200 bg-blue-100 text-blue-700';
+    }
+
+    if (status === 'Failed') {
+        return 'border-rose-200 bg-rose-100 text-rose-700';
     }
 
     return 'border-amber-200 bg-amber-100 text-amber-700';

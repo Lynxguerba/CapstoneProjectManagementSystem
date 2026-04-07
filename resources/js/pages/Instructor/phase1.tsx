@@ -38,6 +38,7 @@ type GroupRow = {
     program_set_name?: string | null;
     program?: string | null;
     school_year?: string | null;
+    concept_verdict?: string | null;
     leader_name?: string | null;
     members?: GroupMember[];
     members_count?: number;
@@ -493,6 +494,44 @@ const Phase1Page = () => {
         return 'Not Paid';
     };
 
+    const resolveVerdictDrivenDefenseStatus = React.useCallback((conceptVerdict?: string | null): 'Defended' | 'Conditional' | 'Failed' | null => {
+        const verdict = (conceptVerdict ?? '').trim();
+
+        if (verdict === 'Passed (No revisions needed)' || verdict === 'Passed (With revisions needed)' || verdict === 'Pass with revision') {
+            return 'Defended';
+        }
+
+        if (verdict === 'Conditional Passed' || verdict === 'Conditional Pass') {
+            return 'Conditional';
+        }
+
+        if (verdict === 'Failed' || verdict === 'Deffered') {
+            return 'Failed';
+        }
+
+        return null;
+    }, []);
+
+    const resolveDefenseStatus = React.useCallback(
+        (schedule: DefenseScheduleRow | undefined, conceptVerdict?: string | null): string => {
+            const verdictStatus = resolveVerdictDrivenDefenseStatus(conceptVerdict);
+            if (verdictStatus !== null) {
+                return verdictStatus;
+            }
+
+            if (!schedule) {
+                return 'Not Scheduled';
+            }
+
+            if (schedule.status === 'Completed') {
+                return 'Defended';
+            }
+
+            return 'Scheduled';
+        },
+        [resolveVerdictDrivenDefenseStatus],
+    );
+
     const requirementsByAcademicYearLabel = React.useMemo(() => {
         const map = new Map<string, RequirementRecord[]>();
 
@@ -630,49 +669,6 @@ const Phase1Page = () => {
         }
     }, [documentsPage, totalDocumentPages]);
 
-    const mandatoryRequirementTargets = React.useMemo(() => {
-        return requirements.map((requirement) => ({
-            academicYearLabel: resolveAcademicYearLabel(requirement.academic_year_id, requirement.academic_year_label ?? null),
-        }));
-    }, [requirements, resolveAcademicYearLabel]);
-
-    const groupById = React.useMemo(() => {
-        return new Map(filteredGroups.map((group) => [group.id, group]));
-    }, [filteredGroups]);
-
-    const missingRequirementsByGroupId = React.useMemo(() => {
-        const map = new Map<number, boolean>();
-
-        if (mandatoryRequirementTargets.length === 0) {
-            return map;
-        }
-
-        documents.forEach((doc) => {
-            if (doc.status === 'Approved') {
-                return;
-            }
-
-            const group = groupById.get(doc.groupId);
-            if (!group) {
-                return;
-            }
-
-            const hasMandatoryRequirement = mandatoryRequirementTargets.some((requirement) => {
-                if (requirement.academicYearLabel === 'All' || requirement.academicYearLabel.trim() === '') {
-                    return true;
-                }
-
-                return group.school_year === requirement.academicYearLabel;
-            });
-
-            if (hasMandatoryRequirement) {
-                map.set(doc.groupId, true);
-            }
-        });
-
-        return map;
-    }, [documents, groupById, mandatoryRequirementTargets]);
-
     const payments = React.useMemo(() => {
         return filteredGroups.map((group) => {
             const schedule = scheduleByGroupId.get(group.id);
@@ -696,8 +692,7 @@ const Phase1Page = () => {
     const defenseRows = React.useMemo(() => {
         return filteredGroups.map((group) => {
             const schedule = scheduleByGroupId.get(group.id);
-            const missingRequirements = missingRequirementsByGroupId.get(group.id) ?? false;
-            const status = missingRequirements ? 'Missing Requirements' : (schedule?.status ?? 'Not Scheduled');
+            const status = resolveDefenseStatus(schedule, group.concept_verdict);
 
             return {
                 id: `defense-${group.id}`,
@@ -709,7 +704,7 @@ const Phase1Page = () => {
                 status,
             };
         });
-    }, [filteredGroups, missingRequirementsByGroupId, scheduleByGroupId]);
+    }, [filteredGroups, resolveDefenseStatus, scheduleByGroupId]);
 
     const defensePerPage = 6;
     const totalDefensePages = Math.max(1, Math.ceil(defenseRows.length / defensePerPage));
@@ -856,11 +851,14 @@ const Phase1Page = () => {
     };
 
     const defenseBadge = (status: string) => {
-        if (status === 'Missing Requirements') {
-            return 'border-rose-200 bg-rose-100 text-rose-700';
-        }
-        if (status === 'Completed') {
+        if (status === 'Defended' || status === 'Completed') {
             return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+        }
+        if (status === 'Conditional') {
+            return 'border-blue-200 bg-blue-100 text-blue-700';
+        }
+        if (status === 'Failed') {
+            return 'border-rose-200 bg-rose-100 text-rose-700';
         }
         if (status === 'Scheduled') {
             return 'border-indigo-200 bg-indigo-100 text-indigo-700';

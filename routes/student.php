@@ -357,6 +357,12 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
                     $programSet = $group->programSet;
                     $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
                     $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+                    $conceptVerdict = null;
+
+                    if (Schema::hasColumn('groups', 'concept_verdict')) {
+                        $rawConceptVerdict = is_string($group->concept_verdict) ? trim($group->concept_verdict) : '';
+                        $conceptVerdict = $rawConceptVerdict !== '' ? $rawConceptVerdict : null;
+                    }
 
                     $groupSummary = [
                         'id' => $group->id,
@@ -364,6 +370,7 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
                         'program_set_name' => $programSet?->name ?: $fallbackName,
                         'program' => $programSet?->program,
                         'school_year' => $schoolYear,
+                        'concept_verdict' => $conceptVerdict,
                     ];
 
                     $adviserUser = $group->adviserAssignment?->adviser;

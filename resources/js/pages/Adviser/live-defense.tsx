@@ -93,8 +93,16 @@ type AdviserLiveDefenseProps = {
 };
 
 const defenseStatusClass = (status: string): string => {
-    if (status === 'Completed') {
+    if (status === 'Defended' || status === 'Completed') {
         return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+    }
+
+    if (status === 'Conditional') {
+        return 'border-blue-200 bg-blue-100 text-blue-700';
+    }
+
+    if (status === 'Failed') {
+        return 'border-rose-200 bg-rose-100 text-rose-700';
     }
 
     if (status === 'In Progress') {
@@ -102,6 +110,22 @@ const defenseStatusClass = (status: string): string => {
     }
 
     return 'border-amber-200 bg-amber-100 text-amber-700';
+};
+
+const resolveVerdictDrivenDefenseStatus = (verdict: ConceptVerdictValue | null | undefined): 'Defended' | 'Conditional' | 'Failed' | null => {
+    if (verdict === 'Passed (No revisions needed)' || verdict === 'Passed (With revisions needed)' || verdict === 'Pass with revision') {
+        return 'Defended';
+    }
+
+    if (verdict === 'Conditional Passed' || verdict === 'Conditional Pass') {
+        return 'Conditional';
+    }
+
+    if (verdict === 'Failed' || verdict === 'Deffered') {
+        return 'Failed';
+    }
+
+    return null;
 };
 
 const statusPillClass = (status: string): string => {
@@ -641,7 +665,8 @@ const AdviserLiveDefense = () => {
     }
 
     const groupLabel = `${group.name}${group.programSetName ? ` · ${group.programSetName}` : ''}${group.academicYear ? ` · ${group.academicYear}` : ''}`;
-    const defenseStatus = group?.defenseStatus ?? 'Pending';
+    const verdictDrivenDefenseStatus = resolveVerdictDrivenDefenseStatus(conceptVerdict?.value);
+    const defenseStatus = verdictDrivenDefenseStatus ?? (group?.defenseStatus ?? 'Pending');
 
     return (
         <AdviserLayout title="Live Defense Board" subtitle="Adviser live guidance workspace">

@@ -58,7 +58,7 @@ class PanelistScheduleController extends Controller
                             'defenseType' => $stage,
                             'projectTitle' => $projectTitle,
                             'defenseStatus' => $this->resolveDefenseStatus($schedule),
-                            'evaluationStatus' => $this->resolveEvaluationStatus($schedule),
+                            'evaluationStatus' => $this->resolveEvaluationStatus($schedule, $group, $stage),
                             'group' => [
                                 'id' => (string) $group->id,
                                 'groupName' => $groupLabel,
@@ -93,6 +93,12 @@ class PanelistScheduleController extends Controller
             return collect();
         }
 
+        $groupColumns = ['id', 'name', 'program_set_id', 'leader_id'];
+
+        if (Schema::hasColumn('groups', 'concept_verdict')) {
+            $groupColumns[] = 'concept_verdict';
+        }
+
         return Group::query()
             ->with([
                 'programSet.academicYear',
@@ -103,7 +109,7 @@ class PanelistScheduleController extends Controller
             ])
             ->whereHas('panelAssignments', fn (Builder $query): Builder => $query->where('panelist_id', $panelistId))
             ->orderBy('name')
-            ->get(['id', 'name', 'program_set_id', 'leader_id']);
+            ->get($groupColumns);
     }
 
     /**
@@ -246,15 +252,53 @@ class PanelistScheduleController extends Controller
         return 'Pending';
     }
 
-    private function resolveEvaluationStatus(?DefenseSchedule $schedule): string
+    private function resolveEvaluationStatus(?DefenseSchedule $schedule, Group $group, string $stage): string
     {
-        $status = is_string($schedule?->status) ? trim($schedule->status) : '';
+        $normalizedStage = strtolower(trim($stage));
+
+        if ($normalizedStage === 'concept') {
+            $conceptVerdictStatus = $this->resolveConceptVerdictEvaluationStatus($group);
+            if ($conceptVerdictStatus !== null) {
+                return $conceptVerdictStatus;
+            }
+        }
+
+        if (! $schedule instanceof DefenseSchedule) {
+            return 'Pending';
+        }
+
+        $status = is_string($schedule->status) ? trim($schedule->status) : '';
 
         if ($status === 'Completed') {
-            return 'Submitted';
+            return 'Defended';
         }
 
         return 'Pending';
+    }
+
+    private function resolveConceptVerdictEvaluationStatus(Group $group): ?string
+    {
+        $conceptVerdict = is_string($group->concept_verdict) ? trim($group->concept_verdict) : '';
+
+        if (
+            in_array($conceptVerdict, [
+                'Passed (No revisions needed)',
+                'Passed (With revisions needed)',
+                'Pass with revision',
+            ], true)
+        ) {
+            return 'Defended';
+        }
+
+        if (in_array($conceptVerdict, ['Conditional Passed', 'Conditional Pass'], true)) {
+            return 'Conditional';
+        }
+
+        if (in_array($conceptVerdict, ['Failed', 'Deffered'], true)) {
+            return 'Failed';
+        }
+
+        return null;
     }
 
     private function resolveProgramSetName(Group $group): string

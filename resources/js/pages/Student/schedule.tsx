@@ -42,6 +42,7 @@ type GroupSummary = {
     program_set_name?: string | null;
     program?: string | null;
     school_year?: string | null;
+    concept_verdict?: string | null;
 };
 
 type AdviserSummary = {
@@ -81,12 +82,14 @@ type StudentSchedulePageProps = {
 
 type PhaseRow = {
     phase: string;
-    status: string;
-    rawStatus: string;
+    status: PhaseStatus | 'Locked';
+    rawStatus: PhaseStatus;
     schedule: ScheduleRow | null;
     isLocked: boolean;
     lockReason?: string;
 };
+
+type PhaseStatus = 'Pending' | 'Defended' | 'Conditional' | 'Failed' | 'Not Scheduled';
 
 const phaseOrder = ['Concept', 'Outline', 'Pre-Deployment', 'Deployment', 'Final'] as const;
 
@@ -120,13 +123,10 @@ const scheduleStatusStyles: Record<string, { badge: string; dot: string; event: 
 
 const phaseStatusStyles: Record<string, string> = {
     Defended: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-    'Re-Defense': 'border-orange-200 bg-orange-50 text-orange-700',
-    Scheduled: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    Conditional: 'border-blue-200 bg-blue-50 text-blue-700',
+    Failed: 'border-rose-200 bg-rose-50 text-rose-700',
     Pending: 'border-amber-200 bg-amber-50 text-amber-700',
-    'In Review': 'border-blue-200 bg-blue-50 text-blue-700',
-    Cancelled: 'border-rose-200 bg-rose-50 text-rose-700',
     Locked: 'border-slate-200 bg-slate-100 text-slate-600',
-    'Not Processed': 'border-slate-200 bg-slate-100 text-slate-600',
     'Not Scheduled': 'border-slate-200 bg-slate-100 text-slate-600',
 };
 
@@ -214,7 +214,50 @@ const scheduleDateTime = (schedule: ScheduleRow): Date | null => {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), Math.floor(minutes / 60), minutes % 60);
 };
 
-const normalizeSchedulePhaseStatus = (schedule: ScheduleRow | null): string => {
+const normalizeConceptVerdictStatus = (conceptVerdict?: string | null): Exclude<PhaseStatus, 'Not Scheduled'> => {
+    const verdict = (conceptVerdict ?? '').trim();
+
+    if (verdict === 'Passed (No revisions needed)' || verdict === 'Passed (With revisions needed)' || verdict === 'Pass with revision') {
+        return 'Defended';
+    }
+
+    if (verdict === 'Conditional Passed' || verdict === 'Conditional Pass') {
+        return 'Conditional';
+    }
+
+    if (verdict === 'Failed' || verdict === 'Deffered') {
+        return 'Failed';
+    }
+
+    return 'Pending';
+};
+
+const normalizePhaseStatus = (schedule: ScheduleRow | null, phase: string, conceptVerdict?: string | null): PhaseStatus => {
+    if (phase === 'Concept') {
+        const verdictStatus = normalizeConceptVerdictStatus(conceptVerdict);
+
+        if (verdictStatus !== 'Pending') {
+            return verdictStatus;
+        }
+    }
+
+    if (!schedule) {
+        return 'Not Scheduled';
+    }
+
+    const status = (schedule.status ?? '').toLowerCase().trim();
+    if (status !== 'completed') {
+        return 'Pending';
+    }
+
+    if (phase !== 'Concept') {
+        return 'Defended';
+    }
+
+    return normalizeConceptVerdictStatus(conceptVerdict);
+};
+
+const normalizeScheduleDetailStatus = (schedule: ScheduleRow | null): string => {
     if (!schedule) {
         return 'Not Scheduled';
     }
@@ -246,25 +289,7 @@ const normalizeSchedulePhaseStatus = (schedule: ScheduleRow | null): string => {
     return schedule.status ?? 'Scheduled';
 };
 
-const normalizeConceptPhaseStatus = (status?: string | null): string => {
-    const normalizedStatus = (status ?? '').trim();
-
-    if (normalizedStatus === 'Approved') {
-        return 'Defended';
-    }
-
-    if (normalizedStatus === 'Revise') {
-        return 'Re-Defense';
-    }
-
-    if (normalizedStatus === 'For Review') {
-        return 'In Review';
-    }
-
-    return 'Not Processed';
-};
-
-const isUnlockStatus = (status: string): boolean => status === 'Defended' || status === 'Re-Defense';
+const isUnlockStatus = (status: PhaseStatus): boolean => status === 'Defended';
 
 const StudentSchedule = () => {
     const { props } = usePage<StudentSchedulePageProps>();
@@ -300,11 +325,11 @@ const StudentSchedule = () => {
 
         return phaseOrder.map((phase, index) => {
             const schedule = schedulesByStage.get(phase) ?? null;
-            const rawStatus = phase === 'Concept' ? normalizeConceptPhaseStatus(conceptReadiness?.status) : normalizeSchedulePhaseStatus(schedule);
+            const rawStatus = normalizePhaseStatus(schedule, phase, group?.concept_verdict);
             const isLocked = index > 0 && !previousPhaseCleared && schedule === null;
             const status = isLocked ? 'Locked' : rawStatus;
 
-            const lockReason = isLocked ? `Waiting for ${phaseOrder[index - 1]} to be marked Defended or Re-Defense.` : undefined;
+            const lockReason = isLocked ? `Waiting for ${phaseOrder[index - 1]} to be marked Defended.` : undefined;
 
             previousPhaseCleared = isUnlockStatus(rawStatus);
 
@@ -317,7 +342,7 @@ const StudentSchedule = () => {
                 lockReason,
             };
         });
-    }, [conceptReadiness?.status, schedulesByStage]);
+    }, [group?.concept_verdict, schedulesByStage]);
 
     const recommendationCount = React.useMemo(() => {
         const requirementRows = conceptReadiness?.requirements ?? [];
@@ -442,7 +467,7 @@ const StudentSchedule = () => {
                             <div className="border-b border-slate-200 bg-slate-50/70 px-4 py-3">
                                 <h3 className="text-sm font-semibold text-slate-800">Capstone Defense Phase Flow</h3>
                                 <p className="mt-1 text-xs text-slate-500">
-                                    Every phase is listed. Next phase rows are locked until the previous row result is Defended or Re-Defense.
+                                    Every phase is listed. Next phase rows are locked until the previous row result is Defended.
                                 </p>
                             </div>
 
@@ -460,7 +485,7 @@ const StudentSchedule = () => {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {phaseRows.map((row, index) => {
-                                            const scheduleStatus = normalizeSchedulePhaseStatus(row.schedule);
+                                            const scheduleStatus = normalizeScheduleDetailStatus(row.schedule);
                                             const scheduleBadgeClass =
                                                 scheduleStatus === 'Re-Defense'
                                                     ? scheduleStatusStyles['Re-Defense'].badge

@@ -49,7 +49,7 @@ const verdictOptions: Array<{ value: ConceptVerdictOptionValue; label: string }>
 ];
 
 const normalizeConceptVerdictValue = (verdict: ConceptVerdictValue | null | undefined): ConceptVerdictOptionValue | '' => {
-    if (verdict === null || verdict === undefined || verdict === '') {
+    if (verdict === null || verdict === undefined) {
         return '';
     }
 
