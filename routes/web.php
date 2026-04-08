@@ -25,6 +25,10 @@ Route::get('/login', function () {
     return redirect()->route('login');
 })->name('login.show');
 
+Route::get('/architecture-flow', function () {
+    return Inertia::render('architecture-flow');
+})->name('architecture-flow');
+
 Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 Route::post('/register', [LoginController::class, 'register'])->name('register.store');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
