@@ -70,20 +70,23 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
         return (adviser.programs ?? []).reduce((total, program) => total + (program.assigned_count ?? 0), 0);
     }, []);
 
-    const getProgramTotals = React.useCallback((adviser: AdviserRow, yearLabel?: string | null) => {
-        const programs = adviser.programs ?? [];
-        const totalAssigned = getAssignedForYear(adviser, yearLabel);
-        const totalCapacity = programs.reduce((total, program) => total + (program.max_groups ?? 0), 0);
-        const remaining = Math.max(0, totalCapacity - totalAssigned);
+    const getProgramTotals = React.useCallback(
+        (adviser: AdviserRow, yearLabel?: string | null) => {
+            const programs = adviser.programs ?? [];
+            const totalAssigned = getAssignedForYear(adviser, yearLabel);
+            const totalCapacity = programs.reduce((total, program) => total + (program.max_groups ?? 0), 0);
+            const remaining = Math.max(0, totalCapacity - totalAssigned);
 
-        return {
-            programs,
-            totalAssigned,
-            totalCapacity,
-            remaining,
-            isAvailable: adviser.is_available === true,
-        };
-    }, [getAssignedForYear]);
+            return {
+                programs,
+                totalAssigned,
+                totalCapacity,
+                remaining,
+                isAvailable: adviser.is_available === true,
+            };
+        },
+        [getAssignedForYear],
+    );
 
     const getTotalAssignedGroups = React.useCallback(
         (adviser: AdviserRow, yearLabel?: string | null) => {
@@ -129,8 +132,7 @@ const AdviserAssignmentPage = ({ advisers = [], academicYears = [] }: AdviserAss
 
     const sortedAdvisers = React.useMemo(() => {
         return [...advisers].sort((first, second) => {
-            const workloadDelta =
-                getTotalAssignedGroups(second, selectedAcademicYear) - getTotalAssignedGroups(first, selectedAcademicYear);
+            const workloadDelta = getTotalAssignedGroups(second, selectedAcademicYear) - getTotalAssignedGroups(first, selectedAcademicYear);
 
             if (workloadDelta !== 0) {
                 return workloadDelta;

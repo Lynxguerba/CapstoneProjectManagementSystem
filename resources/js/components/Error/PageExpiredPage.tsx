@@ -21,9 +21,9 @@ export default function PageExpiredPage() {
                 <div className="relative z-10 w-full max-w-2xl rounded-3xl border border-emerald-100/80 bg-white/80 p-8 shadow-[0_24px_80px_rgba(21,128,61,0.16)] backdrop-blur-sm sm:p-12">
                     <div className="mb-8 flex justify-center">
                         <div className="relative h-64 w-64">
-                            <div className="absolute inset-0 rounded-full border-4 border-emerald-300/50 animate-spin-slow-green" />
-                            <div className="absolute inset-8 rounded-full border-4 border-green-400/40 animate-spin-reverse-green" />
-                            <div className="absolute inset-16 rounded-full bg-gradient-to-br from-emerald-500 to-green-700 animate-pulse-slow-green" />
+                            <div className="animate-spin-slow-green absolute inset-0 rounded-full border-4 border-emerald-300/50" />
+                            <div className="animate-spin-reverse-green absolute inset-8 rounded-full border-4 border-green-400/40" />
+                            <div className="animate-pulse-slow-green absolute inset-16 rounded-full bg-gradient-to-br from-emerald-500 to-green-700" />
 
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <h1 className="animate-float-green bg-gradient-to-r from-green-900 via-emerald-800 to-green-700 bg-clip-text text-7xl font-black text-transparent">
@@ -31,10 +31,10 @@ export default function PageExpiredPage() {
                                 </h1>
                             </div>
 
-                            <div className="absolute top-8 left-8 h-3 w-3 rounded-full bg-emerald-500/80 animate-float-particle-1-green" />
-                            <div className="absolute top-16 right-12 h-2 w-2 rounded-full bg-green-600/80 animate-float-particle-2-green" />
-                            <div className="absolute bottom-16 left-16 h-4 w-4 rounded-full bg-emerald-400/80 animate-float-particle-3-green" />
-                            <div className="absolute right-8 bottom-8 h-2 w-2 rounded-full bg-green-700/80 animate-float-particle-4-green" />
+                            <div className="animate-float-particle-1-green absolute top-8 left-8 h-3 w-3 rounded-full bg-emerald-500/80" />
+                            <div className="animate-float-particle-2-green absolute top-16 right-12 h-2 w-2 rounded-full bg-green-600/80" />
+                            <div className="animate-float-particle-3-green absolute bottom-16 left-16 h-4 w-4 rounded-full bg-emerald-400/80" />
+                            <div className="animate-float-particle-4-green absolute right-8 bottom-8 h-2 w-2 rounded-full bg-green-700/80" />
                         </div>
                     </div>
 

@@ -65,7 +65,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
     const [showModal, setShowModal] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const selectedAcademicYear = useMemo(() => {
-        const query = currentUrl.includes('?') ? currentUrl.split('?')[1] ?? '' : '';
+        const query = currentUrl.includes('?') ? (currentUrl.split('?')[1] ?? '') : '';
         const searchParams = new URLSearchParams(query);
         const academicYear = searchParams.get('academic_year');
 
@@ -176,9 +176,9 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { icon: BarChart3, label: 'Reports', href: '/adviser/reports' },
                     { icon: Settings, label: 'Settings', href: '/adviser/settings' },
                 ];
-                
-                case 'panelist':
-                    return [
+
+            case 'panelist':
+                return [
                     { label: 'Main', isSection: true },
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/panelist/dashboard' },
                     { label: 'Defense Groups', isSection: true },

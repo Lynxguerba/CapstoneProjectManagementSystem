@@ -131,9 +131,7 @@ const RecommendationModal = ({
 
                 <div
                     className={`grid grid-cols-1 gap-0 transition-[grid-template-columns] duration-300 ease-in-out ${
-                        isDetailsCollapsed
-                            ? 'lg:grid-cols-[88px_minmax(0,1fr)]'
-                            : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]'
+                        isDetailsCollapsed ? 'lg:grid-cols-[88px_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]'
                     }`}
                 >
                     <div
@@ -172,11 +170,7 @@ const RecommendationModal = ({
                                         transition={{ duration: 0.18, ease: 'easeInOut' }}
                                         className="inline-flex"
                                     >
-                                        {isDetailsCollapsed ? (
-                                            <PanelRightOpen className="h-4 w-4" />
-                                        ) : (
-                                            <ChevronsLeft className="h-4 w-4" />
-                                        )}
+                                        {isDetailsCollapsed ? <PanelRightOpen className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
                                     </motion.span>
                                 </AnimatePresence>
                             </button>
@@ -192,62 +186,60 @@ const RecommendationModal = ({
                                     transition={{ duration: 0.24, ease: 'easeInOut' }}
                                     className="mt-3 space-y-4 overflow-hidden"
                                 >
-                                {canGenerate ? (
-                                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700">
-                                        All concept submissions are approved and a recommendation requirement is configured.
-                                    </div>
-                                ) : (
-                                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-                                        <div className="flex items-center gap-2 font-semibold">
-                                            <ShieldAlert className="h-4 w-4" />
-                                            Recommendation is currently disabled
+                                    {canGenerate ? (
+                                        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700">
+                                            All concept submissions are approved and a recommendation requirement is configured.
                                         </div>
-                                        <p className="mt-1">{disabledReason ?? 'Complete all required approvals first.'}</p>
-                                    </div>
-                                )}
-
-                                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                    <div className="text-xs font-semibold tracking-wide text-slate-600 uppercase">Requirement</div>
-                                    <div className="mt-1 text-sm font-semibold text-slate-900">
-                                        {recommendationRequirementType ?? 'Recommendation Letter'}
-                                    </div>
-                                </div>
-
-                                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                    <div className="text-xs font-semibold tracking-wide text-slate-600 uppercase">Approved Titles</div>
-                                    {approvedTitles.length === 0 ? (
-                                        <div className="mt-2 text-xs text-slate-500">No approved concept titles found.</div>
                                     ) : (
-                                        <div className="mt-2 space-y-1">
-                                            {approvedTitles.map((title, index) => (
-                                                <div key={`${title}-${index}`} className="text-sm text-slate-800">
-                                                    <span className="font-semibold">Title {index + 1}:</span> {title}
-                                                </div>
-                                            ))}
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                                            <div className="flex items-center gap-2 font-semibold">
+                                                <ShieldAlert className="h-4 w-4" />
+                                                Recommendation is currently disabled
+                                            </div>
+                                            <p className="mt-1">{disabledReason ?? 'Complete all required approvals first.'}</p>
                                         </div>
                                     )}
-                                </div>
 
-                                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                    <div className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
-                                        Prepared and Submitted By
-                                    </div>
-                                    <div className="mt-1 text-sm text-slate-800">{submittedByNames}</div>
-                                </div>
-
-                                {!hasESignature ? (
-                                    <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-                                        Register an e-signature in Adviser Settings before signing this letter.
-                                        <div className="mt-2">
-                                            <Link
-                                                href="/adviser/settings"
-                                                className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-white px-2 py-1 font-semibold text-rose-700 hover:bg-rose-100"
-                                            >
-                                                Go to Settings
-                                            </Link>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                        <div className="text-xs font-semibold tracking-wide text-slate-600 uppercase">Requirement</div>
+                                        <div className="mt-1 text-sm font-semibold text-slate-900">
+                                            {recommendationRequirementType ?? 'Recommendation Letter'}
                                         </div>
                                     </div>
-                                ) : null}
+
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                        <div className="text-xs font-semibold tracking-wide text-slate-600 uppercase">Approved Titles</div>
+                                        {approvedTitles.length === 0 ? (
+                                            <div className="mt-2 text-xs text-slate-500">No approved concept titles found.</div>
+                                        ) : (
+                                            <div className="mt-2 space-y-1">
+                                                {approvedTitles.map((title, index) => (
+                                                    <div key={`${title}-${index}`} className="text-sm text-slate-800">
+                                                        <span className="font-semibold">Title {index + 1}:</span> {title}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                        <div className="text-xs font-semibold tracking-wide text-slate-600 uppercase">Prepared and Submitted By</div>
+                                        <div className="mt-1 text-sm text-slate-800">{submittedByNames}</div>
+                                    </div>
+
+                                    {!hasESignature ? (
+                                        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                                            Register an e-signature in Adviser Settings before signing this letter.
+                                            <div className="mt-2">
+                                                <Link
+                                                    href="/adviser/settings"
+                                                    className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-white px-2 py-1 font-semibold text-rose-700 hover:bg-rose-100"
+                                                >
+                                                    Go to Settings
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    ) : null}
                                 </motion.div>
                             ) : null}
                         </AnimatePresence>
@@ -256,7 +248,9 @@ const RecommendationModal = ({
                     <div className="flex min-h-[30rem] flex-col">
                         <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
                             <div className="text-xs font-semibold text-slate-600 uppercase">PDF Preview</div>
-                            <div className="mt-1 text-sm text-slate-700">{recommendationDocument?.file_name ?? 'No generated recommendation yet.'}</div>
+                            <div className="mt-1 text-sm text-slate-700">
+                                {recommendationDocument?.file_name ?? 'No generated recommendation yet.'}
+                            </div>
                         </div>
 
                         {recommendationDocument?.file_url ? (

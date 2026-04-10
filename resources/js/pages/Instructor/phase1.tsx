@@ -42,6 +42,9 @@ type GroupRow = {
     leader_name?: string | null;
     members?: GroupMember[];
     members_count?: number;
+    panelists_count?: number;
+    receipt_signed_count?: number;
+    receipt_required_count?: number;
     created_at?: string | null;
 };
 
@@ -91,10 +94,13 @@ type DeadlineRow = {
 
 type PaymentRow = {
     id: string;
+    groupId: number;
     group: string;
     members: { initials: string; color: string }[];
     submittedAt: string;
     status: 'Verified' | 'Pending' | 'Not Paid';
+    statusLabel: string;
+    reviewUrl: string;
 };
 
 type DocumentRow = {
@@ -138,7 +144,8 @@ type RequirementRecord = {
 };
 
 const avatarColors = ['bg-emerald-600', 'bg-emerald-500', 'bg-emerald-700', 'bg-slate-600', 'bg-slate-500', 'bg-amber-500'];
-const isTabKey = (value: string | null): value is TabKey => value === 'deadlines' || value === 'documents' || value === 'defense' || value === 'payments';
+const isTabKey = (value: string | null): value is TabKey =>
+    value === 'deadlines' || value === 'documents' || value === 'defense' || value === 'payments';
 
 const pad = (value: number): string => value.toString().padStart(2, '0');
 
@@ -484,54 +491,6 @@ const Phase1Page = () => {
         }
     }, [deadlinesPage, totalDeadlinePages]);
 
-    const resolvePaymentStatus = (status?: DefenseScheduleRow['status'] | null): PaymentRow['status'] => {
-        if (status === 'Completed') {
-            return 'Verified';
-        }
-        if (status === 'Scheduled' || status === 'Pending') {
-            return 'Pending';
-        }
-        return 'Not Paid';
-    };
-
-    const resolveVerdictDrivenDefenseStatus = React.useCallback((conceptVerdict?: string | null): 'Defended' | 'Conditional' | 'Failed' | null => {
-        const verdict = (conceptVerdict ?? '').trim();
-
-        if (verdict === 'Passed (No revisions needed)' || verdict === 'Passed (With revisions needed)' || verdict === 'Pass with revision') {
-            return 'Defended';
-        }
-
-        if (verdict === 'Conditional Passed' || verdict === 'Conditional Pass') {
-            return 'Conditional';
-        }
-
-        if (verdict === 'Failed' || verdict === 'Deffered') {
-            return 'Failed';
-        }
-
-        return null;
-    }, []);
-
-    const resolveDefenseStatus = React.useCallback(
-        (schedule: DefenseScheduleRow | undefined, conceptVerdict?: string | null): string => {
-            const verdictStatus = resolveVerdictDrivenDefenseStatus(conceptVerdict);
-            if (verdictStatus !== null) {
-                return verdictStatus;
-            }
-
-            if (!schedule) {
-                return 'Not Scheduled';
-            }
-
-            if (schedule.status === 'Completed') {
-                return 'Defended';
-            }
-
-            return 'Scheduled';
-        },
-        [resolveVerdictDrivenDefenseStatus],
-    );
-
     const requirementsByAcademicYearLabel = React.useMemo(() => {
         const map = new Map<string, RequirementRecord[]>();
 
@@ -672,19 +631,36 @@ const Phase1Page = () => {
     const payments = React.useMemo(() => {
         return filteredGroups.map((group) => {
             const schedule = scheduleByGroupId.get(group.id);
-            const status = resolvePaymentStatus(schedule?.status ?? null);
             const members = group.members ?? [];
             const initials = members.map((member, index) => ({
                 initials: getInitials(member.name),
                 color: avatarColors[(index + group.id) % avatarColors.length],
             }));
+            const receiptSignedCount = Number(group.receipt_signed_count ?? 0);
+            const receiptRequiredCount = Number(group.receipt_required_count ?? 0);
+            let status: PaymentRow['status'] = 'Not Paid';
+            let statusLabel = 'No Faculty Assigned';
+
+            if (receiptRequiredCount > 0 && receiptSignedCount <= 0) {
+                status = 'Pending';
+                statusLabel = `Unsigned (${receiptSignedCount}/${receiptRequiredCount})`;
+            } else if (receiptRequiredCount > 0 && receiptSignedCount < receiptRequiredCount) {
+                status = 'Pending';
+                statusLabel = `Partially Signed (${receiptSignedCount}/${receiptRequiredCount})`;
+            } else if (receiptRequiredCount > 0) {
+                status = 'Verified';
+                statusLabel = `Fully Signed (${receiptSignedCount}/${receiptRequiredCount})`;
+            }
 
             return {
                 id: `payment-${group.id}`,
+                groupId: group.id,
                 group: group.name,
                 members: initials,
                 submittedAt: schedule?.created_at ? formatDateLabel(schedule.created_at) : formatDateLabel(group.created_at),
                 status,
+                statusLabel,
+                reviewUrl: `/instructor/requirements/documents/acknowledgement?group=${group.id}`,
             } satisfies PaymentRow;
         });
     }, [filteredGroups, scheduleByGroupId]);
@@ -692,19 +668,23 @@ const Phase1Page = () => {
     const defenseRows = React.useMemo(() => {
         return filteredGroups.map((group) => {
             const schedule = scheduleByGroupId.get(group.id);
-            const status = resolveDefenseStatus(schedule, group.concept_verdict);
+            const panelistsCount = Number(group.panelists_count ?? 0);
+            const status = panelistsCount > 0 ? `Available (${panelistsCount} Panelist${panelistsCount === 1 ? '' : 's'})` : 'No Panelists Assigned';
 
             return {
                 id: `defense-${group.id}`,
+                groupId: group.id,
                 group: group.name,
                 programSet: group.program_set_name ?? '—',
                 scheduleDate: schedule?.scheduled_date ? formatDateLabel(schedule.scheduled_date) : '—',
                 scheduleTime: schedule?.start_time && schedule?.end_time ? formatTimeRange(schedule.start_time, schedule.end_time) : '--',
                 room: schedule?.room?.name ?? '—',
                 status,
+                canReview: panelistsCount > 0,
+                reviewUrl: `/instructor/requirements/documents/evaluation?group=${group.id}`,
             };
         });
-    }, [filteredGroups, resolveDefenseStatus, scheduleByGroupId]);
+    }, [filteredGroups, scheduleByGroupId]);
 
     const defensePerPage = 6;
     const totalDefensePages = Math.max(1, Math.ceil(defenseRows.length / defensePerPage));
@@ -851,6 +831,12 @@ const Phase1Page = () => {
     };
 
     const defenseBadge = (status: string) => {
+        if (status.startsWith('Available')) {
+            return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+        }
+        if (status === 'No Panelists Assigned') {
+            return 'border-slate-200 bg-slate-100 text-slate-600';
+        }
         if (status === 'Defended' || status === 'Completed') {
             return 'border-emerald-200 bg-emerald-100 text-emerald-700';
         }

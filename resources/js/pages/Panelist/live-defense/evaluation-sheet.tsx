@@ -107,12 +107,7 @@ const groupCriteria: GroupCriterion[] = [
     },
 ];
 
-const verdictOptions = [
-    'Passed (No revisions needed)',
-    'Passed (With revisions needed)',
-    'Conditional Passed',
-    'Failed',
-] as const;
+const verdictOptions = ['Passed (No revisions needed)', 'Passed (With revisions needed)', 'Conditional Passed', 'Failed'] as const;
 
 const getLocalDateInputValue = (): string => {
     const now = new Date();
@@ -167,10 +162,13 @@ const isAllowedIntegerInput = (value: string): boolean => {
 };
 
 const resolveSignatureDataUrl = (
-    signature: {
-        signatureData: string;
-        mimeType?: string | null;
-    } | null | undefined,
+    signature:
+        | {
+              signatureData: string;
+              mimeType?: string | null;
+          }
+        | null
+        | undefined,
 ): string | null => {
     if (!signature || typeof signature.signatureData !== 'string') {
         return null;
@@ -185,8 +183,7 @@ const resolveSignatureDataUrl = (
         return normalizedSignatureData;
     }
 
-    const normalizedMimeType =
-        typeof signature.mimeType === 'string' && signature.mimeType.trim() !== '' ? signature.mimeType.trim() : 'image/png';
+    const normalizedMimeType = typeof signature.mimeType === 'string' && signature.mimeType.trim() !== '' ? signature.mimeType.trim() : 'image/png';
 
     return `data:${normalizedMimeType};base64,${normalizedSignatureData}`;
 };
@@ -243,11 +240,15 @@ const PanelistEvaluationSheet = () => {
 
         return {
             system: systemScore !== null && systemScore !== undefined && `${systemScore}` !== '' ? `${systemScore}` : '',
-            documentation: documentationScore !== null && documentationScore !== undefined && `${documentationScore}` !== '' ? `${documentationScore}` : '',
+            documentation:
+                documentationScore !== null && documentationScore !== undefined && `${documentationScore}` !== '' ? `${documentationScore}` : '',
             total: totalScore !== null && totalScore !== undefined && `${totalScore}` !== '' ? `${totalScore}` : '',
         };
     }, [savedEvaluationData?.groupScores]);
-    const initialPassingGradeDate = React.useMemo(() => (savedEvaluationData?.passingGradeDate ?? '').trim(), [savedEvaluationData?.passingGradeDate]);
+    const initialPassingGradeDate = React.useMemo(
+        () => (savedEvaluationData?.passingGradeDate ?? '').trim(),
+        [savedEvaluationData?.passingGradeDate],
+    );
     const [defenseDate, setDefenseDate] = React.useState<string>(initialDefenseDate);
     const [presenters, setPresenters] = React.useState<string[]>(initialPresenters);
     const [individualScores, setIndividualScores] = React.useState<Record<string, number | null>>(initialIndividualScores);
@@ -400,7 +401,7 @@ const PanelistEvaluationSheet = () => {
                                 <p>@officialdnsc</p>
                             </div>
                         </div>
-                        <p className="mt-4 text-center text-3xl font-semibold italic text-slate-900">Institute of Computing</p>
+                        <p className="mt-4 text-center text-3xl font-semibold text-slate-900 italic">Institute of Computing</p>
                         <p className="mt-1 text-center text-sm font-bold tracking-wide text-slate-900">{defenseHeaderTitle}</p>
                     </div>
 
@@ -462,7 +463,10 @@ const PanelistEvaluationSheet = () => {
                                 </tr>
                                 <tr className="bg-slate-50">
                                     {scoreScale.map((score) => (
-                                        <th key={`score-scale-${score}`} className="w-10 border-l border-slate-300 px-2 py-1.5 text-center font-semibold">
+                                        <th
+                                            key={`score-scale-${score}`}
+                                            className="w-10 border-l border-slate-300 px-2 py-1.5 text-center font-semibold"
+                                        >
                                             {score}
                                         </th>
                                     ))}
@@ -527,7 +531,9 @@ const PanelistEvaluationSheet = () => {
                                     </th>
                                 </tr>
                                 <tr className="bg-slate-50">
-                                    <th className="w-[80%] border-r border-slate-300 px-3 py-2 text-center text-xs font-semibold">Criteria and Weight</th>
+                                    <th className="w-[80%] border-r border-slate-300 px-3 py-2 text-center text-xs font-semibold">
+                                        Criteria and Weight
+                                    </th>
                                     <th className="px-3 py-2 text-center text-xs font-semibold">Score</th>
                                 </tr>
                             </thead>
@@ -589,9 +595,7 @@ const PanelistEvaluationSheet = () => {
 
                     <div className="mt-6">
                         <p className="text-xs font-semibold text-slate-900">Verdict:</p>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            Auto-filled from Verdict modal: {props.conceptVerdict ?? 'Not set'}
-                        </p>
+                        <p className="mt-1 text-[11px] text-slate-500">Auto-filled from Verdict modal: {props.conceptVerdict ?? 'Not set'}</p>
                         <div className="mt-2 grid gap-2 sm:grid-cols-2">
                             {verdictOptions.map((option) => (
                                 <label
@@ -665,14 +669,14 @@ const PanelistEvaluationSheet = () => {
                             <p className="mt-1 text-[11px] text-amber-700">No registered e-signature found. Add one in Panelist Settings.</p>
                         ) : !isSigned ? (
                             <p className="mt-1 text-[11px] text-slate-500">
-                                {pendingSignatureAction === 'clear' ? 'Removing signature...' : 'Click Sign to attach your e-signature to this sheet.'}
+                                {pendingSignatureAction === 'clear'
+                                    ? 'Removing signature...'
+                                    : 'Click Sign to attach your e-signature to this sheet.'}
                             </p>
                         ) : (
                             <p className="mt-1 text-[11px] text-emerald-700">Evaluation sheet signed.</p>
                         )}
                     </div>
-
-                   
                 </div>
             </motion.section>
         </PanelLayout>

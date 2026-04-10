@@ -182,7 +182,8 @@ const AssignAdviserModal = ({ open, groupId, groupName, currentAdviser, advisers
                                                 <div key={program.program} className="flex items-center justify-between">
                                                     <span>{program.program}</span>
                                                     <span className="font-semibold text-slate-700">
-                                                        {program.assigned_count} / {program.max_groups} ({Math.max(0, program.max_groups - program.assigned_count)} left)
+                                                        {program.assigned_count} / {program.max_groups} (
+                                                        {Math.max(0, program.max_groups - program.assigned_count)} left)
                                                     </span>
                                                 </div>
                                             ))}
@@ -192,9 +193,7 @@ const AssignAdviserModal = ({ open, groupId, groupName, currentAdviser, advisers
                                     )}
 
                                     <div className="mt-3 flex items-center justify-between text-xs text-slate-600">
-                                        <span>
-                                            Remaining slots: {hasPrograms ? remainingSlots : '—'}
-                                        </span>
+                                        <span>Remaining slots: {hasPrograms ? remainingSlots : '—'}</span>
                                         <button
                                             type="button"
                                             onClick={() => assignAdviser(adviser.id)}

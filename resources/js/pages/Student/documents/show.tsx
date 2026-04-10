@@ -103,7 +103,9 @@ const StudentDocumentShow = () => {
                                     <FileText className="h-3.5 w-3.5" />
                                     {document.source}
                                 </span>
-                                <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusPillClass(document.instructorStatus)}`}>
+                                <span
+                                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusPillClass(document.instructorStatus)}`}
+                                >
                                     Instructor: {document.instructorStatus}
                                 </span>
                             </div>

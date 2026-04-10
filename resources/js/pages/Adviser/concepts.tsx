@@ -190,9 +190,7 @@ const AdviserConcepts = () => {
             return false;
         }
 
-        return selectedGroup.concepts.every(
-            (concept) => concept.adviser_status === 'Approved' && concept.instructor_status === 'Approved',
-        );
+        return selectedGroup.concepts.every((concept) => concept.adviser_status === 'Approved' && concept.instructor_status === 'Approved');
     }, [selectedGroup]);
     const hasRecommendationRequirement = selectedGroup?.has_recommendation_requirement === true;
     const canGenerateRecommendation = hasRecommendationRequirement && areAllConceptsApproved;
@@ -265,10 +263,7 @@ const AdviserConcepts = () => {
         return 'border-indigo-200 bg-indigo-100 text-indigo-700';
     };
 
-    const updateAdviserStatus = (
-        conceptId: number,
-        adviserStatus: Extract<SubmissionStatus, 'Approved' | 'Revision Required'>,
-    ): Promise<boolean> => {
+    const updateAdviserStatus = (conceptId: number, adviserStatus: Extract<SubmissionStatus, 'Approved' | 'Revision Required'>): Promise<boolean> => {
         if (processingConceptId !== null) {
             return Promise.resolve(false);
         }
@@ -395,12 +390,10 @@ const AdviserConcepts = () => {
                 body: JSON.stringify({}),
             });
 
-            const payload = (await response.json().catch(() => null)) as
-                | {
-                      message?: string;
-                      recommendation?: RecommendationDocument;
-                  }
-                | null;
+            const payload = (await response.json().catch(() => null)) as {
+                message?: string;
+                recommendation?: RecommendationDocument;
+            } | null;
 
             if (!response.ok) {
                 setNotification({
@@ -703,7 +696,9 @@ const AdviserConcepts = () => {
                                         type="button"
                                         onClick={() => setIsRecommendationModalOpen(true)}
                                         disabled={!canGenerateRecommendation}
-                                        title={canGenerateRecommendation ? 'Open recommendation generator' : (recommendationDisabledReason ?? undefined)}
+                                        title={
+                                            canGenerateRecommendation ? 'Open recommendation generator' : (recommendationDisabledReason ?? undefined)
+                                        }
                                         className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
                                     >
                                         <FileText className="h-3.5 w-3.5" />

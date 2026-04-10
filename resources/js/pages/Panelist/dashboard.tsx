@@ -288,11 +288,10 @@ const PanelistDashboard = () => {
                     <div className="relative grid gap-8 xl:grid-cols-[1.25fr_1fr]">
                         <div>
                             <p className="text-[11px] font-semibold tracking-[0.24em] text-emerald-200 uppercase">Panelist Workspace</p>
-                            <h3 className="mt-3 text-2xl font-semibold text-white md:text-[2rem] md:leading-[1.1]">
-                                Evaluation Command Center
-                            </h3>
+                            <h3 className="mt-3 text-2xl font-semibold text-white md:text-[2rem] md:leading-[1.1]">Evaluation Command Center</h3>
                             <p className="mt-3 max-w-xl text-sm leading-relaxed text-emerald-100 md:text-base">
-                                Hello {welcomeName}. Track your assigned defenses, monitor review outcomes, and move directly to your evaluation actions.
+                                Hello {welcomeName}. Track your assigned defenses, monitor review outcomes, and move directly to your evaluation
+                                actions.
                             </p>
 
                             <div className="mt-6 flex flex-wrap gap-3">

@@ -533,10 +533,14 @@ const BrowseSchedules = () => {
                                                     const style =
                                                         normalizedStatus === 'Re-Defense'
                                                             ? scheduleStatusStyles['Re-Defense']
-                                                            : (scheduleStatusStyles[schedule.status ?? 'Scheduled'] ?? scheduleStatusStyles.Scheduled);
+                                                            : (scheduleStatusStyles[schedule.status ?? 'Scheduled'] ??
+                                                              scheduleStatusStyles.Scheduled);
 
                                                     return (
-                                                        <div key={schedule.id} className={`rounded-md border-l-4 px-2 py-1 text-[10px] ${style.event}`}>
+                                                        <div
+                                                            key={schedule.id}
+                                                            className={`rounded-md border-l-4 px-2 py-1 text-[10px] ${style.event}`}
+                                                        >
                                                             <p className="font-semibold">{formatTime(schedule.start_time)}</p>
                                                             <p className="truncate">{schedule.group_name ?? 'Unnamed group'}</p>
                                                         </div>
@@ -557,7 +561,9 @@ const BrowseSchedules = () => {
                                 <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                         <div>
-                                            <h3 className="text-base font-semibold text-slate-800">Schedules on {formatDateLabel(selectedDateKey)}</h3>
+                                            <h3 className="text-base font-semibold text-slate-800">
+                                                Schedules on {formatDateLabel(selectedDateKey)}
+                                            </h3>
                                             <p className="text-xs text-slate-500">Read-only schedule details for all groups.</p>
                                         </div>
                                     </div>
@@ -584,8 +590,10 @@ const BrowseSchedules = () => {
                                                         const badgeStyle =
                                                             normalizedStatus === 'Re-Defense'
                                                                 ? scheduleStatusStyles['Re-Defense'].badge
-                                                                : (scheduleStatusStyles[schedule.status ?? 'Scheduled'] ?? scheduleStatusStyles.Scheduled)
-                                                                      .badge;
+                                                                : (
+                                                                      scheduleStatusStyles[schedule.status ?? 'Scheduled'] ??
+                                                                      scheduleStatusStyles.Scheduled
+                                                                  ).badge;
 
                                                         return (
                                                             <tr
@@ -595,12 +603,18 @@ const BrowseSchedules = () => {
                                                                 }`}
                                                             >
                                                                 <td className="px-4 py-3">
-                                                                    <div className="font-semibold text-slate-800">{schedule.group_name ?? 'Unnamed group'}</div>
-                                                                    <div className="text-[10px] text-slate-500">{schedule.program_set_name ?? 'Program set'}</div>
+                                                                    <div className="font-semibold text-slate-800">
+                                                                        {schedule.group_name ?? 'Unnamed group'}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-slate-500">
+                                                                        {schedule.program_set_name ?? 'Program set'}
+                                                                    </div>
                                                                 </td>
                                                                 <td className="px-4 py-3 text-slate-600">{schedule.stage ?? 'Stage'}</td>
                                                                 <td className="px-4 py-3 text-slate-600">
-                                                                    <div className="font-semibold text-slate-800">{schedule.room?.name ?? 'Room TBA'}</div>
+                                                                    <div className="font-semibold text-slate-800">
+                                                                        {schedule.room?.name ?? 'Room TBA'}
+                                                                    </div>
                                                                     <div className="text-[10px] text-slate-500">
                                                                         {formatTimeRange(schedule.start_time, schedule.end_time)}
                                                                     </div>
@@ -652,7 +666,10 @@ const BrowseSchedules = () => {
                                                         : (scheduleStatusStyles[schedule.status ?? 'Scheduled'] ?? scheduleStatusStyles.Scheduled);
 
                                                 return (
-                                                    <div key={schedule.id} className="rounded-lg border border-slate-200 p-3 transition hover:bg-slate-50">
+                                                    <div
+                                                        key={schedule.id}
+                                                        className="rounded-lg border border-slate-200 p-3 transition hover:bg-slate-50"
+                                                    >
                                                         <div className="flex items-start justify-between gap-2">
                                                             <div>
                                                                 <p className="text-sm font-semibold text-slate-800">

@@ -16,11 +16,7 @@ type RecommendationLetterModalProps = {
     recommendationLetter: RecommendationLetter;
 };
 
-const RecommendationLetterModal = ({
-    open,
-    onClose,
-    recommendationLetter,
-}: RecommendationLetterModalProps) => {
+const RecommendationLetterModal = ({ open, onClose, recommendationLetter }: RecommendationLetterModalProps) => {
     const [isAppearing, setIsAppearing] = useState(false);
 
     useEffect(() => {

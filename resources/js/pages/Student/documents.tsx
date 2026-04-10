@@ -311,7 +311,9 @@ const StudentDocuments = () => {
                                                                 className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                                                             >
                                                                 <Trash2 className="h-3.5 w-3.5" />
-                                                                {deleteForm.processing && submissionPendingRemoval?.id === file.id ? 'Removing...' : 'Remove File'}
+                                                                {deleteForm.processing && submissionPendingRemoval?.id === file.id
+                                                                    ? 'Removing...'
+                                                                    : 'Remove File'}
                                                             </button>
                                                         ) : null}
                                                     </div>
@@ -364,7 +366,9 @@ const StudentDocuments = () => {
                                             <tr key={file.id} className="hover:bg-slate-50/80">
                                                 <td className="px-3 py-2.5 font-semibold text-slate-900">
                                                     <p>{file.title}</p>
-                                                    <p className="text-[11px] font-medium text-slate-500">{file.fileSizeLabel ?? 'Size unavailable'}</p>
+                                                    <p className="text-[11px] font-medium text-slate-500">
+                                                        {file.fileSizeLabel ?? 'Size unavailable'}
+                                                    </p>
                                                 </td>
                                                 <td className="px-3 py-2.5 text-slate-600">
                                                     <p>{file.requirementType}</p>

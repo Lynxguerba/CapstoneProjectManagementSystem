@@ -226,9 +226,7 @@ export const PdfHighlighterViewer = ({
     }, []);
 
     const isCriticalViewerError = React.useCallback((message: string): boolean => {
-        return message.includes('Transport destroyed')
-            || message.includes('Unable to get page')
-            || message.includes('sendWithPromise');
+        return message.includes('Transport destroyed') || message.includes('Unable to get page') || message.includes('sendWithPromise');
     }, []);
 
     const enableFallbackViewer = React.useCallback((message: string): void => {
@@ -326,11 +324,13 @@ export const PdfHighlighterViewer = ({
         const originalConsoleError = console.error;
 
         const shouldSuppressPdfNoise = (message: string): boolean => {
-            return message.includes('offsetParent is not set -- cannot scroll')
-                || message.includes('getOperatorList - ignoring XObject')
-                || message.includes('getOperatorList - ignoring errors during "GetOperatorList')
-                || message.includes('GlobalImageCache.setData - expected "shouldCache"')
-                || message.includes('Worker task was terminated');
+            return (
+                message.includes('offsetParent is not set -- cannot scroll') ||
+                message.includes('getOperatorList - ignoring XObject') ||
+                message.includes('getOperatorList - ignoring errors during "GetOperatorList') ||
+                message.includes('GlobalImageCache.setData - expected "shouldCache"') ||
+                message.includes('Worker task was terminated')
+            );
         };
 
         const patchedConsoleWarn: typeof console.warn = (...args: unknown[]): void => {
@@ -379,9 +379,8 @@ export const PdfHighlighterViewer = ({
                 return;
             }
 
-            const isPdfHighlighterError = message === '!'
-                || message.toLowerCase().includes('pdfhighlighter')
-                || String(event.filename ?? '').includes('react-pdf-highlighter');
+            const isPdfHighlighterError =
+                message === '!' || message.toLowerCase().includes('pdfhighlighter') || String(event.filename ?? '').includes('react-pdf-highlighter');
 
             if (isPdfHighlighterError) {
                 enableFallbackViewer(message || 'PDF highlighter failed to initialize.');
@@ -426,12 +425,11 @@ export const PdfHighlighterViewer = ({
 
     if (isFallbackViewer) {
         return (
-            <div ref={viewerContainerRef} className={`relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white ${containerClassName}`}>
-                <iframe
-                    src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
-                    title="PDF Preview"
-                    className="h-full w-full"
-                />
+            <div
+                ref={viewerContainerRef}
+                className={`relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white ${containerClassName}`}
+            >
+                <iframe src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`} title="PDF Preview" className="h-full w-full" />
                 <div className="pointer-events-none absolute top-2 right-2 left-2 rounded-lg border border-amber-200 bg-amber-50/95 px-3 py-2 text-[11px] text-amber-800 shadow-sm">
                     PDF highlighter is temporarily unavailable. Preview mode is active.
                     {viewerErrorMessage ? ` (${viewerErrorMessage})` : ''}
@@ -460,76 +458,76 @@ export const PdfHighlighterViewer = ({
 
                     return (
                         <PdfHighlighter<IHighlight>
-                        pdfDocument={pdfDocument}
-                        pdfScaleValue="page-width"
-                        enableAreaSelection={(event) => !isReadOnly && event.altKey}
-                        onScrollChange={() => {}}
-                        scrollRef={(scrollTo) => {
-                            scrollToHighlightRef.current = scrollTo;
-                        }}
-                        highlights={safeHighlights}
-                        onSelectionFinished={(position, content, hideTipAndSelection, transformSelection) => {
-                            if (isReadOnly) {
-                                hideTipAndSelection();
-                                resetPendingState();
+                            pdfDocument={pdfDocument}
+                            pdfScaleValue="page-width"
+                            enableAreaSelection={(event) => !isReadOnly && event.altKey}
+                            onScrollChange={() => {}}
+                            scrollRef={(scrollTo) => {
+                                scrollToHighlightRef.current = scrollTo;
+                            }}
+                            highlights={safeHighlights}
+                            onSelectionFinished={(position, content, hideTipAndSelection, transformSelection) => {
+                                if (isReadOnly) {
+                                    hideTipAndSelection();
+                                    resetPendingState();
 
-                                return <></>;
-                            }
+                                    return <></>;
+                                }
 
-                            transformSelection();
+                                transformSelection();
 
-                            pendingHighlightRef.current = {
-                                content,
-                                position,
-                                comment: { text: '', emoji: '💬' },
-                            };
-                            hideTipCallbackRef.current = hideTipAndSelection;
+                                pendingHighlightRef.current = {
+                                    content,
+                                    position,
+                                    comment: { text: '', emoji: '💬' },
+                                };
+                                hideTipCallbackRef.current = hideTipAndSelection;
 
-                            return (
-                                <SelectionCommentPopup
-                                    previewText={content.text}
-                                    controls={selectionControls}
-                                    isSendDisabled={isSelectionSendDisabled}
-                                    sendDisabledReason={selectionSendDisabledReason}
-                                    onCancel={() => {
-                                        hideTipAndSelection();
-                                        resetPendingState();
-                                    }}
-                                    onSend={handleSend}
-                                />
-                            );
-                        }}
-                        highlightTransform={(highlight, index, setTip, hideTip, _viewportToScaled, _screenshot, isScrolledTo) => {
-                            const popupContent = <HighlightPopup comment={highlight.comment} />;
-                            const hasComment = Boolean(highlight.comment?.text?.trim());
-                            const highlightKey = highlight.id && highlight.id !== '' ? highlight.id : `hl-${index}`;
-                            const highlightElement = highlight.content?.image ? (
-                                <AreaHighlight key={highlightKey} highlight={highlight} onChange={() => {}} isScrolledTo={isScrolledTo} />
-                            ) : (
-                                <Highlight
-                                    key={highlightKey}
-                                    isScrolledTo={isScrolledTo}
-                                    position={highlight.position}
-                                    comment={highlight.comment}
-                                />
-                            );
+                                return (
+                                    <SelectionCommentPopup
+                                        previewText={content.text}
+                                        controls={selectionControls}
+                                        isSendDisabled={isSelectionSendDisabled}
+                                        sendDisabledReason={selectionSendDisabledReason}
+                                        onCancel={() => {
+                                            hideTipAndSelection();
+                                            resetPendingState();
+                                        }}
+                                        onSend={handleSend}
+                                    />
+                                );
+                            }}
+                            highlightTransform={(highlight, index, setTip, hideTip, _viewportToScaled, _screenshot, isScrolledTo) => {
+                                const popupContent = <HighlightPopup comment={highlight.comment} />;
+                                const hasComment = Boolean(highlight.comment?.text?.trim());
+                                const highlightKey = highlight.id && highlight.id !== '' ? highlight.id : `hl-${index}`;
+                                const highlightElement = highlight.content?.image ? (
+                                    <AreaHighlight key={highlightKey} highlight={highlight} onChange={() => {}} isScrolledTo={isScrolledTo} />
+                                ) : (
+                                    <Highlight
+                                        key={highlightKey}
+                                        isScrolledTo={isScrolledTo}
+                                        position={highlight.position}
+                                        comment={highlight.comment}
+                                    />
+                                );
 
-                            if (!hasComment || !popupContent) {
-                                return highlightElement;
-                            }
+                                if (!hasComment || !popupContent) {
+                                    return highlightElement;
+                                }
 
-                            return (
-                                <Popup
-                                    key={highlightKey}
-                                    onMouseOver={(content) => setTip(highlight, () => content)}
-                                    onMouseOut={hideTip}
-                                    popupContent={popupContent}
-                                >
-                                    {highlightElement}
-                                </Popup>
-                            );
-                        }}
-                    />
+                                return (
+                                    <Popup
+                                        key={highlightKey}
+                                        onMouseOver={(content) => setTip(highlight, () => content)}
+                                        onMouseOut={hideTip}
+                                        popupContent={popupContent}
+                                    >
+                                        {highlightElement}
+                                    </Popup>
+                                );
+                            }}
+                        />
                     );
                 }}
             </PdfLoader>

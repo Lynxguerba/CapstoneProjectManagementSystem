@@ -167,11 +167,7 @@ const AdviserUtilitiesPage = () => {
                 setSuccessMessage('Program utilities updated.');
             },
             onError: (errors) => {
-                const firstError =
-                    errors.programs ||
-                    errors['programs.0.program'] ||
-                    errors['programs.0.max_groups'] ||
-                    Object.values(errors)[0];
+                const firstError = errors.programs || errors['programs.0.program'] || errors['programs.0.max_groups'] || Object.values(errors)[0];
 
                 setErrorMessage(firstError ?? 'Unable to update program utilities right now.');
             },
@@ -224,17 +220,15 @@ const AdviserUtilitiesPage = () => {
                                             notification.tone === 'error' ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
                                         }`}
                                     >
-                                        {notification.tone === 'error' ? (
-                                            <AlertCircle className="h-4 w-4" />
-                                        ) : (
-                                            <CheckCircle2 className="h-4 w-4" />
-                                        )}
+                                        {notification.tone === 'error' ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                                     </span>
                                     <div className="min-w-0 flex-1">
                                         <p className={`text-xs font-bold ${notification.tone === 'error' ? 'text-rose-700' : 'text-emerald-700'}`}>
                                             {notification.title}
                                         </p>
-                                        <p className={`mt-1 text-xs font-medium ${notification.tone === 'error' ? 'text-rose-700/90' : 'text-emerald-700/90'}`}>
+                                        <p
+                                            className={`mt-1 text-xs font-medium ${notification.tone === 'error' ? 'text-rose-700/90' : 'text-emerald-700/90'}`}
+                                        >
                                             {notification.message}
                                         </p>
                                     </div>

@@ -93,7 +93,6 @@ const buildGroupLabel = (group: GroupSummary | null): string => {
 const AcknowledgementReceiptPage = () => {
     const { props } = usePage<AcknowledgementReceiptProps>();
     const group = props.group ?? null;
-    const groupQuery = group ? `?group=${group.id}` : '';
     const defense = props.defense ?? null;
     const project = props.project ?? null;
     const facultyRows = React.useMemo(() => props.facultyRows ?? [], [props.facultyRows]);
@@ -109,7 +108,7 @@ const AcknowledgementReceiptPage = () => {
 
     const selectedDefenseTypeKey = (defense?.typeKey ?? '').trim();
     const selectedProgram = (defense?.program ?? '').trim().toUpperCase();
-    const requirementsDocumentsHref = `/instructor/requirements/documents${groupQuery}`;
+    const phaseOnePaymentsHref = '/instructor/phase1?tab=payments';
 
     return (
         <InstructorLayout title="Acknowledgement Receipt" subtitle="Capstone project defense payment verification (view-only)">
@@ -119,12 +118,12 @@ const AcknowledgementReceiptPage = () => {
                         Dashboard
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
-                    <Link href="/instructor/phase1?tab=documents" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                    <Link href="/instructor/phase1?tab=payments" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
                         Phase 1
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
-                    <Link href={requirementsDocumentsHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
-                        Submitted Documents
+                    <Link href={phaseOnePaymentsHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Payment Verification
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
                     <span className="font-semibold text-slate-800" aria-current="page">
@@ -139,10 +138,10 @@ const AcknowledgementReceiptPage = () => {
                             <p className="text-xs text-slate-500">{groupLabel}</p>
                         </div>
                         <Link
-                            href={requirementsDocumentsHref}
+                            href={phaseOnePaymentsHref}
                             className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                         >
-                            Back to Requirement Documents
+                            Back to Payment Verification
                         </Link>
                     </div>
                 </div>
@@ -160,7 +159,7 @@ const AcknowledgementReceiptPage = () => {
                                 <p>@officialdnsc</p>
                             </div>
                         </div>
-                        <p className="mt-4 text-center text-3xl font-semibold italic text-slate-900">Institute of Computing</p>
+                        <p className="mt-4 text-center text-3xl font-semibold text-slate-900 italic">Institute of Computing</p>
                         <p className="mt-2 text-center text-sm font-bold tracking-wide text-slate-900">ACKNOWLEDGEMENT RECEIPT</p>
                         <p className="text-center text-xs font-semibold text-slate-700">Capstone Project Defense Payment</p>
                     </div>
@@ -208,7 +207,7 @@ const AcknowledgementReceiptPage = () => {
                     </div>
 
                     <div className="mt-5 overflow-x-auto rounded border border-slate-300">
-                        <table className="min-w-[840px] w-full border-collapse text-center text-xs text-slate-800">
+                        <table className="w-full min-w-[840px] border-collapse text-center text-xs text-slate-800">
                             <thead className="bg-slate-50">
                                 <tr>
                                     <th className="border border-slate-300 px-2 py-2 font-semibold">Name of Faculty</th>

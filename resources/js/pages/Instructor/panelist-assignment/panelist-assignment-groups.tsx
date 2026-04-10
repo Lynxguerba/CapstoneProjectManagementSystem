@@ -276,7 +276,7 @@ const PanelistAssignmentGroups = ({
             ...program,
             assigned_count:
                 selectedAcademicYear === 'All'
-                    ? program.assigned_count ?? 0
+                    ? (program.assigned_count ?? 0)
                     : typeof program.assigned_by_year?.[selectedAcademicYear] === 'number'
                       ? (program.assigned_by_year?.[selectedAcademicYear] ?? 0)
                       : 0,
@@ -549,7 +549,9 @@ const PanelistAssignmentGroups = ({
                                 <span>Total panelist load</span>
                                 <span className="font-semibold text-slate-800">
                                     {selectedYearLoad}
-                                    {panelistPrograms.length > 0 ? ` / ${panelistPrograms.reduce((total, program) => total + program.max_groups, 0)}` : ''}
+                                    {panelistPrograms.length > 0
+                                        ? ` / ${panelistPrograms.reduce((total, program) => total + program.max_groups, 0)}`
+                                        : ''}
                                 </span>
                             </div>
                         </div>
@@ -733,7 +735,8 @@ const PanelistAssignmentGroups = ({
                                                 {panelistAssignments.length > 0 ? (
                                                     panelistAssignments.map((assignment) => {
                                                         const isCurrentPanelist = assignment.id === panelist.id;
-                                                        const canReplace = !isCurrentPanelist && !isAssignedToPanelist && canTakeNewGroup && panelistIsAvailable;
+                                                        const canReplace =
+                                                            !isCurrentPanelist && !isAssignedToPanelist && canTakeNewGroup && panelistIsAvailable;
                                                         const assignmentRole = assignment.role ?? 'member';
                                                         const isRoleUnchanged = selectedRole === assignmentRole;
 
@@ -927,9 +930,7 @@ const PanelistAssignmentGroups = ({
                                                         <p className="font-semibold text-slate-700">
                                                             {loadForYear} / {maxForProgram}
                                                         </p>
-                                                        {!panelistIsAvailable ? (
-                                                            <p className="text-[10px] text-rose-600">Closed</p>
-                                                        ) : null}
+                                                        {!panelistIsAvailable ? <p className="text-[10px] text-rose-600">Closed</p> : null}
                                                         {isAtProgramLimit && !isAssignedToPanelist ? (
                                                             <p className="text-[10px] text-rose-600">Limit reached</p>
                                                         ) : null}
@@ -941,7 +942,12 @@ const PanelistAssignmentGroups = ({
                                                             const isCurrentPanelist = slot.id === panelist.id;
                                                             const panelistId = slot.id;
                                                             const hasPanelist = panelistId !== undefined;
-                                                            const canReplace = hasPanelist && !isCurrentPanelist && !isAssignedToPanelist && canTakeNewGroup && panelistIsAvailable;
+                                                            const canReplace =
+                                                                hasPanelist &&
+                                                                !isCurrentPanelist &&
+                                                                !isAssignedToPanelist &&
+                                                                canTakeNewGroup &&
+                                                                panelistIsAvailable;
                                                             const slotRole = slot.role ?? 'member';
                                                             const isRoleUnchanged = selectedRole === slotRole;
 

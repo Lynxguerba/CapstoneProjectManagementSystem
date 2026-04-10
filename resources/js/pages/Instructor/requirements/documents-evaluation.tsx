@@ -116,12 +116,7 @@ const groupCriteria: GroupCriterion[] = [
     },
 ];
 
-const verdictOptions = [
-    'Passed (No revisions needed)',
-    'Passed (With revisions needed)',
-    'Conditional Passed',
-    'Failed',
-] as const;
+const verdictOptions = ['Passed (No revisions needed)', 'Passed (With revisions needed)', 'Conditional Passed', 'Failed'] as const;
 
 const getLocalDateInputValue = (): string => {
     const now = new Date();
@@ -185,8 +180,7 @@ const resolveSignatureDataUrl = (signature: SignaturePayload | null | undefined)
         return normalizedSignatureData;
     }
 
-    const normalizedMimeType =
-        typeof signature.mimeType === 'string' && signature.mimeType.trim() !== '' ? signature.mimeType.trim() : 'image/png';
+    const normalizedMimeType = typeof signature.mimeType === 'string' && signature.mimeType.trim() !== '' ? signature.mimeType.trim() : 'image/png';
 
     return `data:${normalizedMimeType};base64,${normalizedSignatureData}`;
 };
@@ -195,9 +189,8 @@ const InstructorEvaluationSheetsPage = () => {
     const { props } = usePage<PageProps>();
     const group = props.group ?? null;
     const panelists = React.useMemo(() => props.panelists ?? [], [props.panelists]);
-    const initialPanelistId = props.selectedPanelistId ?? (panelists[0]?.id ?? null);
+    const initialPanelistId = props.selectedPanelistId ?? panelists[0]?.id ?? null;
     const [selectedPanelistId, setSelectedPanelistId] = React.useState<number | null>(initialPanelistId);
-    const groupQuery = group ? `?group=${group.id}` : '';
     const groupLabel = buildGroupLabel(group);
     const presenters = React.useMemo(() => buildPresenterRows(props.presenters ?? []), [props.presenters]);
     const lockedVerdictOption = React.useMemo(() => mapConceptVerdictToSheetVerdict(props.conceptVerdict), [props.conceptVerdict]);
@@ -242,14 +235,14 @@ const InstructorEvaluationSheetsPage = () => {
 
         return buildPresenterRows(hasSavedPresenters ? savedPresenters : presenters);
     }, [presenters, selectedEvaluationData?.presenters]);
-    const previewIndividualScores = React.useMemo(
-        () => selectedEvaluationData?.individualScores ?? {},
-        [selectedEvaluationData?.individualScores],
-    );
+    const previewIndividualScores = React.useMemo(() => selectedEvaluationData?.individualScores ?? {}, [selectedEvaluationData?.individualScores]);
     const previewGroupScores = React.useMemo(() => selectedEvaluationData?.groupScores ?? {}, [selectedEvaluationData?.groupScores]);
-    const previewPassingGradeDate = React.useMemo(() => (selectedEvaluationData?.passingGradeDate ?? '').trim(), [selectedEvaluationData?.passingGradeDate]);
+    const previewPassingGradeDate = React.useMemo(
+        () => (selectedEvaluationData?.passingGradeDate ?? '').trim(),
+        [selectedEvaluationData?.passingGradeDate],
+    );
     const panelistSignatureDataUrl = React.useMemo(() => resolveSignatureDataUrl(selectedPanelist?.eSignature), [selectedPanelist?.eSignature]);
-    const documentsHref = `/instructor/requirements/documents${groupQuery}`;
+    const phaseOneDefenseHref = '/instructor/phase1?tab=defense';
 
     return (
         <InstructorLayout title="Panelist Evaluation Sheets" subtitle="View-only evaluation forms of assigned panelists">
@@ -260,12 +253,12 @@ const InstructorEvaluationSheetsPage = () => {
                             Dashboard
                         </Link>
                         <ChevronRight className="h-3 w-3 text-slate-400" />
-                        <Link href="/instructor/phase1?tab=documents" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        <Link href="/instructor/phase1?tab=defense" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
                             Phase 1
                         </Link>
                         <ChevronRight className="h-3 w-3 text-slate-400" />
-                        <Link href={documentsHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
-                            Submitted Documents
+                        <Link href={phaseOneDefenseHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                            Defense Status
                         </Link>
                         <ChevronRight className="h-3 w-3 text-slate-400" />
                         <span className="font-semibold text-slate-800" aria-current="page">
@@ -283,16 +276,18 @@ const InstructorEvaluationSheetsPage = () => {
                             <p className="mt-1 text-xs text-slate-500">{groupLabel}</p>
                         </div>
                         <Link
-                            href={documentsHref}
+                            href={phaseOneDefenseHref}
                             className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                         >
-                            Back to Defense Documents
+                            Back to Defense Status
                         </Link>
                     </div>
                 </div>
 
                 {!group ? (
-                    <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">No group selected for evaluation sheets.</div>
+                    <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                        No group selected for evaluation sheets.
+                    </div>
                 ) : (
                     <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:overflow-visible">
                         <div className="border-b border-slate-200 md:sticky md:top-20 md:self-start md:border-r md:border-b-0">
@@ -341,7 +336,7 @@ const InstructorEvaluationSheetsPage = () => {
                                                                         ? 'border-emerald-200 bg-emerald-100 text-emerald-700'
                                                                         : hasSignature
                                                                           ? 'border-amber-200 bg-amber-100 text-amber-700'
-                                                                        : 'border-amber-200 bg-amber-100 text-amber-700'
+                                                                          : 'border-amber-200 bg-amber-100 text-amber-700'
                                                                 }`}
                                                             >
                                                                 {isSigned ? 'Signed' : hasSignature ? 'Awaiting Sign' : 'No e-signature'}
@@ -360,9 +355,13 @@ const InstructorEvaluationSheetsPage = () => {
                             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
                                 <div className="text-xs font-semibold text-slate-600 uppercase">Evaluation Sheet Preview</div>
                                 <div className="mt-1 text-sm font-semibold text-slate-900">
-                                    {selectedPanelist ? `${selectedPanelist.name} (${selectedPanelist.role ?? 'Panel Member'})` : 'Select a panelist from the list'}
+                                    {selectedPanelist
+                                        ? `${selectedPanelist.name} (${selectedPanelist.role ?? 'Panel Member'})`
+                                        : 'Select a panelist from the list'}
                                 </div>
-                                <p className="mt-1 text-[11px] text-slate-500">Instructor view only. This page does not allow modifying panelist evaluation forms.</p>
+                                <p className="mt-1 text-[11px] text-slate-500">
+                                    Instructor view only. This page does not allow modifying panelist evaluation forms.
+                                </p>
                                 {selectedPanelistSigned ? (
                                     <p className="mt-1 text-[11px] text-emerald-700">Signed at: {selectedPanelist?.signedAt ?? '—'}</p>
                                 ) : null}
@@ -388,7 +387,9 @@ const InstructorEvaluationSheetsPage = () => {
                                         <div className="border-b border-slate-300 pb-4">
                                             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                                 <div>
-                                                    <p className="text-lg font-semibold tracking-wide text-slate-900">DAVAO DEL NORTE STATE COLLEGE</p>
+                                                    <p className="text-lg font-semibold tracking-wide text-slate-900">
+                                                        DAVAO DEL NORTE STATE COLLEGE
+                                                    </p>
                                                     <p className="text-xs text-slate-600">New Visayas, Panabo City, Davao del Norte, 8105</p>
                                                 </div>
                                                 <div className="text-left text-[11px] text-slate-600 sm:text-right">
@@ -397,7 +398,7 @@ const InstructorEvaluationSheetsPage = () => {
                                                     <p>@officialdnsc</p>
                                                 </div>
                                             </div>
-                                            <p className="mt-4 text-center text-3xl font-semibold italic text-slate-900">Institute of Computing</p>
+                                            <p className="mt-4 text-center text-3xl font-semibold text-slate-900 italic">Institute of Computing</p>
                                             <p className="mt-1 text-center text-sm font-bold tracking-wide text-slate-900">{defenseHeaderTitle}</p>
                                         </div>
 
@@ -444,7 +445,10 @@ const InstructorEvaluationSheetsPage = () => {
                                                         </th>
                                                     </tr>
                                                     <tr className="bg-slate-50">
-                                                        <th rowSpan={2} className="w-[70%] border-r border-slate-300 px-3 py-2 text-center text-xs font-semibold">
+                                                        <th
+                                                            rowSpan={2}
+                                                            className="w-[70%] border-r border-slate-300 px-3 py-2 text-center text-xs font-semibold"
+                                                        >
                                                             Criteria and Weight
                                                         </th>
                                                         <th colSpan={5} className="px-3 py-2 text-center text-xs font-semibold">
@@ -453,7 +457,10 @@ const InstructorEvaluationSheetsPage = () => {
                                                     </tr>
                                                     <tr className="bg-slate-50">
                                                         {scoreScale.map((score) => (
-                                                            <th key={`score-scale-${score}`} className="w-10 border-l border-slate-300 px-2 py-1.5 text-center font-semibold">
+                                                            <th
+                                                                key={`score-scale-${score}`}
+                                                                className="w-10 border-l border-slate-300 px-2 py-1.5 text-center font-semibold"
+                                                            >
                                                                 {score}
                                                             </th>
                                                         ))}
@@ -464,7 +471,9 @@ const InstructorEvaluationSheetsPage = () => {
                                                         <tr key={criterion.id} className="align-top">
                                                             <td className="border-t border-r border-slate-300 px-3 py-2.5">
                                                                 {criterion.id === 'organization' ? (
-                                                                    <p className="mb-1 text-xs font-semibold text-slate-900">II. Delivery and Presentation (80%)</p>
+                                                                    <p className="mb-1 text-xs font-semibold text-slate-900">
+                                                                        II. Delivery and Presentation (80%)
+                                                                    </p>
                                                                 ) : null}
                                                                 <p className="text-xs font-semibold text-slate-900">{criterion.title}</p>
                                                                 <ul className="mt-1 space-y-1 pl-4 text-[11px] text-slate-700">
@@ -476,7 +485,10 @@ const InstructorEvaluationSheetsPage = () => {
                                                                 </ul>
                                                             </td>
                                                             {scoreScale.map((score) => (
-                                                                <td key={`${criterion.id}-${score}`} className="border-t border-l border-slate-300 p-0 text-center">
+                                                                <td
+                                                                    key={`${criterion.id}-${score}`}
+                                                                    className="border-t border-l border-slate-300 p-0 text-center"
+                                                                >
                                                                     <label className="flex h-full min-h-10 items-center justify-center">
                                                                         <input
                                                                             type="radio"
@@ -505,7 +517,9 @@ const InstructorEvaluationSheetsPage = () => {
                                                         </th>
                                                     </tr>
                                                     <tr className="bg-slate-50">
-                                                        <th className="w-[80%] border-r border-slate-300 px-3 py-2 text-center text-xs font-semibold">Criteria and Weight</th>
+                                                        <th className="w-[80%] border-r border-slate-300 px-3 py-2 text-center text-xs font-semibold">
+                                                            Criteria and Weight
+                                                        </th>
                                                         <th className="px-3 py-2 text-center text-xs font-semibold">Score</th>
                                                     </tr>
                                                 </thead>
@@ -525,7 +539,12 @@ const InstructorEvaluationSheetsPage = () => {
                                                             <td className="border-t border-slate-300 px-3 py-2.5 align-top">
                                                                 <input
                                                                     type="number"
-                                                                    value={previewGroupScores?.[criterion.id] !== null && previewGroupScores?.[criterion.id] !== undefined ? `${previewGroupScores[criterion.id]}` : ''}
+                                                                    value={
+                                                                        previewGroupScores?.[criterion.id] !== null &&
+                                                                        previewGroupScores?.[criterion.id] !== undefined
+                                                                            ? `${previewGroupScores[criterion.id]}`
+                                                                            : ''
+                                                                    }
                                                                     disabled
                                                                     className="w-full cursor-not-allowed rounded-md border border-slate-300 bg-slate-50 px-2 py-1.5 text-center text-xs text-slate-500"
                                                                 />
@@ -533,11 +552,17 @@ const InstructorEvaluationSheetsPage = () => {
                                                         </tr>
                                                     ))}
                                                     <tr className="bg-slate-50">
-                                                        <td className="border-t border-r border-slate-300 px-3 py-2 text-right text-xs font-semibold">Total</td>
+                                                        <td className="border-t border-r border-slate-300 px-3 py-2 text-right text-xs font-semibold">
+                                                            Total
+                                                        </td>
                                                         <td className="border-t border-slate-300 px-3 py-2">
                                                             <input
                                                                 type="number"
-                                                                value={previewGroupScores?.total !== null && previewGroupScores?.total !== undefined ? `${previewGroupScores.total}` : ''}
+                                                                value={
+                                                                    previewGroupScores?.total !== null && previewGroupScores?.total !== undefined
+                                                                        ? `${previewGroupScores.total}`
+                                                                        : ''
+                                                                }
                                                                 disabled
                                                                 className="w-full cursor-not-allowed rounded-md border border-slate-300 bg-slate-50 px-2 py-1.5 text-center text-xs font-semibold text-slate-500"
                                                             />
@@ -595,7 +620,9 @@ const InstructorEvaluationSheetsPage = () => {
                                                         className="pointer-events-none absolute top-0 left-1/2 max-h-14 w-auto -translate-x-1/2 object-contain opacity-90"
                                                     />
                                                 ) : null}
-                                                <p className="absolute inset-x-0 bottom-1 text-center text-sm font-semibold text-slate-800">{selectedPanelist.name}</p>
+                                                <p className="absolute inset-x-0 bottom-1 text-center text-sm font-semibold text-slate-800">
+                                                    {selectedPanelist.name}
+                                                </p>
                                                 <div className="absolute inset-x-0 bottom-0 border-b border-slate-400" aria-hidden="true" />
                                             </div>
                                             <p className="mt-2 text-xs text-slate-700">Name and Signature of Panelist</p>

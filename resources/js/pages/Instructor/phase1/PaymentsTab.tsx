@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import { CreditCard, Download, Eye } from 'lucide-react';
 import React from 'react';
 
@@ -8,10 +9,13 @@ type PaymentMember = {
 
 type PaymentRow = {
     id: string;
+    groupId: number;
     group: string;
     members: PaymentMember[];
     submittedAt: string;
     status: 'Verified' | 'Pending' | 'Not Paid';
+    statusLabel: string;
+    reviewUrl: string;
 };
 
 type PaymentsTabProps = {
@@ -47,7 +51,7 @@ const PaymentsTab = ({
                         <CreditCard className="h-4 w-4 text-emerald-600" />
                         <h3 className="text-sm font-semibold text-slate-900">Payment Verification</h3>
                     </div>
-                    <p className="text-xs text-slate-500">Review and approve group payment submissions</p>
+                    <p className="text-xs text-slate-500">Review acknowledgement receipt signatures by group</p>
                 </div>
                 <button
                     type="button"
@@ -96,24 +100,17 @@ const PaymentsTab = ({
                                     <td className="px-6 py-3 text-xs text-slate-500">{row.submittedAt}</td>
                                     <td className="px-6 py-3">
                                         <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${paymentBadge(row.status)}`}>
-                                            {row.status}
+                                            {row.statusLabel}
                                         </span>
                                     </td>
                                     <td className="px-6 py-3">
-                                        {row.status === 'Pending' ? (
-                                            <div className="flex gap-2">
-                                                <button className="rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100">
-                                                    Approve
-                                                </button>
-                                                <button className="rounded-xl bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100">
-                                                    Reject
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <button className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100">
-                                                <Eye className="h-4 w-4" />
-                                            </button>
-                                        )}
+                                        <Link
+                                            href={row.reviewUrl}
+                                            className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-50"
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                            <span>Review</span>
+                                        </Link>
                                     </td>
                                 </tr>
                             ))

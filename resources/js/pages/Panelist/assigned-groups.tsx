@@ -272,7 +272,7 @@ const PanelistAssignedGroups = () => {
                 const assignedCount =
                     selectedAcademicYear === 'All'
                         ? assignedGroups.filter((group) => normalizeProgramKey(group.program) === program).length
-                        : assignedByProgramYear.get(program)?.get(selectedAcademicYear) ?? 0;
+                        : (assignedByProgramYear.get(program)?.get(selectedAcademicYear) ?? 0);
 
                 return {
                     program,
@@ -282,7 +282,8 @@ const PanelistAssignedGroups = () => {
             });
     }, [assignedByProgramYear, assignedGroups, selectedAcademicYear, utilityMap, utilityPrograms]);
 
-    const totalAssigned = selectedAcademicYear === 'All' ? assignedGroups.length : assignedGroups.filter((group) => group.school_year === selectedAcademicYear).length;
+    const totalAssigned =
+        selectedAcademicYear === 'All' ? assignedGroups.length : assignedGroups.filter((group) => group.school_year === selectedAcademicYear).length;
     const totalCapacity = selectedYearPrograms.reduce((total, utility) => total + (utility.max_groups ?? 0), 0);
 
     const getAssignedForProgramYear = React.useCallback(
@@ -571,7 +572,9 @@ const PanelistAssignedGroups = () => {
                                                 </h3>
                                                 <p className="mt-1 text-xs text-slate-500">{group.program_set_name ?? 'Program set'}</p>
                                             </div>
-                                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleBadgeClasses(group.panel_role)}`}>
+                                            <span
+                                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleBadgeClasses(group.panel_role)}`}
+                                            >
                                                 {formatPanelRole(group.panel_role)}
                                             </span>
                                         </div>
@@ -585,7 +588,7 @@ const PanelistAssignedGroups = () => {
                                             </p>
                                         </div>
 
-                                    <div className="mt-4 flex gap-2">
+                                        <div className="mt-4 flex gap-2">
                                             <button
                                                 type="button"
                                                 onClick={() => setSelectedGroupForModal(group)}
@@ -639,7 +642,9 @@ const PanelistAssignedGroups = () => {
                                                 {loadForYear} / {maxForProgram}
                                             </td>
                                             <td className="px-6 py-3.5">
-                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleBadgeClasses(group.panel_role)}`}>
+                                                <span
+                                                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${roleBadgeClasses(group.panel_role)}`}
+                                                >
                                                     {formatPanelRole(group.panel_role)}
                                                 </span>
                                             </td>
@@ -705,7 +710,9 @@ const PanelistAssignedGroups = () => {
                                         type="button"
                                         onClick={() => setCurrentPage(page)}
                                         className={`h-8 min-w-[32px] rounded-lg text-xs font-bold transition-all ${
-                                            page === currentPage ? 'bg-emerald-700 text-white shadow-md shadow-emerald-700/20' : 'text-slate-600 hover:bg-slate-100'
+                                            page === currentPage
+                                                ? 'bg-emerald-700 text-white shadow-md shadow-emerald-700/20'
+                                                : 'text-slate-600 hover:bg-slate-100'
                                         }`}
                                     >
                                         {page}

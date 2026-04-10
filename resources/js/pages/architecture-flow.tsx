@@ -1,16 +1,6 @@
 // Access URL: /architecture-flow
 import '@xyflow/react/dist/style.css';
-import {
-    Background,
-    BackgroundVariant,
-    Controls,
-    Edge,
-    MarkerType,
-    MiniMap,
-    Node,
-    ReactFlow,
-    ReactFlowProvider,
-} from '@xyflow/react';
+import { Background, BackgroundVariant, Controls, Edge, MarkerType, MiniMap, Node, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import type { CSSProperties } from 'react';
 import { useMemo } from 'react';
 
@@ -48,14 +38,7 @@ const buildNodeStyle = (color: string, width = 250): CSSProperties => ({
     lineHeight: 1.45,
 });
 
-const createNode = (
-    id: string,
-    label: string,
-    x: number,
-    y: number,
-    layer: LayerKey,
-    width?: number,
-): Node<FlowNodeData> => {
+const createNode = (id: string, label: string, x: number, y: number, layer: LayerKey, width?: number): Node<FlowNodeData> => {
     const color = layerPalette[layer].color;
 
     return {
@@ -106,14 +89,7 @@ const nodes: Node<FlowNodeData>[] = [
     createNode('pageLogin', 'resources/js/pages/login.tsx', 20, 1630, 'pages', 260),
     createNode('pageAdminDashboard', 'resources/js/pages/Admin/dashboard.tsx', 320, 1630, 'pages', 300),
     createNode('pageStudentDashboard', 'resources/js/pages/Student/dashboard.tsx', 660, 1630, 'pages', 320),
-    createNode(
-        'pageInstructorDocuments',
-        'resources/js/pages/Instructor/requirements/documents-review.tsx',
-        1020,
-        1630,
-        'pages',
-        360,
-    ),
+    createNode('pageInstructorDocuments', 'resources/js/pages/Instructor/requirements/documents-review.tsx', 1020, 1630, 'pages', 360),
     createNode('pageAdviserLiveDefense', 'resources/js/pages/Adviser/live-defense.tsx', 1420, 1630, 'pages', 320),
     createNode('pagePanelistLiveDefense', 'resources/js/pages/Panelist/live-defense.tsx', 1780, 1630, 'pages', 320),
 ];

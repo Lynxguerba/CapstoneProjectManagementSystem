@@ -117,19 +117,22 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
         return ['All', ...years];
     }, [academicYears]);
 
-    const getAssignedForYear = React.useCallback((panelist: PanelistRow, yearLabel?: string | null): number => {
-        const workloads = panelist.workloads ?? [];
+    const getAssignedForYear = React.useCallback(
+        (panelist: PanelistRow, yearLabel?: string | null): number => {
+            const workloads = panelist.workloads ?? [];
 
-        if (yearLabel && yearLabel !== 'All') {
-            return workloads.find((workload) => workload.academic_year === yearLabel)?.groups_count ?? 0;
-        }
+            if (yearLabel && yearLabel !== 'All') {
+                return workloads.find((workload) => workload.academic_year === yearLabel)?.groups_count ?? 0;
+            }
 
-        if (workloads.length > 0) {
-            return workloads.reduce((total, workload) => total + (workload.groups_count ?? 0), 0);
-        }
+            if (workloads.length > 0) {
+                return workloads.reduce((total, workload) => total + (workload.groups_count ?? 0), 0);
+            }
 
-        return getPanelistPrograms(panelist).reduce((total, program) => total + (program.assigned_count ?? 0), 0);
-    }, [getPanelistPrograms]);
+            return getPanelistPrograms(panelist).reduce((total, program) => total + (program.assigned_count ?? 0), 0);
+        },
+        [getPanelistPrograms],
+    );
 
     const getProgramTotals = React.useCallback(
         (panelist: PanelistRow, yearLabel?: string | null) => {
@@ -193,8 +196,7 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
 
     const sortedPanelists = React.useMemo(() => {
         return [...panelists].sort((first, second) => {
-            const workloadDelta =
-                getTotalAssignedGroups(second, selectedAcademicYear) - getTotalAssignedGroups(first, selectedAcademicYear);
+            const workloadDelta = getTotalAssignedGroups(second, selectedAcademicYear) - getTotalAssignedGroups(first, selectedAcademicYear);
 
             if (workloadDelta !== 0) {
                 return workloadDelta;
@@ -455,7 +457,9 @@ const PanelistAssignmentPage = ({ panelists = [], academicYears = [] }: Panelist
                                                 </div>
                                             </td>
                                             <td className="px-6 py-3.5">
-                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClasses}`}>{status}</span>
+                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClasses}`}>
+                                                    {status}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-3.5 text-right">
                                                 <div className="inline-flex gap-2">

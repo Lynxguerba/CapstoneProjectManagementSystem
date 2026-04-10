@@ -28,7 +28,11 @@ type InstructorGroupsPageProps = {
     selectedAcademicYearId?: number | null;
 };
 
-const normalizeAcademicYearLabel = (value: string): string => value.replace(/^A\.?Y\.?\s*/i, '').trim().toLowerCase();
+const normalizeAcademicYearLabel = (value: string): string =>
+    value
+        .replace(/^A\.?Y\.?\s*/i, '')
+        .trim()
+        .toLowerCase();
 
 const InstructorGroups = () => {
     const page = usePage<InstructorGroupsPageProps>();
@@ -41,7 +45,7 @@ const InstructorGroups = () => {
         return typeof academicYear === 'string' && academicYear !== '' ? academicYear : null;
     }, [academicYears]);
     const queryAcademicYearFilter = React.useMemo(() => {
-        const query = (page.url ?? '').includes('?') ? (page.url ?? '').split('?')[1] ?? '' : '';
+        const query = (page.url ?? '').includes('?') ? ((page.url ?? '').split('?')[1] ?? '') : '';
         const searchParams = new URLSearchParams(query);
         const academicYear = searchParams.get('academic_year');
 
@@ -75,10 +79,7 @@ const InstructorGroups = () => {
     const schoolYearOptions = React.useMemo(() => {
         const academicYearLabels = academicYears
             .map((academicYear) => academicYear.label)
-            .filter(
-                (label): label is string =>
-                    typeof label === 'string' && label !== '' && normalizeAcademicYearLabel(label) !== 'all',
-            );
+            .filter((label): label is string => typeof label === 'string' && label !== '' && normalizeAcademicYearLabel(label) !== 'all');
         const programSetYears = programSets
             .map((programSet) => programSet.school_year)
             .filter(
@@ -383,7 +384,9 @@ const InstructorGroups = () => {
                                         <td className="px-6 py-3.5 font-semibold text-slate-800">{set.totalStudents}</td>
                                         <td className="px-6 py-3.5">
                                             <div className="font-semibold text-slate-800">{set.totalGroups}</div>
-                                            <div className="text-[10px] text-slate-500">Local {set.localGroups} • Cross-set {set.crossSetGroups}</div>
+                                            <div className="text-[10px] text-slate-500">
+                                                Local {set.localGroups} • Cross-set {set.crossSetGroups}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-3.5 text-right">
                                             <Link

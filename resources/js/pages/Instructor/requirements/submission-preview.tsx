@@ -89,8 +89,12 @@ const SubmissionPreviewPage = () => {
                             <>
                                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                                     <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">Group {submission.groupName}</span>
-                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">{submission.programSetName ?? 'Program set'}</span>
-                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">{submission.program ?? 'Program'}</span>
+                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">
+                                        {submission.programSetName ?? 'Program set'}
+                                    </span>
+                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1">
+                                        {submission.program ?? 'Program'}
+                                    </span>
                                 </div>
                                 <div className="mt-4 grid grid-cols-1 gap-2 text-sm text-slate-700 sm:grid-cols-2">
                                     <div>

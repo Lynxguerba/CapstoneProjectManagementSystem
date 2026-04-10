@@ -98,12 +98,7 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
     const editForm = useForm<EditGroupForm>({
         members: [],
     });
-    const {
-        errors: editFormErrors,
-        processing: isSavingMembers,
-        put: putEditForm,
-        setData: setEditFormData,
-    } = editForm;
+    const { errors: editFormErrors, processing: isSavingMembers, put: putEditForm, setData: setEditFormData } = editForm;
 
     const isSubmittingCrossSetRequests = submittingCrossSetStudentIds.length > 0;
     const isBusy = isSavingMembers || isDeletingGroup || isSubmittingCrossSetRequests;
@@ -540,7 +535,14 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                 isAlreadyActiveMember,
             };
         });
-    }, [activeMembers, crossSetSearchResults, requestedCrossSetStudentIds, submittingCrossSetStudentIds, resolveCrossSetActionType, resolveCrossSetProgramSetName]);
+    }, [
+        activeMembers,
+        crossSetSearchResults,
+        requestedCrossSetStudentIds,
+        submittingCrossSetStudentIds,
+        resolveCrossSetActionType,
+        resolveCrossSetProgramSetName,
+    ]);
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -696,7 +698,9 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                                         <tr className="bg-emerald-50/40">
                                             <td className="px-4 py-3" colSpan={4}>
                                                 <div className="space-y-3">
-                                                    <p className="text-[11px] font-semibold tracking-wider text-emerald-700 uppercase">Add Another Member</p>
+                                                    <p className="text-[11px] font-semibold tracking-wider text-emerald-700 uppercase">
+                                                        Add Another Member
+                                                    </p>
                                                     <p className="text-[11px] text-slate-500">Search students managed in your current program set.</p>
 
                                                     <div className="flex flex-col gap-2 sm:flex-row">
@@ -718,7 +722,12 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                                                                     handleAddMember(firstCandidate);
                                                                 }
                                                             }}
-                                                            disabled={isBusy || isLoadingAvailableStudents || memberSearchQuery.trim() === '' || addableStudents.length === 0}
+                                                            disabled={
+                                                                isBusy ||
+                                                                isLoadingAvailableStudents ||
+                                                                memberSearchQuery.trim() === '' ||
+                                                                addableStudents.length === 0
+                                                            }
                                                             className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
                                                         >
                                                             Add
@@ -732,13 +741,17 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                                                         <p className="text-[11px] text-rose-600">{availableStudentsError}</p>
                                                     ) : null}
                                                     {!isLoadingAvailableStudents && !availableStudentsError && memberSearchQuery.trim() === '' ? (
-                                                        <p className="text-[11px] text-slate-500">{availableStudentCount} ungrouped students available to add.</p>
+                                                        <p className="text-[11px] text-slate-500">
+                                                            {availableStudentCount} ungrouped students available to add.
+                                                        </p>
                                                     ) : null}
 
                                                     {memberSearchQuery.trim() !== '' ? (
                                                         <div className="max-h-32 overflow-y-auto rounded-lg border border-slate-200 bg-white">
                                                             {addableStudents.length === 0 ? (
-                                                                <p className="px-3 py-2 text-[11px] text-slate-500">No matching ungrouped students found.</p>
+                                                                <p className="px-3 py-2 text-[11px] text-slate-500">
+                                                                    No matching ungrouped students found.
+                                                                </p>
                                                             ) : (
                                                                 addableStudents.slice(0, 6).map((student) => (
                                                                     <button
@@ -746,10 +759,12 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                                                                         type="button"
                                                                         onClick={() => handleAddMember(student)}
                                                                         disabled={isBusy}
-                                                                        className="flex w-full items-center justify-between border-b border-slate-100 px-3 py-2 text-left transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50 last:border-b-0"
+                                                                        className="flex w-full items-center justify-between border-b border-slate-100 px-3 py-2 text-left transition last:border-b-0 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
                                                                     >
                                                                         <div>
-                                                                            <p className="text-xs font-semibold text-slate-800">{resolveStudentName(student)}</p>
+                                                                            <p className="text-xs font-semibold text-slate-800">
+                                                                                {resolveStudentName(student)}
+                                                                            </p>
                                                                             <p className="text-[10px] text-slate-500">{student.email}</p>
                                                                         </div>
                                                                         <span className="text-[10px] font-semibold text-emerald-700">Add</span>
@@ -767,17 +782,22 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                                                             className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                                                         >
                                                             <span>Add students from other sets</span>
-                                                            <ChevronDown className={`h-4 w-4 transition-transform ${isCrossSetSectionOpen ? 'rotate-180' : ''}`} />
+                                                            <ChevronDown
+                                                                className={`h-4 w-4 transition-transform ${isCrossSetSectionOpen ? 'rotate-180' : ''}`}
+                                                            />
                                                         </button>
 
                                                         {isCrossSetSectionOpen ? (
                                                             <div className="mt-3 space-y-3">
                                                                 <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
-                                                                    Students from your own handled sets can be added directly. Students from other instructors require approval.
+                                                                    Students from your own handled sets can be added directly. Students from other
+                                                                    instructors require approval.
                                                                 </p>
 
                                                                 <div>
-                                                                    <label className="text-[11px] font-semibold text-slate-600">Search students from other sets</label>
+                                                                    <label className="text-[11px] font-semibold text-slate-600">
+                                                                        Search students from other sets
+                                                                    </label>
                                                                     <div className="relative mt-1.5">
                                                                         <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                                                                         <input
@@ -802,46 +822,62 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                                                                             <p className="px-3 py-2 text-[11px] text-slate-500">No students found.</p>
                                                                         ) : (
                                                                             crossSetSearchCandidates.map(
-                                                                                ({ student, programSetName, actionType, isRequested, isRequesting, isAlreadyActiveMember }) => (
-                                                                                <div
-                                                                                    key={student.id}
-                                                                                    className="flex items-center justify-between border-b border-slate-100 px-3 py-2 last:border-b-0"
-                                                                                >
-                                                                                    <div className="min-w-0">
-                                                                                        <p className="truncate text-xs font-semibold text-slate-800">
-                                                                                            {resolveCrossSetStudentName(student)}
-                                                                                        </p>
-                                                                                        {student.email ? <p className="text-[10px] text-slate-500">{student.email}</p> : null}
-                                                                                        <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                                                                                            {programSetName}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                    <button
-                                                                                        type="button"
-                                                                                        onClick={() => {
-                                                                                            if (actionType === 'direct_add') {
-                                                                                                handleAddCrossSetMember(student);
-                                                                                                return;
-                                                                                            }
-
-                                                                                            void handleRequestCrossSetMember(student);
-                                                                                        }}
-                                                                                        disabled={isBusy || isRequesting || isRequested || isAlreadyActiveMember}
-                                                                                        className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                                ({
+                                                                                    student,
+                                                                                    programSetName,
+                                                                                    actionType,
+                                                                                    isRequested,
+                                                                                    isRequesting,
+                                                                                    isAlreadyActiveMember,
+                                                                                }) => (
+                                                                                    <div
+                                                                                        key={student.id}
+                                                                                        className="flex items-center justify-between border-b border-slate-100 px-3 py-2 last:border-b-0"
                                                                                     >
-                                                                                        {isAlreadyActiveMember
-                                                                                            ? 'Member'
-                                                                                            : isRequesting
-                                                                                              ? 'Processing...'
-                                                                                              : isRequested
-                                                                                                ? 'Requested'
-                                                                                              : actionType === 'direct_add'
-                                                                                                ? 'Add Member'
-                                                                                                : 'Request'}
-                                                                                    </button>
-                                                                                </div>
-                                                                            ),
-                                                                        )
+                                                                                        <div className="min-w-0">
+                                                                                            <p className="truncate text-xs font-semibold text-slate-800">
+                                                                                                {resolveCrossSetStudentName(student)}
+                                                                                            </p>
+                                                                                            {student.email ? (
+                                                                                                <p className="text-[10px] text-slate-500">
+                                                                                                    {student.email}
+                                                                                                </p>
+                                                                                            ) : null}
+                                                                                            <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                                                                                {programSetName}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => {
+                                                                                                if (actionType === 'direct_add') {
+                                                                                                    handleAddCrossSetMember(student);
+                                                                                                    return;
+                                                                                                }
+
+                                                                                                void handleRequestCrossSetMember(student);
+                                                                                            }}
+                                                                                            disabled={
+                                                                                                isBusy ||
+                                                                                                isRequesting ||
+                                                                                                isRequested ||
+                                                                                                isAlreadyActiveMember
+                                                                                            }
+                                                                                            className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                                        >
+                                                                                            {isAlreadyActiveMember
+                                                                                                ? 'Member'
+                                                                                                : isRequesting
+                                                                                                  ? 'Processing...'
+                                                                                                  : isRequested
+                                                                                                    ? 'Requested'
+                                                                                                    : actionType === 'direct_add'
+                                                                                                      ? 'Add Member'
+                                                                                                      : 'Request'}
+                                                                                        </button>
+                                                                                    </div>
+                                                                                ),
+                                                                            )
                                                                         )}
                                                                     </div>
                                                                 ) : null}
@@ -891,7 +927,9 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                                         ))}
                                     </tbody>
                                 </table>
-                                {!isLoading && members.length === 0 ? <div className="py-10 text-center text-sm text-slate-500">No members found.</div> : null}
+                                {!isLoading && members.length === 0 ? (
+                                    <div className="py-10 text-center text-sm text-slate-500">No members found.</div>
+                                ) : null}
                             </div>
                         </div>
 
@@ -908,7 +946,9 @@ const EditGroupMembersModal = ({ open, groupId, onClose }: EditGroupMembersModal
                         ) : null}
 
                         {editFormErrors.members ? (
-                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">{editFormErrors.members}</div>
+                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700">
+                                {editFormErrors.members}
+                            </div>
                         ) : null}
 
                         <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">

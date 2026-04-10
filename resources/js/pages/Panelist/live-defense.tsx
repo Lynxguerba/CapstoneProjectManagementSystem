@@ -386,9 +386,7 @@ const PanelistLiveDefense = () => {
     const focusHighlightedComment = (highlightTarget: { submissionId: number; highlightId: string }): void => {
         setSelectedConceptId(highlightTarget.submissionId);
 
-        const hasHighlight = (highlightsMap[highlightTarget.submissionId] ?? []).some(
-            (highlight) => highlight.id === highlightTarget.highlightId,
-        );
+        const hasHighlight = (highlightsMap[highlightTarget.submissionId] ?? []).some((highlight) => highlight.id === highlightTarget.highlightId);
 
         setPendingHighlightFocus(highlightTarget);
 
@@ -491,7 +489,7 @@ const PanelistLiveDefense = () => {
 
     const groupLabel = `${group.name}${group.programSetName ? ` · ${group.programSetName}` : ''}${group.academicYear ? ` · ${group.academicYear}` : ''}`;
     const verdictDrivenDefenseStatus = resolveVerdictDrivenDefenseStatus(conceptVerdict?.value);
-    const defenseStatus = verdictDrivenDefenseStatus ?? (group.defenseStatus ?? 'Pending');
+    const defenseStatus = verdictDrivenDefenseStatus ?? group.defenseStatus ?? 'Pending';
 
     return (
         <PanelLayout title="Live Defense Board" subtitle="Panel live review workspace">
@@ -528,7 +526,7 @@ const PanelistLiveDefense = () => {
                         </div>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="min-w-[680px] w-full text-left text-xs">
+                        <table className="w-full min-w-[680px] text-left text-xs">
                             <thead className="border-b border-slate-200 bg-white text-slate-600">
                                 <tr>
                                     <th className="px-4 py-3 font-semibold">Title</th>
@@ -808,7 +806,9 @@ const PanelistLiveDefense = () => {
                                 <h3 className="text-sm font-semibold text-slate-800">Verdict</h3>
                             </div>
                             <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3">
-                                <p className="text-xs font-semibold text-slate-700">Open verdict recommendation form for this defense panel session.</p>
+                                <p className="text-xs font-semibold text-slate-700">
+                                    Open verdict recommendation form for this defense panel session.
+                                </p>
                                 <p className="mt-1 text-[11px] text-slate-500">Current Verdict: {conceptVerdict?.value ?? 'Not set yet'}</p>
                                 <div className="mt-3">
                                     <button

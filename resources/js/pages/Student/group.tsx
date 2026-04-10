@@ -127,9 +127,9 @@ const StudentGroup = () => {
             <div className="space-y-5">
                 <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-5">
                     <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
-                    <Link href={studentRoutes.dashboard.url()} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
-                        Dashboard
-                    </Link>
+                        <Link href={studentRoutes.dashboard.url()} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                            Dashboard
+                        </Link>
                         <ChevronRight className="h-3 w-3 text-slate-400" />
                         <span className="font-semibold text-slate-800" aria-current="page">
                             Capstone Group

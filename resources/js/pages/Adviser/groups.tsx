@@ -189,11 +189,7 @@ const AdviserGroups = () => {
     }, [assignmentRequests, selectedAcademicYear]);
 
     const programSummaries = React.useMemo(() => {
-        const maxByProgram = new Map(
-            utilityPrograms
-                .filter((utility) => utility.program)
-                .map((utility) => [utility.program, utility.max_groups]),
-        );
+        const maxByProgram = new Map(utilityPrograms.filter((utility) => utility.program).map((utility) => [utility.program, utility.max_groups]));
 
         const assignedByProgram = new Map<string, number>();
         approvedAssignedGroupsForYear.forEach((group) => {
@@ -215,11 +211,7 @@ const AdviserGroups = () => {
                 pendingByProgram.set(request.program, (pendingByProgram.get(request.program) ?? 0) + 1);
             });
 
-        const programs = new Set<string>([
-            ...maxByProgram.keys(),
-            ...assignedByProgram.keys(),
-            ...pendingByProgram.keys(),
-        ]);
+        const programs = new Set<string>([...maxByProgram.keys(), ...assignedByProgram.keys(), ...pendingByProgram.keys()]);
 
         return Array.from(programs)
             .sort((first, second) => first.localeCompare(second))

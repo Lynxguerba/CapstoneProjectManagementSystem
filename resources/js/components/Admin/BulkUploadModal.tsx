@@ -334,9 +334,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
         const normalizedFromUsers = existingUsers
             .map((user) => user.email?.trim().toLowerCase())
             .filter((email): email is string => typeof email === 'string' && email !== '');
-        const normalizedFromSystem = existingEmails
-            .map((email) => email.trim().toLowerCase())
-            .filter((email) => email !== '');
+        const normalizedFromSystem = existingEmails.map((email) => email.trim().toLowerCase()).filter((email) => email !== '');
 
         return new Set([...normalizedFromUsers, ...normalizedFromSystem]);
     }, [existingEmails, existingUsers]);
@@ -502,7 +500,9 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
                 }
 
                 if (!response.ok) {
-                    throw new Error(typeof payload.message === 'string' && payload.message !== '' ? payload.message : 'Unable to track import progress.');
+                    throw new Error(
+                        typeof payload.message === 'string' && payload.message !== '' ? payload.message : 'Unable to track import progress.',
+                    );
                 }
 
                 setUploadProgressValue(Math.max(0, Math.min(100, payload.progress_percentage)));
@@ -566,7 +566,10 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
                         .map((failedItem) => {
                             const lineLabel = typeof failedItem.line === 'number' ? `Row ${failedItem.line}` : 'Row';
                             const emailLabel = typeof failedItem.email === 'string' && failedItem.email !== '' ? ` (${failedItem.email})` : '';
-                            const message = typeof failedItem.message === 'string' && failedItem.message !== '' ? failedItem.message : 'Failed to import this row.';
+                            const message =
+                                typeof failedItem.message === 'string' && failedItem.message !== ''
+                                    ? failedItem.message
+                                    : 'Failed to import this row.';
 
                             return `${lineLabel}${emailLabel}: ${message}`;
                         })
@@ -1081,11 +1084,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
               ? 'Last Name, First Name, Email, Role, and Password'
               : 'Last Name, First Name, Email, Role, and Password';
     const csvTemplateFileName =
-        userType === 'student'
-            ? 'student-upload-template.csv'
-            : userType === 'faculty'
-              ? 'faculty-upload-template.csv'
-              : 'user-upload-template.csv';
+        userType === 'student' ? 'student-upload-template.csv' : userType === 'faculty' ? 'faculty-upload-template.csv' : 'user-upload-template.csv';
     const csvTemplateContent =
         userType === 'student'
             ? ['last_name,first_name,email,program,password', 'Dela Cruz,Juan,juan.delacruz@example.com,BSIT,StrongPass123'].join('\n')
@@ -1193,13 +1192,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
                                 <FileSpreadsheet className="h-8 w-8 text-slate-500" />
                                 <span className="text-sm font-semibold text-slate-700">{fileName || 'Choose CSV file'}</span>
                                 <span className="text-xs text-slate-500">Click to browse and preview before importing.</span>
-                                <input
-                                    type="file"
-                                    accept=".csv,text/csv"
-                                    onChange={handleFileChange}
-                                    ref={fileInputRef}
-                                    className="hidden"
-                                />
+                                <input type="file" accept=".csv,text/csv" onChange={handleFileChange} ref={fileInputRef} className="hidden" />
                             </label>
                         ) : (
                             <div className="rounded-xl border border-slate-300 bg-slate-50 p-3">
@@ -1209,7 +1202,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
                                     onChange={(event) => setPastedCsvContent(event.target.value)}
                                     rows={8}
                                     placeholder={csvTemplateContent}
-                                    className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-700 outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                    className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-700 transition-colors outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                                 />
                                 <div className="mt-3 flex justify-end">
                                     <button

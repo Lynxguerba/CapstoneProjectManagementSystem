@@ -591,7 +591,6 @@ const StudentSchedule = () => {
                                 </table>
                             </div>
                         </div>
-
                     </>
                 )}
             </motion.section>

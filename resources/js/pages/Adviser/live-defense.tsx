@@ -282,10 +282,7 @@ const AdviserLiveDefense = () => {
         const minutesDocument = props.conceptVerdictMinutes
             ? {
                   file_name: props.conceptVerdictMinutes.fileName,
-                  file_url: withCacheBuster(
-                      props.conceptVerdictMinutes.fileUrl,
-                      props.conceptVerdictMinutes.signedAt ?? `${Date.now()}`,
-                  ),
+                  file_url: withCacheBuster(props.conceptVerdictMinutes.fileUrl, props.conceptVerdictMinutes.signedAt ?? `${Date.now()}`),
                   signed_at: props.conceptVerdictMinutes.signedAt ?? null,
               }
             : null;
@@ -496,9 +493,7 @@ const AdviserLiveDefense = () => {
     const focusHighlightedComment = (highlightTarget: { submissionId: number; highlightId: string }): void => {
         setSelectedConceptId(highlightTarget.submissionId);
 
-        const hasHighlight = (highlightsMap[highlightTarget.submissionId] ?? []).some(
-            (highlight) => highlight.id === highlightTarget.highlightId,
-        );
+        const hasHighlight = (highlightsMap[highlightTarget.submissionId] ?? []).some((highlight) => highlight.id === highlightTarget.highlightId);
 
         setPendingHighlightFocus(highlightTarget);
 
@@ -628,12 +623,10 @@ const AdviserLiveDefense = () => {
                 body: JSON.stringify({}),
             });
 
-            const payload = (await response.json().catch(() => null)) as
-                | {
-                      message?: string;
-                      minutes_document?: ConceptVerdictMinutesDocument;
-                  }
-                | null;
+            const payload = (await response.json().catch(() => null)) as {
+                message?: string;
+                minutes_document?: ConceptVerdictMinutesDocument;
+            } | null;
 
             if (!response.ok) {
                 setConceptVerdictMinutesError(payload?.message ?? 'Unable to generate concept verdict minutes PDF.');
@@ -666,7 +659,7 @@ const AdviserLiveDefense = () => {
 
     const groupLabel = `${group.name}${group.programSetName ? ` · ${group.programSetName}` : ''}${group.academicYear ? ` · ${group.academicYear}` : ''}`;
     const verdictDrivenDefenseStatus = resolveVerdictDrivenDefenseStatus(conceptVerdict?.value);
-    const defenseStatus = verdictDrivenDefenseStatus ?? (group?.defenseStatus ?? 'Pending');
+    const defenseStatus = verdictDrivenDefenseStatus ?? group?.defenseStatus ?? 'Pending';
 
     return (
         <AdviserLayout title="Live Defense Board" subtitle="Adviser live guidance workspace">
@@ -757,9 +750,7 @@ const AdviserLiveDefense = () => {
                             <MessageSquareText className="h-4 w-4 text-emerald-600" />
                             <h3 className="text-sm font-semibold text-slate-800">Adviser Comments</h3>
                         </div>
-                        <p className="mt-1 text-xs text-slate-500">
-                            Comments here are visible in the live defense stream for students and adviser.
-                        </p>
+                        <p className="mt-1 text-xs text-slate-500">Comments here are visible in the live defense stream for students and adviser.</p>
 
                         <div
                             ref={commentsContainerRef}
@@ -863,7 +854,7 @@ const AdviserLiveDefense = () => {
                                         const nextPanelistId = Number(rawValue);
                                         setSelectedCommentPanelistId(Number.isNaN(nextPanelistId) ? null : nextPanelistId);
                                     }}
-                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                                 >
                                     {panelists.length === 0 ? <option value="">No assigned panelists</option> : null}
                                     {panelists.map((panelist) => (
@@ -886,7 +877,9 @@ const AdviserLiveDefense = () => {
                                 <button
                                     type="button"
                                     onClick={handleSubmitComment}
-                                    disabled={isSubmittingComment || commentInput.trim() === '' || !selectedConcept || selectedCommentPanelistId === null}
+                                    disabled={
+                                        isSubmittingComment || commentInput.trim() === '' || !selectedConcept || selectedCommentPanelistId === null
+                                    }
                                     className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-40"
                                 >
                                     <ShieldCheck className="h-3.5 w-3.5" />
@@ -1027,7 +1020,10 @@ const AdviserLiveDefense = () => {
                                 </p>
                                 <p className="mt-1 text-[11px] text-slate-500">Current Verdict: {conceptVerdict?.value ?? 'Not set yet'}</p>
                                 <p className="mt-1 text-[11px] text-slate-500">
-                                    Minutes PDF: {conceptVerdictMinutesDocument ? `Generated (${conceptVerdictMinutesDocument.signed_at ?? '—'})` : 'Not generated'}
+                                    Minutes PDF:{' '}
+                                    {conceptVerdictMinutesDocument
+                                        ? `Generated (${conceptVerdictMinutesDocument.signed_at ?? '—'})`
+                                        : 'Not generated'}
                                 </p>
                                 <div className="mt-3">
                                     <button

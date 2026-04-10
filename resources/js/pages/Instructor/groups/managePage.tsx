@@ -84,12 +84,7 @@ type InstructorGroupsManageProps = {
     crossSetMemberGroups?: CrossSetMemberGroupRow[];
 };
 
-const InstructorGroupsManage = ({
-    programSet,
-    groups = [],
-    crossSetRequests = [],
-    crossSetMemberGroups = [],
-}: InstructorGroupsManageProps) => {
+const InstructorGroupsManage = ({ programSet, groups = [], crossSetRequests = [], crossSetMemberGroups = [] }: InstructorGroupsManageProps) => {
     const sectionName = typeof programSet?.name === 'string' && programSet.name.trim() !== '' ? programSet.name : 'Selected Set';
     const sectionProgram = typeof programSet?.program === 'string' ? programSet.program : '';
     const sectionYear = typeof programSet?.school_year === 'string' ? programSet.school_year : '';
@@ -215,18 +210,22 @@ const InstructorGroupsManage = ({
                 : instructorGroups.crossSetRequest.reject.url({ crossSetRequest: requestId });
 
         setProcessingCrossSetRequestId(requestId);
-        router.patch(actionRoute, {}, {
-            preserveScroll: true,
-            preserveState: false,
-            onSuccess: () => {
-                router.reload({
-                    only: ['crossSetRequests', 'crossSetMemberGroups', 'groups'],
-                });
+        router.patch(
+            actionRoute,
+            {},
+            {
+                preserveScroll: true,
+                preserveState: false,
+                onSuccess: () => {
+                    router.reload({
+                        only: ['crossSetRequests', 'crossSetMemberGroups', 'groups'],
+                    });
+                },
+                onFinish: () => {
+                    setProcessingCrossSetRequestId(null);
+                },
             },
-            onFinish: () => {
-                setProcessingCrossSetRequestId(null);
-            },
-        });
+        );
     };
 
     return (
@@ -290,7 +289,6 @@ const InstructorGroupsManage = ({
                         </button>
                     </div>
                 </div>
-
 
                 {viewMode === 'card' ? (
                     <motion.div
@@ -584,9 +582,7 @@ const InstructorGroupsManage = ({
                         <div className="flex items-center justify-between gap-2">
                             <div>
                                 <p className="text-sm font-semibold text-slate-800">Groups With Your Cross-Set Students</p>
-                                <p className="text-xs text-slate-500">
-                                    External groups currently carrying students handled in this program set.
-                                </p>
+                                <p className="text-xs text-slate-500">External groups currently carrying students handled in this program set.</p>
                             </div>
                             <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700">
                                 {crossSetMemberGroups.length} groups

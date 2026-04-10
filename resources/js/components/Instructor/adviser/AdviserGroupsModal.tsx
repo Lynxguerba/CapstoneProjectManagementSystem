@@ -183,7 +183,9 @@ const AdviserGroupsModal = ({ open, adviserId, adviserName, academicYear, onClos
                         </span>
                         <span
                             className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
-                                isAvailable ? 'border border-emerald-200 bg-emerald-50 text-emerald-700' : 'border border-rose-200 bg-rose-50 text-rose-700'
+                                isAvailable
+                                    ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                                    : 'border border-rose-200 bg-rose-50 text-rose-700'
                             }`}
                         >
                             {isAvailable ? 'Open for requests' : 'Closed'}

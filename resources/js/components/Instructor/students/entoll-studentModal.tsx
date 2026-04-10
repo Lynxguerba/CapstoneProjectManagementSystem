@@ -102,9 +102,7 @@ const EnrollStudentModal = ({ open, onClose, programSetId, programSetName, progr
     }, [programMatchedStudents]);
 
     const selectedStudents = useMemo(() => {
-        return selectedStudentIds
-            .map((studentId) => studentById.get(studentId))
-            .filter((student): student is StudentOption => student !== undefined);
+        return selectedStudentIds.map((studentId) => studentById.get(studentId)).filter((student): student is StudentOption => student !== undefined);
     }, [selectedStudentIds, studentById]);
 
     const selectedStudentIdSet = useMemo(() => {
@@ -320,7 +318,8 @@ const EnrollStudentModal = ({ open, onClose, programSetId, programSetName, progr
                                     </span>
                                 </div>
                                 <p className="mt-1 text-[11px] text-slate-500">
-                                    Only students matching this section program are shown. Students already enrolled in another set cannot be selected.
+                                    Only students matching this section program are shown. Students already enrolled in another set cannot be
+                                    selected.
                                 </p>
                             </div>
 
@@ -426,7 +425,8 @@ const EnrollStudentModal = ({ open, onClose, programSetId, programSetName, progr
                                                     <p className="truncate text-sm font-semibold text-slate-800">{resolveStudentName(student)}</p>
                                                     <p className="truncate text-xs text-slate-500">{student.email}</p>
                                                     <p className="mt-1 text-[11px] text-slate-600">
-                                                        Program: <span className="font-semibold text-slate-700">{student.program ?? 'Unassigned'}</span>
+                                                        Program:{' '}
+                                                        <span className="font-semibold text-slate-700">{student.program ?? 'Unassigned'}</span>
                                                     </p>
                                                 </div>
                                                 <button

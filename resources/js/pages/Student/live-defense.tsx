@@ -184,10 +184,7 @@ const StudentLiveDefense = () => {
         }
 
         setSelectedConceptId((currentSelectedConceptId) => {
-            if (
-                currentSelectedConceptId !== null
-                && conceptSubmissions.some((submission) => submission.id === currentSelectedConceptId)
-            ) {
+            if (currentSelectedConceptId !== null && conceptSubmissions.some((submission) => submission.id === currentSelectedConceptId)) {
                 return currentSelectedConceptId;
             }
 
@@ -322,9 +319,7 @@ const StudentLiveDefense = () => {
     const focusHighlightedComment = (highlightTarget: { submissionId: number; highlightId: string }): void => {
         setSelectedConceptId(highlightTarget.submissionId);
 
-        const hasHighlight = (highlightsMap[highlightTarget.submissionId] ?? []).some(
-            (highlight) => highlight.id === highlightTarget.highlightId,
-        );
+        const hasHighlight = (highlightsMap[highlightTarget.submissionId] ?? []).some((highlight) => highlight.id === highlightTarget.highlightId);
 
         setPendingHighlightFocus(highlightTarget);
 
@@ -659,9 +654,7 @@ const StudentLiveDefense = () => {
                                     </p>
                                 </button>
                             ) : (
-                                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                                    Recommendation Letter: Not available yet.
-                                </p>
+                                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">Recommendation Letter: Not available yet.</p>
                             )}
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                                 <p className="text-[11px] text-slate-500">Instructor Status</p>

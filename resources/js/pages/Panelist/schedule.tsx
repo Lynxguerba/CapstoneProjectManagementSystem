@@ -154,7 +154,7 @@ const PanelistSchedule = () => {
                             value={query}
                             onChange={(event) => setQuery(event.target.value)}
                             placeholder={`Search ${activePhaseLabel.toLowerCase()} groups...`}
-                            className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:w-72"
+                            className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:w-72"
                         />
                     </div>
 

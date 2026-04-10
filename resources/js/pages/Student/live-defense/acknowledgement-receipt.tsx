@@ -155,7 +155,7 @@ const AcknowledgementReceiptPage = () => {
                                 <p>@officialdnsc</p>
                             </div>
                         </div>
-                        <p className="mt-4 text-center text-3xl font-semibold italic text-slate-900">Institute of Computing</p>
+                        <p className="mt-4 text-center text-3xl font-semibold text-slate-900 italic">Institute of Computing</p>
                         <p className="mt-2 text-center text-sm font-bold tracking-wide text-slate-900">ACKNOWLEDGEMENT RECEIPT</p>
                         <p className="text-center text-xs font-semibold text-slate-700">Capstone Project Defense Payment</p>
                     </div>
@@ -203,7 +203,7 @@ const AcknowledgementReceiptPage = () => {
                     </div>
 
                     <div className="mt-5 overflow-x-auto rounded border border-slate-300">
-                        <table className="min-w-[840px] w-full border-collapse text-center text-xs text-slate-800">
+                        <table className="w-full min-w-[840px] border-collapse text-center text-xs text-slate-800">
                             <thead className="bg-slate-50">
                                 <tr>
                                     <th className="border border-slate-300 px-2 py-2 font-semibold">Name of Faculty</th>

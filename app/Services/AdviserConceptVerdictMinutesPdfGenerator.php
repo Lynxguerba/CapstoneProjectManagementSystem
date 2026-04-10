@@ -480,7 +480,6 @@ class AdviserConceptVerdictMinutesPdfGenerator
             $titleY,
             $headerPlacement,
             $footerPlacement,
-            'Prepared by:'
         );
 
         $preparedByLabelY = $currentY;

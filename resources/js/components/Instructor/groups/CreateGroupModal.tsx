@@ -635,7 +635,8 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                 {isCrossSetSectionOpen ? (
                                     <div className="mt-3 space-y-3">
                                         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                                            Students from your own handled sets can be added directly. Students from other instructors require approval.
+                                            Students from your own handled sets can be added directly. Students from other instructors require
+                                            approval.
                                         </p>
 
                                         <div>
@@ -666,7 +667,9 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                                     <p className="px-4 py-3 text-sm text-slate-500">No students found.</p>
                                                 ) : (
                                                     crossSetSearchResults.map((student) => {
-                                                        const isAlreadyQueued = selectedCrossSetMembers.some((pending) => pending.student.id === student.id);
+                                                        const isAlreadyQueued = selectedCrossSetMembers.some(
+                                                            (pending) => pending.student.id === student.id,
+                                                        );
                                                         const displayName = resolveCrossSetStudentName(student);
                                                         const programSetName = resolveCrossSetProgramSetName(student);
                                                         const actionType = resolveCrossSetActionType(student);
@@ -679,7 +682,9 @@ const CreateGroupModal = ({ open, onClose, programSets }: CreateGroupModalProps)
                                                             >
                                                                 <div className="min-w-0">
                                                                     <p className="truncate text-sm font-medium text-slate-800">{displayName}</p>
-                                                                    {student.email ? <p className="truncate text-[11px] text-slate-500">{student.email}</p> : null}
+                                                                    {student.email ? (
+                                                                        <p className="truncate text-[11px] text-slate-500">{student.email}</p>
+                                                                    ) : null}
                                                                     <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
                                                                         {programSetName}
                                                                     </span>

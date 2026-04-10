@@ -1,14 +1,18 @@
+import { Link } from '@inertiajs/react';
 import { AlertCircle, Eye, ShieldCheck } from 'lucide-react';
 import React from 'react';
 
 type DefenseRow = {
     id: string;
+    groupId: number;
     group: string;
     programSet: string;
     scheduleDate: string;
     scheduleTime: string;
     room: string;
     status: string;
+    canReview: boolean;
+    reviewUrl: string;
 };
 
 type DefenseTabProps = {
@@ -33,7 +37,7 @@ const DefenseTab = ({ rows, pagedRows, pageStart, perPage, page, totalPages, fil
                         <ShieldCheck className="h-4 w-4 text-emerald-600" />
                         <h3 className="text-sm font-semibold text-slate-900">Defense Status</h3>
                     </div>
-                    <p className="text-xs text-slate-500">Monitor concept defense schedules by group</p>
+                    <p className="text-xs text-slate-500">Monitor concept defense schedules and review evaluation sheets by group</p>
                 </div>
             </div>
             <div className="border-b border-slate-100 px-6 py-4">{filters}</div>
@@ -72,14 +76,22 @@ const DefenseTab = ({ rows, pagedRows, pageStart, perPage, page, totalPages, fil
                                                 row.status,
                                             )}`}
                                         >
-                                            {row.status === 'Missing Requirements' ? <AlertCircle className="h-3.5 w-3.5" /> : null}
+                                            {row.status === 'No Panelists Assigned' ? <AlertCircle className="h-3.5 w-3.5" /> : null}
                                             {row.status}
                                         </span>
                                     </td>
                                     <td className="px-6 py-3">
-                                        <button className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100">
-                                            <Eye className="h-4 w-4" />
-                                        </button>
+                                        {row.canReview ? (
+                                            <Link
+                                                href={row.reviewUrl}
+                                                className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-50"
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                                <span>Review</span>
+                                            </Link>
+                                        ) : (
+                                            <span className="text-xs text-slate-400">Review unavailable</span>
+                                        )}
                                     </td>
                                 </tr>
                             ))

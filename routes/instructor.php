@@ -3157,16 +3157,63 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         try {
             if (class_exists(\App\Models\Group::class) && Schema::hasTable('groups')) {
                 $hasConceptVerdictColumn = Schema::hasColumn('groups', 'concept_verdict');
+                $hasGroupAdvisersTable = Schema::hasTable('group_advisers');
+                $hasGroupPanelistsTable = Schema::hasTable('group_panelists');
+                $hasAcknowledgementReceiptsTable = Schema::hasTable('group_acknowledgement_receipts');
 
-                $groups = \App\Models\Group::query()
+                $groupsQuery = \App\Models\Group::query()
                     ->with(['programSet.academicYear', 'leader', 'members'])
                     ->when($userId !== null, function ($query) use ($userId) {
                         $query->whereHas('programSet', fn ($subQuery) => $subQuery->where('instructor_id', $userId));
                     })
                     ->withCount('members')
-                    ->orderByDesc('created_at')
-                    ->get()
-                    ->map(function (\App\Models\Group $group) use ($resolveUserName, $hasConceptVerdictColumn): array {
+                    ->orderByDesc('created_at');
+
+                if ($hasGroupAdvisersTable) {
+                    $groupsQuery->with('adviserAssignment:id,group_id,adviser_id');
+                }
+
+                if ($hasGroupPanelistsTable) {
+                    $groupsQuery->with('panelAssignments:id,group_id,panelist_id')
+                        ->withCount('panelAssignments');
+                }
+
+                $groupCollection = $groupsQuery->get();
+
+                $signedFacultyIdsByGroupId = collect();
+                if ($hasAcknowledgementReceiptsTable && $groupCollection->isNotEmpty()) {
+                    $groupIds = $groupCollection
+                        ->pluck('id')
+                        ->filter(static fn ($groupId): bool => is_numeric($groupId))
+                        ->map(static fn ($groupId): int => (int) $groupId)
+                        ->values();
+
+                    if ($groupIds->isNotEmpty()) {
+                        $signedFacultyIdsByGroupId = GroupAcknowledgementReceipt::query()
+                            ->whereIn('group_id', $groupIds->all())
+                            ->where('defense_type_key', 'concept_presentation')
+                            ->whereNotNull('signed_at')
+                            ->get(['group_id', 'faculty_user_id'])
+                            ->groupBy('group_id')
+                            ->map(function ($rows) {
+                                return collect($rows)
+                                    ->pluck('faculty_user_id')
+                                    ->filter(static fn ($facultyUserId): bool => is_numeric($facultyUserId))
+                                    ->map(static fn ($facultyUserId): int => (int) $facultyUserId)
+                                    ->unique()
+                                    ->values();
+                            });
+                    }
+                }
+
+                $groups = $groupCollection
+                    ->map(function (\App\Models\Group $group) use (
+                        $resolveUserName,
+                        $hasConceptVerdictColumn,
+                        $hasGroupAdvisersTable,
+                        $hasGroupPanelistsTable,
+                        $signedFacultyIdsByGroupId
+                    ): array {
                         $programSet = $group->programSet;
                         $schoolYear = $programSet?->academicYear?->label;
 
@@ -3187,6 +3234,34 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                                 ->all()
                             : [];
 
+                        $panelistIds = $hasGroupPanelistsTable
+                            ? $group->panelAssignments
+                                ->pluck('panelist_id')
+                                ->filter(static fn ($panelistId): bool => is_numeric($panelistId))
+                                ->map(static fn ($panelistId): int => (int) $panelistId)
+                                ->unique()
+                                ->values()
+                            : collect();
+
+                        $requiredSignerIds = collect([
+                            $hasGroupAdvisersTable ? $group->adviserAssignment?->adviser_id : null,
+                        ])
+                            ->merge($panelistIds)
+                            ->filter(static fn ($facultyUserId): bool => is_numeric($facultyUserId))
+                            ->map(static fn ($facultyUserId): int => (int) $facultyUserId)
+                            ->unique()
+                            ->values();
+
+                        $signedFacultyIds = collect($signedFacultyIdsByGroupId->get($group->id, collect()));
+                        $signedSignerCount = $requiredSignerIds->isNotEmpty()
+                            ? $requiredSignerIds->intersect($signedFacultyIds)->count()
+                            : 0;
+                        $panelistsCount = $hasGroupPanelistsTable
+                            ? (is_numeric($group->panel_assignments_count ?? null)
+                                ? (int) $group->panel_assignments_count
+                                : $panelistIds->count())
+                            : 0;
+
                         return [
                             'id' => $group->id,
                             'name' => $group->name,
@@ -3200,6 +3275,9 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             'leader_name' => $leaderName !== '' ? $leaderName : null,
                             'members' => $members,
                             'members_count' => $group->members_count ?? 0,
+                            'panelists_count' => $panelistsCount,
+                            'receipt_signed_count' => $signedSignerCount,
+                            'receipt_required_count' => $requiredSignerIds->count(),
                             'created_at' => $group->created_at?->format('Y-m-d'),
                         ];
                     })

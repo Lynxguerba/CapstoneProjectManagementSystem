@@ -165,12 +165,7 @@ const ConceptVerdictMinutesModal = ({
     const proponentSlots = useMemo(() => {
         const normalizedNames = proponents.map((name) => name.trim()).filter((name) => name !== '');
 
-        return [
-            normalizedNames[0] ?? null,
-            normalizedNames[1] ?? null,
-            normalizedNames[2] ?? null,
-            normalizedNames[3] ?? null,
-        ];
+        return [normalizedNames[0] ?? null, normalizedNames[1] ?? null, normalizedNames[2] ?? null, normalizedNames[3] ?? null];
     }, [proponents]);
 
     if (!open || typeof document === 'undefined') {
@@ -217,9 +212,7 @@ const ConceptVerdictMinutesModal = ({
 
                 <div
                     className={`grid grid-cols-1 gap-0 transition-[grid-template-columns] duration-300 ease-in-out ${
-                        isDetailsCollapsed
-                            ? 'lg:grid-cols-[minmax(0,1fr)_88px]'
-                            : 'lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]'
+                        isDetailsCollapsed ? 'lg:grid-cols-[minmax(0,1fr)_88px]' : 'lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]'
                     }`}
                 >
                     <div className="flex min-h-[30rem] flex-col border-b border-slate-200 bg-slate-100 lg:border-r lg:border-b-0">
@@ -314,7 +307,9 @@ const ConceptVerdictMinutesModal = ({
                                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">Verdict</p>
                                         <p className="mt-1 text-sm font-semibold text-slate-900">{verdict ?? 'Not set yet'}</p>
-                                        <p className="mt-1 text-xs text-slate-600">Approved Title: {approvedTitle ?? 'No approved title for this verdict.'}</p>
+                                        <p className="mt-1 text-xs text-slate-600">
+                                            Approved Title: {approvedTitle ?? 'No approved title for this verdict.'}
+                                        </p>
                                         <p className="mt-1 text-[11px] text-slate-500">
                                             Decided by: {decidedBy ?? '—'} · Decided at: {decidedAt ?? '—'}
                                         </p>
@@ -381,9 +376,7 @@ const ConceptVerdictMinutesModal = ({
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-100 px-4 py-3">
-                    <div className="text-xs text-emerald-800">
-                        This action generates a signed minutes PDF with adviser e-signature only.
-                    </div>
+                    <div className="text-xs text-emerald-800">This action generates a signed minutes PDF with adviser e-signature only.</div>
                     <button
                         type="button"
                         onClick={onGenerate}

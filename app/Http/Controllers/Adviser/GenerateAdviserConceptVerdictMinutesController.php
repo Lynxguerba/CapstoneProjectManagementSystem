@@ -37,7 +37,7 @@ class GenerateAdviserConceptVerdictMinutesController extends Controller
             'members:id,name,first_name,last_name,email',
             'adviserAssignment:group_id,adviser_id',
             'panelAssignments.panelist:id,name,first_name,last_name,email',
-            'approvedConceptSubmission:id,file_name',
+            'approvedConceptSubmission:id,group_id,file_name',
         ]);
 
         if ((int) ($group->adviserAssignment?->adviser_id ?? 0) !== (int) $adviser->id) {
@@ -247,10 +247,22 @@ class GenerateAdviserConceptVerdictMinutesController extends Controller
             return [];
         }
 
+        $approvedConceptSubmissionId = $this->resolveApprovedConceptSubmissionId($group);
+
         $commentsMap = $panelistNameById
             ->keys()
             ->mapWithKeys(fn (int $panelistId): array => [$panelistId => []])
             ->all();
+
+        if ($approvedConceptSubmissionId === null) {
+            return $panelistNameById
+                ->map(fn (string $name): array => [
+                    'panelist' => $name,
+                    'comments' => [],
+                ])
+                ->values()
+                ->all();
+        }
 
         if (! Schema::hasTable('live_defense_comments')) {
             return $panelistNameById
@@ -278,6 +290,7 @@ class GenerateAdviserConceptVerdictMinutesController extends Controller
 
         $comments = LiveDefenseComment::query()
             ->where('group_id', $group->id)
+            ->where('document_submission_id', $approvedConceptSubmissionId)
             ->orderBy('created_at')
             ->orderBy('id')
             ->get($commentColumns);
@@ -330,6 +343,26 @@ class GenerateAdviserConceptVerdictMinutesController extends Controller
             })
             ->values()
             ->all();
+    }
+
+    private function resolveApprovedConceptSubmissionId(Group $group): ?int
+    {
+        $approvedConceptSubmissionId = is_numeric($group->approved_concept_submission_id)
+            ? (int) $group->approved_concept_submission_id
+            : null;
+
+        if ($approvedConceptSubmissionId === null) {
+            return null;
+        }
+
+        if (
+            $group->approvedConceptSubmission !== null
+            && (int) $group->approvedConceptSubmission->group_id !== (int) $group->id
+        ) {
+            return null;
+        }
+
+        return $approvedConceptSubmissionId;
     }
 
     private function resolveApprovedTitleForVerdict(Group $group, string $verdict): ?string

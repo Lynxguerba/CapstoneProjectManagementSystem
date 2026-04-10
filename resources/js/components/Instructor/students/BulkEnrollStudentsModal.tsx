@@ -675,9 +675,7 @@ const BulkEnrollStudentsModal = ({
                             </span>
                             <div>
                                 <p className="text-base font-semibold text-slate-900">Importing CSV file</p>
-                                <p className="text-sm text-slate-600">
-                                    Please wait while the selected students are being enrolled.
-                                </p>
+                                <p className="text-sm text-slate-600">Please wait while the selected students are being enrolled.</p>
                             </div>
                         </div>
                     </div>

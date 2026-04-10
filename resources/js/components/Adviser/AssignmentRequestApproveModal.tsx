@@ -20,7 +20,14 @@ type GroupMemberRow = {
     is_leader?: boolean;
 };
 
-const AssignmentRequestApproveModal = ({ open, groupName, members = [], processing = false, onClose, onConfirm }: AssignmentRequestApproveModalProps) => {
+const AssignmentRequestApproveModal = ({
+    open,
+    groupName,
+    members = [],
+    processing = false,
+    onClose,
+    onConfirm,
+}: AssignmentRequestApproveModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
     const orderedMembers = React.useMemo(() => {
         return [...members].sort((first, second) => {
@@ -146,7 +153,9 @@ const AssignmentRequestApproveModal = ({ open, groupName, members = [], processi
                                                 <tr key={member.id} className={rowClasses}>
                                                     <td className="px-4 py-2.5 font-semibold text-slate-800">{member.name || 'Unnamed student'}</td>
                                                     <td className="px-4 py-2.5">
-                                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClasses}`}>{roleLabel}</span>
+                                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClasses}`}>
+                                                            {roleLabel}
+                                                        </span>
                                                     </td>
                                                 </tr>
                                             );

@@ -436,7 +436,9 @@ const GroupConceptReviewPage = () => {
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             <tr>
-                                                <td className="px-4 py-3 font-semibold text-slate-900">{activeGroup.adviser?.name ?? 'Unassigned'}</td>
+                                                <td className="px-4 py-3 font-semibold text-slate-900">
+                                                    {activeGroup.adviser?.name ?? 'Unassigned'}
+                                                </td>
                                                 <td className="px-4 py-3 text-slate-600">{activeGroup.adviser?.email ?? '—'}</td>
                                                 <td className="px-4 py-3 text-slate-600">{activeGroup.adviser?.assignedAt ?? '—'}</td>
                                             </tr>

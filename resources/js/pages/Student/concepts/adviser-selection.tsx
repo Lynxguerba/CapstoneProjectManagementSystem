@@ -152,8 +152,7 @@ const AdviserSelection = () => {
 
     const sortedAdvisers = React.useMemo(() => {
         return [...advisers].sort((first, second) => {
-            const workloadDelta =
-                getTotalAssignedGroups(second, selectedAcademicYear) - getTotalAssignedGroups(first, selectedAcademicYear);
+            const workloadDelta = getTotalAssignedGroups(second, selectedAcademicYear) - getTotalAssignedGroups(first, selectedAcademicYear);
 
             if (workloadDelta !== 0) {
                 return workloadDelta;
@@ -361,9 +360,9 @@ const AdviserSelection = () => {
                                     ? 'Pending'
                                     : isClosed
                                       ? 'Closed'
-                                    : isGroupAssigned
-                                      ? 'Request Reassign'
-                                      : 'Invite Adviser';
+                                      : isGroupAssigned
+                                        ? 'Request Reassign'
+                                        : 'Invite Adviser';
 
                             return (
                                 <div
@@ -454,9 +453,9 @@ const AdviserSelection = () => {
                                             ? 'Pending'
                                             : isClosed
                                               ? 'Closed'
-                                            : isGroupAssigned
-                                              ? 'Request Reassign'
-                                              : 'Invite Adviser';
+                                              : isGroupAssigned
+                                                ? 'Request Reassign'
+                                                : 'Invite Adviser';
 
                                     return (
                                         <tr key={adviser.id} className="transition-colors hover:bg-green-50/30">
@@ -527,8 +526,7 @@ const AdviserSelection = () => {
                 {filteredAdvisers.length > 0 && (
                     <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
                         <p className="text-xs font-medium text-slate-500">
-                            Page <span className="text-slate-900">{currentPage}</span> of{' '}
-                            <span className="text-slate-900">{totalPages}</span>
+                            Page <span className="text-slate-900">{currentPage}</span> of <span className="text-slate-900">{totalPages}</span>
                         </p>
                         <div className="flex items-center gap-1.5">
                             <button

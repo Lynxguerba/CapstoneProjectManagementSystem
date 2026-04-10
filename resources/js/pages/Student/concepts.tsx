@@ -1,17 +1,6 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import {
-    AlertTriangle,
-    BellRing,
-    CheckCircle2,
-    ChevronRight,
-    Clock3,
-    ExternalLink,
-    FileText,
-    FolderOpen,
-    Trash2,
-    UploadCloud,
-} from 'lucide-react';
+import { AlertTriangle, BellRing, CheckCircle2, ChevronRight, Clock3, ExternalLink, FileText, FolderOpen, Trash2, UploadCloud } from 'lucide-react';
 import React from 'react';
 import ConceptSubmitConfirmationModal from '@/components/Student/ConceptSubmitConfirmationModal';
 import RemoveConceptSubmissionModal from '@/components/Student/RemoveConceptSubmissionModal';
@@ -130,12 +119,7 @@ const StudentConcepts = () => {
     const requirementLabel = activeRequirement?.type ?? 'Concept Paper';
     const deadlineLabel = activeRequirement?.deadlineLabel ?? notifications.deadline ?? 'No deadline declared yet.';
     const canSubmit =
-        isGroupLeader &&
-        readiness.isReady &&
-        group !== null &&
-        !form.processing &&
-        form.data.concept_file !== null &&
-        form.data.title.trim() !== '';
+        isGroupLeader && readiness.isReady && group !== null && !form.processing && form.data.concept_file !== null && form.data.title.trim() !== '';
 
     const resetFileInput = () => {
         form.setData('concept_file', null);
@@ -300,7 +284,7 @@ const StudentConcepts = () => {
                                                     }`}
                                                 >
                                                     <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-                                                    <span className="max-w-[6.75rem] whitespace-normal text-center leading-tight">Open File</span>
+                                                    <span className="max-w-[6.75rem] text-center leading-tight whitespace-normal">Open File</span>
                                                 </Link>
 
                                                 {isGroupLeader ? (
@@ -311,7 +295,7 @@ const StudentConcepts = () => {
                                                         className="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                                                     >
                                                         <Trash2 className="h-3.5 w-3.5 shrink-0" />
-                                                        <span className="max-w-[6.75rem] whitespace-normal text-center leading-tight">
+                                                        <span className="max-w-[6.75rem] text-center leading-tight whitespace-normal">
                                                             {deleteForm.processing && submissionPendingDeletion?.id === submission.id
                                                                 ? 'Removing File...'
                                                                 : 'Remove File'}
