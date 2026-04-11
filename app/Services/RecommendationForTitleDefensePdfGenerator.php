@@ -21,7 +21,8 @@ class RecommendationForTitleDefensePdfGenerator
         array $approvedTitles,
         string $submittedByNames,
         string $adviserName,
-        CarbonInterface $signedAt
+        CarbonInterface $signedAt,
+        ?string $programCode = null
     ): string {
         $workingDirectory = storage_path('app/private/tmp/recommendation-'.Str::uuid()->toString());
         File::ensureDirectoryExists($workingDirectory);
@@ -34,6 +35,7 @@ class RecommendationForTitleDefensePdfGenerator
             $submittedByNames,
             $adviserName,
             $signedAt,
+            $programCode,
         );
 
         return $outputPdfPath;
@@ -571,7 +573,8 @@ class RecommendationForTitleDefensePdfGenerator
         array $approvedTitles,
         string $submittedByNames,
         string $adviserName,
-        CarbonInterface $signedAt
+        CarbonInterface $signedAt,
+        ?string $programCode
     ): void {
         $lines = [];
         $headerImage = $this->loadTemplateImage(storage_path('app/private/templates/header.png'));
@@ -602,7 +605,11 @@ class RecommendationForTitleDefensePdfGenerator
 
         $this->appendPdfCenteredTextLine($lines, 'F2', 14, $titleY, 'RECOMMENDATION FOR TITLE DEFENSE');
         $y = $titleY - 30;
-        $introText = 'In partial fulfillment of the requirements for the degree Bachelor of Science in Information Systems, this Capstone Project Concept Papers:';
+        $degreeName = $this->resolveDegreeProgramName($programCode);
+        $introText = sprintf(
+            'In partial fulfillment of the requirements for the degree %s, this Capstone Project Concept Papers:',
+            $degreeName
+        );
         $y = $this->appendPdfJustifiedStyledParagraph(
             $lines,
             [['font' => 'F1', 'size' => 11, 'text' => $introText]],
@@ -656,6 +663,17 @@ class RecommendationForTitleDefensePdfGenerator
         $pdfContent = implode("\n", $lines);
         $pdfDocument = $this->buildSimplePdfDocument($pdfContent, $imageMap);
         File::put($outputPdfPath, $pdfDocument);
+    }
+
+    private function resolveDegreeProgramName(?string $programCode): string
+    {
+        $normalizedProgramCode = strtoupper(trim((string) $programCode));
+
+        return match ($normalizedProgramCode) {
+            'BSIS' => 'Bachelor of Science in Information Systems',
+            'BSIT' => 'Bachelor of Science in Information Technology',
+            default => 'Bachelor of Science in Information Technology',
+        };
     }
 
     private function appendPdfTextLine(array &$lines, string $fontKey, int $fontSize, int $x, int $y, string $text): void

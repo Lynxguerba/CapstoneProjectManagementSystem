@@ -32,7 +32,7 @@ class GenerateRecommendationForTitleDefenseController extends Controller
         }
 
         $group->loadMissing([
-            'programSet:id,academic_year_id,instructor_id',
+            'programSet:id,program,academic_year_id,instructor_id',
             'leader:id,name,first_name,last_name',
             'members:id,name,first_name,last_name',
             'adviserAssignment:group_id,adviser_id',
@@ -131,7 +131,8 @@ class GenerateRecommendationForTitleDefenseController extends Controller
                 $approvedTitles,
                 $submittedByNames,
                 $adviserName,
-                $signedAt
+                $signedAt,
+                is_string($group->programSet?->program) ? $group->programSet->program : null,
             );
         } catch (Throwable $exception) {
             return response()->json([
