@@ -1,113 +1,101 @@
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Filter, FolderOpen, GraduationCap, Search, Users } from 'lucide-react';
+import { ChevronRight, Filter, Users } from 'lucide-react';
 import React from 'react';
 
 import ProgramChairpersonLayout from './_layout';
 
-type ProgramSetSummary = {
+type GroupRow = {
     id: number;
     name: string;
-    program: string | null;
-    school_year: string | null;
+    program_set_id?: number | null;
+    program_set_name?: string | null;
+    adviser_name?: string | null;
     instructor_name?: string | null;
-    students_count?: number;
-    groups_count?: number;
-    local_groups_count?: number;
-    cross_set_groups_count?: number;
+    leader_name?: string | null;
+    members_count?: number;
 };
 
-type ProgramChairConceptTitlesPageProps = {
-    programSets?: ProgramSetSummary[];
+type ProgramSetOption = {
+    id: number;
+    name: string;
+};
+
+type ProgramChairConceptTitlesProps = {
+    groups?: GroupRow[];
+    programSetOptions?: ProgramSetOption[];
+    instructorOptions?: string[];
+    adviserOptions?: string[];
     assignedProgram?: string | null;
-    selectedAcademicYear?: string | null;
 };
-
-const normalizeAcademicYearLabel = (value: string): string =>
-    value
-        .replace(/^A\.?Y\.?\s*/i, '')
-        .trim()
-        .toLowerCase();
-
-const formatCount = (value: number): string => new Intl.NumberFormat().format(value);
 
 const ProgramChairpersonConceptTitlesPage = () => {
-    const page = usePage<ProgramChairConceptTitlesPageProps>();
+    const page = usePage<ProgramChairConceptTitlesProps>();
     const { props } = page;
-    const programSets = props.programSets ?? [];
+    const groups = props.groups ?? [];
+    const programSetOptions = props.programSetOptions ?? [];
+    const instructorOptions = props.instructorOptions ?? [];
+    const adviserOptions = props.adviserOptions ?? [];
     const assignedProgram = typeof props.assignedProgram === 'string' && props.assignedProgram !== '' ? props.assignedProgram : null;
-    const selectedAcademicYear =
-        typeof props.selectedAcademicYear === 'string' && props.selectedAcademicYear !== '' ? props.selectedAcademicYear : null;
-    const [searchTerm, setSearchTerm] = React.useState('');
-
-    const schoolYearOptions = React.useMemo(() => {
-        const schoolYears = programSets
-            .map((programSet) => programSet.school_year)
-            .filter((schoolYear): schoolYear is string => typeof schoolYear === 'string' && schoolYear.trim() !== '');
-
-        return ['All', ...Array.from(new Set(schoolYears))];
-    }, [programSets]);
-
-    const selectedAcademicYearFilter = React.useMemo(() => {
-        if (selectedAcademicYear === null || normalizeAcademicYearLabel(selectedAcademicYear) === 'all') {
-            return 'All';
-        }
-
-        const normalizedSelectedAcademicYear = normalizeAcademicYearLabel(selectedAcademicYear);
-        const matchedSchoolYear = schoolYearOptions.find((schoolYear) => normalizeAcademicYearLabel(schoolYear) === normalizedSelectedAcademicYear);
-
-        return matchedSchoolYear ?? selectedAcademicYear;
-    }, [schoolYearOptions, selectedAcademicYear]);
-
-    const [selectedSchoolYear, setSelectedSchoolYear] = React.useState(selectedAcademicYearFilter);
+    const [selectedProgramSet, setSelectedProgramSet] = React.useState('All');
+    const [selectedInstructor, setSelectedInstructor] = React.useState('All');
+    const [selectedAdviser, setSelectedAdviser] = React.useState('All');
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const itemsPerPage = 10;
 
     React.useEffect(() => {
-        setSelectedSchoolYear(selectedAcademicYearFilter);
-    }, [selectedAcademicYearFilter]);
+        if (selectedProgramSet !== 'All' && !programSetOptions.some((option) => String(option.id) === selectedProgramSet)) {
+            setSelectedProgramSet('All');
+        }
+    }, [programSetOptions, selectedProgramSet]);
 
     React.useEffect(() => {
-        if (!schoolYearOptions.includes(selectedSchoolYear)) {
-            setSelectedSchoolYear('All');
+        if (selectedInstructor !== 'All' && !instructorOptions.includes(selectedInstructor)) {
+            setSelectedInstructor('All');
         }
-    }, [schoolYearOptions, selectedSchoolYear]);
+    }, [instructorOptions, selectedInstructor]);
 
-    const filteredProgramSets = React.useMemo(() => {
-        const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+    React.useEffect(() => {
+        if (selectedAdviser !== 'All' && !adviserOptions.includes(selectedAdviser)) {
+            setSelectedAdviser('All');
+        }
+    }, [adviserOptions, selectedAdviser]);
 
-        return programSets.filter((programSet) => {
-            const schoolYearLabel = programSet.school_year ?? '';
-            const matchesSchoolYear =
-                selectedSchoolYear === 'All' || normalizeAcademicYearLabel(schoolYearLabel) === normalizeAcademicYearLabel(selectedSchoolYear);
-            const matchesSearch =
-                normalizedSearchTerm === '' ||
-                (programSet.name ?? '').toLowerCase().includes(normalizedSearchTerm) ||
-                (programSet.program ?? '').toLowerCase().includes(normalizedSearchTerm) ||
-                (programSet.instructor_name ?? '').toLowerCase().includes(normalizedSearchTerm) ||
-                schoolYearLabel.toLowerCase().includes(normalizedSearchTerm);
+    const filteredGroups = React.useMemo(() => {
+        return groups.filter((group) => {
+            const matchesProgramSet = selectedProgramSet === 'All' || String(group.program_set_id ?? '') === selectedProgramSet;
+            const matchesInstructor = selectedInstructor === 'All' || (group.instructor_name ?? '') === selectedInstructor;
+            const matchesAdviser = selectedAdviser === 'All' || (group.adviser_name ?? '') === selectedAdviser;
 
-            return matchesSchoolYear && matchesSearch;
+            return matchesProgramSet && matchesInstructor && matchesAdviser;
         });
-    }, [programSets, searchTerm, selectedSchoolYear]);
+    }, [groups, selectedProgramSet, selectedInstructor, selectedAdviser]);
 
-    const summary = React.useMemo(() => {
-        return filteredProgramSets.reduce(
-            (totals, programSet) => {
-                return {
-                    totalProgramSets: totals.totalProgramSets + 1,
-                    totalStudents: totals.totalStudents + (programSet.students_count ?? 0),
-                    totalGroups: totals.totalGroups + (programSet.groups_count ?? 0),
-                };
-            },
-            {
-                totalProgramSets: 0,
-                totalStudents: 0,
-                totalGroups: 0,
-            },
-        );
-    }, [filteredProgramSets]);
+    const totalPages = Math.max(1, Math.ceil(filteredGroups.length / itemsPerPage));
+
+    React.useEffect(() => {
+        setCurrentPage((page) => Math.min(page, totalPages));
+    }, [totalPages]);
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedProgramSet, selectedInstructor, selectedAdviser]);
+
+    const paginatedGroups = React.useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredGroups.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredGroups, currentPage]);
+
+    const pages = React.useMemo(() => {
+        const maxVisiblePages = 5;
+        const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - (maxVisiblePages - 1)));
+        const endPage = Math.min(totalPages, startPage + (maxVisiblePages - 1));
+
+        return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+    }, [currentPage, totalPages]);
 
     return (
-        <ProgramChairpersonLayout title="Concept Titles" subtitle="Review concept-title program sets scoped to your assigned academic program">
+        <ProgramChairpersonLayout title="Concept Titles" subtitle="List of groups for your assigned program">
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="space-y-5">
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
                     <Link href="/program_chairperson/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
@@ -119,116 +107,151 @@ const ProgramChairpersonConceptTitlesPage = () => {
                     </span>
                 </nav>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Assigned Program</p>
-                        <p className="mt-2 text-2xl font-bold text-slate-900">{assignedProgram ?? 'Not Assigned'}</p>
-                        <p className="mt-1 text-xs text-slate-500">Only program sets under this program are shown.</p>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Visible Program Sets</p>
-                        <p className="mt-2 text-2xl font-bold text-slate-900">{formatCount(summary.totalProgramSets)}</p>
-                        <p className="mt-1 text-xs text-slate-500">Based on current search and academic-year filter.</p>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Students / Groups</p>
-                        <p className="mt-2 text-2xl font-bold text-slate-900">
-                            {formatCount(summary.totalStudents)} / {formatCount(summary.totalGroups)}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">Total enrolled students and groups across visible sets.</p>
-                    </div>
-                </div>
-
                 <div className="">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div className="relative flex-1">
-                            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                            <input
-                                type="text"
-                                value={searchTerm}
-                                onChange={(event) => setSearchTerm(event.target.value)}
-                                placeholder="Search program set, program, instructor, or school year"
-                                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-3 pl-9 text-sm text-slate-700 shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                            />
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <div className="relative">
+                                <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                <select
+                                    value={selectedProgramSet}
+                                    onChange={(event) => setSelectedProgramSet(event.target.value)}
+                                    className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                >
+                                    <option value="All">All Program Sets</option>
+                                    {programSetOptions.map((programSetOption) => (
+                                        <option key={programSetOption.id} value={String(programSetOption.id)}>
+                                            {programSetOption.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="relative">
+                                <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                <select
+                                    value={selectedInstructor}
+                                    onChange={(event) => setSelectedInstructor(event.target.value)}
+                                    className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                >
+                                    {instructorOptions.map((instructorName) => (
+                                        <option key={instructorName} value={instructorName}>
+                                            {instructorName === 'All' ? 'All Instructors' : instructorName}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="relative">
+                                <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                <select
+                                    value={selectedAdviser}
+                                    onChange={(event) => setSelectedAdviser(event.target.value)}
+                                    className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                >
+                                    <option value="All">All Advisers</option>
+                                    {adviserOptions.map((adviserName) => (
+                                        <option key={adviserName} value={adviserName}>
+                                            {adviserName}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {assignedProgram === null ? (
                     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-                        <h3 className="text-base font-semibold text-amber-900">Program assignment is required</h3>
+                        <h3 className="text-base font-semibold text-amber-900">Program assignment is required.</h3>
                         <p className="mt-2 text-sm text-amber-800">
                             No `program` is assigned to this Program Chairperson account yet. Ask an administrator to assign `BSIT` or `BSIS`.
                         </p>
                     </div>
-                ) : filteredProgramSets.length === 0 ? (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-                            <FolderOpen className="h-6 w-6" />
-                        </div>
-                        <h3 className="mt-4 text-lg font-semibold text-slate-900">No program sets found</h3>
-                        <p className="mt-1 text-sm text-slate-500">
-                            {searchTerm.trim() !== ''
-                                ? 'Try a different search term or clear the academic-year filter.'
-                                : `No program sets are currently available for ${assignedProgram}.`}
-                        </p>
-                    </div>
                 ) : (
-                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-slate-200 text-sm">
-                                <thead className="bg-slate-50">
-                                    <tr className="text-left text-xs font-semibold tracking-wide text-slate-600 uppercase">
-                                        <th className="px-4 py-3">Program Set</th>
-                                        <th className="px-4 py-3">Program</th>
-                                        <th className="px-4 py-3">Academic Year</th>
-                                        <th className="px-4 py-3">Instructor</th>
-                                        <th className="px-4 py-3 text-right">Students</th>
-                                        <th className="px-4 py-3 text-right">Groups</th>
+                            <table className="w-full text-left text-xs">
+                                <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                    <tr>
+                                        <th className="px-6 py-4">Group</th>
+                                        <th className="px-6 py-4">Program Set</th>
+                                        <th className="px-6 py-4">Adviser</th>
+                                        <th className="px-6 py-4">Instructor</th>
+                                        <th className="px-6 py-4">Leader</th>
+                                        <th className="px-6 py-4 text-center">Members</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {filteredProgramSets.map((programSet) => (
-                                        <tr key={programSet.id} className="hover:bg-slate-50/60">
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-start gap-2">
-                                                    <span className="mt-0.5 rounded-lg bg-emerald-100 p-1 text-emerald-700">
-                                                        <GraduationCap className="h-4 w-4" />
-                                                    </span>
-                                                    <div>
-                                                        <p className="font-semibold text-slate-900">{programSet.name}</p>
-                                                        <p className="text-xs text-slate-500">Program Set ID: {programSet.id}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                                    {programSet.program ?? 'N/A'}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-slate-700">{programSet.school_year ?? 'Unspecified'}</td>
-                                            <td className="px-4 py-3 text-slate-700">{programSet.instructor_name ?? 'Unassigned'}</td>
-                                            <td className="px-4 py-3 text-right font-medium text-slate-800">
-                                                <span className="inline-flex items-center gap-1">
-                                                    <Users className="h-3.5 w-3.5 text-slate-400" />
-                                                    {formatCount(programSet.students_count ?? 0)}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-medium text-slate-800">
-                                                {formatCount(programSet.groups_count ?? 0)}
-                                                {(programSet.cross_set_groups_count ?? 0) > 0 ? (
-                                                    <span className="ml-1 text-xs text-slate-500">
-                                                        ({formatCount(programSet.cross_set_groups_count ?? 0)} cross-set)
-                                                    </span>
-                                                ) : null}
-                                            </td>
+                                    {paginatedGroups.map((group, index) => (
+                                        <tr
+                                            key={group.id}
+                                            className={`transition-colors hover:bg-emerald-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
+                                        >
+                                            <td className="px-6 py-3.5 font-semibold text-slate-800">{group.name}</td>
+                                            <td className="px-6 py-3.5 text-slate-600">{group.program_set_name || 'Unassigned Set'}</td>
+                                            <td className="px-6 py-3.5 text-slate-600">{group.adviser_name || 'Unassigned'}</td>
+                                            <td className="px-6 py-3.5 text-slate-600">{group.instructor_name || 'Unassigned'}</td>
+                                            <td className="px-6 py-3.5 text-slate-600">{group.leader_name || '—'}</td>
+                                            <td className="px-6 py-3.5 text-center font-semibold text-slate-800">{group.members_count ?? 0}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
+
+                        {filteredGroups.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-xs text-slate-500">
+                                <Users className="h-8 w-8 text-slate-300" />
+                                No groups found for the selected filters.
+                            </div>
+                        ) : null}
                     </div>
                 )}
+
+                {filteredGroups.length > 0 ? (
+                    <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
+                        <p className="text-xs font-medium text-slate-500">
+                            Page <span className="text-slate-900">{currentPage}</span> of <span className="text-slate-900">{totalPages}</span>
+                        </p>
+
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                                disabled={currentPage === 1}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                            >
+                                <ChevronRight size={16} className="rotate-180" />
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                                {pages.map((page) => (
+                                    <button
+                                        key={page}
+                                        type="button"
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`h-8 min-w-[32px] rounded-lg text-xs font-bold transition-all ${
+                                            page === currentPage
+                                                ? 'bg-emerald-700 text-white shadow-md shadow-emerald-700/20'
+                                                : 'text-slate-600 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                                disabled={currentPage === totalPages}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </div>
+                ) : null}
             </motion.section>
         </ProgramChairpersonLayout>
     );

@@ -2,9 +2,9 @@
 
 use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
-use App\Models\ProgramSet;
+use App\Models\Group;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
@@ -14,22 +14,11 @@ Route::middleware(['auth', 'role:program_chairperson'])->prefix('program_chairpe
         return Inertia::render('ProgramChairperson/dashboard');
     })->name('program_chairperson.dashboard');
     Route::get('/concept-titles', function () {
-        $selectedAcademicYearId = request()->query('academic_year_id');
-        $selectedAcademicYearId = is_numeric($selectedAcademicYearId) ? (int) $selectedAcademicYearId : null;
-        $selectedAcademicYearId = $selectedAcademicYearId !== null && $selectedAcademicYearId > 0 ? $selectedAcademicYearId : null;
-        $selectedAcademicYear = request()->query('academic_year');
-        $selectedAcademicYear = is_string($selectedAcademicYear) && $selectedAcademicYear !== '' ? $selectedAcademicYear : null;
-        $normalizedSelectedAcademicYear = is_string($selectedAcademicYear)
-            ? trim((string) preg_replace('/^A\.?Y\.?\s*/i', '', $selectedAcademicYear))
-            : null;
-        $academicYearCandidates = collect([$selectedAcademicYear, $normalizedSelectedAcademicYear])
-            ->filter(fn ($value): bool => is_string($value) && $value !== '')
-            ->unique()
-            ->values()
-            ->all();
-        $hasProgramSetsSchoolYearColumn = Schema::hasTable('program_sets') && Schema::hasColumn('program_sets', 'school_year');
         $assignedProgram = null;
-        $programSets = [];
+        $groups = [];
+        $programSetOptions = [];
+        $instructorOptions = [];
+        $adviserOptions = [];
 
         try {
             $user = Auth::guard('web')->user();
@@ -41,88 +30,98 @@ Route::middleware(['auth', 'role:program_chairperson'])->prefix('program_chairpe
                 ? $normalizedAssignedProgram
                 : null;
 
-            if ($assignedProgram !== null && class_exists(ProgramSet::class) && Schema::hasTable('program_sets')) {
-                $hasProgramSetStudentTable = Schema::hasTable('program_set_student');
-                $hasGroupsTable = Schema::hasTable('groups');
-                $hasGroupMembersTable = Schema::hasTable('group_members');
-                $hasGroupMembersIsCrossSetColumn = $hasGroupMembersTable && Schema::hasColumn('group_members', 'is_cross_set');
-                $programSetColumns = ['id', 'name', 'program', 'academic_year_id', 'instructor_id'];
+            if ($assignedProgram !== null && class_exists(Group::class) && Schema::hasTable('groups') && Schema::hasTable('program_sets')) {
+                $resolveUserName = static function (?User $faculty): string {
+                    if (! $faculty) {
+                        return '';
+                    }
 
-                if ($hasProgramSetsSchoolYearColumn) {
-                    $programSetColumns[] = 'school_year';
+                    $firstName = is_string($faculty->first_name) ? trim($faculty->first_name) : '';
+                    $lastName = is_string($faculty->last_name) ? trim($faculty->last_name) : '';
+                    $fullName = $firstName !== '' || $lastName !== ''
+                        ? trim($firstName.' '.$lastName)
+                        : (is_string($faculty->name) ? trim($faculty->name) : '');
+
+                    return $fullName;
+                };
+
+                $hasGroupAdvisersTable = Schema::hasTable('group_advisers');
+                $groupsQuery = Group::query()
+                    ->with([
+                        'leader:id,name,first_name,last_name',
+                        'programSet:id,name,program,instructor_id',
+                        'programSet.instructor:id,name,first_name,last_name',
+                    ])
+                    ->whereHas('programSet', fn ($query) => $query->where('program', $assignedProgram))
+                    ->withCount('members')
+                    ->orderByDesc('created_at');
+
+                if ($hasGroupAdvisersTable) {
+                    $groupsQuery->with(['adviserAssignment.adviser:id,name,first_name,last_name']);
                 }
 
-                $programSetsQuery = ProgramSet::query()
-                    ->with(['academicYear:id,label,is_current', 'instructor:id,name,first_name,last_name'])
-                    ->where('program', $assignedProgram)
-                    ->when($selectedAcademicYearId !== null, fn ($query) => $query->where('academic_year_id', $selectedAcademicYearId))
-                    ->when(
-                        $selectedAcademicYearId === null && count($academicYearCandidates) > 0 && ! in_array('All', $academicYearCandidates, true),
-                        function ($query) use ($academicYearCandidates, $hasProgramSetsSchoolYearColumn): void {
-                            $query->where(function ($subQuery) use ($academicYearCandidates, $hasProgramSetsSchoolYearColumn): void {
-                                $subQuery->whereHas('academicYear', fn ($academicYearQuery) => $academicYearQuery->whereIn('label', $academicYearCandidates));
-
-                                if ($hasProgramSetsSchoolYearColumn) {
-                                    $subQuery->orWhereIn('school_year', $academicYearCandidates);
-                                }
-                            });
-                        }
-                    )
-                    ->when($hasProgramSetStudentTable, fn ($query) => $query->withCount('students'))
-                    ->when($hasGroupsTable, fn ($query) => $query->withCount('groups'))
-                    ->when(
-                        $hasProgramSetStudentTable && $hasGroupsTable && $hasGroupMembersTable,
-                        function ($query) use ($hasGroupMembersIsCrossSetColumn): void {
-                            $query->selectSub(
-                                DB::table('program_set_student as pss')
-                                    ->join('group_members as gm', 'gm.student_id', '=', 'pss.student_id')
-                                    ->join('groups as g', 'g.id', '=', 'gm.group_id')
-                                    ->whereColumn('pss.program_set_id', 'program_sets.id')
-                                    ->whereColumn('g.program_set_id', '!=', 'pss.program_set_id')
-                                    ->when($hasGroupMembersIsCrossSetColumn, fn ($subQuery) => $subQuery->where('gm.is_cross_set', true))
-                                    ->selectRaw('count(distinct g.id)'),
-                                'cross_set_groups_count',
-                            );
-                        },
-                    )
-                    ->orderByDesc('created_at')
-                    ->get($programSetColumns);
-
-                $programSets = $programSetsQuery
-                    ->map(function ($programSet) use ($hasProgramSetStudentTable, $hasGroupsTable, $hasGroupMembersTable, $hasProgramSetsSchoolYearColumn): array {
-                        $localGroupsCount = $hasGroupsTable ? (int) ($programSet->groups_count ?? 0) : 0;
-                        $crossSetGroupsCount = $hasProgramSetStudentTable && $hasGroupsTable && $hasGroupMembersTable
-                            ? (int) ($programSet->cross_set_groups_count ?? 0)
-                            : 0;
-                        $instructorFirstName = is_string($programSet->instructor?->first_name) ? trim($programSet->instructor->first_name) : '';
-                        $instructorLastName = is_string($programSet->instructor?->last_name) ? trim($programSet->instructor->last_name) : '';
-                        $instructorName = trim($instructorFirstName.' '.$instructorLastName);
-                        $instructorName = $instructorName !== '' ? $instructorName : $programSet->instructor?->name;
+                $groups = $groupsQuery
+                    ->get()
+                    ->map(function (Group $group) use ($resolveUserName, $hasGroupAdvisersTable): array {
+                        $adviserName = $hasGroupAdvisersTable
+                            ? $resolveUserName($group->adviserAssignment?->adviser)
+                            : '';
+                        $instructorName = $resolveUserName($group->programSet?->instructor);
 
                         return [
-                            'id' => $programSet->id,
-                            'name' => $programSet->name,
-                            'program' => $programSet->program,
-                            'school_year' => $programSet->academicYear?->label ?? ($hasProgramSetsSchoolYearColumn ? $programSet->school_year : null),
+                            'id' => $group->id,
+                            'name' => $group->name,
+                            'program_set_id' => $group->programSet?->id,
+                            'program_set_name' => $group->programSet?->name,
+                            'adviser_name' => $adviserName,
                             'instructor_name' => $instructorName,
-                            'students_count' => $hasProgramSetStudentTable ? (int) ($programSet->students_count ?? 0) : 0,
-                            'groups_count' => $localGroupsCount + $crossSetGroupsCount,
-                            'local_groups_count' => $localGroupsCount,
-                            'cross_set_groups_count' => $crossSetGroupsCount,
+                            'leader_name' => $resolveUserName($group->leader),
+                            'members_count' => (int) ($group->members_count ?? 0),
                         ];
                     })
                     ->values()
                     ->all();
+
+                $programSetOptions = collect($groups)
+                    ->filter(fn (array $group): bool => isset($group['program_set_id']) && is_int($group['program_set_id']))
+                    ->map(fn (array $group): array => [
+                        'id' => $group['program_set_id'],
+                        'name' => is_string($group['program_set_name']) ? $group['program_set_name'] : 'Unnamed Set',
+                    ])
+                    ->unique('id')
+                    ->sortBy('name')
+                    ->values()
+                    ->all();
+
+                $instructorOptions = collect($groups)
+                    ->pluck('instructor_name')
+                    ->filter(fn ($name): bool => is_string($name) && trim($name) !== '')
+                    ->unique()
+                    ->sort()
+                    ->values()
+                    ->all();
+
+                $adviserOptions = collect($groups)
+                    ->pluck('adviser_name')
+                    ->filter(fn ($name): bool => is_string($name) && trim($name) !== '')
+                    ->unique()
+                    ->sort()
+                    ->values()
+                    ->all();
             }
         } catch (\Throwable) {
-            $programSets = [];
+            $groups = [];
+            $programSetOptions = [];
+            $instructorOptions = [];
+            $adviserOptions = [];
         }
 
         return Inertia::render('ProgramChairperson/concept-titles', [
-            'programSets' => $programSets,
+            'groups' => $groups,
+            'programSetOptions' => $programSetOptions,
+            'instructorOptions' => $instructorOptions,
+            'adviserOptions' => $adviserOptions,
             'assignedProgram' => $assignedProgram,
-            'selectedAcademicYear' => $selectedAcademicYear,
-            'selectedAcademicYearId' => $selectedAcademicYearId,
         ]);
     })->name('program_chairperson.concept-titles');
     Route::get('/pre-deployment-letters', function () {
