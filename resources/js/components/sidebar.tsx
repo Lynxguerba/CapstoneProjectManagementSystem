@@ -224,7 +224,10 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                 ];
             case 'program_chairperson':
                 return [
+                    { label: 'Main', isSection: true },
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/program_chairperson/dashboard' },
+                    { label: 'Phases', isSection: true },
+                    { icon: Lightbulb, label: 'Concept Titles', href: '/program_chairperson/concept-titles' },
                     { icon: FileText, label: 'Pre-Deployment Letters', href: '/program_chairperson/pre-deployment-letters' },
                     { icon: ClipboardCheck, label: 'Deployment Approval', href: '/program_chairperson/deployment-approval' },
                     { icon: Archive, label: 'Deployment Monitoring', href: '/program_chairperson/deployment-monitoring' },
