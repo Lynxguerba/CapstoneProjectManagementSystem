@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Filter, Users } from 'lucide-react';
+import { ChevronRight, Eye, Filter, Users } from 'lucide-react';
 import React from 'react';
 
 import ProgramChairpersonLayout from './_layout';
@@ -179,6 +179,7 @@ const ProgramChairpersonConceptTitlesPage = () => {
                                         <th className="px-6 py-4">Instructor</th>
                                         <th className="px-6 py-4">Leader</th>
                                         <th className="px-6 py-4 text-center">Members</th>
+                                        <th className="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -193,6 +194,16 @@ const ProgramChairpersonConceptTitlesPage = () => {
                                             <td className="px-6 py-3.5 text-slate-600">{group.instructor_name || 'Unassigned'}</td>
                                             <td className="px-6 py-3.5 text-slate-600">{group.leader_name || '—'}</td>
                                             <td className="px-6 py-3.5 text-center font-semibold text-slate-800">{group.members_count ?? 0}</td>
+                                            <td className="px-6 py-3.5 text-right">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => alert('UI only: view and manage group details')}
+                                                    className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-emerald-700"
+                                                >
+                                                    <Eye className="h-3 w-3" />
+                                                    View & Manage
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
