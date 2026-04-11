@@ -35,6 +35,8 @@ class UpdateAdminUserRequest extends FormRequest
 
         if ($this->query('from') === 'student') {
             $programRules = ['required', 'string', Rule::in(['BSIT', 'BSIS'])];
+        } elseif ($this->query('from') === 'faculty' && $this->hasProgramChairpersonRole()) {
+            $programRules = ['required', 'string', Rule::in(['BSIT', 'BSIS'])];
         }
 
         return [
@@ -61,8 +63,46 @@ class UpdateAdminUserRequest extends FormRequest
             'roles.*.in' => 'One or more selected roles are invalid.',
             'password.min' => 'Password must be at least 8 characters.',
             'status.in' => 'The selected status is invalid.',
-            'program.required' => 'Program is required for student records.',
+            'program.required' => 'Program is required for student records and Program Chairperson role.',
             'program.in' => 'Program must be BSIT or BSIS.',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $program = $this->input('program');
+        $normalizedProgram = is_string($program) ? strtoupper(trim($program)) : null;
+        $roles = $this->input('roles');
+
+        $payload = [
+            'program' => is_string($normalizedProgram) && $normalizedProgram !== '' ? $normalizedProgram : null,
+        ];
+
+        if (is_array($roles)) {
+            $payload['roles'] = collect($roles)
+                ->map(function (mixed $role): mixed {
+                    if (! is_string($role)) {
+                        return $role;
+                    }
+
+                    return Role::normalizeRole($role) ?? trim($role);
+                })
+                ->values()
+                ->all();
+        }
+
+        $this->merge($payload);
+    }
+
+    private function hasProgramChairpersonRole(): bool
+    {
+        $roles = $this->input('roles', []);
+
+        if (! is_array($roles)) {
+            return false;
+        }
+
+        return collect($roles)
+            ->contains(fn (mixed $role): bool => is_string($role) && Role::normalizeRole($role) === 'program_chairperson');
     }
 }

@@ -44,6 +44,7 @@ class ProcessBulkUserImport implements ShouldQueue
 
         $totalRows = count($this->rows);
         $hasStudentProgramTable = Schema::hasTable('student_program');
+        $hasUsersProgramColumn = Schema::hasTable('users') && Schema::hasColumn('users', 'program');
         $roleIdsBySlug = $this->roleIdsBySlug();
         $failedItems = [];
         $processedRows = 0;
@@ -101,7 +102,7 @@ class ProcessBulkUserImport implements ShouldQueue
             $email = is_string($row['email'] ?? null) ? strtolower(trim((string) $row['email'])) : null;
 
             try {
-                $this->importRow($row, $roleIdsBySlug, $hasStudentProgramTable);
+                $this->importRow($row, $roleIdsBySlug, $hasStudentProgramTable, $hasUsersProgramColumn);
                 $successfulRows++;
             } catch (Throwable $throwable) {
                 report($throwable);
@@ -163,9 +164,9 @@ class ProcessBulkUserImport implements ShouldQueue
      * @param  array<string, mixed>  $row
      * @param  array<string, int>  $roleIdsBySlug
      */
-    private function importRow(array $row, array $roleIdsBySlug, bool $hasStudentProgramTable): void
+    private function importRow(array $row, array $roleIdsBySlug, bool $hasStudentProgramTable, bool $hasUsersProgramColumn): void
     {
-        DB::transaction(function () use ($row, $roleIdsBySlug, $hasStudentProgramTable): void {
+        DB::transaction(function () use ($hasStudentProgramTable, $hasUsersProgramColumn, $roleIdsBySlug, $row): void {
             $firstName = trim((string) ($row['first_name'] ?? ''));
             $lastName = trim((string) ($row['last_name'] ?? ''));
             $email = strtolower(trim((string) ($row['email'] ?? '')));
@@ -196,8 +197,9 @@ class ProcessBulkUserImport implements ShouldQueue
                     ->values()
                     ->all();
                 $activeRole = $roles[0] ?? 'adviser';
+                $programCode = $this->resolveProgramChairProgram($roles, $row['program'] ?? null);
 
-                $user = User::query()->create([
+                $userAttributes = [
                     'name' => $name,
                     'first_name' => $firstName,
                     'last_name' => $lastName,
@@ -205,7 +207,13 @@ class ProcessBulkUserImport implements ShouldQueue
                     'role' => $activeRole,
                     'status' => 'active',
                     'password' => $password,
-                ]);
+                ];
+
+                if ($hasUsersProgramColumn) {
+                    $userAttributes['program'] = $programCode;
+                }
+
+                $user = User::query()->create($userAttributes);
 
                 $this->attachRoles($user, $roles !== [] ? $roles : [$activeRole], $roleIdsBySlug);
 
@@ -298,6 +306,18 @@ class ProcessBulkUserImport implements ShouldQueue
         $normalizedCode = strtoupper(trim($programCode));
 
         return in_array($normalizedCode, ['BSIT', 'BSIS'], true) ? $normalizedCode : null;
+    }
+
+    /**
+     * @param  array<int, string>  $roles
+     */
+    private function resolveProgramChairProgram(array $roles, mixed $programCode): ?string
+    {
+        if (! in_array('program_chairperson', $roles, true)) {
+            return null;
+        }
+
+        return $this->normalizeProgramCode($programCode);
     }
 
     private function isFacultyAssignableRole(string $role): bool

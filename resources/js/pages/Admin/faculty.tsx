@@ -9,6 +9,7 @@ import AdminLayout from './_layout';
 
 type FacultyRole = 'admin' | 'adviser' | 'instructor' | 'panelist' | 'dean' | 'program_chairperson';
 type UserStatus = 'active' | 'inactive' | 'pending';
+type StudentProgram = 'BSIT' | 'BSIS';
 
 type FacultyRow = {
     id: number;
@@ -19,6 +20,7 @@ type FacultyRow = {
     role: FacultyRole;
     roles: FacultyRole[];
     status: UserStatus;
+    program?: StudentProgram | null;
     createdAt: string;
 };
 
@@ -43,6 +45,14 @@ const statusBadgeClasses = (status: UserStatus): string => {
     }
 
     return 'bg-slate-200 text-slate-600';
+};
+
+const formatFacultyRoleLabel = (role: FacultyRole, program?: StudentProgram | null): string => {
+    if (role === 'program_chairperson') {
+        return program ? `Program Chairperson[${program}]` : 'Program Chairperson';
+    }
+
+    return role.replaceAll('_', ' ');
 };
 
 const AdminFaculty = ({ faculties = [], existingEmails = [], filters }: AdminFacultyProps) => {
@@ -227,9 +237,9 @@ const AdminFaculty = ({ faculties = [], existingEmails = [], filters }: AdminFac
                                             {user.roles.map((r) => (
                                                 <span
                                                     key={r}
-                                                    className="rounded bg-slate-200/70 px-1.5 py-0.5 text-[10px] font-medium text-slate-700 capitalize"
+                                                    className="rounded bg-slate-200/70 px-1.5 py-0.5 text-[10px] font-medium text-slate-700"
                                                 >
-                                                    {r.replaceAll('_', ' ')}
+                                                    {formatFacultyRoleLabel(r, user.program)}
                                                 </span>
                                             ))}
                                         </div>

@@ -56,6 +56,13 @@ class StoreAdminUserRequest extends FormRequest
         ];
 
         if ($entityType === 'faculty') {
+            $programRules = [
+                'nullable',
+                'string',
+                Rule::in(['BSIT', 'BSIS']),
+                Rule::requiredIf(fn (): bool => $this->hasProgramChairpersonRole()),
+            ];
+
             return [
                 ...$sharedRules,
                 'first_name' => ['required', 'string', 'max:255'],
@@ -63,6 +70,7 @@ class StoreAdminUserRequest extends FormRequest
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'roles' => ['required', 'array', 'min:1'],
                 'roles.*' => ['required', 'string', Rule::in(self::FACULTY_ASSIGNABLE_ROLES)],
+                'program' => $programRules,
                 'password' => ['required', 'string', 'min:8', 'max:255'],
                 'status' => ['nullable', 'string', Rule::in(self::AVAILABLE_STATUSES)],
             ];
@@ -118,11 +126,38 @@ class StoreAdminUserRequest extends FormRequest
             'roles.array' => 'Roles must be sent as a list.',
             'roles.min' => 'At least one role is required.',
             'roles.*.in' => 'One or more selected roles are invalid.',
+            'program.required' => 'Program is required when Program Chairperson role is selected.',
             'password.required' => 'Password is required.',
             'password.min' => 'Password must be at least 8 characters.',
             'status.in' => 'The selected status is invalid.',
             'program.in' => 'Program must be BSIT or BSIS.',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $program = $this->input('program');
+        $normalizedProgram = is_string($program) ? strtoupper(trim($program)) : null;
+        $roles = $this->input('roles');
+
+        $payload = [
+            'program' => is_string($normalizedProgram) && $normalizedProgram !== '' ? $normalizedProgram : null,
+        ];
+
+        if (is_array($roles)) {
+            $payload['roles'] = collect($roles)
+                ->map(function (mixed $role): mixed {
+                    if (! is_string($role)) {
+                        return $role;
+                    }
+
+                    return Role::normalizeRole($role) ?? trim($role);
+                })
+                ->values()
+                ->all();
+        }
+
+        $this->merge($payload);
     }
 
     private function resolveEntityType(): string
@@ -134,5 +169,17 @@ class StoreAdminUserRequest extends FormRequest
         }
 
         return in_array($entityType, self::ENTITY_TYPES, true) ? $entityType : 'user';
+    }
+
+    private function hasProgramChairpersonRole(): bool
+    {
+        $roles = $this->input('roles', []);
+
+        if (! is_array($roles)) {
+            return false;
+        }
+
+        return collect($roles)
+            ->contains(fn (mixed $role): bool => is_string($role) && Role::normalizeRole($role) === 'program_chairperson');
     }
 }

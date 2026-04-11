@@ -122,8 +122,9 @@ class AdminUserController extends Controller
 
             $activeRole = $roles->first() ?? 'adviser';
             $name = $this->buildDisplayName($validated['first_name'], $validated['last_name']);
+            $programCode = $this->resolveProgramChairProgram($roles->all(), $validated['program'] ?? null);
 
-            $user = User::query()->create([
+            $userAttributes = [
                 'name' => $name,
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
@@ -131,7 +132,13 @@ class AdminUserController extends Controller
                 'role' => $activeRole,
                 'status' => $validated['status'] ?? 'active',
                 'password' => $validated['password'],
-            ]);
+            ];
+
+            if ($this->hasUsersProgramColumn()) {
+                $userAttributes['program'] = $programCode;
+            }
+
+            $user = User::query()->create($userAttributes);
 
             $user->syncRoles($roles->all());
 
@@ -213,8 +220,11 @@ class AdminUserController extends Controller
         $programCode = is_string($validated['program'] ?? null)
             ? $validated['program']
             : $user->studentProgram?->program;
+        $facultyProgramCode = $from === 'faculty'
+            ? $this->resolveProgramChairProgram($roles->all(), $validated['program'] ?? null)
+            : null;
 
-        $user->update([
+        $userAttributes = [
             'name' => $name,
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
@@ -224,7 +234,13 @@ class AdminUserController extends Controller
             'password' => is_string($validated['password'] ?? null) && $validated['password'] !== ''
                 ? $validated['password']
                 : $user->password,
-        ]);
+        ];
+
+        if ($from === 'faculty' && $this->hasUsersProgramColumn()) {
+            $userAttributes['program'] = $facultyProgramCode;
+        }
+
+        $user->update($userAttributes);
 
         $user->syncRoles($roles->all());
         $this->syncStudentProfile($user, $programCode, $isStudent);
@@ -319,6 +335,7 @@ class AdminUserController extends Controller
 
         $this->extendExecutionTimeForBulkImport();
         $hasStudentProgramTable = $this->hasStudentProgramTable();
+        $hasUsersProgramColumn = $this->hasUsersProgramColumn();
         $roleIdsBySlug = $this->roleIdsBySlug();
 
         $resolveRoleIds = function (array $roles) use ($roleIdsBySlug): array {
@@ -332,7 +349,7 @@ class AdminUserController extends Controller
         };
 
         if ($entityType === 'faculty') {
-            collect($validated['rows'])->each(function (array $row) use ($resolveRoleIds): void {
+            collect($validated['rows'])->each(function (array $row) use ($hasUsersProgramColumn, $resolveRoleIds): void {
                 $roles = collect($row['roles'] ?? [])
                     ->map(fn (string $role): ?string => Role::normalizeRole($role))
                     ->filter(fn (?string $role): bool => is_string($role) && in_array($role, self::FACULTY_ASSIGNABLE_ROLES, true))
@@ -341,8 +358,9 @@ class AdminUserController extends Controller
 
                 $activeRole = $roles->first() ?? 'adviser';
                 $name = $this->buildDisplayName($row['first_name'], $row['last_name']);
+                $programCode = $this->resolveProgramChairProgram($roles->all(), $row['program'] ?? null);
 
-                $user = User::query()->create([
+                $userAttributes = [
                     'name' => $name,
                     'first_name' => $row['first_name'],
                     'last_name' => $row['last_name'],
@@ -350,7 +368,13 @@ class AdminUserController extends Controller
                     'role' => $activeRole,
                     'status' => 'active',
                     'password' => (string) $row['password'],
-                ]);
+                ];
+
+                if ($hasUsersProgramColumn) {
+                    $userAttributes['program'] = $programCode;
+                }
+
+                $user = User::query()->create($userAttributes);
 
                 $resolvedRoles = $roles->isNotEmpty() ? $roles->all() : [$activeRole];
                 $roleIds = $resolveRoleIds($resolvedRoles);
@@ -577,6 +601,11 @@ class AdminUserController extends Controller
         ];
 
         $facultyRoles = self::FACULTY_ASSIGNABLE_ROLES;
+        $facultyColumns = ['id', 'name', 'first_name', 'last_name', 'email', 'role', 'status', 'created_at'];
+
+        if ($this->hasUsersProgramColumn()) {
+            $facultyColumns[] = 'program';
+        }
 
         $faculties = User::query()
             ->with('roles:id,slug')
@@ -607,7 +636,7 @@ class AdminUserController extends Controller
             })
             ->orderByRaw("CASE WHEN users.status = 'pending' THEN 0 ELSE 1 END")
             ->orderByDesc('users.created_at')
-            ->get(['id', 'name', 'first_name', 'last_name', 'email', 'role', 'status', 'created_at'])
+            ->get($facultyColumns)
             ->map(function (User $user) use ($facultyRoles): array {
                 $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
                 $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
@@ -621,6 +650,9 @@ class AdminUserController extends Controller
                     : 'adviser';
                 $resolvedRoles = count($roleSlugs) > 0 ? $roleSlugs : [$fallbackRole];
                 $status = is_string($user->status) && $user->status !== '' ? $user->status : 'active';
+                $program = $this->hasUsersProgramColumn()
+                    ? $this->normalizeProgramCode($user->program)
+                    : null;
 
                 return [
                     'id' => $user->id,
@@ -631,6 +663,7 @@ class AdminUserController extends Controller
                     'role' => $resolvedRoles[0],
                     'roles' => $resolvedRoles,
                     'status' => $status,
+                    'program' => $program,
                     'createdAt' => $user->created_at?->format('Y-m-d') ?? '',
                 ];
             })
@@ -659,6 +692,18 @@ class AdminUserController extends Controller
         }
 
         return $normalizedCode;
+    }
+
+    /**
+     * @param  array<int, string>  $roles
+     */
+    private function resolveProgramChairProgram(array $roles, mixed $programCode): ?string
+    {
+        if (! in_array('program_chairperson', $roles, true)) {
+            return null;
+        }
+
+        return $this->normalizeProgramCode($programCode);
     }
 
     private function syncStudentProfile(User $user, ?string $programCode, bool $isStudent, ?bool $hasStudentProgramTable = null): void

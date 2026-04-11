@@ -357,6 +357,17 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
                     };
                 }
 
+                if (userType === 'faculty') {
+                    return {
+                        first_name: row.first_name,
+                        last_name: row.last_name,
+                        email: row.email,
+                        roles: row.roles,
+                        program: row.program,
+                        password: row.password,
+                    };
+                }
+
                 return {
                     first_name: row.first_name,
                     last_name: row.last_name,
@@ -818,6 +829,9 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
             const email = values[headerIndex.email] ?? '';
             const rawRoleValue = values[headerIndex.role] ?? '';
             const parsedRoles = parseRoles(rawRoleValue);
+            const rawProgram = headerIndex.program === undefined ? '' : (values[headerIndex.program] ?? '').toUpperCase();
+            const hasProgramChairpersonRole = parsedRoles.roles.includes('program_chairperson');
+            const hasValidProgram = studentPrograms.includes(rawProgram as StudentProgram);
 
             if (email === '') {
                 issues.push('Email is required.');
@@ -838,6 +852,14 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
                 issues.push('One or more roles are invalid.');
             }
 
+            if (hasProgramChairpersonRole && rawProgram === '') {
+                issues.push('Program is required when role includes Program Chairperson.');
+            }
+
+            if (rawProgram !== '' && !hasValidProgram) {
+                issues.push('Program must be BSIT or BSIS.');
+            }
+
             let password: string | undefined;
             if (userType === 'user' || userType === 'faculty') {
                 password = values[headerIndex.password] ?? '';
@@ -855,6 +877,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
                 last_name: lastName,
                 email,
                 roles: parsedRoles.roles,
+                program: hasValidProgram ? (rawProgram as StudentProgram) : undefined,
                 password,
                 issues,
             };
@@ -1081,7 +1104,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
         userType === 'student'
             ? 'Last Name, First Name, Email, Program, and Password'
             : userType === 'faculty'
-              ? 'Last Name, First Name, Email, Role, and Password'
+              ? 'Last Name, First Name, Email, Role, Program, and Password (program is required for Program Chairperson)'
               : 'Last Name, First Name, Email, Role, and Password';
     const csvTemplateFileName =
         userType === 'student' ? 'student-upload-template.csv' : userType === 'faculty' ? 'faculty-upload-template.csv' : 'user-upload-template.csv';
@@ -1090,9 +1113,9 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
             ? ['last_name,first_name,email,program,password', 'Dela Cruz,Juan,juan.delacruz@example.com,BSIT,StrongPass123'].join('\n')
             : userType === 'faculty'
               ? [
-                    'last_name,first_name,email,role,password',
-                    'Santos,Maria,maria.santos@example.com,instructor,StrongPass123',
-                    'Reyes,Carlo,carlo.reyes@example.com,adviser;panelist,StrongPass123',
+                    'last_name,first_name,email,role,program,password',
+                    'Santos,Maria,maria.santos@example.com,instructor,,StrongPass123',
+                    'Ramos,Lea,lea.ramos@example.com,program_chairperson,BSIT,StrongPass123',
                 ].join('\n')
               : [
                     'last_name,first_name,email,role,password',
@@ -1324,6 +1347,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
                                             {userType === 'student' ? <th className="px-3 py-2 font-semibold">Email</th> : null}
                                             {userType === 'student' ? <th className="px-3 py-2 font-semibold">Program</th> : null}
                                             {userType !== 'student' ? <th className="px-3 py-2 font-semibold">Email</th> : null}
+                                            {userType === 'faculty' ? <th className="px-3 py-2 font-semibold">Program</th> : null}
                                             {userType !== 'student' ? <th className="px-3 py-2 font-semibold">Roles</th> : null}
                                             <th className="px-3 py-2 font-semibold">Issues</th>
                                             <th className="px-3 py-2 font-semibold">Action</th>
@@ -1350,6 +1374,7 @@ const BulkUploadModal = ({ open, onClose, existingUsers = [], existingEmails = [
                                                 {userType === 'student' ? <td className="px-3 py-2">{row.email ?? '-'}</td> : null}
                                                 {userType === 'student' ? <td className="px-3 py-2">{row.program ?? '-'}</td> : null}
                                                 {userType !== 'student' ? <td className="px-3 py-2">{row.email}</td> : null}
+                                                {userType === 'faculty' ? <td className="px-3 py-2">{row.program ?? '-'}</td> : null}
                                                 {userType !== 'student' ? (
                                                     <td className="px-3 py-2 capitalize">{(row.roles ?? []).join(', ').replaceAll('_', ' ')}</td>
                                                 ) : null}

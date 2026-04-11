@@ -59,6 +59,7 @@ class StoreBulkAdminUsersRequest extends FormRequest
                 'rows.*.email' => ['required', 'string', 'email', 'max:255', 'distinct'],
                 'rows.*.roles' => ['required', 'array', 'min:1'],
                 'rows.*.roles.*' => ['required', 'string', Rule::in(self::FACULTY_ASSIGNABLE_ROLES)],
+                'rows.*.program' => ['nullable', 'string', Rule::in(['BSIT', 'BSIS'])],
                 'rows.*.password' => ['required', 'string', 'min:8', 'max:255'],
             ];
         }
@@ -117,6 +118,7 @@ class StoreBulkAdminUsersRequest extends FormRequest
             'rows.*.roles.*.in' => 'One or more roles are invalid.',
             'rows.*.password.required' => 'Each row must include a password.',
             'rows.*.password.min' => 'Each password must be at least 8 characters.',
+            'rows.*.program.required' => 'Program is required when role includes Program Chairperson.',
             'rows.*.program.in' => 'Program must be BSIT or BSIS.',
         ];
     }
@@ -128,6 +130,33 @@ class StoreBulkAdminUsersRequest extends FormRequest
 
             if (! is_array($rows) || count($rows) === 0) {
                 return;
+            }
+
+            if ($this->resolveEntityType() === 'faculty') {
+                collect($rows)->each(function (mixed $row, int $index) use ($validator): void {
+                    if (! is_array($row)) {
+                        return;
+                    }
+
+                    $roles = $row['roles'] ?? null;
+
+                    if (! is_array($roles)) {
+                        return;
+                    }
+
+                    $isProgramChairperson = collect($roles)
+                        ->contains(fn (mixed $role): bool => is_string($role) && Role::normalizeRole($role) === 'program_chairperson');
+
+                    if (! $isProgramChairperson) {
+                        return;
+                    }
+
+                    $program = is_string($row['program'] ?? null) ? strtoupper(trim((string) $row['program'])) : '';
+
+                    if ($program === '') {
+                        $validator->errors()->add("rows.{$index}.program", 'Program is required when role includes Program Chairperson.');
+                    }
+                });
             }
 
             $emailsByIndex = collect($rows)
@@ -170,6 +199,47 @@ class StoreBulkAdminUsersRequest extends FormRequest
                 }
             });
         });
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $rows = $this->input('rows');
+
+        if (! is_array($rows)) {
+            return;
+        }
+
+        $normalizedRows = collect($rows)
+            ->map(function (mixed $row): mixed {
+                if (! is_array($row)) {
+                    return $row;
+                }
+
+                if (array_key_exists('program', $row)) {
+                    $program = is_string($row['program']) ? strtoupper(trim((string) $row['program'])) : '';
+                    $row['program'] = $program !== '' ? $program : null;
+                }
+
+                if (array_key_exists('roles', $row) && is_array($row['roles'])) {
+                    $row['roles'] = collect($row['roles'])
+                        ->map(function (mixed $role): mixed {
+                            if (! is_string($role)) {
+                                return $role;
+                            }
+
+                            return Role::normalizeRole($role) ?? trim($role);
+                        })
+                        ->values()
+                        ->all();
+                }
+
+                return $row;
+            })
+            ->all();
+
+        $this->merge([
+            'rows' => $normalizedRows,
+        ]);
     }
 
     private function duplicateEmailMessage(): string

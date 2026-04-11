@@ -32,7 +32,7 @@ const defaultRoles: UserRole[] = ['admin', 'student', 'adviser', 'instructor', '
 const facultyRoles: FacultyRole[] = ['admin', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 const formatRoleLabel = (role: string): string => {
     if (role === 'program_chairperson') {
-        return 'Prog Chair';
+        return 'Program Chairperson';
     }
 
     return role.replaceAll('_', ' ');
@@ -149,6 +149,7 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
 
     const formErrors = addUserForm.errors as Record<string, string | undefined>;
     const roleError = addUserForm.errors.roles ?? formErrors['roles.0'] ?? formErrors['roles.1'] ?? formErrors['roles.2'];
+    const isFacultyProgramChairSelected = userType === 'faculty' && addUserForm.data.roles.includes('program_chairperson');
 
     if (!open || typeof document === 'undefined') {
         return null;
@@ -325,6 +326,21 @@ const AddUserModal = ({ open, onClose, availableRoles = defaultRoles, userType =
                                 </div>
                                 {roleError ? <p className="mt-1 text-xs text-rose-600">{roleError}</p> : null}
                             </div>
+
+                            {isFacultyProgramChairSelected ? (
+                                <div>
+                                    <label className="text-sm font-semibold text-slate-700">Program Handle</label>
+                                    <select
+                                        value={addUserForm.data.program}
+                                        onChange={(event) => addUserForm.setData('program', event.target.value as StudentProgram)}
+                                        className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                    >
+                                        <option value="BSIT">BSIT</option>
+                                        <option value="BSIS">BSIS</option>
+                                    </select>
+                                    {addUserForm.errors.program ? <p className="mt-1 text-xs text-rose-600">{addUserForm.errors.program}</p> : null}
+                                </div>
+                            ) : null}
 
                             <div>
                                 <label className="text-sm font-semibold text-slate-700">Status</label>

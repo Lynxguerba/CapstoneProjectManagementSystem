@@ -19,7 +19,7 @@ type ManagedUser = {
     roles?: UserRole[];
     status: UserStatus;
     createdAt: string;
-    program?: StudentProgram;
+    program?: StudentProgram | null;
 };
 
 type ManageUserActionModalProps = {
@@ -45,7 +45,7 @@ const userRoleOptions: UserRole[] = ['admin', 'student', 'adviser', 'instructor'
 const facultyRoleOptions: FacultyRole[] = ['admin', 'adviser', 'instructor', 'panelist', 'dean', 'program_chairperson'];
 const formatRoleLabel = (role: string): string => {
     if (role === 'program_chairperson') {
-        return 'Prog Chair';
+        return 'Program Chairperson';
     }
 
     return role.replaceAll('_', ' ');
@@ -98,6 +98,7 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
     const formErrors = errors as Record<string, string | undefined>;
     const roleError = errors.roles ?? formErrors['roles.0'] ?? formErrors['roles.1'] ?? formErrors['roles.2'];
     const selectedRoleLabel = data.roles.length > 0 ? data.roles.map((role) => formatRoleLabel(role)).join(', ') : 'Select roles';
+    const isFacultyProgramChairSelected = mode === 'faculty' && data.roles.includes('program_chairperson');
 
     useEffect(() => {
         if (!isRoleDropdownOpen) {
@@ -268,6 +269,21 @@ const ManageUserActionModal = ({ open, user, mode = 'user', submitUrl, onClose, 
                                     ))}
                                 </div>
                                 {roleError ? <p className="mt-1 text-xs text-rose-600">{roleError}</p> : null}
+                            </div>
+                        ) : null}
+
+                        {isFacultyProgramChairSelected ? (
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700">Program Handle</label>
+                                <select
+                                    value={data.program}
+                                    onChange={(event) => setData('program', event.target.value as StudentProgram)}
+                                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                                >
+                                    <option value="BSIT">BSIT</option>
+                                    <option value="BSIS">BSIS</option>
+                                </select>
+                                {errors.program ? <p className="mt-1 text-xs text-rose-600">{errors.program}</p> : null}
                             </div>
                         ) : null}
 
