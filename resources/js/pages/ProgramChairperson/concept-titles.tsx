@@ -195,14 +195,13 @@ const ProgramChairpersonConceptTitlesPage = () => {
                                             <td className="px-6 py-3.5 text-slate-600">{group.leader_name || '—'}</td>
                                             <td className="px-6 py-3.5 text-center font-semibold text-slate-800">{group.members_count ?? 0}</td>
                                             <td className="px-6 py-3.5 text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => alert('UI only: view and manage group details')}
+                                                <Link
+                                                    href={`/program_chairperson/concept-titles/${group.id}/view`}
                                                     className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-emerald-700"
                                                 >
                                                     <Eye className="h-3 w-3" />
                                                     View & Manage
-                                                </button>
+                                                </Link>
                                             </td>
                                         </tr>
                                     ))}
