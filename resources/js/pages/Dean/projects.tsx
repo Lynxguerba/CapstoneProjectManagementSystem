@@ -1,144 +1,276 @@
+import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import React, { useMemo, useState } from 'react';
+import { ChevronRight, Eye, Filter, FolderOpen } from 'lucide-react';
+import React from 'react';
+
 import DeanLayout from './_layout';
 
-type ProjectStatus = 'Proposed' | 'Active' | 'Completed' | 'On Hold' | 'Archived';
-
 type ProjectRow = {
-    id: string;
+    id: number;
+    group_name: string;
     title: string;
-    group: string;
-    adviser: string;
-    department: string;
-    status: ProjectStatus;
-    submittedAt: string;
+    program_set_id?: number | null;
+    program_set_name?: string | null;
+    program?: string | null;
+    adviser_name?: string | null;
+    instructor_name?: string | null;
+    leader_name?: string | null;
+    members_count?: number;
+    approved_at?: string | null;
+};
+
+type ProgramSetOption = {
+    id: number;
+    name: string;
+};
+
+type DeanProjectsPageProps = {
+    projects?: ProjectRow[];
+    programSetOptions?: ProgramSetOption[];
+    instructorOptions?: string[];
+    adviserOptions?: string[];
 };
 
 const DeanProjects = () => {
-    const [search, setSearch] = useState('');
-    const [status, setStatus] = useState<'all' | ProjectStatus>('all');
+    const page = usePage<DeanProjectsPageProps>();
+    const { props } = page;
+    const projects = React.useMemo(() => props.projects ?? [], [props.projects]);
+    const programSetOptions = React.useMemo(() => props.programSetOptions ?? [], [props.programSetOptions]);
+    const instructorOptions = React.useMemo(() => props.instructorOptions ?? [], [props.instructorOptions]);
+    const adviserOptions = React.useMemo(() => props.adviserOptions ?? [], [props.adviserOptions]);
+    const [selectedProgramSet, setSelectedProgramSet] = React.useState('All');
+    const [selectedInstructor, setSelectedInstructor] = React.useState('All');
+    const [selectedAdviser, setSelectedAdviser] = React.useState('All');
+    const [searchKeyword, setSearchKeyword] = React.useState('');
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const itemsPerPage = 10;
 
-    const projects: ProjectRow[] = [
-        {
-            id: 'p1',
-            title: 'Smart Attendance with QR + Face Match',
-            group: 'Group 2',
-            adviser: 'Prof. Reyes',
-            department: 'Computer Science',
-            status: 'Active',
-            submittedAt: '2026-03-10',
-        },
-        {
-            id: 'p2',
-            title: 'E-Library Book Locator with RFID',
-            group: 'Group 6',
-            adviser: 'Prof. Cruz',
-            department: 'Information Systems',
-            status: 'Completed',
-            submittedAt: '2026-02-28',
-        },
-    ];
+    React.useEffect(() => {
+        if (selectedProgramSet !== 'All' && !programSetOptions.some((option) => String(option.id) === selectedProgramSet)) {
+            setSelectedProgramSet('All');
+        }
+    }, [programSetOptions, selectedProgramSet]);
 
-    const filtered = useMemo(() => {
-        const s = search.trim().toLowerCase();
-        return projects.filter((p) => {
-            const matchesSearch = !s || p.title.toLowerCase().includes(s) || p.group.toLowerCase().includes(s) || p.adviser.toLowerCase().includes(s);
-            const matchesStatus = status === 'all' || p.status === status;
-            return matchesSearch && matchesStatus;
+    React.useEffect(() => {
+        if (selectedInstructor !== 'All' && !instructorOptions.includes(selectedInstructor)) {
+            setSelectedInstructor('All');
+        }
+    }, [instructorOptions, selectedInstructor]);
+
+    React.useEffect(() => {
+        if (selectedAdviser !== 'All' && !adviserOptions.includes(selectedAdviser)) {
+            setSelectedAdviser('All');
+        }
+    }, [adviserOptions, selectedAdviser]);
+
+    const filteredProjects = React.useMemo(() => {
+        const search = searchKeyword.trim().toLowerCase();
+
+        return projects.filter((project) => {
+            const matchesProgramSet = selectedProgramSet === 'All' || String(project.program_set_id ?? '') === selectedProgramSet;
+            const matchesInstructor = selectedInstructor === 'All' || (project.instructor_name ?? '') === selectedInstructor;
+            const matchesAdviser = selectedAdviser === 'All' || (project.adviser_name ?? '') === selectedAdviser;
+            const matchesSearch =
+                search === '' ||
+                project.title.toLowerCase().includes(search) ||
+                project.group_name.toLowerCase().includes(search) ||
+                (project.program_set_name ?? '').toLowerCase().includes(search) ||
+                (project.instructor_name ?? '').toLowerCase().includes(search) ||
+                (project.adviser_name ?? '').toLowerCase().includes(search);
+
+            return matchesProgramSet && matchesInstructor && matchesAdviser && matchesSearch;
         });
-    }, [projects, search, status]);
+    }, [projects, selectedProgramSet, selectedInstructor, selectedAdviser, searchKeyword]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredProjects.length / itemsPerPage));
+
+    React.useEffect(() => {
+        setCurrentPage((pageNumber) => Math.min(pageNumber, totalPages));
+    }, [totalPages]);
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedProgramSet, selectedInstructor, selectedAdviser, searchKeyword]);
+
+    const paginatedProjects = React.useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+
+        return filteredProjects.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredProjects, currentPage]);
+
+    const pages = React.useMemo(() => {
+        const maxVisiblePages = 5;
+        const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - (maxVisiblePages - 1)));
+        const endPage = Math.min(totalPages, startPage + (maxVisiblePages - 1));
+
+        return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+    }, [currentPage, totalPages]);
 
     return (
-        <DeanLayout title="Capstone Projects" subtitle="Overview of all capstone projects across departments">
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h3 className="text-lg font-semibold text-slate-800">Projects</h3>
-                            <p className="text-sm text-slate-500">Manage and review submitted capstone projects</p>
-                        </div>
+        <DeanLayout title="Capstone Projects" subtitle="Approved concept titles from BSIT and BSIS groups">
+            <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="space-y-5">
+                <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+                    <Link href="/dean/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <span className="font-semibold text-slate-800" aria-current="page">
+                        Projects
+                    </span>
+                </nav>
 
-                        <div className="flex flex-wrap gap-3">
-                            <input
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search title, group or adviser..."
-                                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                            />
-
-                            <select
-                                value={status}
-                                onChange={(e) => setStatus(e.target.value as typeof status)}
-                                className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="all">All Status</option>
-                                <option value="Proposed">Proposed</option>
-                                <option value="Active">Active</option>
-                                <option value="Completed">Completed</option>
-                                <option value="On Hold">On Hold</option>
-                                <option value="Archived">Archived</option>
-                            </select>
-
-                            <button
-                                onClick={() => alert('UI only: export projects CSV')}
-                                className="rounded-xl bg-gradient-to-r from-slate-700 to-slate-900 px-5 py-2.5 font-medium text-white transition-all hover:shadow-lg"
-                            >
-                                Export
-                            </button>
-                        </div>
+                <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                    <div className="relative">
+                        <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                        <select
+                            value={selectedProgramSet}
+                            onChange={(event) => setSelectedProgramSet(event.target.value)}
+                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                        >
+                            <option value="All">All Program Sets</option>
+                            {programSetOptions.map((programSetOption) => (
+                                <option key={programSetOption.id} value={String(programSetOption.id)}>
+                                    {programSetOption.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
-                    <div className="mt-6 overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-200 text-slate-600">
-                                    <th className="py-4 text-left font-semibold">Title</th>
-                                    <th className="py-4 text-left font-semibold">Group</th>
-                                    <th className="py-4 text-left font-semibold">Adviser</th>
-                                    <th className="py-4 text-left font-semibold">Department</th>
-                                    <th className="py-4 text-left font-semibold">Status</th>
-                                    <th className="py-4 text-left font-semibold">Submitted</th>
-                                    <th className="py-4 text-left font-semibold">Actions</th>
+                    <div className="relative">
+                        <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                        <select
+                            value={selectedInstructor}
+                            onChange={(event) => setSelectedInstructor(event.target.value)}
+                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                        >
+                            <option value="All">All Instructors</option>
+                            {instructorOptions.map((instructorName) => (
+                                <option key={instructorName} value={instructorName}>
+                                    {instructorName}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="relative">
+                        <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                        <select
+                            value={selectedAdviser}
+                            onChange={(event) => setSelectedAdviser(event.target.value)}
+                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                        >
+                            <option value="All">All Advisers</option>
+                            {adviserOptions.map((adviserName) => (
+                                <option key={adviserName} value={adviserName}>
+                                    {adviserName}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <input
+                        value={searchKeyword}
+                        onChange={(event) => setSearchKeyword(event.target.value)}
+                        placeholder="Search title, group, set, adviser, instructor..."
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:min-w-[280px]"
+                    />
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                            <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                <tr>
+                                    <th className="px-6 py-4">Approved Title</th>
+                                    <th className="px-6 py-4">Group</th>
+                                    <th className="px-6 py-4">Program</th>
+                                    <th className="px-6 py-4">Program Set</th>
+                                    <th className="px-6 py-4">Adviser</th>
+                                    <th className="px-6 py-4">Instructor</th>
+                                    <th className="px-6 py-4 text-center">Members</th>
+                                    <th className="px-6 py-4">Approved At</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filtered.map((p) => (
-                                    <tr key={p.id} className="transition-colors hover:bg-slate-50">
-                                        <td className="py-4 font-medium text-slate-800">{p.title}</td>
-                                        <td className="py-4 text-slate-600">{p.group}</td>
-                                        <td className="py-4 text-slate-600">{p.adviser}</td>
-                                        <td className="py-4 text-slate-600">{p.department}</td>
-                                        <td className="py-4">
-                                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                                                {p.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 text-slate-600">{p.submittedAt}</td>
-                                        <td className="py-4">
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => alert(`UI only: view project ${p.id}`)}
-                                                    className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
-                                                >
-                                                    View
-                                                </button>
-                                                <button
-                                                    onClick={() => alert('UI only: request updates')}
-                                                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 transition hover:bg-slate-50"
-                                                >
-                                                    Request Update
-                                                </button>
-                                            </div>
+                                {paginatedProjects.map((project, index) => (
+                                    <tr key={project.id} className={`transition-colors hover:bg-emerald-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
+                                        <td className="px-6 py-3.5 font-semibold text-slate-800">{project.title}</td>
+                                        <td className="px-6 py-3.5 text-slate-600">{project.group_name}</td>
+                                        <td className="px-6 py-3.5 text-slate-600">{project.program || '—'}</td>
+                                        <td className="px-6 py-3.5 text-slate-600">{project.program_set_name || 'Unassigned Set'}</td>
+                                        <td className="px-6 py-3.5 text-slate-600">{project.adviser_name || 'Unassigned'}</td>
+                                        <td className="px-6 py-3.5 text-slate-600">{project.instructor_name || 'Unassigned'}</td>
+                                        <td className="px-6 py-3.5 text-center font-semibold text-slate-800">{project.members_count ?? 0}</td>
+                                        <td className="px-6 py-3.5 text-slate-600">{project.approved_at || '—'}</td>
+                                        <td className="px-6 py-3.5 text-right">
+                                            <Link
+                                                href={`/dean/project-details?group=${project.id}`}
+                                                className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-emerald-700"
+                                            >
+                                                <Eye className="h-3 w-3" />
+                                                Detail
+                                            </Link>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-
-                        {filtered.length === 0 ? <div className="py-10 text-center text-sm text-slate-500">No projects found.</div> : null}
                     </div>
+
+                    {filteredProjects.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-xs text-slate-500">
+                            <FolderOpen className="h-8 w-8 text-slate-300" />
+                            No approved concept titles found for the selected filters.
+                        </div>
+                    ) : null}
                 </div>
-            </motion.div>
+
+                {filteredProjects.length > 0 ? (
+                    <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
+                        <p className="text-xs font-medium text-slate-500">
+                            Page <span className="text-slate-900">{currentPage}</span> of <span className="text-slate-900">{totalPages}</span>
+                        </p>
+
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((pageNumber) => Math.max(1, pageNumber - 1))}
+                                disabled={currentPage === 1}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                            >
+                                <ChevronRight size={16} className="rotate-180" />
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                                {pages.map((pageNumber) => (
+                                    <button
+                                        key={pageNumber}
+                                        type="button"
+                                        onClick={() => setCurrentPage(pageNumber)}
+                                        className={`h-8 min-w-[32px] rounded-lg text-xs font-bold transition-all ${
+                                            pageNumber === currentPage
+                                                ? 'bg-emerald-700 text-white shadow-md shadow-emerald-700/20'
+                                                : 'text-slate-600 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        {pageNumber}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((pageNumber) => Math.min(totalPages, pageNumber + 1))}
+                                disabled={currentPage === totalPages}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </div>
+                ) : null}
+            </motion.section>
         </DeanLayout>
     );
 };
