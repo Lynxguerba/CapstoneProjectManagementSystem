@@ -120,6 +120,12 @@ const DeanProjects = () => {
                 </nav>
 
                 <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                    <input
+                        value={searchKeyword}
+                        onChange={(event) => setSearchKeyword(event.target.value)}
+                        placeholder="Search title, group, set, adviser, instructor..."
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:min-w-[280px]"
+                    />
                     <div className="relative">
                         <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                         <select
@@ -168,12 +174,7 @@ const DeanProjects = () => {
                         </select>
                     </div>
 
-                    <input
-                        value={searchKeyword}
-                        onChange={(event) => setSearchKeyword(event.target.value)}
-                        placeholder="Search title, group, set, adviser, instructor..."
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:min-w-[280px]"
-                    />
+                    
                 </div>
 
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
