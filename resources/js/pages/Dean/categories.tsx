@@ -46,6 +46,35 @@ const programMeta: Record<ProgramCode, { label: string; accent: string; panel: s
     },
 };
 
+const programControlStyles: Record<
+    ProgramCode,
+    {
+        focus: string;
+        primaryButton: string;
+        primaryButtonHover: string;
+        rowHover: string;
+        inlineAction: string;
+        inlineActionHover: string;
+    }
+> = {
+    BSIT: {
+        focus: 'focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20',
+        primaryButton: 'bg-sky-600',
+        primaryButtonHover: 'hover:bg-sky-700',
+        rowHover: 'hover:bg-sky-50/40',
+        inlineAction: 'border-sky-200 text-sky-700',
+        inlineActionHover: 'hover:bg-sky-50',
+    },
+    BSIS: {
+        focus: 'focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20',
+        primaryButton: 'bg-emerald-600',
+        primaryButtonHover: 'hover:bg-emerald-700',
+        rowHover: 'hover:bg-emerald-50/30',
+        inlineAction: 'border-emerald-200 text-emerald-700',
+        inlineActionHover: 'hover:bg-emerald-50',
+    },
+};
+
 const DeanCategoriesPage = () => {
     const { props } = usePage<CategoriesPageProps>();
     const categoriesByProgram = React.useMemo(
@@ -274,6 +303,7 @@ const DeanCategoriesPage = () => {
         const items = categoriesByProgram[program] ?? [];
         const meta = programMeta[program];
         const draft = draftByProgram[program];
+        const controls = programControlStyles[program];
 
         return (
             <div key={program} className={`rounded-2xl border p-4 shadow-sm ${meta.panel}`}>
@@ -287,19 +317,19 @@ const DeanCategoriesPage = () => {
                         value={draft.name}
                         onChange={(event) => setDraftValue(program, 'name', event.target.value)}
                         placeholder={`Add new ${program} category`}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                        className={`rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm outline-none ${controls.focus}`}
                     />
                     <input
                         value={draft.description}
                         onChange={(event) => setDraftValue(program, 'description', event.target.value)}
                         placeholder="Category description (optional)"
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                        className={`rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm outline-none ${controls.focus}`}
                     />
                     <button
                         type="button"
                         onClick={() => handleCreate(program)}
                         disabled={creatingProgram !== null}
-                        className="inline-flex items-center justify-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                        className={`inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-[11px] font-bold text-white transition disabled:opacity-60 ${controls.primaryButton} ${controls.primaryButtonHover}`}
                     >
                         <Plus className="h-3.5 w-3.5" />
                         {creatingProgram === program ? 'Adding...' : 'Add'}
@@ -324,14 +354,14 @@ const DeanCategoriesPage = () => {
                                 return (
                                     <tr
                                         key={category.id}
-                                        className={`transition-colors hover:bg-emerald-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
+                                        className={`transition-colors ${controls.rowHover} ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}
                                     >
                                         <td className="px-4 py-3 align-top">
                                             {isEditing ? (
                                                 <input
                                                     value={editForm.data.name}
                                                     onChange={(event) => editForm.setData('name', event.target.value)}
-                                                    className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] text-slate-700 outline-none focus:border-emerald-500"
+                                                    className={`w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] text-slate-700 outline-none ${controls.focus}`}
                                                 />
                                             ) : (
                                                 <p className="font-semibold text-slate-800">{category.name}</p>
@@ -342,7 +372,7 @@ const DeanCategoriesPage = () => {
                                                 <input
                                                     value={editForm.data.description}
                                                     onChange={(event) => editForm.setData('description', event.target.value)}
-                                                    className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] text-slate-700 outline-none focus:border-emerald-500"
+                                                    className={`w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] text-slate-700 outline-none ${controls.focus}`}
                                                 />
                                             ) : category.description ? (
                                                 category.description
@@ -380,7 +410,7 @@ const DeanCategoriesPage = () => {
                                                             type="button"
                                                             onClick={() => handleUpdate(category)}
                                                             disabled={editForm.processing}
-                                                            className="inline-flex items-center gap-1 rounded-md border border-emerald-200 px-2 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-60"
+                                                            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold transition disabled:opacity-60 ${controls.inlineAction} ${controls.inlineActionHover}`}
                                                         >
                                                             <Save className="h-3 w-3" />
                                                             Save

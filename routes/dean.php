@@ -3,6 +3,9 @@
 use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
 use App\Http\Controllers\Dean\DeanCategoryController;
+use App\Http\Controllers\Dean\DeanDashboardController;
+use App\Http\Controllers\Dean\ShowDeanProjectDetailsController;
+use App\Http\Controllers\Dean\UpdateDeanProjectCategoryController;
 use App\Models\Group;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,9 +15,7 @@ use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 
 Route::middleware(['auth', 'role:dean'])->prefix('dean')->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dean/dashboard');
-    })->name('dean.dashboard');
+    Route::get('/dashboard', DeanDashboardController::class)->name('dean.dashboard');
     Route::get('/projects', function () {
         $deanProgramScope = ['BSIT', 'BSIS'];
         $projects = [];
@@ -126,6 +127,10 @@ Route::middleware(['auth', 'role:dean'])->prefix('dean')->group(function () {
             'adviserOptions' => $adviserOptions,
         ]);
     })->name('dean.projects');
+    Route::get('/project-details', ShowDeanProjectDetailsController::class)->name('dean.projects.details');
+    Route::put('/project-details/{group}/category', UpdateDeanProjectCategoryController::class)
+        ->whereNumber('group')
+        ->name('dean.projects.details.category.update');
     Route::get('/categories', [DeanCategoryController::class, 'index'])->name('dean.categories');
     Route::post('/categories', [DeanCategoryController::class, 'store'])->name('dean.categories.store');
     Route::put('/categories/{category}', [DeanCategoryController::class, 'update'])

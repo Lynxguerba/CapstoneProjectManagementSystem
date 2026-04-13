@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Filter, FolderOpen } from 'lucide-react';
+import { ChevronRight, Filter, FolderOpen, Eye } from 'lucide-react';
 import React from 'react';
 
 import DeanLayout from './_layout';
@@ -182,14 +182,13 @@ const DeanProjects = () => {
                         <table className="w-full text-left text-xs">
                             <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                                 <tr>
-                                    <th className="px-6 py-4">Approved Title</th>
+                                    <th className="px-6 py-4">Title</th>
                                     <th className="px-6 py-4">Group</th>
                                     <th className="px-6 py-4">Program</th>
                                     <th className="px-6 py-4">Program Set</th>
                                     <th className="px-6 py-4">Adviser</th>
                                     <th className="px-6 py-4">Instructor</th>
                                     <th className="px-6 py-4 text-center">Members</th>
-                                    <th className="px-6 py-4">Approved At</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -202,7 +201,15 @@ const DeanProjects = () => {
                                         <td className="px-6 py-3.5 text-slate-600">{project.adviser_name || 'Unassigned'}</td>
                                         <td className="px-6 py-3.5 text-slate-600">{project.instructor_name || 'Unassigned'}</td>
                                         <td className="px-6 py-3.5 text-center font-semibold text-slate-800">{project.members_count ?? 0}</td>
-                                        <td className="px-6 py-3.5 text-slate-600">{project.approved_at || '—'}</td>
+                                        <td className="px-6 py-3.5 text-right">
+                                            <Link
+                                                href={`/dean/project-details?group=${project.id}`}
+                                                className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-emerald-700"
+                                            >
+                                                <Eye className="h-3 w-3" />
+                                                Detail
+                                            </Link>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
