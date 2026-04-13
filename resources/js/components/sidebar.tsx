@@ -219,10 +219,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { icon: LayoutDashboard, label: 'Dashboard', href: '/dean/dashboard' },
                     { icon: FolderOpen, label: 'Projects', href: '/dean/projects' },
                     { icon: Tags, label: 'Categories', href: '/dean/categories' },
-                    { icon: Archive, label: 'Projects Details', href: '/dean/project-details' },
-                    { icon: Users, label: 'Student Monitoring', href: '/dean/students' },
                     { icon: Settings, label: 'Settings', href: '/dean/settings' },
-                    { icon: FileText, label: 'Reports', href: '/dean/reports' },
                 ];
             case 'program_chairperson':
                 return [

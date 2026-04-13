@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Eye, Filter, FolderOpen } from 'lucide-react';
+import { ChevronRight, Filter, FolderOpen } from 'lucide-react';
 import React from 'react';
 
 import DeanLayout from './_layout';
@@ -190,7 +190,6 @@ const DeanProjects = () => {
                                     <th className="px-6 py-4">Instructor</th>
                                     <th className="px-6 py-4 text-center">Members</th>
                                     <th className="px-6 py-4">Approved At</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -204,15 +203,6 @@ const DeanProjects = () => {
                                         <td className="px-6 py-3.5 text-slate-600">{project.instructor_name || 'Unassigned'}</td>
                                         <td className="px-6 py-3.5 text-center font-semibold text-slate-800">{project.members_count ?? 0}</td>
                                         <td className="px-6 py-3.5 text-slate-600">{project.approved_at || '—'}</td>
-                                        <td className="px-6 py-3.5 text-right">
-                                            <Link
-                                                href={`/dean/project-details?group=${project.id}`}
-                                                className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-emerald-700"
-                                            >
-                                                <Eye className="h-3 w-3" />
-                                                Detail
-                                            </Link>
-                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
