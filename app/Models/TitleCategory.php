@@ -19,4 +19,9 @@ class TitleCategory extends Model
     {
         return $this->hasMany(TitleRepository::class);
     }
+
+    public function documentSubmissions(): HasMany
+    {
+        return $this->hasMany(DocumentSubmission::class);
+    }
 }

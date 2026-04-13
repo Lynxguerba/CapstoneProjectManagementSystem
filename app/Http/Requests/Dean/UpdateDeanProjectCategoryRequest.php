@@ -21,7 +21,7 @@ class UpdateDeanProjectCategoryRequest extends FormRequest
     {
         return [
             'title_category_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('title_categories', 'id'),
             ],
@@ -34,7 +34,6 @@ class UpdateDeanProjectCategoryRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'title_category_id.required' => 'Please select a category.',
             'title_category_id.integer' => 'Selected category is invalid.',
             'title_category_id.exists' => 'Selected category does not exist.',
         ];

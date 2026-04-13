@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
+use App\Http\Controllers\Dean\DeanCategoryController;
 use App\Http\Controllers\Dean\UpdateDeanProjectCategoryController;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
@@ -254,7 +255,7 @@ Route::middleware(['auth', 'role:dean'])->prefix('dean')->group(function () {
                             'adviserStatus' => (string) ($approvedSubmission->adviser_status ?? 'Submitted'),
                             'titleCategoryId' => $approvedSubmission->title_category_id,
                             'titleCategoryName' => $approvedSubmission->titleCategory?->name,
-                            'fileUrl' => route('dean.document-submissions.file', ['submission' => $approvedSubmission->id]),
+                            'fileUrl' => route('dean.document-submissions.file', ['submission' => $approvedSubmission->id], false),
                         ];
                     }
 
@@ -323,6 +324,14 @@ Route::middleware(['auth', 'role:dean'])->prefix('dean')->group(function () {
     Route::put('/project-details/{group}/category', UpdateDeanProjectCategoryController::class)
         ->whereNumber('group')
         ->name('dean.project-details.category.update');
+    Route::get('/categories', [DeanCategoryController::class, 'index'])->name('dean.categories');
+    Route::post('/categories', [DeanCategoryController::class, 'store'])->name('dean.categories.store');
+    Route::put('/categories/{category}', [DeanCategoryController::class, 'update'])
+        ->whereNumber('category')
+        ->name('dean.categories.update');
+    Route::delete('/categories/{category}', [DeanCategoryController::class, 'destroy'])
+        ->whereNumber('category')
+        ->name('dean.categories.destroy');
     Route::get('/students', function () {
         return Inertia::render('Dean/students');
     })->name('dean.students');

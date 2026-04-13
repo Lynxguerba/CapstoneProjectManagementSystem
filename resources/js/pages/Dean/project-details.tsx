@@ -231,16 +231,20 @@ const ProjectDetails = () => {
                                     id="title_category_id"
                                     value={form.data.title_category_id}
                                     onChange={(event) => form.setData('title_category_id', event.target.value)}
-                                    disabled={!canSetCategory || form.processing || categoryOptions.length === 0}
+                                    disabled={!canSetCategory || form.processing}
                                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-100"
                                 >
-                                    <option value="">Select category</option>
+                                    <option value="">N/A (No Category)</option>
                                     {categoryOptions.map((option) => (
                                         <option key={option.id} value={String(option.id)}>
                                             {option.name}
                                         </option>
                                     ))}
                                 </select>
+
+                                {group.program ? (
+                                    <p className="text-[11px] text-slate-500">Showing {group.program} categories for this group.</p>
+                                ) : null}
 
                                 {form.errors.title_category_id ? <p className="text-xs text-rose-600">{form.errors.title_category_id}</p> : null}
                                 {categoryOptions.length === 0 ? (
@@ -249,7 +253,7 @@ const ProjectDetails = () => {
 
                                 <button
                                     type="submit"
-                                    disabled={!canSetCategory || form.processing || form.data.title_category_id === ''}
+                                    disabled={!canSetCategory || form.processing}
                                     className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
                                 >
                                     <Save className="h-3.5 w-3.5" />

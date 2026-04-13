@@ -48,7 +48,16 @@ class UpdateDeanProjectCategoryController extends Controller
             ]);
         }
 
-        $categoryId = (int) $request->validated('title_category_id');
+        $validatedCategoryId = $request->validated('title_category_id');
+        if ($validatedCategoryId === null || $validatedCategoryId === '') {
+            $submission = $groupModel->approvedConceptSubmission;
+            $submission->title_category_id = null;
+            $submission->save();
+
+            return back()->with('success', 'Project category cleared successfully.');
+        }
+
+        $categoryId = (int) $validatedCategoryId;
         $category = TitleCategory::query()
             ->whereKey($categoryId)
             ->where('program', $groupProgram)
