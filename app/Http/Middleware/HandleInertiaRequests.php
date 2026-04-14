@@ -83,6 +83,9 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
                 'created_group_id' => $request->session()->get('created_group_id'),
             ],
+            'impersonation' => [
+                'isImpersonating' => $request->session()->has('impersonator_id'),
+            ],
         ];
     }
 

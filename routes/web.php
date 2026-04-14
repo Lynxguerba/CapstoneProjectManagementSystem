@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\ImpersonationController;
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -34,4 +35,13 @@ Route::post('/register', [LoginController::class, 'register'])->name('register.s
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::post('/switch-role', \App\Http\Controllers\Auth\SwitchRoleController::class)
     ->name('switch-role')
+    ->middleware('auth');
+Route::get('/admin/impersonate/search', [ImpersonationController::class, 'search'])
+    ->name('impersonation.search')
+    ->middleware('auth');
+Route::post('/admin/impersonate', [ImpersonationController::class, 'store'])
+    ->name('impersonation.store')
+    ->middleware('auth');
+Route::post('/admin/impersonate/leave', [ImpersonationController::class, 'destroy'])
+    ->name('impersonation.destroy')
     ->middleware('auth');

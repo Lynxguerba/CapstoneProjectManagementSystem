@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { AlertTriangle, ChevronUp, LogOut, Repeat, X } from 'lucide-react';
+import { AlertTriangle, ChevronUp, LogOut, Repeat, Search, Users, X } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -8,7 +8,17 @@ interface SignOutModalProps {
     onClose: () => void;
     activeRole: string;
     assignedRoles: string[];
+    showDeanAccountTools: boolean;
 }
+
+type ImpersonationUserOption = {
+    full_name: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    roles: string[];
+    active_role?: string | null;
+};
 
 const formatRoleLabel = (role: string): string => {
     return role
@@ -17,20 +27,32 @@ const formatRoleLabel = (role: string): string => {
         .join(' ');
 };
 
-const SignOutModal = ({ open, onClose, activeRole, assignedRoles }: SignOutModalProps) => {
+const SignOutModal = ({ open, onClose, activeRole, assignedRoles, showDeanAccountTools }: SignOutModalProps) => {
     const [isSigningOut, setIsSigningOut] = useState(false);
     const [isSwitchingRole, setIsSwitchingRole] = useState(false);
+    const [isSubmittingImpersonation, setIsSubmittingImpersonation] = useState(false);
+    const [isSearchingUsers, setIsSearchingUsers] = useState(false);
     const [showRoleTooltip, setShowRoleTooltip] = useState(false);
+    const [impersonationQuery, setImpersonationQuery] = useState('');
+    const [impersonationResults, setImpersonationResults] = useState<ImpersonationUserOption[]>([]);
+    const [selectedUser, setSelectedUser] = useState<ImpersonationUserOption | null>(null);
+    const [impersonationSearchError, setImpersonationSearchError] = useState('');
     const [isAppearing, setIsAppearing] = useState(false);
 
     const uniqueRoles = useMemo(() => {
         return [...new Set(assignedRoles.filter((role) => role.trim() !== ''))];
     }, [assignedRoles]);
     const canSwitchRole = uniqueRoles.length > 1;
+    const canImpersonateUser = showDeanAccountTools;
+    const isBusy = isSigningOut || isSwitchingRole || isSubmittingImpersonation;
 
     useEffect(() => {
         if (!open) {
             setShowRoleTooltip(false);
+            setImpersonationQuery('');
+            setImpersonationResults([]);
+            setSelectedUser(null);
+            setImpersonationSearchError('');
             return;
         }
 
@@ -71,6 +93,60 @@ const SignOutModal = ({ open, onClose, activeRole, assignedRoles }: SignOutModal
         };
     }, [open]);
 
+    useEffect(() => {
+        if (!open || !canImpersonateUser) {
+            setIsSearchingUsers(false);
+            setImpersonationResults([]);
+            setImpersonationSearchError('');
+            return;
+        }
+
+        const normalizedQuery = impersonationQuery.trim();
+
+        if (normalizedQuery.length < 2) {
+            setIsSearchingUsers(false);
+            setImpersonationResults([]);
+            setImpersonationSearchError('');
+            return;
+        }
+
+        const abortController = new AbortController();
+        const timeoutId = window.setTimeout(async () => {
+            setIsSearchingUsers(true);
+            setImpersonationSearchError('');
+
+            try {
+                const response = await fetch(`/admin/impersonate/search?q=${encodeURIComponent(normalizedQuery)}`, {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                    signal: abortController.signal,
+                });
+
+                if (!response.ok) {
+                    throw new Error('Unable to search users right now.');
+                }
+
+                const payload = (await response.json().catch(() => null)) as { users?: ImpersonationUserOption[] } | null;
+                setImpersonationResults(Array.isArray(payload?.users) ? payload.users : []);
+            } catch (error) {
+                if (!abortController.signal.aborted) {
+                    setImpersonationResults([]);
+                    setImpersonationSearchError(error instanceof Error ? error.message : 'Unable to search users right now.');
+                }
+            } finally {
+                if (!abortController.signal.aborted) {
+                    setIsSearchingUsers(false);
+                }
+            }
+        }, 250);
+
+        return () => {
+            abortController.abort();
+            window.clearTimeout(timeoutId);
+        };
+    }, [canImpersonateUser, impersonationQuery, open]);
+
     const handleSignOut = () => {
         setIsSigningOut(true);
 
@@ -103,6 +179,28 @@ const SignOutModal = ({ open, onClose, activeRole, assignedRoles }: SignOutModal
         );
     };
 
+    const handleImpersonationSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!selectedUser) {
+            return;
+        }
+
+        setIsSubmittingImpersonation(true);
+
+        router.post(
+            '/admin/impersonate',
+            { email: selectedUser.email },
+            {
+                preserveScroll: false,
+                replace: true,
+                onFinish: () => {
+                    setIsSubmittingImpersonation(false);
+                },
+            },
+        );
+    };
+
     if (!open) {
         return null;
     }
@@ -119,7 +217,7 @@ const SignOutModal = ({ open, onClose, activeRole, assignedRoles }: SignOutModal
             role="dialog"
             aria-modal="true"
             onMouseDown={(event) => {
-                if (event.target === event.currentTarget && !isSigningOut && !isSwitchingRole) {
+                if (event.target === event.currentTarget && !isBusy) {
                     onClose();
                 }
             }}
@@ -139,14 +237,14 @@ const SignOutModal = ({ open, onClose, activeRole, assignedRoles }: SignOutModal
                         type="button"
                         onClick={onClose}
                         className="rounded-lg p-1.5 text-gray-600 transition-all duration-200 hover:rotate-90 hover:bg-gray-200"
-                        disabled={isSigningOut || isSwitchingRole}
+                        disabled={isBusy}
                     >
                         <X className="h-5 w-5" />
                     </button>
                 </div>
 
-                <div className="p-4">
-                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
+                <div className="space-y-4 p-4">
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-3">
                         <div className="flex items-center gap-2">
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white shadow-sm">
                                 <AlertTriangle className="h-5 w-5" />
@@ -157,6 +255,107 @@ const SignOutModal = ({ open, onClose, activeRole, assignedRoles }: SignOutModal
                             </div>
                         </div>
                     </div>
+
+                    {canImpersonateUser ? (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                                    <Users className="h-5 w-5" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <div>
+                                            <p className="text-sm font-bold text-amber-950">Dean account tools</p>
+                                            <p className="text-xs text-amber-800">Search by email, first name, or last name to access another account.</p>
+                                        </div>
+                                    </div>
+
+                                    <form onSubmit={handleImpersonationSubmit} className="mt-3 space-y-2">
+                                        <label htmlFor="impersonation-user-search" className="block text-xs font-semibold tracking-wide text-amber-900 uppercase">
+                                            Search User
+                                        </label>
+
+                                        <div className="relative">
+                                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-amber-500" />
+                                            <input
+                                                id="impersonation-user-search"
+                                                type="text"
+                                                value={impersonationQuery}
+                                                onChange={(event) => {
+                                                    setSelectedUser(null);
+                                                    setImpersonationQuery(event.target.value);
+                                                }}
+                                                disabled={isSigningOut || isSwitchingRole || isSubmittingImpersonation}
+                                                placeholder="Search email, first name, or last name..."
+                                                className="w-full rounded-lg border border-amber-200 bg-white py-2 pr-3 pl-9 text-sm text-slate-800 shadow-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-300/40 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                            />
+                                        </div>
+
+                                        {impersonationQuery.trim().length < 2 ? (
+                                            <p className="text-xs text-amber-800">Type at least 2 characters to search accounts.</p>
+                                        ) : null}
+
+                                        {impersonationSearchError !== '' ? <p className="text-xs text-rose-600">{impersonationSearchError}</p> : null}
+
+                                        {impersonationQuery.trim().length >= 2 ? (
+                                            <div className="max-h-52 overflow-y-auto rounded-xl border border-amber-200 bg-white shadow-sm">
+                                                {isSearchingUsers ? (
+                                                    <p className="px-4 py-3 text-sm text-slate-500">Searching users...</p>
+                                                ) : impersonationResults.length === 0 ? (
+                                                    <p className="px-4 py-3 text-sm text-slate-500">No matching users found.</p>
+                                                ) : (
+                                                    impersonationResults.map((user) => {
+                                                        const isSelected = selectedUser?.email === user.email;
+
+                                                        return (
+                                                            <button
+                                                                key={user.email}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedUser(user);
+                                                                    setImpersonationQuery(user.email);
+                                                                }}
+                                                                disabled={isSigningOut || isSwitchingRole || isSubmittingImpersonation}
+                                                                className={`flex w-full flex-col gap-1 border-b border-amber-100 px-4 py-3 text-left transition last:border-b-0 ${
+                                                                    isSelected ? 'bg-amber-100/80' : 'hover:bg-amber-50'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className="text-sm font-semibold text-slate-800">{user.full_name}</span>
+                                                                    {user.active_role ? (
+                                                                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                                                                            {formatRoleLabel(user.active_role)}
+                                                                        </span>
+                                                                    ) : null}
+                                                                </div>
+                                                                <span className="text-xs text-slate-600">{user.email}</span>
+                                                                {user.roles.length > 0 ? (
+                                                                    <span className="text-[11px] text-slate-500">
+                                                                        {user.roles.map((role) => formatRoleLabel(role)).join(', ')}
+                                                                    </span>
+                                                                ) : null}
+                                                                {isSelected ? <span className="text-[10px] font-semibold text-amber-800">Selected account</span> : null}
+                                                            </button>
+                                                        );
+                                                    })
+                                                )}
+                                            </div>
+                                        ) : null}
+
+                                        <div className="flex justify-end">
+                                            <button
+                                                type="submit"
+                                                disabled={isSigningOut || isSwitchingRole || isSubmittingImpersonation || selectedUser === null}
+                                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                                {isSubmittingImpersonation ? 'Switching...' : 'Switch User'}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
                 </div>
 
                 <div className="border-t border-gray-200 bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3">
@@ -165,8 +364,10 @@ const SignOutModal = ({ open, onClose, activeRole, assignedRoles }: SignOutModal
                             <div className="relative">
                                 <button
                                     type="button"
-                                    onClick={() => setShowRoleTooltip((previousState) => !previousState)}
-                                    disabled={isSigningOut || isSwitchingRole}
+                                    onClick={() => {
+                                        setShowRoleTooltip((previousState) => !previousState);
+                                    }}
+                                    disabled={isBusy}
                                     className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-200 bg-blue-50 px-4 py-2 font-medium text-blue-700 transition-all duration-200 hover:bg-blue-100 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     <Repeat className="h-4 w-4" />
@@ -207,7 +408,7 @@ const SignOutModal = ({ open, onClose, activeRole, assignedRoles }: SignOutModal
                         <button
                             type="button"
                             onClick={handleSignOut}
-                            disabled={isSigningOut || isSwitchingRole}
+                            disabled={isBusy}
                             className="group relative z-10 flex transform items-center gap-2 overflow-hidden rounded-lg bg-red-600 px-5 py-2 font-medium text-white shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-red-700 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <span className="pointer-events-none absolute inset-0 z-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 group-hover:translate-x-[100%]" />

@@ -50,13 +50,16 @@ type SidebarPageProps = {
     auth?: {
         user?: SidebarAuthUser;
     };
+    impersonation?: {
+        isImpersonating?: boolean;
+    };
 };
 
 type MenuItem = { icon: LucideIcon; label: string; href?: string; isSection?: false } | { label: string; isSection: true };
 
 const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => {
     const page = usePage<SidebarPageProps>();
-    const { auth } = page.props;
+    const { auth, impersonation } = page.props;
     const user = auth?.user;
     const role = user?.role || 'student';
     const normalizedRole = normalizeRole(role);
@@ -65,6 +68,8 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
     const scrollKey = useMemo(() => `cpms-sidebar-scroll-${role}`, [role]);
     const [showModal, setShowModal] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [isReturningToDean, setIsReturningToDean] = useState(false);
+    const isImpersonating = impersonation?.isImpersonating === true;
     const selectedAcademicYear = useMemo(() => {
         const query = currentUrl.includes('?') ? (currentUrl.split('?')[1] ?? '') : '';
         const searchParams = new URLSearchParams(query);
@@ -387,6 +392,32 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                 </div>
 
                 {/* Navigation - Compressed items */}
+                {isImpersonating ? (
+                    <div className="mx-3 rounded-xl border border-amber-400/30 bg-amber-500/10 p-3 text-amber-50">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-200">Impersonation Active</p>
+                        <p className="mt-1 text-xs leading-5 text-amber-50/90">You are browsing as another user. Return to the dean session when you are done.</p>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsReturningToDean(true);
+                                router.post(
+                                    '/admin/impersonate/leave',
+                                    {},
+                                    {
+                                        preserveScroll: false,
+                                        replace: true,
+                                        onFinish: () => setIsReturningToDean(false),
+                                    },
+                                );
+                            }}
+                            disabled={isReturningToDean}
+                            className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-amber-300/40 bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {isReturningToDean ? 'Returning...' : 'Return to Dean'}
+                        </button>
+                    </div>
+                ) : null}
+
                 <nav ref={scrollContainerRef} className="cpms-scroll mt-2 min-h-0 flex-1 overflow-y-auto px-3">
                     <div className="space-y-1 pb-3">
                         {menuItems.map((item) => {
@@ -440,7 +471,13 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                         Sign Out
                     </button>
                 </div>
-                <SignOutModal open={showModal} onClose={() => setShowModal(false)} activeRole={role} assignedRoles={user?.roles ?? []} />
+                <SignOutModal
+                    open={showModal}
+                    onClose={() => setShowModal(false)}
+                    activeRole={role}
+                    assignedRoles={user?.roles ?? []}
+                    showDeanAccountTools={isImpersonating || (user?.roles ?? []).includes('dean')}
+                />
             </aside>
         </>
     );
