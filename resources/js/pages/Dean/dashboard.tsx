@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Box } from '@mui/material';
-import { BarChart, LineChart, PieChart } from '@mui/x-charts';
+import { BarChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
 import { FolderKanban, GraduationCap, Layers3, Tags, UserCheck } from 'lucide-react';
 import React from 'react';
@@ -37,19 +37,6 @@ type CategoryItem = {
     projectCount: number;
 };
 
-type ApprovalTrendEvent = {
-    occurredAt: string;
-};
-
-type ApprovalTrend = {
-    events: ApprovalTrendEvent[];
-};
-
-type ApprovalTrendSeries = {
-    labels: string[];
-    values: number[];
-};
-
 type RecentApproval = {
     id: number;
     groupName: string;
@@ -63,7 +50,6 @@ type DeanDashboardProps = {
     categoriesByProgram?: Record<ProgramCode, CategoryItem[]>;
     programDistribution?: DistributionItem[];
     programSetGroups?: ProgramSetGroupCount[];
-    approvalTrend?: ApprovalTrend;
     recentApprovals?: RecentApproval[];
 };
 
@@ -85,55 +71,12 @@ const fallbackCategoriesByProgram: Record<ProgramCode, CategoryItem[]> = {
     BSIS: [],
 };
 
-const fallbackApprovalTrend: ApprovalTrend = {
-    events: [],
-};
-
 const progressFor = (value: number, total: number): number => {
     if (total <= 0) {
         return 0;
     }
 
     return Math.round((value / total) * 100);
-};
-
-const toLocalDateKey = (value: Date): string => {
-    const year = value.getFullYear();
-    const month = String(value.getMonth() + 1).padStart(2, '0');
-    const day = String(value.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-};
-
-const buildLocalApprovalTrendSeries = (events: ApprovalTrendEvent[]): ApprovalTrendSeries => {
-    const dayStarts = Array.from({ length: 7 }, (_, index) => {
-        const dayStart = new Date();
-        dayStart.setHours(0, 0, 0, 0);
-        dayStart.setDate(dayStart.getDate() - (6 - index));
-
-        return dayStart;
-    });
-
-    const labels = dayStarts.map((dayStart) => dayStart.toLocaleDateString(undefined, { weekday: 'short' }));
-    const values = Array.from({ length: 7 }, () => 0);
-    const dayIndexByKey = new Map(dayStarts.map((dayStart, index): [string, number] => [toLocalDateKey(dayStart), index]));
-
-    events.forEach((event) => {
-        const parsedDate = new Date(event.occurredAt);
-
-        if (Number.isNaN(parsedDate.getTime())) {
-            return;
-        }
-
-        const dayIndex = dayIndexByKey.get(toLocalDateKey(parsedDate));
-        if (dayIndex === undefined) {
-            return;
-        }
-
-        values[dayIndex] += 1;
-    });
-
-    return { labels, values };
 };
 
 const formatDateTime = (value: string | null): string => {
@@ -166,7 +109,6 @@ const Dashboard = () => {
     const categoriesByProgram = props.categoriesByProgram ?? fallbackCategoriesByProgram;
     const programDistribution = props.programDistribution ?? fallbackProgramDistribution;
     const programSetGroups = props.programSetGroups ?? [];
-    const approvalTrend = props.approvalTrend ?? fallbackApprovalTrend;
     const recentApprovals = props.recentApprovals ?? [];
 
     const categoriesByProgramSorted = React.useMemo(() => {
@@ -228,9 +170,6 @@ const Dashboard = () => {
     }, [programSetGroups, selectedProgramSetChartFilter]);
     const hasProgramSetGroupData = filteredProgramSetGroups.some((item) => item.value > 0);
     const programSetBarChartWidth = Math.max(520, filteredProgramSetGroups.length * 92);
-
-    const approvalTrendSeries = React.useMemo(() => buildLocalApprovalTrendSeries(approvalTrend.events), [approvalTrend.events]);
-    const hasApprovalData = approvalTrendSeries.values.some((value) => value > 0);
 
     const heroHighlights = [
         {
@@ -672,67 +611,6 @@ const Dashboard = () => {
                             ))}
                         </div>
                     </motion.div>
-                </motion.section>
-
-                <motion.section
-                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                    viewport={{ once: false, amount: 0.2 }}
-                    transition={{ duration: 0.35 }}
-                    className={panelClassName}
-                >
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <h3 className="text-lg font-semibold text-slate-900">Approvals Trend</h3>
-                            <p className="mt-1 text-sm text-slate-600">Daily approved concept activity for the last 7 days (local time).</p>
-                        </div>
-                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                            Weekly Timeline
-                        </span>
-                    </div>
-
-                    {hasApprovalData ? (
-                        <Box>
-                            <LineChart
-                                height={260}
-                                xAxis={[{ data: approvalTrendSeries.labels, scaleType: 'point' }]}
-                                series={[
-                                    {
-                                        id: 'approvals',
-                                        data: approvalTrendSeries.values,
-                                        label: 'Approvals',
-                                        color: '#10b981',
-                                        area: true,
-                                        disableHighlight: true,
-                                        showMark: false,
-                                    },
-                                ]}
-                                margin={{ top: 16, right: 20, bottom: 28, left: 40 }}
-                                grid={{ vertical: true, horizontal: true }}
-                                disableLineItemHighlight
-                                sx={{
-                                    '& .MuiAreaElement-series-approvals': {
-                                        fill: 'url(#deanApprovalsAreaGradient) !important',
-                                    },
-                                    '& .MuiLineElement-series-approvals': {
-                                        strokeWidth: 3,
-                                    },
-                                }}
-                                skipAnimation={false}
-                            >
-                                <defs>
-                                    <linearGradient id="deanApprovalsAreaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
-                                        <stop offset="100%" stopColor="#10b981" stopOpacity="0.04" />
-                                    </linearGradient>
-                                </defs>
-                            </LineChart>
-                        </Box>
-                    ) : (
-                        <div className="mt-2 rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-8 text-center text-xs text-slate-500">
-                            No approval activity recorded in the last 7 days yet.
-                        </div>
-                    )}
                 </motion.section>
             </div>
         </DeanLayout>
