@@ -189,6 +189,7 @@ const DeanProjects = () => {
                                     <th className="px-6 py-4">Adviser</th>
                                     <th className="px-6 py-4">Instructor</th>
                                     <th className="px-6 py-4 text-center">Members</th>
+                                    <th className="px-6 py-4 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">

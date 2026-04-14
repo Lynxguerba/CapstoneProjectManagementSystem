@@ -15,6 +15,8 @@ type DashboardStats = {
     groupsWithoutAdviser: number;
 };
 
+type ProgramCode = 'BSIT' | 'BSIS';
+
 type DistributionItem = {
     label: string;
     value: number;
@@ -25,6 +27,22 @@ type ProgramSetGroupCount = {
     label: string;
     value: number;
     program?: string | null;
+};
+
+type CategoryItem = {
+    id: number;
+    program: ProgramCode;
+    name: string;
+    description?: string | null;
+    projectCount: number;
+};
+
+type CategoryPieSlice = {
+    id: string;
+    value: number;
+    label: string;
+    color: string;
+    actualValue: number;
 };
 
 type ApprovalTrendEvent = {
@@ -50,6 +68,7 @@ type RecentApproval = {
 
 type DeanDashboardProps = {
     stats?: DashboardStats;
+    categoriesByProgram?: Record<ProgramCode, CategoryItem[]>;
     programDistribution?: DistributionItem[];
     programSetGroups?: ProgramSetGroupCount[];
     approvalTrend?: ApprovalTrend;
@@ -69,8 +88,42 @@ const fallbackProgramDistribution: DistributionItem[] = [
     { label: 'BSIS', value: 0, color: '#65a30d' },
 ];
 
+const fallbackCategoriesByProgram: Record<ProgramCode, CategoryItem[]> = {
+    BSIT: [],
+    BSIS: [],
+};
+
+const categoryColorPalettes: Record<ProgramCode, string[]> = {
+    BSIT: ['#0ea5e9', '#14b8a6', '#22c55e', '#3b82f6', '#8b5cf6', '#06b6d4'],
+    BSIS: ['#f97316', '#f59e0b', '#eab308', '#f43f5e', '#fb7185', '#facc15'],
+};
+
 const fallbackApprovalTrend: ApprovalTrend = {
     events: [],
+};
+
+const buildCategoryPieData = (categories: CategoryItem[], program: ProgramCode): CategoryPieSlice[] => {
+    if (categories.length === 0) {
+        return [
+            {
+                id: `${program}-empty`,
+                value: 1,
+                label: 'No categorized projects',
+                color: '#d1d5db',
+                actualValue: 0,
+            },
+        ];
+    }
+
+    const palette = categoryColorPalettes[program];
+
+    return categories.map((category, index) => ({
+        id: `${program}-${category.id}`,
+        value: category.projectCount,
+        label: category.name,
+        color: palette[index % palette.length],
+        actualValue: category.projectCount,
+    }));
 };
 
 const progressFor = (value: number, total: number): number => {
@@ -142,16 +195,39 @@ const formatDateTime = (value: string | null): string => {
 const Dashboard = () => {
     const { props } = usePage<DeanDashboardProps>();
     const stats = props.stats ?? fallbackStats;
+    const categoriesByProgram = props.categoriesByProgram ?? fallbackCategoriesByProgram;
     const programDistribution = props.programDistribution ?? fallbackProgramDistribution;
     const programSetGroups = props.programSetGroups ?? [];
     const approvalTrend = props.approvalTrend ?? fallbackApprovalTrend;
     const recentApprovals = props.recentApprovals ?? [];
+
+    const categoriesByProgramSorted = React.useMemo(() => {
+        const sortCategories = (categories: CategoryItem[]): CategoryItem[] =>
+            [...categories].sort((left, right) => {
+                if (right.projectCount !== left.projectCount) {
+                    return right.projectCount - left.projectCount;
+                }
+
+                return left.name.localeCompare(right.name);
+            });
+
+        return {
+            BSIT: sortCategories(categoriesByProgram.BSIT ?? []),
+            BSIS: sortCategories(categoriesByProgram.BSIS ?? []),
+        };
+    }, [categoriesByProgram]);
 
     const programTotal = programDistribution.reduce((sum, item) => sum + item.value, 0);
     const hasProgramData = programTotal > 0;
     const approvedProjectsTotal = stats.approvedProjects;
     const adviserCoverageTotal = stats.groupsWithAdviser + stats.groupsWithoutAdviser;
     const adviserCoverageRate = progressFor(stats.groupsWithAdviser, adviserCoverageTotal);
+    const bsitCategoryPieData = React.useMemo(() => buildCategoryPieData(categoriesByProgramSorted.BSIT, 'BSIT'), [categoriesByProgramSorted.BSIT]);
+    const bsisCategoryPieData = React.useMemo(() => buildCategoryPieData(categoriesByProgramSorted.BSIS, 'BSIS'), [categoriesByProgramSorted.BSIS]);
+    const bsitProjectTotal = categoriesByProgramSorted.BSIT.reduce((sum, category) => sum + category.projectCount, 0);
+    const bsisProjectTotal = categoriesByProgramSorted.BSIS.reduce((sum, category) => sum + category.projectCount, 0);
+    const categoryTotal = categoriesByProgramSorted.BSIT.length + categoriesByProgramSorted.BSIS.length;
+    const categoryProjectTotal = bsitProjectTotal + bsisProjectTotal;
 
     const programPieData = programDistribution.map((item, index) => ({
         id: index,
@@ -194,6 +270,33 @@ const Dashboard = () => {
             label: 'Adviser Coverage',
             value: `${adviserCoverageRate}%`,
             icon: UserCheck,
+        },
+    ] as const;
+
+    const programCategoryPanels = [
+        {
+            program: 'BSIT' as const,
+            label: 'BSIT',
+            categories: categoriesByProgramSorted.BSIT,
+            projectTotal: bsitProjectTotal,
+            pieData: bsitCategoryPieData,
+            startAngle: 90,
+            endAngle: 270,
+            accentText: 'text-emerald-700',
+            accentBorder: 'border-emerald-200',
+            accentBg: 'bg-emerald-50',
+        },
+        {
+            program: 'BSIS' as const,
+            label: 'BSIS',
+            categories: categoriesByProgramSorted.BSIS,
+            projectTotal: bsisProjectTotal,
+            pieData: bsisCategoryPieData,
+            startAngle: -90,
+            endAngle: 90,
+            accentText: 'text-amber-700',
+            accentBorder: 'border-amber-200',
+            accentBg: 'bg-amber-50',
         },
     ] as const;
 
@@ -301,10 +404,8 @@ const Dashboard = () => {
                     whileInView={{ opacity: 1, y: 0, scale: 1 }}
                     viewport={{ once: false, amount: 0.2 }}
                     transition={{ duration: 0.35 }}
-                    className="grid grid-cols-1 gap-6 xl:grid-cols-3"
+                    className="grid grid-cols-1 gap-6 xl:grid-cols-2"
                 >
-                    
-
                     <div className={panelClassName}>
                         <div className="flex items-center justify-between gap-3">
                             <div>
@@ -347,6 +448,65 @@ const Dashboard = () => {
                             </div>
                         )}
                     </div>
+
+                    <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.18 }} className={panelClassName}>
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Tags className="h-5 w-5 text-emerald-700" />
+                                    <h3 className="text-lg font-semibold text-slate-900">Categories by Program</h3>
+                                </div>
+                                <p className="mt-1 text-sm text-slate-600">
+                                    Only categories with categorized projects appear here. Hover a slice to see the category name.
+                                </p>
+                            </div>
+                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                {categoryTotal.toLocaleString()} categories · {categoryProjectTotal.toLocaleString()} projects
+                            </span>
+                        </div>
+
+                        <div className="mt-8 flex flex-col items-center justify-between gap-8 xl:flex-row">
+                            <div className="relative flex flex-1 items-center justify-center">
+                                <div className="absolute top-1/2 left-0 -translate-y-1/2 rotate-180 font-bold text-emerald-700/10 uppercase select-none [writing-mode:vertical-lr]">
+                                    BSIT Program
+                                </div>
+                                <div className="absolute top-1/2 right-0 -translate-y-1/2 font-bold text-amber-700/10 uppercase select-none [writing-mode:vertical-lr]">
+                                    BSIS Program
+                                </div>
+
+                                <PieChart
+                                    width={360}
+                                    height={320}
+                                    margin={{ top: 0, bottom: 0, left: 0, right: 0 }}
+                                    series={[
+                                        {
+                                            data: [
+                                                ...programCategoryPanels[0].pieData, // BSIT
+                                                ...programCategoryPanels[1].pieData, // BSIS
+                                            ],
+                                            innerRadius: 80,
+                                            outerRadius: 140,
+                                            paddingAngle: 2,
+                                            cornerRadius: 6,
+
+                                            // THIS controls FULL rotation
+                                            startAngle: 180,
+                                            endAngle: 540,
+
+                                            highlightScope: { faded: 'global', highlighted: 'item' },
+                                            faded: {
+                                                innerRadius: 70,
+                                                additionalRadius: -10,
+                                                color: '#f1f5f9',
+                                            },
+                                        },
+                                    ]}
+                                    tooltip={{ trigger: 'item' }}
+                                    slotProps={{ legend: { hidden: true } }}
+                                />
+                            </div>
+                        </div>
+                    </motion.div>
                 </motion.section>
 
                 <motion.section
@@ -500,7 +660,9 @@ const Dashboard = () => {
                             {adviserCoverage.map((status) => (
                                 <div key={status.label} className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
                                     <div className="flex items-center justify-between gap-3">
-                                        <span className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold ${status.pill}`}>
+                                        <span
+                                            className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold ${status.pill}`}
+                                        >
                                             {status.label}
                                         </span>
                                         <span className="text-xs font-semibold text-slate-900 tabular-nums">{status.value.toLocaleString()}</span>

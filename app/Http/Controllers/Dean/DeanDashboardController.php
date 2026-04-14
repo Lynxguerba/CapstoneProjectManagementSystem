@@ -31,6 +31,7 @@ class DeanDashboardController extends Controller
     {
         return Inertia::render('Dean/dashboard', [
             'stats' => $this->buildStats(),
+            'categoriesByProgram' => $this->buildCategoriesByProgram(),
             'programDistribution' => $this->buildProgramDistribution(),
             'programSetGroups' => $this->buildProgramSetApprovedGroupDistribution(),
             'approvalTrend' => $this->buildApprovalTrend(),
@@ -108,6 +109,57 @@ class DeanDashboardController extends Controller
             ->whereIn('program_sets.program', $this->deanProgramScope)
             ->distinct('group_advisers.group_id')
             ->count('group_advisers.group_id');
+    }
+
+    /**
+     * @return array<string, array<int, array{id: int, program: string, name: string, description: string|null, projectCount: int}>>
+     */
+    private function buildCategoriesByProgram(): array
+    {
+        $categoriesByProgram = [
+            'BSIT' => [],
+            'BSIS' => [],
+        ];
+
+        if (! Schema::hasTable('title_categories')) {
+            return $categoriesByProgram;
+        }
+
+        $categoriesQuery = TitleCategory::query()
+            ->whereIn('program', $this->deanProgramScope)
+            ->orderBy('program')
+            ->orderBy('name');
+
+        if (Schema::hasTable('document_submissions')) {
+            $categoriesQuery
+                ->whereHas('documentSubmissions')
+                ->withCount('documentSubmissions as project_count');
+        } elseif (Schema::hasTable('title_repositories')) {
+            $categoriesQuery
+                ->whereHas('titleRepositories')
+                ->withCount('titleRepositories as project_count');
+        }
+
+        $categories = $categoriesQuery->get(['id', 'program', 'name', 'description']);
+
+        foreach ($categoriesByProgram as $program => $_categories) {
+            $categoriesByProgram[$program] = $categories
+                ->where('program', $program)
+                ->filter(static fn (TitleCategory $category): bool => (int) ($category->project_count ?? 0) > 0)
+                ->values()
+                ->map(static function (TitleCategory $category): array {
+                    return [
+                        'id' => $category->id,
+                        'program' => $category->program,
+                        'name' => $category->name,
+                        'description' => $category->description,
+                        'projectCount' => (int) ($category->project_count ?? 0),
+                    ];
+                })
+                ->all();
+        }
+
+        return $categoriesByProgram;
     }
 
     /**
