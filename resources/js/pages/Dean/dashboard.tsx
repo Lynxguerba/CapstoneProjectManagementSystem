@@ -2,8 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { Box } from '@mui/material';
 import { BarChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
-import { FolderKanban, GraduationCap, Layers3, Tags, UserCheck } from 'lucide-react';
-import React from 'react';
+import { FolderKanban, GraduationCap, Layers3, Tags, UserCheck } from 'lucide-react';import React from 'react';
 import deanRoutes from '../../routes/dean';
 import DeanLayout from './_layout';
 
