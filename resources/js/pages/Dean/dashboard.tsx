@@ -94,8 +94,8 @@ const fallbackCategoriesByProgram: Record<ProgramCode, CategoryItem[]> = {
 };
 
 const categoryColorPalettes: Record<ProgramCode, string[]> = {
-    BSIT: ['#0ea5e9', '#14b8a6', '#22c55e', '#3b82f6', '#8b5cf6', '#06b6d4'],
-    BSIS: ['#f97316', '#f59e0b', '#eab308', '#f43f5e', '#fb7185', '#facc15'],
+    BSIT: ['#16a34a', '#15803d', '#22c55e', '#4ade80', '#86efac', '#bbf7d0'],
+    BSIS: ['#14532d', '#166534', '#65a30d', '#84cc16', '#a3e635', '#d9f99d'],
 };
 
 const fallbackApprovalTrend: ApprovalTrend = {
