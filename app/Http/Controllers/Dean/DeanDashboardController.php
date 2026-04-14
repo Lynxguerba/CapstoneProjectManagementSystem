@@ -120,40 +120,51 @@ class DeanDashboardController extends Controller
             'BSIT' => [],
             'BSIS' => [],
         ];
+        $projectCountsByCategory = collect();
 
         if (! Schema::hasTable('title_categories')) {
             return $categoriesByProgram;
         }
 
-        $categoriesQuery = TitleCategory::query()
-            ->whereIn('program', $this->deanProgramScope)
-            ->orderBy('program')
-            ->orderBy('name');
-
-        if (Schema::hasTable('document_submissions')) {
-            $categoriesQuery
-                ->whereHas('documentSubmissions')
-                ->withCount('documentSubmissions as project_count');
+        if (
+            Schema::hasTable('groups')
+            && Schema::hasTable('program_sets')
+            && Schema::hasTable('document_submissions')
+        ) {
+            $projectCountsByCategory = Group::query()
+                ->selectRaw('document_submissions.title_category_id, COUNT(DISTINCT groups.id) as total')
+                ->join('program_sets', 'program_sets.id', '=', 'groups.program_set_id')
+                ->join('document_submissions', 'document_submissions.id', '=', 'groups.approved_concept_submission_id')
+                ->whereIn('program_sets.program', $this->deanProgramScope)
+                ->whereNotNull('groups.approved_concept_submission_id')
+                ->whereNotNull('document_submissions.title_category_id')
+                ->groupBy('document_submissions.title_category_id')
+                ->pluck('total', 'document_submissions.title_category_id');
         } elseif (Schema::hasTable('title_repositories')) {
-            $categoriesQuery
-                ->whereHas('titleRepositories')
-                ->withCount('titleRepositories as project_count');
+            $projectCountsByCategory = TitleCategory::query()
+                ->whereIn('program', $this->deanProgramScope)
+                ->withCount('titleRepositories as project_count')
+                ->get(['id'])
+                ->pluck('project_count', 'id');
         }
 
-        $categories = $categoriesQuery->get(['id', 'program', 'name', 'description']);
+        $categories = TitleCategory::query()
+            ->whereIn('program', $this->deanProgramScope)
+            ->orderBy('program')
+            ->orderBy('name')
+            ->get(['id', 'program', 'name', 'description']);
 
         foreach ($categoriesByProgram as $program => $_categories) {
             $categoriesByProgram[$program] = $categories
                 ->where('program', $program)
-                ->filter(static fn (TitleCategory $category): bool => (int) ($category->project_count ?? 0) > 0)
                 ->values()
-                ->map(static function (TitleCategory $category): array {
+                ->map(static function (TitleCategory $category) use ($projectCountsByCategory): array {
                     return [
                         'id' => $category->id,
                         'program' => $category->program,
                         'name' => $category->name,
                         'description' => $category->description,
-                        'projectCount' => (int) ($category->project_count ?? 0),
+                        'projectCount' => (int) ($projectCountsByCategory->get($category->id, 0)),
                     ];
                 })
                 ->all();

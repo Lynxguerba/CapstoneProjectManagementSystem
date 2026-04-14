@@ -87,7 +87,10 @@ class ShowDeanProjectDetailsController extends Controller
                     'members' => $this->buildMembersPayload($group),
                 ];
 
-                if ($group->approvedConceptSubmission instanceof DocumentSubmission) {
+                if (
+                    $group->approvedConceptSubmission instanceof DocumentSubmission
+                    && (int) $group->approvedConceptSubmission->group_id === (int) $group->id
+                ) {
                     $submission = $group->approvedConceptSubmission;
                     $filePath = is_string($submission->file_path) ? trim($submission->file_path) : '';
 

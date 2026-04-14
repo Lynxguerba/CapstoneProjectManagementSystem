@@ -37,14 +37,6 @@ type CategoryItem = {
     projectCount: number;
 };
 
-type CategoryPieSlice = {
-    id: string;
-    value: number;
-    label: string;
-    color: string;
-    actualValue: number;
-};
-
 type ApprovalTrendEvent = {
     occurredAt: string;
 };
@@ -93,37 +85,8 @@ const fallbackCategoriesByProgram: Record<ProgramCode, CategoryItem[]> = {
     BSIS: [],
 };
 
-const categoryColorPalettes: Record<ProgramCode, string[]> = {
-    BSIT: ['#16a34a', '#15803d', '#22c55e', '#4ade80', '#86efac', '#bbf7d0'],
-    BSIS: ['#14532d', '#166534', '#65a30d', '#84cc16', '#a3e635', '#d9f99d'],
-};
-
 const fallbackApprovalTrend: ApprovalTrend = {
     events: [],
-};
-
-const buildCategoryPieData = (categories: CategoryItem[], program: ProgramCode): CategoryPieSlice[] => {
-    if (categories.length === 0) {
-        return [
-            {
-                id: `${program}-empty`,
-                value: 1,
-                label: 'No categorized projects',
-                color: '#d1d5db',
-                actualValue: 0,
-            },
-        ];
-    }
-
-    const palette = categoryColorPalettes[program];
-
-    return categories.map((category, index) => ({
-        id: `${program}-${category.id}`,
-        value: category.projectCount,
-        label: category.name,
-        color: palette[index % palette.length],
-        actualValue: category.projectCount,
-    }));
 };
 
 const progressFor = (value: number, total: number): number => {
@@ -192,6 +155,11 @@ const formatDateTime = (value: string | null): string => {
     });
 };
 
+const categoryBarColorByProgram: Record<ProgramCode, string> = {
+    BSIT: '#059669',
+    BSIS: '#65a30d',
+};
+
 const Dashboard = () => {
     const { props } = usePage<DeanDashboardProps>();
     const stats = props.stats ?? fallbackStats;
@@ -216,18 +184,18 @@ const Dashboard = () => {
             BSIS: sortCategories(categoriesByProgram.BSIS ?? []),
         };
     }, [categoriesByProgram]);
+    const categoryGroups = React.useMemo(
+        () => [...categoriesByProgramSorted.BSIT, ...categoriesByProgramSorted.BSIS],
+        [categoriesByProgramSorted.BSIS, categoriesByProgramSorted.BSIT],
+    );
 
     const programTotal = programDistribution.reduce((sum, item) => sum + item.value, 0);
     const hasProgramData = programTotal > 0;
     const approvedProjectsTotal = stats.approvedProjects;
     const adviserCoverageTotal = stats.groupsWithAdviser + stats.groupsWithoutAdviser;
     const adviserCoverageRate = progressFor(stats.groupsWithAdviser, adviserCoverageTotal);
-    const bsitCategoryPieData = React.useMemo(() => buildCategoryPieData(categoriesByProgramSorted.BSIT, 'BSIT'), [categoriesByProgramSorted.BSIT]);
-    const bsisCategoryPieData = React.useMemo(() => buildCategoryPieData(categoriesByProgramSorted.BSIS, 'BSIS'), [categoriesByProgramSorted.BSIS]);
-    const bsitProjectTotal = categoriesByProgramSorted.BSIT.reduce((sum, category) => sum + category.projectCount, 0);
-    const bsisProjectTotal = categoriesByProgramSorted.BSIS.reduce((sum, category) => sum + category.projectCount, 0);
-    const categoryTotal = categoriesByProgramSorted.BSIT.length + categoriesByProgramSorted.BSIS.length;
-    const categoryProjectTotal = bsitProjectTotal + bsisProjectTotal;
+    const categoryTotal = categoryGroups.length;
+    const categoryProjectTotal = categoryGroups.reduce((sum, category) => sum + category.projectCount, 0);
 
     const programPieData = programDistribution.map((item, index) => ({
         id: index,
@@ -235,6 +203,20 @@ const Dashboard = () => {
         label: item.label,
         color: item.color,
     }));
+
+    const [selectedCategoryChartFilter, setSelectedCategoryChartFilter] = React.useState<'All' | 'BSIT' | 'BSIS'>('All');
+    const filteredCategoryGroups = React.useMemo(() => {
+        if (selectedCategoryChartFilter === 'All') {
+            return categoryGroups;
+        }
+
+        return categoryGroups.filter((item) => item.program === selectedCategoryChartFilter);
+    }, [categoryGroups, selectedCategoryChartFilter]);
+    const visibleCategoryTotal = filteredCategoryGroups.length;
+    const visibleCategoryProjectTotal = filteredCategoryGroups.reduce((sum, item) => sum + item.projectCount, 0);
+    const categoryBarChartWidth = Math.max(520, filteredCategoryGroups.length * 92);
+    const hasCategoryData = filteredCategoryGroups.length > 0;
+    const categoryBarColor = selectedCategoryChartFilter === 'BSIS' ? categoryBarColorByProgram.BSIS : '#10b981';
 
     const [selectedProgramSetChartFilter, setSelectedProgramSetChartFilter] = React.useState<'All' | 'BSIT' | 'BSIS'>('All');
     const filteredProgramSetGroups = React.useMemo(() => {
@@ -273,33 +255,6 @@ const Dashboard = () => {
         },
     ] as const;
 
-    const programCategoryPanels = [
-        {
-            program: 'BSIT' as const,
-            label: 'BSIT',
-            categories: categoriesByProgramSorted.BSIT,
-            projectTotal: bsitProjectTotal,
-            pieData: bsitCategoryPieData,
-            startAngle: 90,
-            endAngle: 270,
-            accentText: 'text-emerald-700',
-            accentBorder: 'border-emerald-200',
-            accentBg: 'bg-emerald-50',
-        },
-        {
-            program: 'BSIS' as const,
-            label: 'BSIS',
-            categories: categoriesByProgramSorted.BSIS,
-            projectTotal: bsisProjectTotal,
-            pieData: bsisCategoryPieData,
-            startAngle: -90,
-            endAngle: 90,
-            accentText: 'text-amber-700',
-            accentBorder: 'border-amber-200',
-            accentBg: 'bg-amber-50',
-        },
-    ] as const;
-
     const adviserCoverage = [
         {
             label: 'With Adviser',
@@ -325,18 +280,24 @@ const Dashboard = () => {
                 <style
                     dangerouslySetInnerHTML={{
                         __html: `
+                            .cpms-scroll {
+                                scrollbar-width: thin;
+                                scrollbar-color: #10b981 #d1fae5;
+                            }
                             .cpms-scroll::-webkit-scrollbar {
-                                height: 6px;
+                                height: 10px;
                             }
                             .cpms-scroll::-webkit-scrollbar-track {
-                                background: transparent;
+                                background: #d1fae5;
+                                border-radius: 9999px;
                             }
                             .cpms-scroll::-webkit-scrollbar-thumb {
-                                background: #09be8293;
-                                border-radius: 3px;
+                                background: linear-gradient(90deg, #059669 0%, #84cc16 100%);
+                                border: 2px solid #d1fae5;
+                                border-radius: 9999px;
                             }
                             .cpms-scroll::-webkit-scrollbar-thumb:hover {
-                                background: #00af78ff;
+                                background: linear-gradient(90deg, #047857 0%, #65a30d 100%);
                             }
                             .cpms-scroll::-webkit-scrollbar-button {
                                 display: none;
@@ -450,62 +411,98 @@ const Dashboard = () => {
                     </div>
 
                     <motion.div whileHover={{ y: -3, scale: 1.005 }} transition={{ duration: 0.18 }} className={panelClassName}>
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2">
                                     <Tags className="h-5 w-5 text-emerald-700" />
                                     <h3 className="text-lg font-semibold text-slate-900">Categories by Program</h3>
                                 </div>
                                 <p className="mt-1 text-sm text-slate-600">
-                                    Only categories with categorized projects appear here. Hover a slice to see the category name.
+                                    Dean-managed categories grouped by program. Filter the chart to compare how many approved project records are
+                                    linked per category.
                                 </p>
                             </div>
-                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                {categoryTotal.toLocaleString()} categories · {categoryProjectTotal.toLocaleString()} projects
-                            </span>
-                        </div>
-
-                        <div className="mt-8 flex flex-col items-center justify-between gap-8 xl:flex-row">
-                            <div className="relative flex flex-1 items-center justify-center">
-                                <div className="absolute top-1/2 left-0 -translate-y-1/2 rotate-180 font-bold text-emerald-700/10 uppercase select-none [writing-mode:vertical-lr]">
-                                    BSIT Program
-                                </div>
-                                <div className="absolute top-1/2 right-0 -translate-y-1/2 font-bold text-amber-700/10 uppercase select-none [writing-mode:vertical-lr]">
-                                    BSIS Program
-                                </div>
-
-                                <PieChart
-                                    width={360}
-                                    height={320}
-                                    margin={{ top: 0, bottom: 0, left: 0, right: 0 }}
-                                    series={[
-                                        {
-                                            data: [
-                                                ...programCategoryPanels[0].pieData, // BSIT
-                                                ...programCategoryPanels[1].pieData, // BSIS
-                                            ],
-                                            innerRadius: 80,
-                                            outerRadius: 140,
-                                            paddingAngle: 2,
-                                            cornerRadius: 6,
-
-                                            // THIS controls FULL rotation
-                                            startAngle: 180,
-                                            endAngle: 540,
-
-                                            highlightScope: { faded: 'global', highlighted: 'item' },
-                                            faded: {
-                                                innerRadius: 70,
-                                                additionalRadius: -10,
-                                                color: '#f1f5f9',
-                                            },
-                                        },
-                                    ]}
-                                    tooltip={{ trigger: 'item' }}
-                                    slotProps={{ legend: { hidden: true } }}
-                                />
+                            <div className="flex flex-wrap items-center justify-end gap-2">
+                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                    {categoryTotal.toLocaleString()} categories · {categoryProjectTotal.toLocaleString()} linked projects
+                                </span>
+                                <select
+                                    value={selectedCategoryChartFilter}
+                                    onChange={(event) => setSelectedCategoryChartFilter(event.target.value as 'All' | 'BSIT' | 'BSIS')}
+                                    className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+                                >
+                                    <option value="All">All Programs</option>
+                                    <option value="BSIT">BSIT</option>
+                                    <option value="BSIS">BSIS</option>
+                                </select>
                             </div>
                         </div>
+
+                        {hasCategoryData ? (
+                            <>
+                                <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-semibold text-slate-600">
+                                        {visibleCategoryTotal.toLocaleString()} visible categories
+                                    </span>
+                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-semibold text-slate-600">
+                                        {visibleCategoryProjectTotal.toLocaleString()} linked projects
+                                    </span>
+                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 font-medium text-slate-500">
+                                        <span
+                                            className="h-2.5 w-2.5 rounded-full"
+                                            style={{
+                                                backgroundColor: categoryBarColor,
+                                            }}
+                                        />
+                                        {selectedCategoryChartFilter === 'All'
+                                            ? 'Categories from both Dean programs'
+                                            : `${selectedCategoryChartFilter} categories`}
+                                    </span>
+                                </div>
+
+                                <div className="cpms-scroll mt-4 overflow-x-auto pr-1 pb-2">
+                                    <Box sx={{ minWidth: categoryBarChartWidth }}>
+                                        <BarChart
+                                            width={categoryBarChartWidth}
+                                            height={248}
+                                            xAxis={[
+                                                {
+                                                    scaleType: 'band',
+                                                    data: filteredCategoryGroups.map((item) => item.name),
+                                                    tickLabelStyle: { fontSize: 10 },
+                                                },
+                                            ]}
+                                            yAxis={[{ min: 0 }]}
+                                            series={[
+                                                {
+                                                    label: 'Linked Projects',
+                                                    data: filteredCategoryGroups.map((item) => item.projectCount),
+                                                    color: categoryBarColor,
+                                                },
+                                            ]}
+                                            margin={{ top: 16, right: 16, bottom: 54, left: 40 }}
+                                            grid={{ horizontal: true }}
+                                            slotProps={{ legend: { hidden: true } }}
+                                            skipAnimation={false}
+                                            sx={{
+                                                '& .MuiBarElement-root': {
+                                                    transformOrigin: 'center bottom',
+                                                    transition: 'transform 160ms ease, filter 160ms ease',
+                                                },
+                                                '& .MuiBarElement-root:hover': {
+                                                    transform: 'scaleY(1.05)',
+                                                    filter: 'brightness(1.02)',
+                                                },
+                                            }}
+                                        />
+                                    </Box>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="mt-6 rounded-xl border border-dashed border-emerald-100 bg-emerald-50/50 p-6 text-center text-xs text-slate-500">
+                                No categories configured for the selected program yet.
+                            </div>
+                        )}
                     </motion.div>
                 </motion.section>
 

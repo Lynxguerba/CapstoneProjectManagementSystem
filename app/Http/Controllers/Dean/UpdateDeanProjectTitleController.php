@@ -27,7 +27,10 @@ class UpdateDeanProjectTitleController extends Controller
             abort(404);
         }
 
-        if (! $group->approvedConceptSubmission instanceof DocumentSubmission) {
+        if (
+            ! $group->approvedConceptSubmission instanceof DocumentSubmission
+            || (int) $group->approvedConceptSubmission->group_id !== (int) $group->id
+        ) {
             abort(404);
         }
 

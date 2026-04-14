@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Dean;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Dean\StoreDeanCategoryRequest;
 use App\Http\Requests\Dean\UpdateDeanCategoryRequest;
-use App\Models\DocumentSubmission;
+use App\Models\Group;
 use App\Models\TitleCategory;
 use App\Models\TitleRepository;
 use Illuminate\Http\RedirectResponse;
@@ -27,38 +27,54 @@ class DeanCategoryController extends Controller
             'BSIT' => [],
             'BSIS' => [],
         ];
+        $linkedProjectCountsByCategory = collect();
         $statusCountsByCategory = collect();
 
         if (Schema::hasTable('title_categories')) {
-            $categoriesQuery = TitleCategory::query()
-                ->whereIn('program', $this->deanProgramScope)
-                ->orderBy('program')
-                ->orderBy('name');
+            if (
+                Schema::hasTable('groups')
+                && Schema::hasTable('program_sets')
+                && Schema::hasTable('document_submissions')
+            ) {
+                $approvedProjectStatusRows = Group::query()
+                    ->selectRaw("document_submissions.title_category_id, COALESCE(NULLIF(TRIM(document_submissions.status), ''), 'Submitted') as project_status, COUNT(DISTINCT groups.id) as total")
+                    ->join('program_sets', 'program_sets.id', '=', 'groups.program_set_id')
+                    ->join('document_submissions', 'document_submissions.id', '=', 'groups.approved_concept_submission_id')
+                    ->whereIn('program_sets.program', $this->deanProgramScope)
+                    ->whereNotNull('groups.approved_concept_submission_id')
+                    ->whereNotNull('document_submissions.title_category_id')
+                    ->groupBy('document_submissions.title_category_id', 'project_status')
+                    ->get();
 
-            if (Schema::hasTable('document_submissions')) {
-                $categoriesQuery->withCount('documentSubmissions as linked_projects_count');
-
-                $statusCountsByCategory = DocumentSubmission::query()
-                    ->selectRaw("title_category_id, COALESCE(NULLIF(TRIM(status), ''), 'Submitted') as project_status, COUNT(*) as total")
-                    ->whereNotNull('title_category_id')
-                    ->groupBy('title_category_id', 'project_status')
-                    ->get()
-                    ->groupBy('title_category_id');
+                $statusCountsByCategory = $approvedProjectStatusRows->groupBy('title_category_id');
+                $linkedProjectCountsByCategory = $approvedProjectStatusRows
+                    ->groupBy('title_category_id')
+                    ->map(static fn ($rows): int => (int) $rows->sum('total'));
+            } elseif (Schema::hasTable('title_repositories')) {
+                $linkedProjectCountsByCategory = TitleCategory::query()
+                    ->whereIn('program', $this->deanProgramScope)
+                    ->withCount('titleRepositories as linked_projects_count')
+                    ->get(['id'])
+                    ->pluck('linked_projects_count', 'id');
             }
 
-            $categories = $categoriesQuery->get(['id', 'program', 'name', 'description']);
+            $categories = TitleCategory::query()
+                ->whereIn('program', $this->deanProgramScope)
+                ->orderBy('program')
+                ->orderBy('name')
+                ->get(['id', 'program', 'name', 'description']);
 
             $categoriesByProgram = [
                 'BSIT' => $categories
                     ->where('program', 'BSIT')
                     ->values()
-                    ->map(function (TitleCategory $category) use ($statusCountsByCategory): array {
+                    ->map(function (TitleCategory $category) use ($linkedProjectCountsByCategory, $statusCountsByCategory): array {
                         $statusCounts = $statusCountsByCategory
                             ->get($category->id, collect())
                             ->map(
-                                fn (DocumentSubmission $submissionStatus): array => [
-                                    'status' => (string) $submissionStatus->project_status,
-                                    'count' => (int) $submissionStatus->total,
+                                static fn ($statusRow): array => [
+                                    'status' => (string) ($statusRow->project_status ?? 'Submitted'),
+                                    'count' => (int) ($statusRow->total ?? 0),
                                 ]
                             )
                             ->values()
@@ -69,20 +85,20 @@ class DeanCategoryController extends Controller
                             'program' => $category->program,
                             'name' => $category->name,
                             'description' => $category->description,
-                            'linkedProjectsCount' => (int) ($category->linked_projects_count ?? 0),
+                            'linkedProjectsCount' => (int) ($linkedProjectCountsByCategory->get($category->id, 0)),
                             'projectStatusCounts' => $statusCounts,
                         ];
                     })->all(),
                 'BSIS' => $categories
                     ->where('program', 'BSIS')
                     ->values()
-                    ->map(function (TitleCategory $category) use ($statusCountsByCategory): array {
+                    ->map(function (TitleCategory $category) use ($linkedProjectCountsByCategory, $statusCountsByCategory): array {
                         $statusCounts = $statusCountsByCategory
                             ->get($category->id, collect())
                             ->map(
-                                fn (DocumentSubmission $submissionStatus): array => [
-                                    'status' => (string) $submissionStatus->project_status,
-                                    'count' => (int) $submissionStatus->total,
+                                static fn ($statusRow): array => [
+                                    'status' => (string) ($statusRow->project_status ?? 'Submitted'),
+                                    'count' => (int) ($statusRow->total ?? 0),
                                 ]
                             )
                             ->values()
@@ -93,7 +109,7 @@ class DeanCategoryController extends Controller
                             'program' => $category->program,
                             'name' => $category->name,
                             'description' => $category->description,
-                            'linkedProjectsCount' => (int) ($category->linked_projects_count ?? 0),
+                            'linkedProjectsCount' => (int) ($linkedProjectCountsByCategory->get($category->id, 0)),
                             'projectStatusCounts' => $statusCounts,
                         ];
                     })->all(),
