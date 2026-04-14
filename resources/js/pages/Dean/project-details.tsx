@@ -2,6 +2,7 @@ import { Link, useForm, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import {
     ChevronRight,
+    PencilLine,
     FileText,
     Save,
     BookOpen,
@@ -14,6 +15,8 @@ import {
 } from 'lucide-react';
 import React from 'react';
 
+import ProjectTitleRenameModal from '@/components/Dean/ProjectTitleRenameModal';
+import deanProjectDetails from '@/routes/dean/projects/details';
 import DeanLayout from './_layout';
 
 type CategoryOption = {
@@ -62,6 +65,7 @@ const ProjectDetails = () => {
     const approvedConcept = props.approvedConcept ?? null;
     const categoryOptions = React.useMemo(() => props.categoryOptions ?? [], [props.categoryOptions]);
     const canSetCategory = props.canSetCategory === true;
+    const [showRenameModal, setShowRenameModal] = React.useState(false);
     const form = useForm<{ title_category_id: string }>({
         title_category_id: approvedConcept?.titleCategoryId ? String(approvedConcept.titleCategoryId) : '',
     });
@@ -81,7 +85,7 @@ const ProjectDetails = () => {
             return;
         }
 
-        form.put(`/dean/project-details/${group.id}/category`, {
+        form.put(deanProjectDetails.category.update.url({ group: group.id }), {
             preserveScroll: true,
         });
     };
@@ -131,7 +135,17 @@ const ProjectDetails = () => {
                                     <FileCheck2 className="h-3.5 w-3.5" />
                                     Project Title
                                 </dt>
-                                <dd className="mt-1 text-xs leading-snug font-medium text-emerald-900">{approvedConcept.title}</dd>
+                                <div className="mt-1 flex items-start gap-2">
+                                    <p className="min-w-0 flex-1 text-xs leading-snug font-medium text-emerald-900">{approvedConcept.title}</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowRenameModal(true)}
+                                        className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+                                    >
+                                        <PencilLine className="h-3 w-3" />
+                                        Rename
+                                    </button>
+                                </div>
                             </div>
 
                             {/* ── Info Grid ── */}
@@ -264,11 +278,18 @@ const ProjectDetails = () => {
                                     <p className="text-center text-[11px] font-medium text-emerald-600">✓ Category saved successfully.</p>
                                 ) : null}
                             </form>
+
+                            <ProjectTitleRenameModal
+                                open={showRenameModal}
+                                groupId={group.id}
+                                currentTitle={approvedConcept.title}
+                                onClose={() => setShowRenameModal(false)}
+                            />
                         </div>
 
                         <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm">
                             <div className="p-4">
-                                <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Concept Paper PDF</p>
+                                <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">Project File</p>
                             </div>
                             <div className="flex-1 overflow-hidden rounded-b-2xl border-t border-slate-100 bg-slate-50">
                                 {approvedConcept.fileUrl ? (

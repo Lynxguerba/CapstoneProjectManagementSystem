@@ -36,13 +36,13 @@ type CategoryEditFormData = {
 const programMeta: Record<ProgramCode, { label: string; accent: string; panel: string }> = {
     BSIT: {
         label: 'BSIT Categories',
-        accent: 'text-sky-700',
-        panel: 'border-sky-200 bg-sky-50/30',
+        accent: 'text-emerald-700',
+        panel: 'border-emerald-200 bg-emerald-50/30',
     },
     BSIS: {
         label: 'BSIS Categories',
-        accent: 'text-emerald-700',
-        panel: 'border-emerald-200 bg-emerald-50/30',
+        accent: 'text-lime-700',
+        panel: 'border-lime-200 bg-lime-50/30',
     },
 };
 
@@ -58,20 +58,20 @@ const programControlStyles: Record<
     }
 > = {
     BSIT: {
-        focus: 'focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20',
-        primaryButton: 'bg-sky-600',
-        primaryButtonHover: 'hover:bg-sky-700',
-        rowHover: 'hover:bg-sky-50/40',
-        inlineAction: 'border-sky-200 text-sky-700',
-        inlineActionHover: 'hover:bg-sky-50',
-    },
-    BSIS: {
         focus: 'focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20',
         primaryButton: 'bg-emerald-600',
         primaryButtonHover: 'hover:bg-emerald-700',
-        rowHover: 'hover:bg-emerald-50/30',
+        rowHover: 'hover:bg-emerald-50/40',
         inlineAction: 'border-emerald-200 text-emerald-700',
         inlineActionHover: 'hover:bg-emerald-50',
+    },
+    BSIS: {
+        focus: 'focus:border-lime-500 focus:ring-2 focus:ring-lime-500/20',
+        primaryButton: 'bg-lime-600',
+        primaryButtonHover: 'hover:bg-lime-700',
+        rowHover: 'hover:bg-lime-50/30',
+        inlineAction: 'border-lime-200 text-lime-700',
+        inlineActionHover: 'hover:bg-lime-50',
     },
 };
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Dean\DeanCategoryController;
 use App\Http\Controllers\Dean\DeanDashboardController;
 use App\Http\Controllers\Dean\ShowDeanProjectDetailsController;
 use App\Http\Controllers\Dean\UpdateDeanProjectCategoryController;
+use App\Http\Controllers\Dean\UpdateDeanProjectTitleController;
 use App\Models\Group;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -128,6 +129,9 @@ Route::middleware(['auth', 'role:dean'])->prefix('dean')->group(function () {
         ]);
     })->name('dean.projects');
     Route::get('/project-details', ShowDeanProjectDetailsController::class)->name('dean.projects.details');
+    Route::put('/project-details/{group}/title', UpdateDeanProjectTitleController::class)
+        ->whereNumber('group')
+        ->name('dean.projects.details.title.update');
     Route::put('/project-details/{group}/category', UpdateDeanProjectCategoryController::class)
         ->whereNumber('group')
         ->name('dean.projects.details.category.update');

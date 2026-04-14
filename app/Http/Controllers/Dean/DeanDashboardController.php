@@ -23,8 +23,8 @@ class DeanDashboardController extends Controller
      * @var array<string, array{label: string, color: string}>
      */
     private const PROGRAM_VISUALS = [
-        'BSIT' => ['label' => 'BSIT', 'color' => '#0ea5e9'],
-        'BSIS' => ['label' => 'BSIS', 'color' => '#10b981'],
+        'BSIT' => ['label' => 'BSIT', 'color' => '#047857'],
+        'BSIS' => ['label' => 'BSIS', 'color' => '#65a30d'],
     ];
 
     public function __invoke(): Response

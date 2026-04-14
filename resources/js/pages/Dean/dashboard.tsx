@@ -2,7 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { Box } from '@mui/material';
 import { BarChart, LineChart, PieChart } from '@mui/x-charts';
 import { motion } from 'framer-motion';
-import { BookOpenCheck, FolderKanban, GraduationCap, Layers3, Settings, Tags, UserCheck } from 'lucide-react';
+import { FolderKanban, GraduationCap, Layers3, Tags, UserCheck } from 'lucide-react';
 import React from 'react';
 import deanRoutes from '../../routes/dean';
 import DeanLayout from './_layout';
@@ -65,8 +65,8 @@ const fallbackStats: DashboardStats = {
 };
 
 const fallbackProgramDistribution: DistributionItem[] = [
-    { label: 'BSIT', value: 0, color: '#0ea5e9' },
-    { label: 'BSIS', value: 0, color: '#10b981' },
+    { label: 'BSIT', value: 0, color: '#047857' },
+    { label: 'BSIS', value: 0, color: '#65a30d' },
 ];
 
 const fallbackApprovalTrend: ApprovalTrend = {
@@ -173,7 +173,6 @@ const Dashboard = () => {
 
     const approvalTrendSeries = React.useMemo(() => buildLocalApprovalTrendSeries(approvalTrend.events), [approvalTrend.events]);
     const hasApprovalData = approvalTrendSeries.values.some((value) => value > 0);
-    const approvalsLast7Days = approvalTrendSeries.values.reduce((sum, value) => sum + value, 0);
 
     const heroHighlights = [
         {
@@ -195,38 +194,6 @@ const Dashboard = () => {
             label: 'Adviser Coverage',
             value: `${adviserCoverageRate}%`,
             icon: UserCheck,
-        },
-    ] as const;
-
-    const operationTiles = [
-        {
-            label: 'Assigned Advisers',
-            value: stats.groupsWithAdviser.toLocaleString(),
-            helper: `${adviserCoverageRate}% of approved projects`,
-            icon: UserCheck,
-            tone: 'from-emerald-600 to-emerald-500',
-        },
-        {
-            label: 'Needs Adviser',
-            value: stats.groupsWithoutAdviser.toLocaleString(),
-            helper: 'Approved projects without adviser',
-            icon: GraduationCap,
-            tone: 'from-orange-500 to-amber-500',
-        },
-        {
-            label: 'Approvals (7 days)',
-            value: approvalsLast7Days.toLocaleString(),
-            helper: 'Local time trend',
-            icon: BookOpenCheck,
-            tone: 'from-sky-600 to-emerald-500',
-        },
-        {
-            label: 'Dean Settings',
-            value: 'Manage',
-            helper: 'e-signatures & preferences',
-            icon: Settings,
-            tone: 'from-slate-700 to-slate-600',
-            href: deanRoutes.settings.url(),
         },
     ] as const;
 
