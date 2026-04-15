@@ -917,6 +917,53 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
         return Inertia::render('Student/deadlines');
     })->name('student.deadlines');
     Route::get('/settings', function () {
-        return Inertia::render('Student/settings');
+        $user = Auth::guard('web')->user();
+        if (!$user instanceof User) {
+            abort(403);
+        }
+
+        $programSet = $user->programSets()->with('academicYear')->first();
+        
+        $groupRole = 'Student';
+        if (Schema::hasTable('groups')) {
+            $group = Group::query()
+                ->where('leader_id', $user->id)
+                ->orWhereHas('members', function (Builder $query) use ($user) {
+                    $query->where('users.id', $user->id);
+                })
+                ->first();
+
+            if ($group) {
+                if ((int) $group->leader_id === (int) $user->id) {
+                    $groupRole = 'Group Leader';
+                } else if (Schema::hasTable('group_members')) {
+                    $member = $group->members()->where('users.id', $user->id)->first();
+                    if ($member && $member->pivot && is_string($member->pivot->role) && trim($member->pivot->role) !== '') {
+                        $groupRole = trim($member->pivot->role);
+                    } else {
+                        $groupRole = 'Member';
+                    }
+                } else {
+                    $groupRole = 'Member';
+                }
+            }
+        }
+
+        return Inertia::render('Student/settings', [
+            'auth' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'program' => $user->program,
+                    'section' => $programSet?->name,
+                    'groupRole' => $groupRole,
+                ],
+            ],
+        ]);
     })->name('student.settings');
+    Route::put('/settings/password', \App\Http\Controllers\Student\UpdateStudentPasswordController::class)->name('student.settings.password.update');
 });

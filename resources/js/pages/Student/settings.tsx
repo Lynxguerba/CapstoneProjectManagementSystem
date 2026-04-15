@@ -1,135 +1,92 @@
+import { usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { KeyRound, ShieldCheck, User } from 'lucide-react';
-import React, { useState } from 'react';
+import { Settings, ShieldCheck } from 'lucide-react';
+import React from 'react';
+import PasswordManager from '@/components/Settings/PasswordManager';
+import ProfileCard from '@/components/Settings/ProfileCard';
 import StudentLayout from './_layout';
 
+type StudentUser = {
+    id?: number | string;
+    name?: string;
+    email?: string;
+    role?: string;
+    roles?: string[];
+    program?: string;
+    section?: string;
+    groupRole?: string;
+};
+
+type StudentPageProps = {
+    auth?: {
+        user?: StudentUser;
+    };
+};
+
 const StudentSettings = () => {
-    const [name, setName] = useState('Juan Dela Cruz');
-    const [email] = useState('juan@student.edu');
-    const [program, setProgram] = useState('BSIT');
-    const [section, setSection] = useState('BSIT 4A');
+    const { auth } = usePage<StudentPageProps>().props;
+    const user = auth?.user;
+
+    // For the ProfileCard, we'll show their program and section as part of "assigned roles" 
+    // to maintain UI consistency while providing relevant student info.
+    const assignedRoles = [
+        user?.groupRole ?? 'Student',
+        user?.program ?? 'N/A',
+        user?.section ?? 'No Section',
+    ].filter(Boolean);
 
     return (
-        <StudentLayout title="Profile & Settings" subtitle="Account and academic details (UI only)">
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <StudentLayout title="Settings" subtitle="Profile details, academic info, and account security">
+            <div className="space-y-6">
                 <motion.section
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2"
+                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
                 >
                     <div className="flex items-center gap-2">
-                        <User size={18} className="text-slate-700" />
-                        <h3 className="text-lg font-semibold text-slate-900">Profile</h3>
-                    </div>
-
-                    <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Settings size={18} className="text-slate-700" />
                         <div>
-                            <label className="block text-xs font-semibold tracking-wide text-slate-600 uppercase">Full Name</label>
-                            <input
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold tracking-wide text-slate-600 uppercase">Email</label>
-                            <input value={email} disabled className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold tracking-wide text-slate-600 uppercase">Program</label>
-                            <select
-                                value={program}
-                                onChange={(e) => setProgram(e.target.value)}
-                                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                            >
-                                <option value="BSIT">BSIT</option>
-                                <option value="BSIS">BSIS</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold tracking-wide text-slate-600 uppercase">Section</label>
-                            <input
-                                value={section}
-                                onChange={(e) => setSection(e.target.value)}
-                                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                            />
+                            <div className="text-lg font-semibold text-slate-900">Account Settings</div>
+                            <div className="text-sm text-slate-500">Profile details and role assignment within your capstone group.</div>
                         </div>
                     </div>
 
-                    <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                        <button
-                            type="button"
-                            onClick={() => alert('UI only: save profile')}
-                            className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
+                    <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+                        <ProfileCard 
+                            name={user?.name ?? 'Student'} 
+                            email={user?.email ?? ''} 
+                            assignedRoles={assignedRoles} 
+                        />
+                        
+                        <PasswordManager updateUrl="/student/settings/password" />
+
+                        <motion.section
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.1 }}
+                            className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-300 hover:shadow-lg"
                         >
-                            Save changes
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => alert('UI only: cancel changes')}
-                            className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                        >
-                            Cancel
-                        </button>
+                            <div className="flex items-center gap-2">
+                                <ShieldCheck size={18} className="text-emerald-600" />
+                                <h3 className="text-sm font-semibold text-slate-900">Current Role</h3>
+                            </div>
+                            <p className="mt-2 text-xs text-slate-500">
+                                Your designated role within your assigned capstone group.
+                            </p>
+                            
+                            <div className="mt-4 flex-1 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
+                                <div className="text-base font-bold text-emerald-900">{user?.groupRole ?? 'Student'}</div>
+                                <div className="mt-1 text-xs text-emerald-700">
+                                    {user?.program} • {user?.section ?? 'Unassigned Section'}
+                                </div>
+                                <div className="mt-4 text-[11px] leading-relaxed text-slate-600">
+                                    Your role is assigned by your Project Manager or the Program Chairperson. 
+                                    This role determines your permissions and tasks within the group.
+                                </div>
+                            </div>
+                        </motion.section>
                     </div>
                 </motion.section>
-
-                <div className="space-y-6">
-                    <motion.section
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.05 }}
-                        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-                    >
-                        <div className="flex items-center gap-2">
-                            <ShieldCheck size={18} className="text-slate-700" />
-                            <h3 className="text-lg font-semibold text-slate-900">Role</h3>
-                        </div>
-                        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                            <div className="text-sm font-semibold text-slate-900">Student</div>
-                            <div className="mt-1 text-sm text-slate-600">Your account is enrolled in a capstone group.</div>
-                        </div>
-                    </motion.section>
-
-                    <motion.section
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.08 }}
-                        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-                    >
-                        <div className="flex items-center gap-2">
-                            <KeyRound size={18} className="text-slate-700" />
-                            <h3 className="text-lg font-semibold text-slate-900">Change Password</h3>
-                        </div>
-                        <p className="mt-1 text-sm text-slate-500">UI only. Hook validation later.</p>
-
-                        <div className="mt-4 space-y-3">
-                            <input
-                                type="password"
-                                placeholder="Current password"
-                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                            />
-                            <input
-                                type="password"
-                                placeholder="New password"
-                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                            />
-                            <input
-                                type="password"
-                                placeholder="Confirm new password"
-                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                            />
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={() => alert('UI only: update password')}
-                            className="mt-4 w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-                        >
-                            Update password
-                        </button>
-                    </motion.section>
-                </div>
             </div>
         </StudentLayout>
     );

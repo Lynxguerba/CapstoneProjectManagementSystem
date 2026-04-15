@@ -3,7 +3,11 @@ import { AlertTriangle, Eye, EyeOff, Lock, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-const PasswordManager = () => {
+type PasswordManagerProps = {
+    updateUrl?: string;
+};
+
+const PasswordManager = ({ updateUrl = '/adviser/settings/password' }: PasswordManagerProps) => {
     const [showPasswordConfirmationModal, setShowPasswordConfirmationModal] = useState(false);
     const [isPasswordModalAppearing, setIsPasswordModalAppearing] = useState(false);
     const [passwordSuccessMessage, setPasswordSuccessMessage] = useState('');
@@ -52,7 +56,7 @@ const PasswordManager = () => {
     }, [showPasswordConfirmationModal]);
 
     const submitPasswordUpdate = (): void => {
-        passwordForm.put('/adviser/settings/password', {
+        passwordForm.put(updateUrl, {
             preserveScroll: true,
             onSuccess: () => {
                 setPasswordSuccessMessage('Password updated successfully.');
