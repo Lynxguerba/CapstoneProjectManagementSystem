@@ -304,6 +304,7 @@ Route::middleware(['auth', 'role:program_chairperson'])->prefix('program_chairpe
                 : null,
         ]);
     })->name('program_chairperson.settings');
+    Route::put('/settings/password', \App\Http\Controllers\UpdatePasswordController::class)->name('program_chairperson.settings.password.update');
     Route::put('/settings/e-signature', UpsertAdviserESignatureController::class)->name('program_chairperson.settings.e-signature.upsert');
     Route::delete('/settings/e-signature', DeleteAdviserESignatureController::class)->name('program_chairperson.settings.e-signature.delete');
 });

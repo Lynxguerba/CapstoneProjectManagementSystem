@@ -51,7 +51,7 @@ const InstructorSettings = () => {
 
                     <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
                         <ProfileCard name={name} email={email} assignedRoles={assignedRoles} />
-                        <PasswordManager />
+                        <PasswordManager updateUrl="/instructor/settings/password" />
                         <ESignature
                             initialSignature={eSignature?.signatureData ?? ''}
                             upsertUrl="/instructor/settings/e-signature"

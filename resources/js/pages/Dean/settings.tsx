@@ -51,7 +51,7 @@ const DeanSettings = () => {
 
                     <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
                         <ProfileCard name={name} email={email} assignedRoles={assignedRoles} />
-                        <PasswordManager />
+                        <PasswordManager updateUrl="/dean/settings/password" />
                         <ESignature
                             initialSignature={eSignature?.signatureData ?? ''}
                             upsertUrl="/dean/settings/e-signature"

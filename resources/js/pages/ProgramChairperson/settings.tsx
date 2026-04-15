@@ -52,7 +52,7 @@ const ProgramChairpersonSettings = () => {
 
                     <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
                         <ProfileCard name={name} email={email} assignedRoles={assignedRoles} />
-                        <PasswordManager />
+                        <PasswordManager updateUrl="/program_chairperson/settings/password" />
                         <ESignature
                             initialSignature={eSignature?.signatureData ?? ''}
                             upsertUrl="/program_chairperson/settings/e-signature"

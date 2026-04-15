@@ -51,7 +51,7 @@ const PanelSettings = () => {
 
                     <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
                         <ProfileCard name={name} email={email} assignedRoles={assignedRoles} />
-                        <PasswordManager />
+                        <PasswordManager updateUrl="/panelist/settings/password" />
                         <ESignature
                             initialSignature={eSignature?.signatureData ?? ''}
                             upsertUrl="/panelist/settings/e-signature"

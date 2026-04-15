@@ -1247,7 +1247,7 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
                 : null,
         ]);
     })->name('adviser.settings');
-    Route::put('/settings/password', UpdateAdviserPasswordController::class)->name('adviser.settings.password.update');
+    Route::put('/settings/password', \App\Http\Controllers\UpdatePasswordController::class)->name('adviser.settings.password.update');
     Route::put('/settings/e-signature', UpsertAdviserESignatureController::class)->name('adviser.settings.e-signature.upsert');
     Route::delete('/settings/e-signature', DeleteAdviserESignatureController::class)->name('adviser.settings.e-signature.delete');
 });

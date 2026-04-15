@@ -1,17 +1,15 @@
 <?php
 
-namespace App\Http\Requests\Adviser;
+namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
-class UpdateAdviserPasswordRequest extends FormRequest
+class UpdatePasswordRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $user = $this->user();
-
-        return $user !== null && $user->hasRole('adviser');
+        return $this->user() !== null;
     }
 
     /**

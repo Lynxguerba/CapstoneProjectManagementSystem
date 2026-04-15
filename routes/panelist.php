@@ -812,6 +812,7 @@ Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function
                 : null,
         ]);
     })->name('panelist.settings');
+    Route::put('/settings/password', \App\Http\Controllers\UpdatePasswordController::class)->name('panelist.settings.password.update');
     Route::put('/settings/e-signature', UpsertAdviserESignatureController::class)->name('panelist.settings.e-signature.upsert');
     Route::delete('/settings/e-signature', DeleteAdviserESignatureController::class)->name('panelist.settings.e-signature.delete');
 });

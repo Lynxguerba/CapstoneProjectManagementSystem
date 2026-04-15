@@ -4448,6 +4448,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 : null,
         ]);
     })->name('instructor.settings');
+    Route::put('/settings/password', \App\Http\Controllers\UpdatePasswordController::class)->name('instructor.settings.password.update');
     Route::put('/settings/e-signature', UpsertAdviserESignatureController::class)->name('instructor.settings.e-signature.upsert');
     Route::delete('/settings/e-signature', DeleteAdviserESignatureController::class)->name('instructor.settings.e-signature.delete');
 });

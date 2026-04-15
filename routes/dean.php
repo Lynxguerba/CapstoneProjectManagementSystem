@@ -156,6 +156,7 @@ Route::middleware(['auth', 'role:dean'])->prefix('dean')->group(function () {
                 : null,
         ]);
     })->name('dean.settings');
+    Route::put('/settings/password', \App\Http\Controllers\UpdatePasswordController::class)->name('dean.settings.password.update');
     Route::put('/settings/e-signature', UpsertAdviserESignatureController::class)->name('dean.settings.e-signature.upsert');
     Route::delete('/settings/e-signature', DeleteAdviserESignatureController::class)->name('dean.settings.e-signature.delete');
 });

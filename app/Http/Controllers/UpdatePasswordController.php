@@ -1,14 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\Adviser;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Adviser\UpdateAdviserPasswordRequest;
+use App\Http\Requests\UpdatePasswordRequest;
 use Illuminate\Http\RedirectResponse;
 
-class UpdateAdviserPasswordController extends Controller
+class UpdatePasswordController extends Controller
 {
-    public function __invoke(UpdateAdviserPasswordRequest $request): RedirectResponse
+    public function __invoke(UpdatePasswordRequest $request): RedirectResponse
     {
         $user = $request->user();
 
