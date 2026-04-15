@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { AlertTriangle, Eye, EyeOff, Lock, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import Notification, { NotificationData } from '@/components/Notification';
 
 type PasswordManagerProps = {
     updateUrl?: string;
@@ -10,7 +11,7 @@ type PasswordManagerProps = {
 const PasswordManager = ({ updateUrl = '/adviser/settings/password' }: PasswordManagerProps) => {
     const [showPasswordConfirmationModal, setShowPasswordConfirmationModal] = useState(false);
     const [isPasswordModalAppearing, setIsPasswordModalAppearing] = useState(false);
-    const [passwordSuccessMessage, setPasswordSuccessMessage] = useState('');
+    const [notification, setNotification] = useState<NotificationData | null>(null);
     const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
@@ -20,6 +21,8 @@ const PasswordManager = ({ updateUrl = '/adviser/settings/password' }: PasswordM
         password: '',
         password_confirmation: '',
     });
+
+    const dismissNotification = () => setNotification(null);
 
     useEffect(() => {
         if (!showPasswordConfirmationModal) return;
@@ -56,32 +59,38 @@ const PasswordManager = ({ updateUrl = '/adviser/settings/password' }: PasswordM
     }, [showPasswordConfirmationModal]);
 
     const submitPasswordUpdate = (): void => {
+        setNotification(null);
         passwordForm.put(updateUrl, {
             preserveScroll: true,
             onSuccess: () => {
-                setPasswordSuccessMessage('Password updated successfully.');
+                setNotification({
+                    tone: 'success',
+                    title: 'Password Updated',
+                    message: 'Your account password has been successfully updated.',
+                });
                 setShowPasswordConfirmationModal(false);
                 passwordForm.reset();
             },
             onError: () => {
                 setShowPasswordConfirmationModal(false);
+                setNotification({
+                    tone: 'error',
+                    title: 'Update Failed',
+                    message: 'Could not update your password. Please check your current password and try again.',
+                });
             },
         });
     };
 
     return (
         <>
+            <Notification notification={notification} onDismiss={dismissNotification} />
+
             <div className="rounded-2xl border border-slate-200 bg-white p-6">
                 <div className="flex items-center gap-2">
                     <Lock size={18} className="text-slate-700" />
                     <div className="text-sm font-semibold text-slate-900">Password Manager</div>
                 </div>
-
-                {passwordSuccessMessage !== '' && (
-                    <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
-                        {passwordSuccessMessage}
-                    </div>
-                )}
 
                 {/* Current Password */}
                 <div className="mt-4">
@@ -91,7 +100,7 @@ const PasswordManager = ({ updateUrl = '/adviser/settings/password' }: PasswordM
                             type={showCurrent ? 'text' : 'password'}
                             value={passwordForm.data.current_password}
                             onChange={(e) => {
-                                setPasswordSuccessMessage('');
+                                setNotification(null);
                                 passwordForm.setData('current_password', e.target.value);
                             }}
                             className="w-full rounded-xl border border-slate-300 bg-white py-3 pr-11 pl-4 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
@@ -117,7 +126,7 @@ const PasswordManager = ({ updateUrl = '/adviser/settings/password' }: PasswordM
                             type={showNew ? 'text' : 'password'}
                             value={passwordForm.data.password}
                             onChange={(e) => {
-                                setPasswordSuccessMessage('');
+                                setNotification(null);
                                 passwordForm.setData('password', e.target.value);
                             }}
                             className="w-full rounded-xl border border-slate-300 bg-white py-3 pr-11 pl-4 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
@@ -141,7 +150,7 @@ const PasswordManager = ({ updateUrl = '/adviser/settings/password' }: PasswordM
                             type={showConfirm ? 'text' : 'password'}
                             value={passwordForm.data.password_confirmation}
                             onChange={(e) => {
-                                setPasswordSuccessMessage('');
+                                setNotification(null);
                                 passwordForm.setData('password_confirmation', e.target.value);
                             }}
                             className="w-full rounded-xl border border-slate-300 bg-white py-3 pr-11 pl-4 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
