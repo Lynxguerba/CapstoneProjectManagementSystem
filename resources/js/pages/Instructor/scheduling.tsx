@@ -906,18 +906,6 @@ const SchedulingPage = () => {
                                                             >
                                                                 {status}
                                                             </span>
-                                                            <select
-                                                                value={status}
-                                                                onChange={(event) => updateScheduleStatus(schedule, event.target.value)}
-                                                                disabled={!canManage}
-                                                                className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600 disabled:cursor-not-allowed disabled:bg-slate-100"
-                                                            >
-                                                                {['Scheduled', 'Pending', 'Completed', 'Cancelled'].map((option) => (
-                                                                    <option key={option} value={option}>
-                                                                        {option}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
                                                         </td>
                                                         <td className="px-4 py-3 text-slate-600">{managerName}</td>
                                                         <td className="px-4 py-3 text-right">
