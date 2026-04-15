@@ -159,10 +159,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { label: 'Schedule Overview', isSection: true },
                     { icon: Calendar, label: 'Defense Schedule', href: '/student/schedule' },
                     { icon: Calendar, label: 'Browse Schedule', href: '/student/browse-schedules' },
-                    { icon: ClipboardCheck, label: 'Evaluation & Feedback', href: '/student/evaluation' },
-                    { icon: Scale, label: 'Verdict Results', href: '/student/verdict' },
-                    { icon: Archive, label: 'Deployment Submission', href: '/student/deployment' },
-                    { icon: Clock, label: 'Deadlines & Notifications', href: '/student/deadlines' },
+                    { label: 'Profile', isSection: true },
                     { icon: Settings, label: 'Profile & Settings', href: '/student/settings' },
                 ];
             case 'adviser':

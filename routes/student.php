@@ -904,18 +904,6 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
             ],
         ]);
     })->name('student.live-defense.acknowledgement');
-    Route::get('/evaluation', function () {
-        return Inertia::render('Student/evaluation');
-    })->name('student.evaluation');
-    Route::get('/verdict', function () {
-        return Inertia::render('Student/verdict');
-    })->name('student.verdict');
-    Route::get('/deployment', function () {
-        return Inertia::render('Student/deployment');
-    })->name('student.deployment');
-    Route::get('/deadlines', function () {
-        return Inertia::render('Student/deadlines');
-    })->name('student.deadlines');
     Route::get('/settings', function () {
         $user = Auth::guard('web')->user();
         if (!$user instanceof User) {
