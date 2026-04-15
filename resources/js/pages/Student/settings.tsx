@@ -27,13 +27,11 @@ const StudentSettings = () => {
     const { auth } = usePage<StudentPageProps>().props;
     const user = auth?.user;
 
-    // For the ProfileCard, we'll show their program and section as part of "assigned roles" 
-    // to maintain UI consistency while providing relevant student info.
+    // Show only the group role and program set (section) in the profile card
     const assignedRoles = [
-        user?.groupRole ?? 'Student',
-        user?.program ?? 'N/A',
-        user?.section ?? 'No Section',
-    ].filter(Boolean);
+        user?.groupRole,
+        user?.section,
+    ].filter((role): role is string => Boolean(role));
 
     return (
         <StudentLayout title="Settings" subtitle="Profile details, academic info, and account security">
