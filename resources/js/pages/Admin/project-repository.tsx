@@ -8,6 +8,8 @@ type ProjectRepositoryRow = {
     id: number;
     title: string;
     academicYear: string;
+    adviser_name?: string;
+    author_names?: string;
     status: 'Archived' | 'Approved';
     dateAdded: string;
 };
@@ -144,8 +146,8 @@ const AdminProjectRepository = () => {
                                             <span className="leading-relaxed font-semibold text-slate-800">{project.title}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-slate-400">—</td>
-                                    <td className="px-6 py-4 text-slate-400">—</td>
+                                    <td className="px-6 py-4 text-slate-600">{project.author_names || '—'}</td>
+                                    <td className="px-6 py-4 text-slate-600">{project.adviser_name || '—'}</td>
                                     <td className="px-6 py-4">
                                         <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
                                             <Calendar size={10} />

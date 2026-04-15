@@ -888,7 +888,79 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
     Route::post('/concepts/groups/{group}/recommendation-title-defense', GenerateRecommendationForTitleDefenseController::class)
         ->name('adviser.concepts.groups.recommendation-title-defense');
     Route::get('/documents', function () {
-        return Inertia::render('Adviser/documents');
+        $userId = Auth::guard('web')->id();
+        $projects = [];
+
+        try {
+            if ($userId !== null && class_exists(Group::class) && Schema::hasTable('groups')) {
+                $resolveUserName = static function (?User $user): string {
+                    if (! $user) {
+                        return '';
+                    }
+
+                    $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+                    $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+                    $fullName = $firstName !== '' || $lastName !== ''
+                        ? trim($firstName.' '.$lastName)
+                        : (is_string($user->name) ? trim($user->name) : '');
+
+                    return $fullName;
+                };
+
+                $groupsQuery = Group::query()
+                    ->with([
+                        'leader:id,name,first_name,last_name',
+                        'members:id,name,first_name,last_name',
+                        'programSet:id,name,program,instructor_id,academic_year_id',
+                        'programSet.academicYear',
+                        'approvedConceptSubmission:id,file_name,created_at',
+                    ])
+                    ->whereHas('adviserAssignment', fn ($query) => $query->where('adviser_id', $userId))
+                    ->whereNotNull('approved_concept_submission_id')
+                    ->whereHas('approvedConceptSubmission')
+                    ->orderByDesc('concept_verdict_decided_at')
+                    ->orderByDesc('updated_at');
+
+                $projects = $groupsQuery
+                    ->get()
+                    ->map(function (Group $group) use ($resolveUserName): array {
+                        $academicYearLabel = trim((string) ($group->programSet?->academicYear?->label ?? ''));
+                        if ($academicYearLabel !== '') {
+                            $academicYearLabel = (string) preg_replace('/^A\\.Y\\s*/i', '', $academicYearLabel);
+                        } else {
+                            $academicYearLabel = 'N/A';
+                        }
+                        
+                        $approvedConceptTitle = $group->approvedConceptSubmission?->file_name;
+                        $authorNames = collect([$group->leader, ...$group->members])
+                            ->filter()
+                            ->map(fn($u) => $resolveUserName($u))
+                            ->unique()
+                            ->filter()
+                            ->implode(', ');
+
+                        return [
+                            'id' => $group->id,
+                            'title' => is_string($approvedConceptTitle) ? $approvedConceptTitle : 'Untitled Concept',
+                            'group_name' => $group->name,
+                            'academicYear' => $academicYearLabel,
+                            'author_names' => $authorNames,
+                            'status' => 'Approved',
+                            'dateAdded' => $group->concept_verdict_decided_at?->format('M Y') 
+                                ?? $group->approvedConceptSubmission?->created_at?->format('M Y') 
+                                ?? 'N/A',
+                        ];
+                    })
+                    ->values()
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $projects = [];
+        }
+
+        return Inertia::render('Adviser/documents', [
+            'projects' => $projects,
+        ]);
     })->name('adviser.documents');
     Route::get('/evaluations', function () {
         return Inertia::render('Adviser/evaluations');

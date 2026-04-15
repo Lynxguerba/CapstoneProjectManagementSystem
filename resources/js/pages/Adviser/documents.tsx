@@ -1,244 +1,225 @@
+import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Download, Eye, FileText, FolderOpen, MessageSquareText, Search } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import { Calendar, ChevronRight, Eye, FileText, Filter, FolderOpen, Search } from 'lucide-react';
+import React from 'react';
 import AdviserLayout from './_layout';
 
-type DocStatus = 'Approved' | 'For Revision' | 'Rejected' | 'Pending';
+type ProjectRow = {
+    id: number;
+    title: string;
+    group_name: string;
+    academicYear: string;
+    author_names: string;
+    status: string;
+    dateAdded: string;
+};
 
-type DocumentItem = {
-    id: string;
-    group: string;
-    name: string;
-    type: string;
-    submittedAt: string;
-    status: DocStatus;
+type AdviserDocumentsProps = {
+    projects?: ProjectRow[];
 };
 
 const AdviserDocuments = () => {
-    const [query, setQuery] = useState('');
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [comment, setComment] = useState('');
+    const { props } = usePage<AdviserDocumentsProps>();
+    const projects = props.projects ?? [];
+    const [search, setSearch] = React.useState('');
+    const [selectedYear, setSelectedYear] = React.useState('all');
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const projectsPerPage = 10;
 
-    const documents: DocumentItem[] = [
-        { id: 'd1', group: 'Group Alpha', name: 'Chapter 1–3', type: 'Outline', submittedAt: '2026-03-12', status: 'Pending' },
-        { id: 'd2', group: 'Group Beta', name: 'Full Manuscript v1', type: 'Pre-Oral', submittedAt: '2026-03-10', status: 'For Revision' },
-        { id: 'd3', group: 'Group Gamma', name: 'Revised Manuscript v2', type: 'Pre-Oral', submittedAt: '2026-03-11', status: 'Approved' },
-        { id: 'd4', group: 'Group Delta', name: 'Final Copy', type: 'Final', submittedAt: '2026-03-14', status: 'Pending' },
-    ];
+    const academicYearOptions = React.useMemo(() => {
+        return Array.from(new Set(projects.map((project) => project.academicYear))).filter((year) => year.trim() !== '');
+    }, [projects]);
 
-    const filtered = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        if (!q) {
-            return documents;
-        }
+    const filteredProjects = React.useMemo(() => {
+        const query = search.trim().toLowerCase();
 
-        return documents.filter((d) => d.group.toLowerCase().includes(q) || d.name.toLowerCase().includes(q) || d.type.toLowerCase().includes(q));
-    }, [documents, query]);
+        return projects.filter((project) => {
+            const matchesQuery =
+                query === '' ||
+                project.title.toLowerCase().includes(query) ||
+                project.group_name.toLowerCase().includes(query) ||
+                project.author_names.toLowerCase().includes(query);
+            const matchesYear = selectedYear === 'all' || project.academicYear === selectedYear;
 
-    const selected = useMemo(() => filtered.find((d) => d.id === selectedId) ?? null, [filtered, selectedId]);
+            return matchesQuery && matchesYear;
+        });
+    }, [projects, search, selectedYear]);
 
-    const statusPill = (s: DocStatus): string => {
-        if (s === 'Approved') {
-            return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-        }
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [search, selectedYear]);
 
-        if (s === 'Rejected') {
-            return 'bg-rose-50 text-rose-700 border-rose-200';
-        }
+    const totalPages = Math.max(1, Math.ceil(filteredProjects.length / projectsPerPage));
 
-        if (s === 'For Revision') {
-            return 'bg-amber-50 text-amber-700 border-amber-200';
-        }
+    React.useEffect(() => {
+        setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
+    }, [totalPages]);
 
-        return 'bg-slate-50 text-slate-700 border-slate-200';
-    };
+    const paginatedProjects = React.useMemo(() => {
+        const startIndex = (currentPage - 1) * projectsPerPage;
+
+        return filteredProjects.slice(startIndex, startIndex + projectsPerPage);
+    }, [filteredProjects, currentPage]);
+
+    const pages = React.useMemo(() => {
+        const maxVisiblePages = 3;
+        const startPage = Math.max(1, Math.min(currentPage - 1, totalPages - (maxVisiblePages - 1)));
+        const endPage = Math.min(totalPages, startPage + (maxVisiblePages - 1));
+
+        return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+    }, [currentPage, totalPages]);
 
     return (
-        <AdviserLayout title="Documents" subtitle="Review phase-based documents (UI only)">
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-1"
-                >
-                    <div className="flex items-center gap-2">
-                        <FolderOpen size={18} className="text-slate-700" />
-                        <div>
-                            <div className="text-lg font-semibold text-slate-900">Submission Queue</div>
-                            <div className="text-sm text-slate-500">Pick a document to review.</div>
+        <AdviserLayout title="Documents" subtitle="Approved project titles assigned to you">
+            <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-5">
+                <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+                    <Link href="/adviser/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <span className="font-semibold text-slate-800" aria-current="page">
+                        Approved Projects
+                    </span>
+                </nav>
+
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative">
+                            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search titles, groups, authors..."
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                                className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm transition-all outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/10 md:w-80"
+                            />
+                        </div>
+
+                        <div className="relative">
+                            <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                            <select
+                                value={selectedYear}
+                                onChange={(event) => setSelectedYear(event.target.value)}
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs capitalize shadow-sm outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/10"
+                            >
+                                <option value="all">All Years</option>
+                                {academicYearOptions.map((year) => (
+                                    <option key={year} value={year}>
+                                        {year}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
+                </div>
 
-                    <div className="relative mt-5">
-                        <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-500" />
-                        <input
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search group, file, type..."
-                            className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-3 pl-9 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                        />
-                    </div>
-
-                    <div className="mt-5 space-y-3">
-                        {filtered.map((d) => {
-                            const active = d.id === selectedId;
-                            return (
-                                <button
-                                    key={d.id}
-                                    type="button"
-                                    onClick={() => {
-                                        setSelectedId(d.id);
-                                        setComment('');
-                                    }}
-                                    className={`w-full rounded-2xl border p-4 text-left transition-colors ${active ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <div className="truncate text-sm font-semibold text-slate-900">{d.name}</div>
-                                            <div className="mt-1 text-xs text-slate-500">
-                                                {d.group} • {d.type}
-                                            </div>
-                                        </div>
-                                        <span
-                                            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusPill(d.status)}`}
-                                        >
-                                            {d.status}
-                                        </span>
-                                    </div>
-                                    <div className="mt-2 text-xs text-slate-500">Submitted: {d.submittedAt}</div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </motion.section>
-
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2"
-                >
-                    {!selected ? (
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center">
-                            <div className="text-lg font-semibold text-slate-900">Select a document</div>
-                            <div className="mt-2 text-sm text-slate-600">Choose an item from the queue to view preview/actions.</div>
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                                <div>
-                                    <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Document</div>
-                                    <div className="mt-1 text-2xl font-bold text-slate-900">{selected.name}</div>
-                                    <div className="mt-2 flex flex-wrap gap-2">
-                                        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
-                                            {selected.group}
-                                        </span>
-                                        <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-                                            Type: {selected.type}
-                                        </span>
-                                        <span
-                                            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusPill(selected.status)}`}
-                                        >
-                                            {selected.status}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => alert('UI only: preview file')}
-                                        className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                            <thead className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                <tr>
+                                    <th className="px-6 py-4">Capstone Title</th>
+                                    <th className="px-6 py-4">Group Name</th>
+                                    <th className="px-6 py-4">Authors / Group Members</th>
+                                    <th className="px-6 py-4">AY / Term</th>
+                                    <th className="px-6 py-4 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {paginatedProjects.map((project, index) => (
+                                    <tr
+                                        key={project.id}
+                                        className={`transition-colors hover:bg-indigo-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
                                     >
-                                        <Eye size={16} />
-                                        Preview
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => alert('UI only: download file')}
-                                        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
-                                    >
-                                        <Download size={16} />
-                                        Download
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                                    <div className="flex items-center gap-2">
-                                        <FileText size={18} className="text-slate-700" />
-                                        <div>
-                                            <div className="text-sm font-semibold text-slate-900">File Preview</div>
-                                            <div className="text-sm text-slate-600">Placeholder preview area.</div>
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-                                        <div className="text-sm font-semibold text-slate-900">PDF preview not connected</div>
-                                        <div className="mt-2 text-sm text-slate-600">Backend integration later.</div>
-                                    </div>
-                                </div>
-
-                                <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                                    <div className="flex items-center gap-2">
-                                        <MessageSquareText size={18} className="text-slate-700" />
-                                        <div>
-                                            <div className="text-sm font-semibold text-slate-900">Comments</div>
-                                            <div className="text-sm text-slate-600">Write feedback and update status (UI only).</div>
-                                        </div>
-                                    </div>
-
-                                    <textarea
-                                        value={comment}
-                                        onChange={(e) => setComment(e.target.value)}
-                                        placeholder="Add your feedback..."
-                                        className="mt-4 h-32 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                                    />
-
-                                    <div className="mt-4 flex flex-wrap gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => alert('UI only: approve')}
-                                            className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
-                                        >
-                                            Approve
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => alert('UI only: for revision')}
-                                            className="rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600"
-                                        >
-                                            For Revision
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => alert('UI only: reject')}
-                                            className="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700"
-                                        >
-                                            Reject
-                                        </button>
-                                    </div>
-
-                                    <div className="mt-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-                                        <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Revision history</div>
-                                        <div className="mt-2 space-y-2">
-                                            {[
-                                                { date: '2026-03-10', action: 'Submitted v1' },
-                                                { date: '2026-03-11', action: 'Adviser comment added' },
-                                            ].map((h) => (
-                                                <div key={h.date} className="flex items-center justify-between text-sm">
-                                                    <div className="font-semibold text-slate-700">{h.date}</div>
-                                                    <div className="text-slate-600">{h.action}</div>
+                                        <td className="max-w-xs px-6 py-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="mt-1 rounded bg-indigo-100 p-1.5 text-indigo-700">
+                                                    <FileText size={14} />
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
+                                                <span className="leading-relaxed font-semibold text-slate-800">{project.title}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 font-medium">{project.group_name}</td>
+                                        <td className="px-6 py-4 text-slate-600">{project.author_names || '—'}</td>
+                                        <td className="px-6 py-4">
+                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                                                <Calendar size={10} />
+                                                {project.academicYear}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <Link
+                                                href={`/adviser/group-details?group=${project.id}`}
+                                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                                            >
+                                                <Eye className="h-3 w-3" />
+                                                View Details
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+
+                                {filteredProjects.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-500">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <FolderOpen className="h-8 w-8 text-slate-300" />
+                                                No approved projects found.
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : null}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {filteredProjects.length > 0 ? (
+                    <div className="flex flex-col items-center justify-between gap-4 px-1 pb-2 md:flex-row">
+                        <p className="text-xs font-medium text-slate-500">
+                            Showing <span className="text-slate-900">{(currentPage - 1) * projectsPerPage + 1}</span> to{' '}
+                            <span className="text-slate-900">{Math.min(currentPage * projectsPerPage, filteredProjects.length)}</span> of{' '}
+                            <span className="text-slate-900">{filteredProjects.length}</span> records
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((previousPage) => Math.max(1, previousPage - 1))}
+                                disabled={currentPage === 1}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                            >
+                                <ChevronRight size={16} className="rotate-180" />
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                                {pages.map((page) => (
+                                    <button
+                                        key={page}
+                                        type="button"
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`h-8 min-w-[32px] rounded-lg text-xs font-bold transition-all ${
+                                            page === currentPage
+                                                ? 'bg-indigo-700 text-white shadow-md shadow-indigo-700/20'
+                                                : 'text-slate-600 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
                             </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage((previousPage) => Math.min(totalPages, previousPage + 1))}
+                                disabled={currentPage === totalPages}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
                         </div>
-                    )}
-                </motion.section>
-            </div>
+                    </div>
+                ) : null}
+            </motion.section>
         </AdviserLayout>
     );
 };

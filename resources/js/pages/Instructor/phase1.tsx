@@ -267,6 +267,9 @@ const Phase1Page = () => {
     const [paymentsPage, setPaymentsPage] = React.useState(1);
     const [editingRequirement, setEditingRequirement] = React.useState<RequirementRecord | null>(null);
     const [deletingRequirement, setDeletingRequirement] = React.useState<RequirementRecord | null>(null);
+    const [selectedDocumentStatus, setSelectedDocumentStatus] = React.useState('All');
+    const [selectedDefenseStatus, setSelectedDefenseStatus] = React.useState('All');
+    const [selectedPaymentStatus, setSelectedPaymentStatus] = React.useState('All');
 
     const academicYearOptions = React.useMemo(() => ['All', ...academicYears.map((year) => year.label)], [academicYears]);
 
@@ -375,6 +378,24 @@ const Phase1Page = () => {
         });
     }, [groups, searchTerm, selectedAcademicYear, selectedProgramSetId]);
 
+    const filteredGroupsWithoutYear = React.useMemo(() => {
+        const query = searchTerm.trim().toLowerCase();
+
+        return groups.filter((group) => {
+            if (selectedProgramSetId !== null && group.program_set_id !== selectedProgramSetId) {
+                return false;
+            }
+
+            if (!query) {
+                return true;
+            }
+
+            const haystack = `${group.name} ${group.program_set_name ?? ''} ${group.leader_name ?? ''} ${group.program ?? ''}`.trim().toLowerCase();
+
+            return haystack.includes(query);
+        });
+    }, [groups, searchTerm, selectedProgramSetId]);
+
     const conceptSchedules = React.useMemo(
         () => defenseSchedules.filter((schedule) => (schedule.stage ?? '').toLowerCase() === 'concept'),
         [defenseSchedules],
@@ -465,16 +486,12 @@ const Phase1Page = () => {
     const filteredDeadlines = React.useMemo(() => {
         let filtered = deadlines;
 
-        if (requirementsAcademicYear !== 'All') {
-            filtered = filtered.filter((row) => row.academicYear === requirementsAcademicYear);
-        }
-
         if (requirementsStatus !== 'All') {
             filtered = filtered.filter((row) => row.status === requirementsStatus);
         }
 
         return filtered;
-    }, [deadlines, requirementsAcademicYear, requirementsStatus]);
+    }, [deadlines, requirementsStatus]);
 
     const deadlinesPerPage = 6;
     const totalDeadlinePages = Math.max(1, Math.ceil(filteredDeadlines.length / deadlinesPerPage));
@@ -483,7 +500,7 @@ const Phase1Page = () => {
 
     React.useEffect(() => {
         setDeadlinesPage(1);
-    }, [filteredDeadlines.length, requirementsAcademicYear, requirementsStatus]);
+    }, [filteredDeadlines.length, requirementsStatus]);
 
     React.useEffect(() => {
         if (deadlinesPage > totalDeadlinePages) {
@@ -568,7 +585,7 @@ const Phase1Page = () => {
             Missing: 'bg-slate-100 text-slate-400',
         };
 
-        return filteredGroups.map((group) => {
+        return filteredGroupsWithoutYear.map((group) => {
             const submissions = documentSubmissionsByGroupId.get(group.id) ?? [];
             const normalizedStatuses = submissions.map((submission) => resolveSubmissionStatus(submission));
 
@@ -611,16 +628,24 @@ const Phase1Page = () => {
                 iconColor: iconTone[status],
             } satisfies DocumentRow;
         });
-    }, [documentSubmissionsByGroupId, filteredGroups]);
+    }, [documentSubmissionsByGroupId, filteredGroupsWithoutYear]);
+
+    const filteredDocuments = React.useMemo(() => {
+        if (selectedDocumentStatus === 'All') {
+            return documents;
+        }
+
+        return documents.filter((doc) => doc.status === selectedDocumentStatus);
+    }, [documents, selectedDocumentStatus]);
 
     const documentsPerPage = 6;
-    const totalDocumentPages = Math.max(1, Math.ceil(documents.length / documentsPerPage));
+    const totalDocumentPages = Math.max(1, Math.ceil(filteredDocuments.length / documentsPerPage));
     const documentsPageStart = (documentsPage - 1) * documentsPerPage;
-    const pagedDocuments = documents.slice(documentsPageStart, documentsPageStart + documentsPerPage);
+    const pagedDocuments = filteredDocuments.slice(documentsPageStart, documentsPageStart + documentsPerPage);
 
     React.useEffect(() => {
         setDocumentsPage(1);
-    }, [documents.length, searchTerm, selectedAcademicYear, selectedProgramSet]);
+    }, [filteredDocuments.length, searchTerm, selectedProgramSet]);
 
     React.useEffect(() => {
         if (documentsPage > totalDocumentPages) {
@@ -629,7 +654,7 @@ const Phase1Page = () => {
     }, [documentsPage, totalDocumentPages]);
 
     const payments = React.useMemo(() => {
-        return filteredGroups.map((group) => {
+        return filteredGroupsWithoutYear.map((group) => {
             const schedule = scheduleByGroupId.get(group.id);
             const members = group.members ?? [];
             const initials = members.map((member, index) => ({
@@ -663,10 +688,18 @@ const Phase1Page = () => {
                 reviewUrl: `/instructor/requirements/documents/acknowledgement?group=${group.id}`,
             } satisfies PaymentRow;
         });
-    }, [filteredGroups, scheduleByGroupId]);
+    }, [filteredGroupsWithoutYear, scheduleByGroupId]);
+
+    const filteredPayments = React.useMemo(() => {
+        if (selectedPaymentStatus === 'All') {
+            return payments;
+        }
+
+        return payments.filter((payment) => payment.status === selectedPaymentStatus);
+    }, [payments, selectedPaymentStatus]);
 
     const defenseRows = React.useMemo(() => {
-        return filteredGroups.map((group) => {
+        return filteredGroupsWithoutYear.map((group) => {
             const schedule = scheduleByGroupId.get(group.id);
             const panelistsCount = Number(group.panelists_count ?? 0);
             const status = panelistsCount > 0 ? `Available (${panelistsCount} Panelist${panelistsCount === 1 ? '' : 's'})` : 'No Panelists Assigned';
@@ -684,22 +717,35 @@ const Phase1Page = () => {
                 reviewUrl: `/instructor/requirements/documents/evaluation?group=${group.id}`,
             };
         });
-    }, [filteredGroups, scheduleByGroupId]);
+    }, [filteredGroupsWithoutYear, scheduleByGroupId]);
+
+    const filteredDefenseRows = React.useMemo(() => {
+        if (selectedDefenseStatus === 'All') {
+            return defenseRows;
+        }
+
+        return defenseRows.filter((row) => {
+            if (selectedDefenseStatus === 'Available') {
+                return row.status.startsWith('Available');
+            }
+            return row.status === selectedDefenseStatus;
+        });
+    }, [defenseRows, selectedDefenseStatus]);
 
     const defensePerPage = 6;
-    const totalDefensePages = Math.max(1, Math.ceil(defenseRows.length / defensePerPage));
+    const totalDefensePages = Math.max(1, Math.ceil(filteredDefenseRows.length / defensePerPage));
     const defensePageStart = (defensePage - 1) * defensePerPage;
-    const pagedDefenseRows = defenseRows.slice(defensePageStart, defensePageStart + defensePerPage);
+    const pagedDefenseRows = filteredDefenseRows.slice(defensePageStart, defensePageStart + defensePerPage);
 
     const paymentsPerPage = 6;
-    const totalPaymentsPages = Math.max(1, Math.ceil(payments.length / paymentsPerPage));
+    const totalPaymentsPages = Math.max(1, Math.ceil(filteredPayments.length / paymentsPerPage));
     const paymentsPageStart = (paymentsPage - 1) * paymentsPerPage;
-    const pagedPayments = payments.slice(paymentsPageStart, paymentsPageStart + paymentsPerPage);
+    const pagedPayments = filteredPayments.slice(paymentsPageStart, paymentsPageStart + paymentsPerPage);
 
     React.useEffect(() => {
         setDefensePage(1);
         setPaymentsPage(1);
-    }, [filteredGroups.length, searchTerm, selectedAcademicYear, selectedProgramSet]);
+    }, [filteredGroupsWithoutYear.length, searchTerm, selectedProgramSet, selectedDefenseStatus, selectedPaymentStatus]);
 
     React.useEffect(() => {
         if (defensePage > totalDefensePages) {
@@ -871,23 +917,25 @@ const Phase1Page = () => {
                         className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm transition-all outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 md:w-60"
                     />
                 </div>
-                <div className="relative">
-                    <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                    <select
-                        value={selectedAcademicYear}
-                        onChange={(event) => setSelectedAcademicYear(event.target.value)}
-                        className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                    >
-                        {academicYearOptions.map((year) => {
-                            const isCurrent = academicYears.find((ay) => ay.label === year)?.is_current;
-                            return (
-                                <option key={year} value={year}>
-                                    {year === 'All' ? 'All Years' : `${year}${isCurrent ? ' (current)' : ''}`}
-                                </option>
-                            );
-                        })}
-                    </select>
-                </div>
+                {activeTab === 'deadlines' && (
+                    <div className="relative">
+                        <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                        <select
+                            value={selectedAcademicYear}
+                            onChange={(event) => setSelectedAcademicYear(event.target.value)}
+                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                        >
+                            {academicYearOptions.map((year) => {
+                                const isCurrent = academicYears.find((ay) => ay.label === year)?.is_current;
+                                return (
+                                    <option key={year} value={year}>
+                                        {year === 'All' ? 'All Years' : `${year}${isCurrent ? ' (current)' : ''}`}
+                                    </option>
+                                );
+                            })}
+                        </select>
+                    </div>
+                )}
                 <div className="relative">
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
                         <ChevronRight size={12} className="rotate-90" />
@@ -905,12 +953,60 @@ const Phase1Page = () => {
                         ))}
                     </select>
                 </div>
+                {activeTab === 'documents' && (
+                    <div className="relative">
+                        <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                        <select
+                            value={selectedDocumentStatus}
+                            onChange={(event) => setSelectedDocumentStatus(event.target.value)}
+                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                        >
+                            <option value="All">All Status</option>
+                            <option value="Approved">Approved</option>
+                            <option value="For Review">For Review</option>
+                            <option value="Revise">Revise</option>
+                            <option value="Missing">Missing</option>
+                        </select>
+                    </div>
+                )}
+                {activeTab === 'defense' && (
+                    <div className="relative">
+                        <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                        <select
+                            value={selectedDefenseStatus}
+                            onChange={(event) => setSelectedDefenseStatus(event.target.value)}
+                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                        >
+                            <option value="All">All Status</option>
+                            <option value="Available">Available</option>
+                            <option value="No Panelists Assigned">No Panelists Assigned</option>
+                        </select>
+                    </div>
+                )}
+                {activeTab === 'payments' && (
+                    <div className="relative">
+                        <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                        <select
+                            value={selectedPaymentStatus}
+                            onChange={(event) => setSelectedPaymentStatus(event.target.value)}
+                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                        >
+                            <option value="All">All Status</option>
+                            <option value="Verified">Verified</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Not Paid">Not Paid</option>
+                        </select>
+                    </div>
+                )}
                 <button
                     type="button"
                     onClick={() => {
                         setSelectedAcademicYear('All');
                         setSelectedProgramSet('All');
                         setSearchTerm('');
+                        setSelectedDocumentStatus('All');
+                        setSelectedDefenseStatus('All');
+                        setSelectedPaymentStatus('All');
                     }}
                     className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900"
                 >
@@ -958,9 +1054,6 @@ const Phase1Page = () => {
 
                 {activeTab === 'deadlines' ? (
                     <DeadlinesTab
-                        academicYearOptions={academicYearOptions}
-                        academicYears={academicYears}
-                        requirementsAcademicYear={requirementsAcademicYear}
                         requirementsStatus={requirementsStatus}
                         rows={filteredDeadlines}
                         pagedRows={pagedDeadlines}
@@ -968,7 +1061,6 @@ const Phase1Page = () => {
                         perPage={deadlinesPerPage}
                         page={deadlinesPage}
                         totalPages={totalDeadlinePages}
-                        onAcademicYearChange={setRequirementsAcademicYear}
                         onStatusChange={(value) => setRequirementsStatus(value)}
                         onAddRequirement={handleAddRequirement}
                         onEditRequirement={handleEditRequirement}
@@ -982,7 +1074,7 @@ const Phase1Page = () => {
 
                 {activeTab === 'documents' ? (
                     <DocumentsTab
-                        documents={documents}
+                        documents={filteredDocuments}
                         pagedDocuments={pagedDocuments}
                         documentsPageStart={documentsPageStart}
                         documentsPerPage={documentsPerPage}
@@ -998,7 +1090,7 @@ const Phase1Page = () => {
 
                 {activeTab === 'defense' ? (
                     <DefenseTab
-                        rows={defenseRows}
+                        rows={filteredDefenseRows}
                         pagedRows={pagedDefenseRows}
                         pageStart={defensePageStart}
                         perPage={defensePerPage}
@@ -1013,7 +1105,7 @@ const Phase1Page = () => {
 
                 {activeTab === 'payments' ? (
                     <PaymentsTab
-                        payments={payments}
+                        payments={filteredPayments}
                         pagedPayments={pagedPayments}
                         pageStart={paymentsPageStart}
                         perPage={paymentsPerPage}

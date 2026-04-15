@@ -5,9 +5,11 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminSystemSettingsController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Models\AcademicYear;
+use App\Models\Group;
 use App\Models\ProgramSet;
 use App\Models\TitleRepository;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
@@ -656,28 +658,71 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         $projects = [];
 
         try {
-            if (Schema::hasTable('title_repositories')) {
-                $projects = TitleRepository::query()
-                    ->with('academicYear:id,label,start_year,end_year')
-                    ->orderByDesc('created_at')
-                    ->get(['id', 'title', 'academic_year_id', 'status', 'created_at'])
-                    ->map(static function (TitleRepository $repository): array {
-                        $academicYearLabel = trim((string) ($repository->academicYear?->label ?? ''));
+            if (class_exists(Group::class) && Schema::hasTable('groups')) {
+                $resolveUserName = static function (?User $user): string {
+                    if (! $user) {
+                        return '';
+                    }
 
+                    $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+                    $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+                    $fullName = $firstName !== '' || $lastName !== ''
+                        ? trim($firstName.' '.$lastName)
+                        : (is_string($user->name) ? trim($user->name) : '');
+
+                    return $fullName;
+                };
+
+                $hasGroupAdvisersTable = Schema::hasTable('group_advisers');
+                $groupsQuery = Group::query()
+                    ->with([
+                        'leader:id,name,first_name,last_name',
+                        'members:id,name,first_name,last_name',
+                        'programSet:id,name,program,instructor_id,academic_year_id',
+                        'programSet.academicYear',
+                        'approvedConceptSubmission:id,file_name,created_at',
+                    ])
+                    ->whereNotNull('approved_concept_submission_id')
+                    ->whereHas('approvedConceptSubmission')
+                    ->orderByDesc('concept_verdict_decided_at')
+                    ->orderByDesc('updated_at');
+
+                if ($hasGroupAdvisersTable) {
+                    $groupsQuery->with(['adviserAssignment.adviser:id,name,first_name,last_name']);
+                }
+
+                $projects = $groupsQuery
+                    ->get()
+                    ->map(function (Group $group) use ($resolveUserName, $hasGroupAdvisersTable): array {
+                        $adviserName = $hasGroupAdvisersTable
+                            ? $resolveUserName($group->adviserAssignment?->adviser)
+                            : '';
+                        
+                        $academicYearLabel = trim((string) ($group->programSet?->academicYear?->label ?? ''));
                         if ($academicYearLabel !== '') {
                             $academicYearLabel = (string) preg_replace('/^A\\.Y\\s*/i', '', $academicYearLabel);
                         } else {
-                            $startYear = $repository->academicYear?->start_year;
-                            $endYear = $repository->academicYear?->end_year;
-                            $academicYearLabel = $startYear && $endYear ? "{$startYear}-{$endYear}" : 'N/A';
+                            $academicYearLabel = 'N/A';
                         }
+                        
+                        $approvedConceptTitle = $group->approvedConceptSubmission?->file_name;
+                        $authorNames = collect([$group->leader, ...$group->members])
+                            ->filter()
+                            ->map(fn($u) => $resolveUserName($u))
+                            ->unique()
+                            ->filter()
+                            ->implode(', ');
 
                         return [
-                            'id' => $repository->id,
-                            'title' => $repository->title,
+                            'id' => $group->id,
+                            'title' => is_string($approvedConceptTitle) ? $approvedConceptTitle : 'Untitled Concept',
                             'academicYear' => $academicYearLabel,
-                            'status' => in_array($repository->status, ['Archived', 'Approved'], true) ? $repository->status : 'Approved',
-                            'dateAdded' => $repository->created_at?->format('M Y') ?? 'N/A',
+                            'adviser_name' => $adviserName,
+                            'author_names' => $authorNames,
+                            'status' => 'Approved',
+                            'dateAdded' => $group->concept_verdict_decided_at?->format('M Y') 
+                                ?? $group->approvedConceptSubmission?->created_at?->format('M Y') 
+                                ?? 'N/A',
                         ];
                     })
                     ->values()
@@ -691,33 +736,75 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
             'projects' => $projects,
         ]);
     })->name('admin.repository');
+
     Route::get('/project-repository/export', function () {
         $rows = [];
 
         try {
-            if (Schema::hasTable('title_repositories')) {
-                $rows = TitleRepository::query()
-                    ->with('academicYear:id,label,start_year,end_year')
-                    ->orderByDesc('created_at')
-                    ->get(['id', 'title', 'academic_year_id', 'status', 'created_at'])
-                    ->map(static function (TitleRepository $repository): array {
-                        $academicYearLabel = trim((string) ($repository->academicYear?->label ?? ''));
+            if (class_exists(Group::class) && Schema::hasTable('groups')) {
+                $resolveUserName = static function (?User $user): string {
+                    if (! $user) {
+                        return '';
+                    }
 
+                    $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+                    $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+                    $fullName = $firstName !== '' || $lastName !== ''
+                        ? trim($firstName.' '.$lastName)
+                        : (is_string($user->name) ? trim($user->name) : '');
+
+                    return $fullName;
+                };
+
+                $hasGroupAdvisersTable = Schema::hasTable('group_advisers');
+                $groupsQuery = Group::query()
+                    ->with([
+                        'leader:id,name,first_name,last_name',
+                        'members:id,name,first_name,last_name',
+                        'programSet:id,name,program,instructor_id,academic_year_id',
+                        'programSet.academicYear',
+                        'approvedConceptSubmission:id,file_name,created_at',
+                    ])
+                    ->whereNotNull('approved_concept_submission_id')
+                    ->whereHas('approvedConceptSubmission')
+                    ->orderByDesc('concept_verdict_decided_at')
+                    ->orderByDesc('updated_at');
+
+                if ($hasGroupAdvisersTable) {
+                    $groupsQuery->with(['adviserAssignment.adviser:id,name,first_name,last_name']);
+                }
+
+                $rows = $groupsQuery
+                    ->get()
+                    ->map(function (Group $group) use ($resolveUserName, $hasGroupAdvisersTable): array {
+                        $adviserName = $hasGroupAdvisersTable
+                            ? $resolveUserName($group->adviserAssignment?->adviser)
+                            : '';
+                        
+                        $academicYearLabel = trim((string) ($group->programSet?->academicYear?->label ?? ''));
                         if ($academicYearLabel !== '') {
                             $academicYearLabel = (string) preg_replace('/^A\\.Y\\s*/i', '', $academicYearLabel);
                         } else {
-                            $startYear = $repository->academicYear?->start_year;
-                            $endYear = $repository->academicYear?->end_year;
-                            $academicYearLabel = $startYear && $endYear ? "{$startYear}-{$endYear}" : 'N/A';
+                            $academicYearLabel = 'N/A';
                         }
+                        
+                        $approvedConceptTitle = $group->approvedConceptSubmission?->file_name;
+                        $authorNames = collect([$group->leader, ...$group->members])
+                            ->filter()
+                            ->map(fn($u) => $resolveUserName($u))
+                            ->unique()
+                            ->filter()
+                            ->implode(', ');
 
                         return [
-                            'title' => $repository->title,
-                            'authors' => '',
-                            'adviser' => '',
+                            'title' => is_string($approvedConceptTitle) ? $approvedConceptTitle : 'Untitled Concept',
+                            'authors' => $authorNames,
+                            'adviser' => $adviserName,
                             'academic_year' => $academicYearLabel,
-                            'status' => in_array($repository->status, ['Archived', 'Approved'], true) ? $repository->status : 'Approved',
-                            'date_added' => $repository->created_at?->format('M Y') ?? 'N/A',
+                            'status' => 'Approved',
+                            'date_added' => $group->concept_verdict_decided_at?->format('M Y') 
+                                ?? $group->approvedConceptSubmission?->created_at?->format('M Y') 
+                                ?? 'N/A',
                         ];
                     })
                     ->values()

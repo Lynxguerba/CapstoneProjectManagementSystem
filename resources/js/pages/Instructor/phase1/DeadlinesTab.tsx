@@ -26,9 +26,6 @@ type DeadlineRow = {
 };
 
 type DeadlinesTabProps = {
-    academicYearOptions: string[];
-    academicYears: AcademicYearOption[];
-    requirementsAcademicYear: string;
     requirementsStatus: 'All' | 'Due Soon' | 'On Track';
     rows: DeadlineRow[];
     pagedRows: DeadlineRow[];
@@ -36,7 +33,6 @@ type DeadlinesTabProps = {
     perPage: number;
     page: number;
     totalPages: number;
-    onAcademicYearChange: (value: string) => void;
     onStatusChange: (value: 'All' | 'Due Soon' | 'On Track') => void;
     onAddRequirement: () => void;
     onEditRequirement: (record: RequirementRecord) => void;
@@ -48,9 +44,6 @@ type DeadlinesTabProps = {
 };
 
 const DeadlinesTab = ({
-    academicYearOptions,
-    academicYears,
-    requirementsAcademicYear,
     requirementsStatus,
     rows,
     pagedRows,
@@ -58,7 +51,6 @@ const DeadlinesTab = ({
     perPage,
     page,
     totalPages,
-    onAcademicYearChange,
     onStatusChange,
     onAddRequirement,
     onEditRequirement,
@@ -80,24 +72,6 @@ const DeadlinesTab = ({
                         <p className="text-xs text-slate-500">Manage submission requirements for Phase 1 groups</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <div className="relative">
-                            <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                            <select
-                                value={requirementsAcademicYear}
-                                onChange={(event) => onAcademicYearChange(event.target.value)}
-                                aria-label="Filter academic year"
-                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                            >
-                                {academicYearOptions.map((year) => {
-                                    const isCurrent = academicYears.find((ay) => ay.label === year)?.is_current;
-                                    return (
-                                        <option key={year} value={year}>
-                                            {year === 'All' ? 'All Years' : `${year}${isCurrent ? ' (current)' : ''}`}
-                                        </option>
-                                    );
-                                })}
-                            </select>
-                        </div>
                         <div className="relative">
                             <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                             <select
