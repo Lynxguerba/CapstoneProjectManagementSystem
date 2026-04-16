@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Adviser\AdviserLiveDefenseController;
+use App\Http\Controllers\Adviser\AdviserNotificationController;
 use App\Http\Controllers\Adviser\AdviserScheduleController;
 use App\Http\Controllers\Adviser\ApproveGroupAdviserRequestController;
 use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
@@ -11,7 +12,6 @@ use App\Http\Controllers\Adviser\GenerateRecommendationForTitleDefenseController
 use App\Http\Controllers\Adviser\StoreAdviserLiveDefenseCommentController;
 use App\Http\Controllers\Adviser\UpdateAdviserAvailabilityController;
 use App\Http\Controllers\Adviser\UpdateAdviserConceptSubmissionStatusController;
-use App\Http\Controllers\Adviser\UpdateAdviserPasswordController;
 use App\Http\Controllers\Adviser\UpdateAdviserProgramUtilitiesController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
 use App\Http\Controllers\Panelist\DeleteGroupAcknowledgementReceiptSignatureController;
@@ -930,11 +930,11 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
                         } else {
                             $academicYearLabel = 'N/A';
                         }
-                        
+
                         $approvedConceptTitle = $group->approvedConceptSubmission?->file_name;
                         $authorNames = collect([$group->leader, ...$group->members])
                             ->filter()
-                            ->map(fn($u) => $resolveUserName($u))
+                            ->map(fn ($u) => $resolveUserName($u))
                             ->unique()
                             ->filter()
                             ->implode(', ');
@@ -946,8 +946,8 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
                             'academicYear' => $academicYearLabel,
                             'author_names' => $authorNames,
                             'status' => 'Approved',
-                            'dateAdded' => $group->concept_verdict_decided_at?->format('M Y') 
-                                ?? $group->approvedConceptSubmission?->created_at?->format('M Y') 
+                            'dateAdded' => $group->concept_verdict_decided_at?->format('M Y')
+                                ?? $group->approvedConceptSubmission?->created_at?->format('M Y')
                                 ?? 'N/A',
                         ];
                     })
@@ -1225,9 +1225,15 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
     Route::get('/minutes', function () {
         return Inertia::render('Adviser/minutes');
     })->name('adviser.minutes');
-    Route::get('/notifications', function () {
-        return Inertia::render('Adviser/notifications');
-    })->name('adviser.notifications');
+    Route::get('/notifications', [AdviserNotificationController::class, 'index'])->name('adviser.notifications');
+    Route::patch('/notifications/read-all', [AdviserNotificationController::class, 'markAllAsRead'])
+        ->name('adviser.notifications.read-all');
+    Route::patch('/notifications/{notificationKey}/read', [AdviserNotificationController::class, 'markAsRead'])
+        ->where('notificationKey', '[A-Za-z0-9\-]+')
+        ->name('adviser.notifications.read');
+    Route::delete('/notifications/{notificationKey}', [AdviserNotificationController::class, 'dismiss'])
+        ->where('notificationKey', '[A-Za-z0-9\-]+')
+        ->name('adviser.notifications.dismiss');
     Route::get('/deadlines', function () {
         return Inertia::render('Adviser/deadlines');
     })->name('adviser.deadlines');

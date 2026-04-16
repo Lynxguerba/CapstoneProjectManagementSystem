@@ -8,6 +8,7 @@ use App\Http\Controllers\Panelist\DeletePanelistEvaluationSheetSignatureControll
 use App\Http\Controllers\Panelist\DestroyPanelistLiveDefenseCommentController;
 use App\Http\Controllers\Panelist\PanelistDashboardController;
 use App\Http\Controllers\Panelist\PanelistLiveDefenseController;
+use App\Http\Controllers\Panelist\PanelistNotificationController;
 use App\Http\Controllers\Panelist\PanelistScheduleController;
 use App\Http\Controllers\Panelist\StorePanelistConceptVerdictController;
 use App\Http\Controllers\Panelist\StorePanelistLiveDefenseCommentController;
@@ -796,9 +797,15 @@ Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function
     Route::get('/history', function () {
         return Inertia::render('Panelist/history/past-evaluations');
     })->name('panelist.history');
-    Route::get('/notifications', function () {
-        return Inertia::render('Panelist/notifications');
-    })->name('panelist.notifications');
+    Route::get('/notifications', [PanelistNotificationController::class, 'index'])->name('panelist.notifications');
+    Route::patch('/notifications/read-all', [PanelistNotificationController::class, 'markAllAsRead'])
+        ->name('panelist.notifications.read-all');
+    Route::patch('/notifications/{notificationKey}/read', [PanelistNotificationController::class, 'markAsRead'])
+        ->where('notificationKey', '[A-Za-z0-9\-]+')
+        ->name('panelist.notifications.read');
+    Route::delete('/notifications/{notificationKey}', [PanelistNotificationController::class, 'dismiss'])
+        ->where('notificationKey', '[A-Za-z0-9\-]+')
+        ->name('panelist.notifications.dismiss');
     Route::get('/settings', function () {
         $user = Auth::guard('web')->user();
         $user?->loadMissing('eSignature');
