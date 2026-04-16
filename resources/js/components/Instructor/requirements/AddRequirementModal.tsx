@@ -13,24 +13,35 @@ type RequirementFormData = {
     requirement_type: string;
     due_date: string;
     academic_year_id: string;
+    stage: string;
 };
 
 type AddRequirementModalProps = {
     open: boolean;
     academicYearOptions: AcademicYearOption[];
     defaultAcademicYearId: string;
+    stage?: 'Concept' | 'Outline' | 'Pre-Deployment' | 'Deployment' | 'Final';
     onClose: () => void;
 };
 
-const requirementTypeOptions = ['Concept Papers', 'Manuscript', 'Minutes', 'Recommendation Letter', 'Acknowledgement Receipt', 'Evaluation Sheet'];
+const requirementTypeOptions = [
+    'Concept Papers',
+    'Project Outline',
+    'Manuscript',
+    'Minutes',
+    'Recommendation Letter',
+    'Acknowledgement Receipt',
+    'Evaluation Sheet',
+];
 
-const AddRequirementModal = ({ open, academicYearOptions, defaultAcademicYearId, onClose }: AddRequirementModalProps) => {
+const AddRequirementModal = ({ open, academicYearOptions, defaultAcademicYearId, stage = 'Concept', onClose }: AddRequirementModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
     const wasOpen = React.useRef(false);
     const form = useForm<RequirementFormData>({
         requirement_type: '',
         due_date: '',
         academic_year_id: defaultAcademicYearId,
+        stage,
     });
 
     React.useEffect(() => {
@@ -51,9 +62,10 @@ const AddRequirementModal = ({ open, academicYearOptions, defaultAcademicYearId,
                 requirement_type: '',
                 due_date: '',
                 academic_year_id: defaultAcademicYearId,
+                stage,
             });
         }
-    }, [defaultAcademicYearId, open]);
+    }, [defaultAcademicYearId, open, stage]);
 
     React.useEffect(() => {
         if (!open) {
@@ -127,7 +139,7 @@ const AddRequirementModal = ({ open, academicYearOptions, defaultAcademicYearId,
                 <div className="flex items-center justify-between border-b border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3">
                     <div className="flex items-center gap-2">
                         <FilePlus className="h-5 w-5 text-emerald-800" />
-                        <h2 className="text-lg font-bold text-emerald-900">Add Requirement</h2>
+                        <h2 className="text-lg font-bold text-emerald-900">Add {stage} Requirement</h2>
                     </div>
                     <button
                         type="button"

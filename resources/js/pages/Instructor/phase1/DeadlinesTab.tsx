@@ -41,6 +41,8 @@ type DeadlinesTabProps = {
     onNextPage: () => void;
     formatDateLabel: (value?: string | null) => string;
     statusBadge: (status: DeadlineRow['status']) => string;
+    headingTitle?: string;
+    headingDescription?: string;
 };
 
 const DeadlinesTab = ({
@@ -59,6 +61,8 @@ const DeadlinesTab = ({
     onNextPage,
     formatDateLabel,
     statusBadge,
+    headingTitle,
+    headingDescription,
 }: DeadlinesTabProps) => {
     return (
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -67,9 +71,9 @@ const DeadlinesTab = ({
                     <div>
                         <div className="flex items-center gap-2">
                             <CalendarClock className="h-4 w-4 text-emerald-600" />
-                            <h3 className="text-sm font-semibold text-slate-900">Requirements Manager</h3>
+                            <h3 className="text-sm font-semibold text-slate-900">{headingTitle ?? 'Requirements Manager'}</h3>
                         </div>
-                        <p className="text-xs text-slate-500">Manage submission requirements for Phase 1 groups</p>
+                        <p className="text-xs text-slate-500">{headingDescription ?? 'Manage submission requirements for Phase 1 groups'}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="relative">

@@ -26,18 +26,35 @@ type DefenseTabProps = {
     defenseBadge: (status: string) => string;
     onPrevPage: () => void;
     onNextPage: () => void;
+    headingTitle?: string;
+    headingDescription?: string;
 };
 
-const DefenseTab = ({ rows, pagedRows, pageStart, perPage, page, totalPages, filters, defenseBadge, onPrevPage, onNextPage }: DefenseTabProps) => {
+const DefenseTab = ({
+    rows,
+    pagedRows,
+    pageStart,
+    perPage,
+    page,
+    totalPages,
+    filters,
+    defenseBadge,
+    onPrevPage,
+    onNextPage,
+    headingTitle,
+    headingDescription,
+}: DefenseTabProps) => {
     return (
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
                 <div>
                     <div className="flex items-center gap-2">
                         <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                        <h3 className="text-sm font-semibold text-slate-900">Defense Status</h3>
+                        <h3 className="text-sm font-semibold text-slate-900">{headingTitle ?? 'Defense Status'}</h3>
                     </div>
-                    <p className="text-xs text-slate-500">Monitor concept defense schedules and review evaluation sheets by group</p>
+                    <p className="text-xs text-slate-500">
+                        {headingDescription ?? 'Monitor concept defense schedules and review evaluation sheets by group'}
+                    </p>
                 </div>
             </div>
             <div className="border-b border-slate-100 px-6 py-4">{filters}</div>

@@ -27,6 +27,13 @@ class UpdateDocumentRequirementRequest extends FormRequest
     {
         $requirement = $this->route('requirement');
         $requirementId = $requirement instanceof DocumentRequirement ? $requirement->id : null;
+        $requirementStage = $requirement instanceof DocumentRequirement && is_string($requirement->stage)
+            ? trim($requirement->stage)
+            : 'Concept';
+
+        if ($requirementStage === '') {
+            $requirementStage = 'Concept';
+        }
 
         return [
             'requirement_type' => [
@@ -36,7 +43,7 @@ class UpdateDocumentRequirementRequest extends FormRequest
                 Rule::unique('document_requirements', 'requirement_type')
                     ->where(fn ($query) => $query
                         ->where('academic_year_id', $this->input('academic_year_id'))
-                        ->where('stage', 'Concept'))
+                        ->where('stage', $requirementStage))
                     ->ignore($requirementId),
             ],
             'due_date' => ['required', 'date'],

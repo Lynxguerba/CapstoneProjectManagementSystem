@@ -108,7 +108,9 @@ const AcknowledgementReceiptPage = () => {
 
     const selectedDefenseTypeKey = (defense?.typeKey ?? '').trim();
     const selectedProgram = (defense?.program ?? '').trim().toUpperCase();
-    const phaseOnePaymentsHref = '/instructor/phase1?tab=payments';
+    const isOutlineStage = selectedDefenseTypeKey === 'outline_defense';
+    const phaseLabel = isOutlineStage ? 'Phase 2' : 'Phase 1';
+    const phasePaymentsHref = isOutlineStage ? '/instructor/phase2?tab=defense' : '/instructor/phase1?tab=payments';
 
     return (
         <InstructorLayout title="Acknowledgement Receipt" subtitle="Capstone project defense payment verification (view-only)">
@@ -118,11 +120,11 @@ const AcknowledgementReceiptPage = () => {
                         Dashboard
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
-                    <Link href="/instructor/phase1?tab=payments" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
-                        Phase 1
+                    <Link href={phasePaymentsHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        {phaseLabel}
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
-                    <Link href={phaseOnePaymentsHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                    <Link href={phasePaymentsHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
                         Payment Verification
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
@@ -138,7 +140,7 @@ const AcknowledgementReceiptPage = () => {
                             <p className="text-xs text-slate-500">{groupLabel}</p>
                         </div>
                         <Link
-                            href={phaseOnePaymentsHref}
+                            href={phasePaymentsHref}
                             className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                         >
                             Back to Payment Verification

@@ -44,6 +44,7 @@ type PageProps = {
     selectedGroupId?: number | null;
     selectedRequirementId?: number | null;
     selectedRequirementType?: string | null;
+    activeStage?: string | null;
 };
 
 const statusBadge = (status: SubmissionStatus): string => {
@@ -125,8 +126,15 @@ const GroupConceptReviewPage = () => {
 
         return activeGroup.submissions.find((submission) => submission.id === selectedSubmissionId) ?? null;
     }, [activeGroup, selectedSubmissionId]);
-    const requirementLabel = props.selectedRequirementType ?? 'Concept';
-    const requirementsIndexHref = activeGroup ? `/instructor/requirements/documents?group=${activeGroup.id}` : '/instructor/requirements/documents';
+    const normalizedStage = (props.activeStage ?? 'Concept').trim().toLowerCase();
+    const stageLabel = (props.activeStage ?? 'Concept').trim() || 'Concept';
+    const phaseLabel = normalizedStage === 'outline' ? 'Phase 2' : 'Phase 1';
+    const phaseHref = normalizedStage === 'outline' ? '/instructor/phase2?tab=documents' : '/instructor/phase1?tab=documents';
+    const requirementLabel = props.selectedRequirementType ?? `${stageLabel} Requirement`;
+    const stageQuerySuffix = `&stage=${encodeURIComponent(stageLabel)}`;
+    const requirementsIndexHref = activeGroup
+        ? `/instructor/requirements/documents?group=${activeGroup.id}${stageQuerySuffix}`
+        : `/instructor/requirements/documents?stage=${encodeURIComponent(stageLabel)}`;
 
     const updateSubmissionStatus = React.useCallback((submissionId: number, status: 'Approved' | 'Revision Required'): Promise<boolean> => {
         return new Promise((resolve) => {
@@ -173,7 +181,7 @@ const GroupConceptReviewPage = () => {
         setNotification({
             tone: 'success',
             title: 'Submission Approved',
-            message: 'The selected concept paper is now marked as approved.',
+            message: 'The selected submission is now marked as approved.',
         });
     };
 
@@ -195,12 +203,12 @@ const GroupConceptReviewPage = () => {
         setNotification({
             tone: 'warning',
             title: 'Resubmission Requested',
-            message: 'The selected concept paper is now marked for resubmission.',
+            message: 'The selected submission is now marked for resubmission.',
         });
     };
 
     return (
-        <InstructorLayout title="Concept Requirement Review" subtitle="Review concept submissions for the selected requirement">
+        <InstructorLayout title={`${stageLabel} Requirement Review`} subtitle={`Review ${stageLabel.toLowerCase()} submissions for the selected requirement`}>
             <div className="space-y-6">
                 <div className="space-y-3">
                     <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
@@ -208,8 +216,8 @@ const GroupConceptReviewPage = () => {
                             Dashboard
                         </Link>
                         <ChevronRight className="h-3 w-3 text-slate-400" />
-                        <Link href="/instructor/phase1?tab=documents" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
-                            Phase 1
+                        <Link href={phaseHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                            {phaseLabel}
                         </Link>
                         <ChevronRight className="h-3 w-3 text-slate-400" />
                         <Link href={requirementsIndexHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
@@ -217,7 +225,7 @@ const GroupConceptReviewPage = () => {
                         </Link>
                         <ChevronRight className="h-3 w-3 text-slate-400" />
                         <span className="font-semibold text-slate-800" aria-current="page">
-                            Concept Review
+                            {stageLabel} Review
                         </span>
                     </nav>
                 </div>
@@ -342,7 +350,7 @@ const GroupConceptReviewPage = () => {
                     <div className="grid grid-cols-1 gap-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
                         <div className="border-r border-slate-200">
                             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-600 uppercase">
-                                Submitted Concept Papers
+                                Submitted Requirement Files
                             </div>
                             <div className="max-h-[70vh] overflow-auto">
                                 <table className="w-full text-left text-xs">
@@ -357,7 +365,7 @@ const GroupConceptReviewPage = () => {
                                         {activeGroup.submissions.length === 0 ? (
                                             <tr>
                                                 <td colSpan={3} className="px-4 py-10 text-center text-xs text-slate-500">
-                                                    No concept submissions found for this group.
+                                                    No submissions found for this group.
                                                 </td>
                                             </tr>
                                         ) : (
@@ -494,13 +502,13 @@ const GroupConceptReviewPage = () => {
                             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
                                 <div className="text-xs font-semibold text-slate-600 uppercase">PDF Preview</div>
                                 <div className="mt-1 text-sm font-semibold text-slate-900">
-                                    {selectedSubmission ? selectedSubmission.title : 'Select a concept submission'}
+                                    {selectedSubmission ? selectedSubmission.title : 'Select a submission'}
                                 </div>
                             </div>
 
                             {!selectedSubmission ? (
                                 <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-slate-500">
-                                    Select a concept paper row from the table to preview the PDF.
+                                    Select a row from the table to preview the PDF.
                                 </div>
                             ) : selectedSubmission.fileUrl ? (
                                 <div className="flex-1 bg-slate-100 p-4">
@@ -513,7 +521,7 @@ const GroupConceptReviewPage = () => {
                                 </div>
                             ) : (
                                 <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-slate-500">
-                                    PDF preview is unavailable for the selected concept submission.
+                                    PDF preview is unavailable for the selected submission.
                                 </div>
                             )}
                         </div>

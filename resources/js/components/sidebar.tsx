@@ -207,7 +207,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { icon: Calendar, label: 'Defense Scheduling', href: '/instructor/scheduling' },
                     { label: 'Capstone Phases', isSection: true },
                     { icon: Lightbulb, label: 'Phase 1: Concept', href: '/instructor/phase1' },
-                    { icon: ListTree, label: 'Phase 2: Outline', href: '' },
+                    { icon: ListTree, label: 'Phase 2: Outline', href: '/instructor/phase2' },
                     { icon: PackageCheck, label: 'Phase 3: Pre-Deployment', href: '' },
                     { icon: Rocket, label: 'Phase 4: Deployment', href: '' },
                     { icon: Flag, label: 'Phase 5: Finals', href: '' },

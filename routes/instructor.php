@@ -13,6 +13,8 @@ use App\Http\Controllers\DownloadDocumentSubmissionController;
 use App\Http\Controllers\EnrollStudentController;
 use App\Http\Controllers\Instructor\ApproveCrossSetGroupRequestController;
 use App\Http\Controllers\Instructor\CrossSetStudentSearchController;
+use App\Http\Controllers\Instructor\InstructorNotificationController;
+use App\Http\Controllers\Instructor\InstructorPhaseTwoController;
 use App\Http\Controllers\Instructor\RejectCrossSetGroupRequestController;
 use App\Http\Controllers\Instructor\StoreCrossSetGroupRequestController;
 use App\Http\Controllers\StoreDefenseRoomController;
@@ -3435,13 +3437,17 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             'settings' => $settings,
         ]);
     })->name('instructor.phase1');
+    Route::get('/phase2', InstructorPhaseTwoController::class)->name('instructor.phase2');
     Route::get('/requirements/documents', function () {
         $userId = Auth::guard('web')->id();
         $groupQueryValue = request()->query('group');
+        $requestedStage = request()->query('stage');
+        $requestedStage = is_string($requestedStage) && trim($requestedStage) !== '' ? trim($requestedStage) : null;
         $selectedGroupId = is_numeric($groupQueryValue) ? (int) $groupQueryValue : null;
         $groupOptions = [];
         $selectedGroup = null;
         $documents = [];
+        $activeStage = $requestedStage ?? 'Concept';
         $receiptDefenseDateTime = null;
         $evaluationPanelistsCount = 0;
         $receiptSignatureStatus = [
@@ -3466,6 +3472,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         try {
             if ($userId !== null && class_exists(Group::class) && Schema::hasTable('groups')) {
                 $hasGroupPanelistsTable = Schema::hasTable('group_panelists');
+                $hasApprovedConceptSubmissionColumn = Schema::hasColumn('groups', 'approved_concept_submission_id');
+                $isOutlineStageRequest = $requestedStage !== null && strtolower($requestedStage) === 'outline';
                 $groupQuery = Group::query()
                     ->with([
                         'programSet.academicYear',
@@ -3474,6 +3482,10 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     ])
                     ->whereHas('programSet', fn ($query) => $query->where('instructor_id', $userId))
                     ->orderByDesc('updated_at');
+
+                if ($isOutlineStageRequest && $hasApprovedConceptSubmissionColumn) {
+                    $groupQuery->whereNotNull('approved_concept_submission_id');
+                }
 
                 if ($hasGroupPanelistsTable) {
                     $groupQuery->with('panelAssignments:id,group_id,panelist_id');
@@ -3536,19 +3548,38 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     ];
 
                     if (class_exists(DefenseSchedule::class) && Schema::hasTable('defense_schedules')) {
-                        $selectedSchedule = DefenseSchedule::query()
-                            ->where('group_id', $activeGroup->id)
-                            ->orderByRaw(
-                                "CASE
-                                    WHEN status = 'Scheduled' THEN 0
-                                    WHEN status = 'Pending' THEN 1
-                                    WHEN status = 'Completed' THEN 2
-                                    ELSE 3
-                                END"
-                            )
-                            ->orderByDesc('scheduled_date')
-                            ->orderByDesc('start_time')
-                            ->first(['id', 'group_id', 'stage', 'status', 'scheduled_date', 'start_time']);
+                        $baseScheduleQuery = DefenseSchedule::query()->where('group_id', $activeGroup->id);
+
+                        if ($requestedStage !== null) {
+                            $selectedSchedule = (clone $baseScheduleQuery)
+                                ->whereRaw('LOWER(stage) = ?', [strtolower($requestedStage)])
+                                ->orderByRaw(
+                                    "CASE
+                                        WHEN status = 'Scheduled' THEN 0
+                                        WHEN status = 'Pending' THEN 1
+                                        WHEN status = 'Completed' THEN 2
+                                        ELSE 3
+                                    END"
+                                )
+                                ->orderByDesc('scheduled_date')
+                                ->orderByDesc('start_time')
+                                ->first(['id', 'group_id', 'stage', 'status', 'scheduled_date', 'start_time']);
+                        }
+
+                        if (! $selectedSchedule instanceof DefenseSchedule) {
+                            $selectedSchedule = (clone $baseScheduleQuery)
+                                ->orderByRaw(
+                                    "CASE
+                                        WHEN status = 'Scheduled' THEN 0
+                                        WHEN status = 'Pending' THEN 1
+                                        WHEN status = 'Completed' THEN 2
+                                        ELSE 3
+                                    END"
+                                )
+                                ->orderByDesc('scheduled_date')
+                                ->orderByDesc('start_time')
+                                ->first(['id', 'group_id', 'stage', 'status', 'scheduled_date', 'start_time']);
+                        }
 
                         if ($selectedSchedule instanceof DefenseSchedule) {
                             $defenseDateLabel = $selectedSchedule->scheduled_date?->format('F d, Y') ?? 'TBD';
@@ -3564,7 +3595,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
                     $resolvedStage = is_string($selectedSchedule?->stage) && trim($selectedSchedule->stage) !== ''
                         ? trim($selectedSchedule->stage)
-                        : 'Concept';
+                        : ($requestedStage ?? 'Concept');
+                    $activeStage = $resolvedStage;
                     $normalizedStage = strtolower($resolvedStage);
                     $defenseTypeKey = match ($normalizedStage) {
                         'concept', 'concept paper', 'concept papers' => 'concept_presentation',
@@ -3613,7 +3645,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     if (class_exists(DocumentRequirement::class) && Schema::hasTable('document_requirements')) {
                         $requirementsQuery = DocumentRequirement::query()
                             ->with('academicYear')
-                            ->where('stage', 'Concept')
+                            ->whereRaw('LOWER(stage) = ?', [strtolower($resolvedStage)])
                             ->orderBy('due_date')
                             ->orderBy('id');
 
@@ -3651,11 +3683,10 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         }
 
                         $documents = $requirements
-                            ->map(function (DocumentRequirement $requirement) use ($activeGroup, $latestSubmissionByRequirementId): array {
+                            ->map(function (DocumentRequirement $requirement) use ($activeGroup, $latestSubmissionByRequirementId, $resolvedStage): array {
                                 /** @var DocumentSubmission|null $submission */
                                 $submission = $latestSubmissionByRequirementId->get($requirement->id);
                                 $requirementType = trim((string) ($requirement->requirement_type ?? 'Requirement'));
-                                $isConceptRequirement = str_contains(strtolower($requirementType), 'concept');
                                 $isRecommendationRequirement = str_contains(strtolower($requirementType), 'recommendation');
                                 $status = match ((string) ($submission?->status ?? '')) {
                                     'Approved' => 'Approved',
@@ -3667,14 +3698,15 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                                     $status = 'Approved';
                                 }
 
-                                $canReview = $submission instanceof DocumentSubmission && ($isConceptRequirement || $isRecommendationRequirement);
+                                $canReview = $submission instanceof DocumentSubmission;
                                 $reviewUrl = null;
 
                                 if ($canReview) {
-                                    if ($isConceptRequirement) {
+                                    if (! $isRecommendationRequirement) {
                                         $reviewUrl = route('instructor.requirements.documents.review', [
                                             'group' => $activeGroup->id,
                                             'requirement' => $requirement->id,
+                                            'stage' => $resolvedStage,
                                         ]);
                                     } else {
                                         $reviewUrl = route('instructor.requirements.documents.submission-preview', [
@@ -3717,6 +3749,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             'selectedGroupId' => $selectedGroupId,
             'selectedGroup' => $selectedGroup,
             'documents' => $documents,
+            'activeStage' => $activeStage,
             'receiptDefenseDateTime' => $receiptDefenseDateTime,
             'evaluationPanelistsCount' => $evaluationPanelistsCount,
             'receiptSignatureStatus' => $receiptSignatureStatus,
@@ -3736,6 +3769,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         $conceptVerdict = null;
         $defenseHeaderTitle = 'CONCEPT TITLE DEFENSE';
         $defenseDate = now()->format('Y-m-d');
+        $activeStage = $requestedStage ?? 'Concept';
 
         $resolveUserName = static function (?User $user): string {
             if (! $user instanceof User) {
@@ -3860,6 +3894,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         $resolvedStage = is_string($selectedSchedule?->stage) && trim($selectedSchedule->stage) !== ''
                             ? trim($selectedSchedule->stage)
                             : ($requestedStage ?? 'Concept');
+                        $activeStage = $resolvedStage;
                         $defenseHeaderTitle = $resolveDefenseHeaderTitle($resolvedStage);
                         $defenseDate = $selectedSchedule?->scheduled_date?->format('Y-m-d') ?? now()->format('Y-m-d');
                         $normalizedStage = strtolower(trim($resolvedStage));
@@ -3976,6 +4011,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             'conceptVerdict' => $conceptVerdict,
             'defenseHeaderTitle' => $defenseHeaderTitle,
             'defenseDate' => $defenseDate,
+            'activeStage' => $activeStage,
         ]);
     })->name('instructor.requirements.documents.evaluation');
     Route::get('/requirements/documents/acknowledgement', function () {
@@ -4241,8 +4277,11 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
         $userId = Auth::guard('web')->id();
         $groupQueryValue = request()->query('group');
         $requirementQueryValue = request()->query('requirement');
+        $requestedStage = request()->query('stage');
+        $requestedStage = is_string($requestedStage) && trim($requestedStage) !== '' ? trim($requestedStage) : null;
         $selectedGroupId = is_numeric($groupQueryValue) ? (int) $groupQueryValue : null;
         $selectedRequirementId = is_numeric($requirementQueryValue) ? (int) $requirementQueryValue : null;
+        $activeStage = $requestedStage ?? 'Concept';
         $selectedRequirementType = null;
         $groups = [];
 
@@ -4266,13 +4305,17 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 && class_exists(DocumentRequirement::class)
                 && Schema::hasTable('document_requirements')
             ) {
+                $selectedRequirementStage = $requestedStage ?? 'Concept';
                 /** @var DocumentRequirement|null $selectedRequirement */
                 $selectedRequirement = DocumentRequirement::query()
-                    ->where('stage', 'Concept')
-                    ->find($selectedRequirementId, ['id', 'requirement_type']);
+                    ->whereRaw('LOWER(stage) = ?', [strtolower($selectedRequirementStage)])
+                    ->find($selectedRequirementId, ['id', 'requirement_type', 'stage']);
 
                 if ($selectedRequirement instanceof DocumentRequirement) {
                     $selectedRequirementType = $selectedRequirement->requirement_type;
+                    $activeStage = is_string($selectedRequirement->stage) && trim($selectedRequirement->stage) !== ''
+                        ? trim($selectedRequirement->stage)
+                        : $selectedRequirementStage;
                 } else {
                     $selectedRequirementId = null;
                 }
@@ -4286,7 +4329,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     ->get(['id', 'name', 'program_set_id', 'leader_id', 'updated_at']);
 
                 $groupIds = $groupCollection->pluck('id')->filter()->values();
-                $conceptSubmissionsByGroup = collect();
+                $groupSubmissionsByGroup = collect();
 
                 if (
                     class_exists(DocumentSubmission::class)
@@ -4294,12 +4337,11 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                     && Schema::hasTable('document_requirements')
                     && $groupIds->isNotEmpty()
                 ) {
-                    $conceptSubmissionsByGroup = DocumentSubmission::query()
+                    $groupSubmissionsByGroup = DocumentSubmission::query()
                         ->with('requirement:id,requirement_type,stage')
                         ->whereIn('group_id', $groupIds)
-                        ->whereHas('requirement', function ($query): void {
-                            $query->where('stage', 'Concept')
-                                ->whereRaw('LOWER(requirement_type) like ?', ['%concept%']);
+                        ->whereHas('requirement', function ($query) use ($activeStage): void {
+                            $query->whereRaw('LOWER(stage) = ?', [strtolower($activeStage)]);
                         })
                         ->when($selectedRequirementId !== null, fn ($query) => $query->where('document_requirement_id', $selectedRequirementId))
                         ->orderByDesc('created_at')
@@ -4319,7 +4361,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 }
 
                 $groups = $groupCollection
-                    ->map(function (Group $group) use ($conceptSubmissionsByGroup, $resolveUserName): array {
+                    ->map(function (Group $group) use ($groupSubmissionsByGroup, $resolveUserName): array {
                         $programSet = $group->programSet;
                         $adviserAssignment = $group->adviserAssignment;
                         $adviser = $adviserAssignment?->adviser;
@@ -4327,7 +4369,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
                         $leaderName = $resolveUserName($group->leader);
 
-                        $groupSubmissions = $conceptSubmissionsByGroup->get($group->id, collect());
+                        $groupSubmissions = $groupSubmissionsByGroup->get($group->id, collect());
                         $submissions = $groupSubmissions
                             ->map(static function (DocumentSubmission $submission): array {
                                 $status = match ((string) $submission->status) {
@@ -4338,8 +4380,8 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
 
                                 return [
                                     'id' => $submission->id,
-                                    'title' => $submission->file_name ?: 'Concept Paper Submission',
-                                    'requirementType' => $submission->requirement?->requirement_type ?? 'Concept Paper',
+                                    'title' => $submission->file_name ?: 'Requirement Submission',
+                                    'requirementType' => $submission->requirement?->requirement_type ?? 'Requirement',
                                     'status' => $status,
                                     'adviserStatus' => match ((string) $submission->adviser_status) {
                                         'Approved' => 'Approved',
@@ -4385,6 +4427,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
             'selectedGroupId' => $selectedGroupId,
             'selectedRequirementId' => $selectedRequirementId,
             'selectedRequirementType' => $selectedRequirementType,
+            'activeStage' => $activeStage,
         ]);
     })->name('instructor.requirements.documents.review');
     Route::get('/requirements/documents/submissions/{submission}/preview', function (DocumentSubmission $submission) {
@@ -4406,6 +4449,7 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                 'programSetName' => $submission->group?->programSet?->name,
                 'program' => $submission->group?->programSet?->program,
                 'requirementType' => $submission->requirement?->requirement_type ?? 'Document',
+                'stage' => $submission->requirement?->stage ?? 'Concept',
                 'fileName' => $submission->file_name,
                 'fileUrl' => Storage::disk('public')->url($submission->file_path),
                 'status' => $submission->status,
@@ -4432,9 +4476,15 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
     Route::post('/requirements', StoreDocumentRequirementController::class)->name('instructor.requirements.store');
     Route::patch('/requirements/{requirement}', UpdateDocumentRequirementController::class)->name('instructor.requirements.update');
     Route::delete('/requirements/{requirement}', DestroyDocumentRequirementController::class)->name('instructor.requirements.destroy');
-    Route::get('/notifications', function () {
-        return Inertia::render('Instructor/notifications');
-    })->name('instructor.notifications');
+    Route::get('/notifications', [InstructorNotificationController::class, 'index'])->name('instructor.notifications');
+    Route::patch('/notifications/read-all', [InstructorNotificationController::class, 'markAllAsRead'])
+        ->name('instructor.notifications.read-all');
+    Route::patch('/notifications/{notificationKey}/read', [InstructorNotificationController::class, 'markAsRead'])
+        ->where('notificationKey', '[A-Za-z0-9\-]+')
+        ->name('instructor.notifications.read');
+    Route::delete('/notifications/{notificationKey}', [InstructorNotificationController::class, 'dismiss'])
+        ->where('notificationKey', '[A-Za-z0-9\-]+')
+        ->name('instructor.notifications.dismiss');
     Route::get('/settings', function () {
         $user = Auth::guard('web')->user();
         $user?->loadMissing('eSignature');

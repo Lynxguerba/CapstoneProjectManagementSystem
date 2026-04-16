@@ -42,6 +42,7 @@ type PageProps = {
     conceptVerdict?: string | null;
     defenseHeaderTitle?: string | null;
     defenseDate?: string | null;
+    activeStage?: string | null;
 };
 
 type IndividualCriterion = {
@@ -204,6 +205,9 @@ const InstructorEvaluationSheetsPage = () => {
 
         return normalizedTitle !== '' ? normalizedTitle : 'CONCEPT TITLE DEFENSE';
     }, [props.defenseHeaderTitle]);
+    const normalizedStage = (props.activeStage ?? 'Concept').trim().toLowerCase();
+    const phaseLabel = normalizedStage === 'outline' ? 'Phase 2' : 'Phase 1';
+    const phaseDefenseHref = normalizedStage === 'outline' ? '/instructor/phase2?tab=defense' : '/instructor/phase1?tab=defense';
 
     React.useEffect(() => {
         if (panelists.length === 0) {
@@ -242,8 +246,6 @@ const InstructorEvaluationSheetsPage = () => {
         [selectedEvaluationData?.passingGradeDate],
     );
     const panelistSignatureDataUrl = React.useMemo(() => resolveSignatureDataUrl(selectedPanelist?.eSignature), [selectedPanelist?.eSignature]);
-    const phaseOneDefenseHref = '/instructor/phase1?tab=defense';
-
     return (
         <InstructorLayout title="Panelist Evaluation Sheets" subtitle="View-only evaluation forms of assigned panelists">
             <div className="space-y-6">
@@ -253,11 +255,11 @@ const InstructorEvaluationSheetsPage = () => {
                             Dashboard
                         </Link>
                         <ChevronRight className="h-3 w-3 text-slate-400" />
-                        <Link href="/instructor/phase1?tab=defense" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
-                            Phase 1
+                        <Link href={phaseDefenseHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                            {phaseLabel}
                         </Link>
                         <ChevronRight className="h-3 w-3 text-slate-400" />
-                        <Link href={phaseOneDefenseHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        <Link href={phaseDefenseHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
                             Defense Status
                         </Link>
                         <ChevronRight className="h-3 w-3 text-slate-400" />
@@ -276,7 +278,7 @@ const InstructorEvaluationSheetsPage = () => {
                             <p className="mt-1 text-xs text-slate-500">{groupLabel}</p>
                         </div>
                         <Link
-                            href={phaseOneDefenseHref}
+                            href={phaseDefenseHref}
                             className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                         >
                             Back to Defense Status

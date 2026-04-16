@@ -10,6 +10,7 @@ type SubmissionPreview = {
     programSetName?: string | null;
     program?: string | null;
     requirementType: string;
+    stage?: string | null;
     fileName: string;
     fileUrl: string;
     status?: string | null;
@@ -26,9 +27,13 @@ const SubmissionPreviewPage = () => {
     const { props } = usePage<PageProps>();
     const submission = props.submission;
     const [isDetailsCollapsed, setIsDetailsCollapsed] = useState<boolean>(false);
+    const normalizedStage = (submission.stage ?? 'Concept').trim().toLowerCase();
+    const isOutlineStage = normalizedStage === 'outline';
+    const phaseLabel = isOutlineStage ? 'Phase 2' : 'Phase 1';
+    const phaseDocumentsHref = isOutlineStage ? '/instructor/phase2?tab=documents' : '/instructor/phase1?tab=documents';
     const requirementDocumentsHref = submission.groupId
-        ? `/instructor/requirements/documents?group=${submission.groupId}`
-        : '/instructor/requirements/documents';
+        ? `/instructor/requirements/documents?group=${submission.groupId}&stage=${encodeURIComponent(submission.stage ?? 'Concept')}`
+        : `/instructor/requirements/documents?stage=${encodeURIComponent(submission.stage ?? 'Concept')}`;
 
     return (
         <InstructorLayout title="Requirement Submission Preview" subtitle="Preview generated recommendation and signed requirement documents">
@@ -38,8 +43,8 @@ const SubmissionPreviewPage = () => {
                         Dashboard
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
-                    <Link href="/instructor/phase1?tab=documents" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
-                        Phase 1
+                    <Link href={phaseDocumentsHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                        {phaseLabel}
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
                     <Link href={requirementDocumentsHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">

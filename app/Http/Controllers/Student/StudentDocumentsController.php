@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdviserRecommendationDocument;
+use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
 use App\Models\User;
@@ -27,9 +28,11 @@ class StudentDocumentsController extends Controller
         $isGroupLeader = $group !== null
             && $student !== null
             && (int) $group->leader_id === (int) $student->id;
+        $isPhaseTwoAvailable = $this->isPhaseTwoAvailable($group);
 
         $uploadedFiles = $this->resolveUploadedFiles($group?->id);
         $generatedFiles = $this->resolveGeneratedFiles($group?->id);
+        $phaseTwoRequirements = $this->resolvePhaseTwoRequirements($group, $isPhaseTwoAvailable);
 
         $documentsComponent = file_exists(resource_path('js/pages/Student/documents.tsx'))
             ? 'Student/documents'
@@ -43,6 +46,8 @@ class StudentDocumentsController extends Controller
                 'academicYear' => $group->programSet?->academicYear?->label,
             ] : null,
             'isGroupLeader' => $isGroupLeader,
+            'isPhase2Available' => $isPhaseTwoAvailable,
+            'phase2Requirements' => $phaseTwoRequirements,
             'uploadedFiles' => $uploadedFiles
                 ->map(fn (DocumentSubmission $submission): array => [
                     'id' => $submission->id,
@@ -146,7 +151,146 @@ class StudentDocumentsController extends Controller
             }
         });
 
-        return $query->first(['id', 'name', 'program_set_id', 'leader_id']);
+        $groupColumns = ['id', 'name', 'program_set_id', 'leader_id'];
+
+        if (Schema::hasColumn('groups', 'approved_concept_submission_id')) {
+            $groupColumns[] = 'approved_concept_submission_id';
+        }
+
+        if (Schema::hasColumn('groups', 'concept_verdict')) {
+            $groupColumns[] = 'concept_verdict';
+        }
+
+        return $query->first($groupColumns);
+    }
+
+    /**
+     * @return array<int, array{
+     *     id: int,
+     *     requirementType: string,
+     *     stage: string,
+     *     dueDate: string|null,
+     *     status: string,
+     *     fileName: string|null,
+     *     submittedAt: string|null
+     * }>
+     */
+    private function resolvePhaseTwoRequirements(?Group $group, bool $isPhaseTwoAvailable): array
+    {
+        if (
+            ! $isPhaseTwoAvailable
+            || ! $group instanceof Group
+            || ! Schema::hasTable('document_requirements')
+            || ! class_exists(DocumentRequirement::class)
+        ) {
+            return [];
+        }
+
+        $requirementsQuery = DocumentRequirement::query()
+            ->with('academicYear:id,label')
+            ->where('stage', 'Outline')
+            ->orderBy('due_date')
+            ->orderBy('id');
+
+        $academicYearId = $group->programSet?->academic_year_id;
+
+        if (is_int($academicYearId)) {
+            $requirementsQuery->where(function (Builder $query) use ($academicYearId): void {
+                $query->where('academic_year_id', $academicYearId)
+                    ->orWhereNull('academic_year_id');
+            });
+        }
+
+        $requirements = $requirementsQuery->get([
+            'id',
+            'requirement_type',
+            'due_date',
+            'stage',
+            'academic_year_id',
+        ]);
+
+        if ($requirements->isEmpty() || ! Schema::hasTable('document_submissions')) {
+            return $requirements
+                ->map(static fn (DocumentRequirement $requirement): array => [
+                    'id' => $requirement->id,
+                    'requirementType' => (string) ($requirement->requirement_type ?? 'Outline Requirement'),
+                    'stage' => (string) ($requirement->stage ?? 'Outline'),
+                    'dueDate' => $requirement->due_date?->format('Y-m-d'),
+                    'status' => 'Missing',
+                    'fileName' => null,
+                    'submittedAt' => null,
+                ])
+                ->values()
+                ->all();
+        }
+
+        $latestSubmissionsByRequirementId = DocumentSubmission::query()
+            ->where('group_id', $group->id)
+            ->whereIn('document_requirement_id', $requirements->pluck('id')->all())
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get([
+                'id',
+                'document_requirement_id',
+                'file_name',
+                'status',
+                'created_at',
+            ])
+            ->unique('document_requirement_id')
+            ->keyBy('document_requirement_id');
+
+        return $requirements
+            ->map(static function (DocumentRequirement $requirement) use ($latestSubmissionsByRequirementId): array {
+                /** @var DocumentSubmission|null $submission */
+                $submission = $latestSubmissionsByRequirementId->get($requirement->id);
+
+                $status = match ((string) ($submission?->status ?? '')) {
+                    'Approved' => 'Approved',
+                    'Revision Required' => 'Revision Required',
+                    'Submitted' => 'Submitted',
+                    default => $submission instanceof DocumentSubmission ? 'Submitted' : 'Missing',
+                };
+
+                return [
+                    'id' => $requirement->id,
+                    'requirementType' => (string) ($requirement->requirement_type ?? 'Outline Requirement'),
+                    'stage' => (string) ($requirement->stage ?? 'Outline'),
+                    'dueDate' => $requirement->due_date?->format('Y-m-d'),
+                    'status' => $status,
+                    'fileName' => $submission?->file_name,
+                    'submittedAt' => $submission?->created_at?->format('Y-m-d H:i'),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function isPhaseTwoAvailable(?Group $group): bool
+    {
+        if (! $group instanceof Group) {
+            return false;
+        }
+
+        if (Schema::hasColumn('groups', 'approved_concept_submission_id')) {
+            return is_numeric($group->approved_concept_submission_id)
+                && (int) $group->approved_concept_submission_id > 0;
+        }
+
+        if (! Schema::hasColumn('groups', 'concept_verdict') || ! is_string($group->concept_verdict)) {
+            return false;
+        }
+
+        $normalizedVerdict = strtolower(trim($group->concept_verdict));
+
+        if ($normalizedVerdict === '') {
+            return false;
+        }
+
+        if (str_contains($normalizedVerdict, 'failed') || str_contains($normalizedVerdict, 'deferred') || str_contains($normalizedVerdict, 'deffered')) {
+            return false;
+        }
+
+        return str_contains($normalizedVerdict, 'pass') || str_contains($normalizedVerdict, 'approved');
     }
 
     /**

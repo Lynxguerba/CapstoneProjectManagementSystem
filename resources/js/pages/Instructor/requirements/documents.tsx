@@ -34,6 +34,7 @@ type RequirementDocumentRow = {
 type PageProps = {
     selectedGroup?: GroupDocumentContext | null;
     documents?: RequirementDocumentRow[];
+    activeStage?: string | null;
 };
 
 const statusBadge = (status: RequirementDocumentStatus): string => {
@@ -56,6 +57,10 @@ const GroupRequirementDocumentsPage = () => {
     const { props } = usePage<PageProps>();
     const selectedGroup = props.selectedGroup ?? null;
     const documents = props.documents ?? [];
+    const normalizedStage = (props.activeStage ?? 'Concept').trim().toLowerCase();
+    const isOutlineStage = normalizedStage === 'outline';
+    const phaseLabel = isOutlineStage ? 'Phase 2' : 'Phase 1';
+    const phaseDocumentsHref = isOutlineStage ? '/instructor/phase2?tab=documents' : '/instructor/phase1?tab=documents';
 
     return (
         <InstructorLayout title="Group Requirement Documents" subtitle="Review required submissions generated from Requirements Manager">
@@ -66,8 +71,8 @@ const GroupRequirementDocumentsPage = () => {
                             Dashboard
                         </Link>
                         <ChevronRight className="h-3 w-3 text-slate-400" />
-                        <Link href="/instructor/phase1?tab=documents" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
-                            Phase 1
+                        <Link href={phaseDocumentsHref} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                            {phaseLabel}
                         </Link>
                         <ChevronRight className="h-3 w-3 text-slate-400" />
                         <span className="font-semibold text-slate-800" aria-current="page">

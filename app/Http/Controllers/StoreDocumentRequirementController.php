@@ -12,11 +12,16 @@ class StoreDocumentRequirementController extends Controller
     {
         $data = $request->validated();
         $user = $request->user();
+        $stage = is_string($data['stage'] ?? null) ? trim((string) $data['stage']) : 'Concept';
+
+        if ($stage === '') {
+            $stage = 'Concept';
+        }
 
         DocumentRequirement::query()->create([
             'requirement_type' => trim((string) $data['requirement_type']),
             'due_date' => $data['due_date'],
-            'stage' => 'Concept',
+            'stage' => $stage,
             'is_mandatory' => $data['is_mandatory'] ?? true,
             'academic_year_id' => (int) $data['academic_year_id'],
             'created_by' => $user?->id,

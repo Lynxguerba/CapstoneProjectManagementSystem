@@ -130,6 +130,11 @@ class User extends Authenticatable
         return $this->hasMany(GroupAcknowledgementReceipt::class, 'signed_by_user_id');
     }
 
+    public function notificationStates(): HasMany
+    {
+        return $this->hasMany(UserNotificationState::class);
+    }
+
     public function hasRole(string $role): bool
     {
         $normalizedRole = Role::normalizeRole($role);

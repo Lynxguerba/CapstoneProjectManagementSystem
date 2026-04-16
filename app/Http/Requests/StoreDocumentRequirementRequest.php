@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreDocumentRequirementRequest extends FormRequest
 {
@@ -28,6 +29,7 @@ class StoreDocumentRequirementRequest extends FormRequest
             'due_date' => ['required', 'date'],
             'academic_year_id' => ['required', 'integer', 'exists:academic_years,id'],
             'is_mandatory' => ['nullable', 'boolean'],
+            'stage' => ['nullable', 'string', Rule::in(['Concept', 'Outline', 'Pre-Deployment', 'Deployment', 'Final'])],
         ];
     }
 
@@ -41,6 +43,7 @@ class StoreDocumentRequirementRequest extends FormRequest
             'due_date.required' => 'Provide a due date.',
             'academic_year_id.required' => 'Select an academic year.',
             'academic_year_id.exists' => 'The selected academic year is invalid.',
+            'stage.in' => 'The selected stage is invalid.',
         ];
     }
 }
