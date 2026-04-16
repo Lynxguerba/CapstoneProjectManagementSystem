@@ -779,10 +779,9 @@ Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function
         ->name('panelist.live-defense.acknowledgement.signature.upsert');
     Route::delete('/live-defense/acknowledgement/signature', DeleteGroupAcknowledgementReceiptSignatureController::class)
         ->name('panelist.live-defense.acknowledgement.signature.delete');
-    Route::get('/documents', function () {
-        return Inertia::render('Panelist/documents/document-list');
-    })->name('panelist.documents');
-    Route::get('/documents/viewer', function () {
+    Route::get('/documents', [\App\Http\Controllers\Panelist\DocumentController::class, 'index'])->name('panelist.documents');
+    Route::get('/documents/{document}', [\App\Http\Controllers\Panelist\DocumentController::class, 'show'])->name('panelist.documents.show');
+    Route::get('/documents-viewer-placeholder', function () {
         return Inertia::render('Panelist/documents/document-viewer');
     })->name('panelist.documents.viewer');
     Route::get('/evaluation', function () {
