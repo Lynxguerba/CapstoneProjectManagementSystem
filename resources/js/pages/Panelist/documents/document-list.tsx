@@ -156,7 +156,7 @@ const PanelistDocumentList = ({ documents, groups, categories, filters }: Props)
                                 }}
                                 className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                             >
-                                <option value="all">All Status</option>
+                                <option value="all">All Statuses</option>
                                 <option value="Not Reviewed">Not Reviewed</option>
                                 <option value="In Progress">In Progress</option>
                                 <option value="Reviewed">Reviewed</option>

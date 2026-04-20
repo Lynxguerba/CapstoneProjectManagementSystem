@@ -107,7 +107,17 @@ class DocumentController extends Controller
 
     public function show(DocumentSubmission $document): Response
     {
-        $document->load(['group', 'requirement', 'liveDefenseComments.author']);
+        $document->load([
+            'group.members',
+            'group.programSet.academicYear',
+            'group.panelAssignments.panelist',
+            'group.adviserAssignment.adviser',
+            'requirement',
+            'liveDefenseComments.author'
+        ]);
+
+        $group = $document->group;
+        $adviser = $group?->adviserAssignment?->adviser;
 
         return Inertia::render('Panelist/documents/document-viewer', [
             'document' => [
@@ -118,6 +128,19 @@ class DocumentController extends Controller
                 'category' => $document->requirement?->requirement_type,
                 'uploadedAt' => $document->created_at->format('Y-m-d H:i'),
                 'status' => self::STATUS_MAP[$document->status] ?? 'Not Reviewed',
+            ],
+            'groupDetails' => [
+                'name' => $group?->name,
+                'program' => $group?->programSet?->program,
+                'academicYear' => $group?->programSet?->academicYear?->label,
+                'adviser' => $adviser ? [
+                    'name' => $adviser->name,
+                    'email' => $adviser->email,
+                ] : null,
+                'members' => $group?->members->map(fn ($m) => [
+                    'name' => $m->name,
+                    'role' => $m->pivot?->role,
+                ]),
             ],
             'comments' => $document->liveDefenseComments->map(fn ($comment) => [
                 'id' => (string) $comment->id,
