@@ -1,6 +1,7 @@
 // Access URL: /architecture-flow
 import '@xyflow/react/dist/style.css';
-import { Background, BackgroundVariant, Controls, Edge, MarkerType, MiniMap, Node, ReactFlow, ReactFlowProvider } from '@xyflow/react';
+import type { Edge, Node} from '@xyflow/react';
+import { Background, BackgroundVariant, Controls, MarkerType, MiniMap, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import type { CSSProperties } from 'react';
 import { useMemo } from 'react';
 

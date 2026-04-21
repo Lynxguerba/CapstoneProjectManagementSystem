@@ -1,16 +1,17 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { CalendarClock, ChevronRight, FileText, Filter, Search, ShieldCheck } from 'lucide-react';
+import { CalendarClock, ChevronRight, CreditCard, FileText, Filter, Search, ShieldCheck } from 'lucide-react';
 import React from 'react';
 import AddRequirementModal from '../../components/Instructor/requirements/AddRequirementModal';
 import DeleteRequirementModal from '../../components/Instructor/requirements/DeleteRequirementModal';
 import EditRequirementModal from '../../components/Instructor/requirements/EditRequirementModal';
 import InstructorLayout from './_layout';
-import DeadlinesTab from './phase1/DeadlinesTab';
-import DefenseTab from './phase1/DefenseTab';
-import DocumentsTab from './phase1/DocumentsTab';
+import DeadlinesTab from './phase2/DeadlinesTab';
+import DefenseTab from './phase2/DefenseTab';
+import DocumentsTab from './phase2/DocumentsTab';
+import PaymentsTab from './phase2/PaymentsTab';
 
-type TabKey = 'deadlines' | 'documents' | 'defense';
+type TabKey = 'deadlines' | 'documents' | 'defense' | 'payments';
 
 type AcademicYearOption = {
     id: number;
@@ -25,6 +26,11 @@ type ProgramSetOption = {
     school_year?: string | null;
 };
 
+type GroupMember = {
+    id: number;
+    name?: string | null;
+};
+
 type GroupRow = {
     id: number;
     name: string;
@@ -35,14 +41,24 @@ type GroupRow = {
     concept_verdict?: string | null;
     approved_concept_submission_id?: number | null;
     leader_name?: string | null;
+    members?: GroupMember[];
+    members_count?: number;
     panelists_count?: number;
+    receipt_signed_count?: number;
+    receipt_required_count?: number;
+    created_at?: string | null;
 };
 
 type DefenseScheduleRow = {
     id: number;
     group_id?: number | null;
     group_name?: string | null;
+    program_set_id?: number | null;
+    program_set_name?: string | null;
+    program?: string | null;
+    school_year?: string | null;
     stage?: string | null;
+    status?: 'Scheduled' | 'Completed' | 'Pending' | 'Cancelled' | string | null;
     scheduled_date?: string | null;
     start_time?: string | null;
     end_time?: string | null;
@@ -50,13 +66,19 @@ type DefenseScheduleRow = {
         id: number;
         name: string;
     } | null;
+    created_at?: string | null;
 };
 
 type DocumentSubmissionRow = {
     id: number;
     group_id: number;
     document_requirement_id: number;
+    requirement_type?: string | null;
     status?: 'Submitted' | 'Approved' | 'Revision Required' | string | null;
+    file_name?: string | null;
+    file_path?: string | null;
+    mime_type?: string | null;
+    file_size?: number | null;
     submitted_at?: string | null;
 };
 
@@ -88,6 +110,17 @@ type DeadlineRow = {
     record: RequirementRecord;
 };
 
+type PaymentRow = {
+    id: string;
+    groupId: number;
+    group: string;
+    members: { initials: string; color: string }[];
+    submittedAt: string;
+    status: 'Verified' | 'Pending' | 'Not Paid';
+    statusLabel: string;
+    reviewUrl: string;
+};
+
 type DocumentRow = {
     id: string;
     groupId: number;
@@ -99,20 +132,9 @@ type DocumentRow = {
     iconColor: string;
 };
 
-type DefenseRow = {
-    id: string;
-    groupId: number;
-    group: string;
-    programSet: string;
-    scheduleDate: string;
-    scheduleTime: string;
-    room: string;
-    status: string;
-    canReview: boolean;
-    reviewUrl: string;
-};
-
-const isTabKey = (value: string | null): value is TabKey => value === 'deadlines' || value === 'documents' || value === 'defense';
+const avatarColors = ['bg-emerald-600', 'bg-emerald-500', 'bg-emerald-700', 'bg-slate-600', 'bg-slate-500', 'bg-amber-500'];
+const isTabKey = (value: string | null): value is TabKey =>
+    value === 'deadlines' || value === 'documents' || value === 'defense' || value === 'payments';
 
 const pad = (value: number): string => value.toString().padStart(2, '0');
 
@@ -166,6 +188,24 @@ const formatTimeRange = (start?: string | null, end?: string | null): string => 
     return `${formatTime(start)} - ${formatTime(end)}`;
 };
 
+const getInitials = (value?: string | null): string => {
+    if (!value) {
+        return '—';
+    }
+
+    const parts = value
+        .split(/\s+/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+
+    const initials = parts
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() ?? '')
+        .join('');
+
+    return initials || '—';
+};
+
 const resolveSubmissionStatus = (submission: DocumentSubmissionRow): 'Missing' | 'Submitted' | 'Approved' | 'Revision Required' => {
     if (submission.status === 'Approved') {
         return 'Approved';
@@ -179,6 +219,12 @@ const resolveSubmissionStatus = (submission: DocumentSubmissionRow): 'Missing' |
 };
 
 const isPhaseOneApproved = (group: GroupRow): boolean => {
+    // Check if they have at least 3 panelists (requirement from user)
+    const panelistsCount = Number(group.panelists_count ?? 0);
+    if (panelistsCount < 3) {
+        return false;
+    }
+
     if (typeof group.approved_concept_submission_id === 'number' && group.approved_concept_submission_id > 0) {
         return true;
     }
@@ -227,22 +273,14 @@ const Phase2Page = () => {
     const [documentsPage, setDocumentsPage] = React.useState(1);
     const [deadlinesPage, setDeadlinesPage] = React.useState(1);
     const [defensePage, setDefensePage] = React.useState(1);
+    const [paymentsPage, setPaymentsPage] = React.useState(1);
     const [editingRequirement, setEditingRequirement] = React.useState<RequirementRecord | null>(null);
     const [deletingRequirement, setDeletingRequirement] = React.useState<RequirementRecord | null>(null);
     const [selectedDocumentStatus, setSelectedDocumentStatus] = React.useState('All');
     const [selectedDefenseStatus, setSelectedDefenseStatus] = React.useState('All');
+    const [selectedPaymentStatus, setSelectedPaymentStatus] = React.useState('All');
 
     const academicYearOptions = React.useMemo(() => ['All', ...academicYears.map((year) => year.label)], [academicYears]);
-
-    React.useEffect(() => {
-        if (requirementsStatus === 'All') {
-            return;
-        }
-
-        if (!['All', 'Due Soon', 'On Track'].includes(requirementsStatus)) {
-            setRequirementsStatus('All');
-        }
-    }, [requirementsStatus]);
 
     React.useEffect(() => {
         if (selectedAcademicYear === 'All') {
@@ -567,6 +605,51 @@ const Phase2Page = () => {
         }
     }, [documentsPage, totalDocumentPages]);
 
+    const payments = React.useMemo(() => {
+        return filteredGroupsWithoutYear.map((group) => {
+            const schedule = scheduleByGroupId.get(group.id);
+            const members = group.members ?? [];
+            const initials = members.map((member, index) => ({
+                initials: getInitials(member.name),
+                color: avatarColors[(index + group.id) % avatarColors.length],
+            }));
+            const receiptSignedCount = Number(group.receipt_signed_count ?? 0);
+            const receiptRequiredCount = Number(group.receipt_required_count ?? 0);
+            let status: PaymentRow['status'] = 'Not Paid';
+            let statusLabel = 'No Faculty Assigned';
+
+            if (receiptRequiredCount > 0 && receiptSignedCount <= 0) {
+                status = 'Pending';
+                statusLabel = `Unsigned (${receiptSignedCount}/${receiptRequiredCount})`;
+            } else if (receiptRequiredCount > 0 && receiptSignedCount < receiptRequiredCount) {
+                status = 'Pending';
+                statusLabel = `Partially Signed (${receiptSignedCount}/${receiptRequiredCount})`;
+            } else if (receiptRequiredCount > 0) {
+                status = 'Verified';
+                statusLabel = `Fully Signed (${receiptSignedCount}/${receiptRequiredCount})`;
+            }
+
+            return {
+                id: `payment-${group.id}`,
+                groupId: group.id,
+                group: group.name,
+                members: initials,
+                submittedAt: schedule?.created_at ? formatDateLabel(schedule.created_at) : formatDateLabel(group.created_at),
+                status,
+                statusLabel,
+                reviewUrl: `/instructor/requirements/documents/acknowledgement?group=${group.id}&stage=Outline`,
+            } satisfies PaymentRow;
+        });
+    }, [filteredGroupsWithoutYear, scheduleByGroupId]);
+
+    const filteredPayments = React.useMemo(() => {
+        if (selectedPaymentStatus === 'All') {
+            return payments;
+        }
+
+        return payments.filter((payment) => payment.status === selectedPaymentStatus);
+    }, [payments, selectedPaymentStatus]);
+
     const defenseRows = React.useMemo(() => {
         return filteredGroupsWithoutYear.map((group) => {
             const schedule = scheduleByGroupId.get(group.id);
@@ -584,7 +667,7 @@ const Phase2Page = () => {
                 status,
                 canReview: panelistsCount > 0,
                 reviewUrl: `/instructor/requirements/documents/evaluation?group=${group.id}&stage=Outline`,
-            } satisfies DefenseRow;
+            };
         });
     }, [filteredGroupsWithoutYear, scheduleByGroupId]);
 
@@ -606,15 +689,27 @@ const Phase2Page = () => {
     const defensePageStart = (defensePage - 1) * defensePerPage;
     const pagedDefenseRows = filteredDefenseRows.slice(defensePageStart, defensePageStart + defensePerPage);
 
+    const paymentsPerPage = 6;
+    const totalPaymentsPages = Math.max(1, Math.ceil(filteredPayments.length / paymentsPerPage));
+    const paymentsPageStart = (paymentsPage - 1) * paymentsPerPage;
+    const pagedPayments = filteredPayments.slice(paymentsPageStart, paymentsPageStart + paymentsPerPage);
+
     React.useEffect(() => {
         setDefensePage(1);
-    }, [filteredGroupsWithoutYear.length, searchTerm, selectedProgramSet, selectedDefenseStatus]);
+        setPaymentsPage(1);
+    }, [filteredGroupsWithoutYear.length, searchTerm, selectedProgramSet, selectedDefenseStatus, selectedPaymentStatus]);
 
     React.useEffect(() => {
         if (defensePage > totalDefensePages) {
             setDefensePage(totalDefensePages);
         }
     }, [defensePage, totalDefensePages]);
+
+    React.useEffect(() => {
+        if (paymentsPage > totalPaymentsPages) {
+            setPaymentsPage(totalPaymentsPages);
+        }
+    }, [paymentsPage, totalPaymentsPages]);
 
     const handleAddRequirement = () => {
         setEditingRequirement(null);
@@ -662,12 +757,30 @@ const Phase2Page = () => {
                 badge: 'bg-emerald-100 text-emerald-700',
                 iconClass: 'text-emerald-600',
             },
+            {
+                id: 'payments' as const,
+                label: 'Outline Payment',
+                count: String(payments.length),
+                icon: CreditCard,
+                badge: 'bg-emerald-100 text-emerald-700',
+                iconClass: 'text-emerald-600',
+            },
         ],
-        [deadlines.length, documents.length, defenseRows.length],
+        [deadlines.length, documents.length, defenseRows.length, payments.length],
     );
 
     const statusBadge = (status: DeadlineRow['status']) => {
         return status === 'Due Soon' ? 'border-amber-200 bg-amber-100 text-amber-700' : 'border-emerald-200 bg-emerald-100 text-emerald-700';
+    };
+
+    const paymentBadge = (status: PaymentRow['status']) => {
+        if (status === 'Verified') {
+            return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+        }
+        if (status === 'Pending') {
+            return 'border-amber-200 bg-amber-100 text-amber-700';
+        }
+        return 'border-slate-200 bg-slate-100 text-slate-600';
     };
 
     const documentBadge = (status: DocumentRow['status']) => {
@@ -774,6 +887,21 @@ const Phase2Page = () => {
                         </select>
                     </div>
                 ) : null}
+                {activeTab === 'payments' ? (
+                    <div className="relative">
+                        <Filter className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                        <select
+                            value={selectedPaymentStatus}
+                            onChange={(event) => setSelectedPaymentStatus(event.target.value)}
+                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                        >
+                            <option value="All">All Status</option>
+                            <option value="Verified">Verified</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Not Paid">Not Paid</option>
+                        </select>
+                    </div>
+                ) : null}
                 <button
                     type="button"
                     onClick={() => {
@@ -782,6 +910,7 @@ const Phase2Page = () => {
                         setSearchTerm('');
                         setSelectedDocumentStatus('All');
                         setSelectedDefenseStatus('All');
+                        setSelectedPaymentStatus('All');
                     }}
                     className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900"
                 >
@@ -880,6 +1009,21 @@ const Phase2Page = () => {
                         onNextPage={() => setDefensePage((page) => Math.min(totalDefensePages, page + 1))}
                         headingTitle="Outline Review Status"
                         headingDescription="Monitor outline defense schedules and review evaluation sheets by group"
+                    />
+                ) : null}
+
+                {activeTab === 'payments' ? (
+                    <PaymentsTab
+                        payments={filteredPayments}
+                        pagedPayments={pagedPayments}
+                        pageStart={paymentsPageStart}
+                        perPage={paymentsPerPage}
+                        page={paymentsPage}
+                        totalPages={totalPaymentsPages}
+                        filters={renderFilters()}
+                        paymentBadge={paymentBadge}
+                        onPrevPage={() => setPaymentsPage((page) => Math.max(1, page - 1))}
+                        onNextPage={() => setPaymentsPage((page) => Math.min(totalPaymentsPages, page + 1))}
                     />
                 ) : null}
             </motion.section>

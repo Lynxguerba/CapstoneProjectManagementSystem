@@ -2,7 +2,8 @@ import { useForm } from '@inertiajs/react';
 import { AlertTriangle, Eye, EyeOff, Lock, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import Notification, { NotificationData } from '@/components/Notification';
+import type { NotificationData } from '@/components/Notification';
+import Notification from '@/components/Notification';
 
 type PasswordManagerProps = {
     updateUrl?: string;

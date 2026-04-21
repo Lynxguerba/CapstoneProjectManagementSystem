@@ -19,7 +19,7 @@ const ProjectTitleRenameModal = ({ open, groupId, currentTitle, onClose }: Proje
         title: currentTitle,
     });
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     React.useEffect(() => {
         if (!open) {
             setIsAppearing(false);
@@ -30,7 +30,7 @@ const ProjectTitleRenameModal = ({ open, groupId, currentTitle, onClose }: Proje
         renameForm.setData('title', currentTitle);
     }, [open, currentTitle]);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     React.useEffect(() => {
         if (!open) {
             return;
