@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import backgroundImg from '../assets/background.jpg';
 import loginCoverImg from '../assets/loginright.jpg';
 import cpmsLogo from '../assets/logo-cpms.png';
+import LockoutModal from '../components/lockout-modal';
 import RegisterPanel from '../components/register-panel';
 import { ROLE_REDIRECTS, normalizeRole } from '../types/auth';
 import '../../css/pages/login.css';
@@ -23,6 +24,9 @@ type LoginPageProps = {
 };
 
 type AuthView = 'login' | 'register';
+
+const LOCKOUT_DURATION_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_ATTEMPTS = 3;
 
 const primaryButtonClassName =
     'group relative isolate inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-600 to-green-700 px-5 py-3.5 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:from-emerald-500 hover:to-green-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/25 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50';
@@ -58,11 +62,39 @@ export default function LoginPage() {
     const activeRole = auth?.user?.role ?? auth?.user?.roles?.[0];
     const [authView, setAuthView] = useState<AuthView>('login');
     const [registrationMessage, setRegistrationMessage] = useState(flash?.success ?? '');
-    const [showPassword, setShowPassword] = useState(false);
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+    
+    // Rate limiting state
+    const [failedAttempts, setFailedAttempts] = useState<number>(0);
+    const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+    const [showLockoutModal, setShowLockoutModal] = useState<boolean>(false);
+
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
     });
+
+    // Initialize rate limiting from localStorage
+    useEffect(() => {
+        const savedAttempts = localStorage.getItem('login_attempts');
+        const savedLockout = localStorage.getItem('lockout_until');
+
+        if (savedAttempts) {
+            setFailedAttempts(parseInt(savedAttempts, 10));
+        }
+
+        if (savedLockout) {
+            const lockoutTime = parseInt(savedLockout, 10);
+            if (lockoutTime > Date.now()) {
+                setLockoutUntil(lockoutTime);
+                setShowLockoutModal(true);
+            } else {
+                localStorage.removeItem('lockout_until');
+                localStorage.removeItem('login_attempts');
+                setFailedAttempts(0);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         if (!activeRole) {
@@ -86,14 +118,55 @@ export default function LoginPage() {
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
         event.preventDefault();
 
+        if (lockoutUntil && lockoutUntil > Date.now()) {
+            setShowLockoutModal(true);
+            return;
+        }
+
         post('/login', {
             replace: true,
             preserveScroll: true,
+            onError: (errors) => {
+                // Increment attempts on authentication error
+                // We check if there are errors related to credentials
+                if (errors.email || errors.password) {
+                    const newAttempts = failedAttempts + 1;
+                    setFailedAttempts(newAttempts);
+                    localStorage.setItem('login_attempts', newAttempts.toString());
+
+                    if (newAttempts > MAX_ATTEMPTS) {
+                        const lockoutTime = Date.now() + LOCKOUT_DURATION_MS;
+                        setLockoutUntil(lockoutTime);
+                        setShowLockoutModal(true);
+                        localStorage.setItem('lockout_until', lockoutTime.toString());
+                    }
+                }
+            },
+            onSuccess: () => {
+                localStorage.removeItem('login_attempts');
+                localStorage.removeItem('lockout_until');
+            }
         });
+    };
+
+    const handleCloseLockoutModal = () => {
+        setShowLockoutModal(false);
+        // If lockout is expired, reset attempts
+        if (lockoutUntil && lockoutUntil <= Date.now()) {
+            setLockoutUntil(null);
+            setFailedAttempts(0);
+            localStorage.removeItem('login_attempts');
+            localStorage.removeItem('lockout_until');
+        }
     };
 
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-3 py-6 sm:px-4">
+            <LockoutModal 
+                open={showLockoutModal} 
+                onClose={handleCloseLockoutModal} 
+                lockoutUntil={lockoutUntil} 
+            />
             <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${backgroundImg})` }}>
                 <div className="absolute inset-0 backdrop-blur-md" />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-900/80" />
@@ -201,7 +274,7 @@ export default function LoginPage() {
                                                                     </label>
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() => setShowPassword((previousState) => !previousState)}
+                                                                        onClick={() => setShowPassword((previousState: boolean) => !previousState)}
                                                                         className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-gray-400 hover:text-green-600 focus:outline-none"
                                                                     >
                                                                         {showPassword ? (
@@ -247,7 +320,7 @@ export default function LoginPage() {
 
                                                             <button
                                                                 type="submit"
-                                                                disabled={processing}
+                                                                disabled={processing || (!!lockoutUntil && lockoutUntil > Date.now())}
                                                                 className={`${primaryButtonClassName} animate-fade-in-up`}
                                                                 style={{ animationDelay: '0.4s' }}
                                                             >
