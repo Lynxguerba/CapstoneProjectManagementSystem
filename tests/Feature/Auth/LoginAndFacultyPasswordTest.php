@@ -117,6 +117,157 @@ it('allows login when a previous session marker is already stale', function (): 
     expect($user->active_session_last_activity_at)->not->toBeNull();
 });
 
+it('returns a specific error when the email address is not registered', function (): void {
+    $response = $this
+        ->from(route('login'))
+        ->post(route('login.store'), [
+            'email' => 'unknown-account@example.com',
+            'password' => 'secretpass',
+        ]);
+
+    $response
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors([
+            'email' => 'This email address is not registered in our system.',
+        ])
+        ->assertSessionMissing('lockout_until')
+        ->assertSessionMissing('locked_email');
+});
+
+it('shows the remaining password attempts before the account is locked', function (): void {
+    $user = User::factory()->create([
+        'email' => 'remaining-attempts@example.com',
+        'password' => 'secretpass',
+        'role' => 'adviser',
+        'status' => 'active',
+    ]);
+    $user->syncRoles(['adviser']);
+
+    $firstResponse = $this
+        ->from(route('login'))
+        ->post(route('login.store'), [
+            'email' => 'remaining-attempts@example.com',
+            'password' => 'wrong-password',
+        ]);
+
+    $firstResponse
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors([
+            'password' => 'The password you entered is incorrect. You have 2 attempts remaining.',
+        ]);
+
+    $secondResponse = $this
+        ->from(route('login'))
+        ->post(route('login.store'), [
+            'email' => 'remaining-attempts@example.com',
+            'password' => 'still-wrong',
+        ]);
+
+    $secondResponse
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors([
+            'password' => 'The password you entered is incorrect. You have 1 attempts remaining.',
+        ]);
+});
+
+it('locks the account for ten minutes after the third incorrect password attempt', function (): void {
+    $user = User::factory()->create([
+        'email' => 'locked-account@example.com',
+        'password' => 'secretpass',
+        'role' => 'adviser',
+        'status' => 'active',
+    ]);
+    $user->syncRoles(['adviser']);
+
+    foreach (range(1, 2) as $attempt) {
+        $this
+            ->from(route('login'))
+            ->post(route('login.store'), [
+                'email' => 'locked-account@example.com',
+                'password' => 'wrong-password',
+            ]);
+    }
+
+    $response = $this
+        ->from(route('login'))
+        ->post(route('login.store'), [
+            'email' => 'locked-account@example.com',
+            'password' => 'wrong-password',
+        ]);
+
+    $response
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors([
+            'email' => 'Too many login attempts.',
+        ])
+        ->assertSessionHas('error', 'Too many login attempts.')
+        ->assertSessionHas('locked_email', 'locked-account@example.com')
+        ->assertSessionHas('lockout_until', static function ($value): bool {
+            expect($value)->toBeInt();
+            expect($value)->toBeGreaterThanOrEqual(now()->addMinutes(9)->timestamp * 1000);
+            expect($value)->toBeLessThanOrEqual(now()->addMinutes(10)->timestamp * 1000);
+
+            return true;
+        });
+
+    $this->assertGuest('web');
+});
+
+it('keeps a locked account locked across ip addresses while allowing another account to sign in', function (): void {
+    $lockedUser = User::factory()->create([
+        'email' => 'locked-cross-browser@example.com',
+        'password' => 'secretpass',
+        'role' => 'adviser',
+        'status' => 'active',
+    ]);
+    $lockedUser->syncRoles(['adviser']);
+
+    $otherUser = User::factory()->create([
+        'email' => 'other-account@example.com',
+        'password' => 'secretpass',
+        'role' => 'adviser',
+        'status' => 'active',
+    ]);
+    $otherUser->syncRoles(['adviser']);
+
+    foreach (range(1, 3) as $attempt) {
+        $this
+            ->withServerVariables(['REMOTE_ADDR' => '198.51.100.10'])
+            ->from(route('login'))
+            ->post(route('login.store'), [
+                'email' => 'locked-cross-browser@example.com',
+                'password' => 'wrong-password',
+            ]);
+    }
+
+    $lockedResponse = $this
+        ->withServerVariables(['REMOTE_ADDR' => '203.0.113.25'])
+        ->from(route('login'))
+        ->post(route('login.store'), [
+            'email' => 'locked-cross-browser@example.com',
+            'password' => 'secretpass',
+        ]);
+
+    $lockedResponse
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors([
+            'email' => 'Too many login attempts.',
+        ])
+        ->assertSessionHas('locked_email', 'locked-cross-browser@example.com');
+
+    $this->assertGuest('web');
+
+    $allowedResponse = $this
+        ->withServerVariables(['REMOTE_ADDR' => '203.0.113.30'])
+        ->post(route('login.store'), [
+            'email' => 'other-account@example.com',
+            'password' => 'secretpass',
+        ]);
+
+    $allowedResponse->assertRedirect(route('adviser.dashboard'));
+    $this->assertAuthenticatedAs($otherUser, 'web');
+});
+
 it('stores the provided password when creating a faculty account', function (): void {
     $admin = User::factory()->create([
         'email' => 'admin@example.com',

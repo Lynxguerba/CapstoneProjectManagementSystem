@@ -81,6 +81,8 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
+                'lockout_until' => $request->session()->get('lockout_until'),
+                'locked_email' => $request->session()->get('locked_email'),
                 'created_group_id' => $request->session()->get('created_group_id'),
             ],
             'impersonation' => [

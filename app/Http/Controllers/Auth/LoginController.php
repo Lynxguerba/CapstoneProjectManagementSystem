@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\StoreLoginRequest;
 use App\Http\Requests\Auth\StoreSelfRegistrationRequest;
 use App\Models\AuditLog;
 use App\Models\Role;
@@ -12,12 +13,17 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class LoginController extends Controller
 {
+    private const LOGIN_LOCKOUT_MAX_ATTEMPTS = 3;
+
+    private const LOGIN_LOCKOUT_DECAY_SECONDS = 600;
+
     /**
      * @var array<string, string>
      */
@@ -55,20 +61,42 @@ class LoginController extends Controller
         'program_chairperson',
     ];
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreLoginRequest $request): RedirectResponse
     {
-        $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ]);
+        $validated = $request->validated();
+        $email = $validated['email'];
+        $throttleKey = $this->throttleKey($email);
 
-        $user = User::query()->with('roles:id,slug')->where('email', $request->email)->first();
+        $user = User::query()
+            ->with('roles:id,slug')
+            ->where('email', $email)
+            ->first();
 
-        if (! $user || ! $this->passwordMatches($user, (string) $request->input('password'))) {
+        if (! $user) {
             return back()->withErrors([
-                'email' => 'The provided credentials do not match our records.',
+                'email' => 'This email address is not registered in our system.',
             ]);
         }
+
+        if ($this->hasActiveLoginLockout($throttleKey)) {
+            return $this->sendLockoutResponse($email, $throttleKey);
+        }
+
+        if (! $this->passwordMatches($user, $validated['password'])) {
+            $attempts = $this->incrementLoginAttempts($throttleKey);
+
+            if ($attempts >= self::LOGIN_LOCKOUT_MAX_ATTEMPTS) {
+                return $this->sendLockoutResponse($email, $throttleKey);
+            }
+
+            $remaining = self::LOGIN_LOCKOUT_MAX_ATTEMPTS - $attempts;
+
+            return back()->withErrors([
+                'password' => "The password you entered is incorrect. You have $remaining attempts remaining.",
+            ]);
+        }
+
+        RateLimiter::clear($throttleKey);
 
         $blockedLoginMessage = $this->resolveBlockedLoginMessage($user);
 
@@ -100,6 +128,42 @@ class LoginController extends Controller
         Inertia::clearHistory();
 
         return redirect()->route(self::ROLE_DASHBOARD_ROUTES[$requestedRole]);
+    }
+
+    private function throttleKey(string $email): string
+    {
+        return RateLimiter::cleanRateLimiterKey(Str::lower(trim($email)));
+    }
+
+    private function hasActiveLoginLockout(string $throttleKey): bool
+    {
+        return RateLimiter::tooManyAttempts($throttleKey, self::LOGIN_LOCKOUT_MAX_ATTEMPTS);
+    }
+
+    private function incrementLoginAttempts(string $throttleKey): int
+    {
+        $currentAttempts = RateLimiter::attempts($throttleKey);
+
+        if (($currentAttempts + 1) >= self::LOGIN_LOCKOUT_MAX_ATTEMPTS) {
+            RateLimiter::clear($throttleKey);
+
+            return RateLimiter::increment($throttleKey, self::LOGIN_LOCKOUT_DECAY_SECONDS, self::LOGIN_LOCKOUT_MAX_ATTEMPTS);
+        }
+
+        return RateLimiter::hit($throttleKey, self::LOGIN_LOCKOUT_DECAY_SECONDS);
+    }
+
+    private function sendLockoutResponse(string $email, string $throttleKey): RedirectResponse
+    {
+        $secondsUntilUnlock = RateLimiter::availableIn($throttleKey);
+
+        return back()
+            ->withErrors([
+                'email' => 'Too many login attempts.',
+            ])
+            ->with('error', 'Too many login attempts.')
+            ->with('lockout_until', now()->addSeconds($secondsUntilUnlock)->timestamp * 1000)
+            ->with('locked_email', $email);
     }
 
     public function register(StoreSelfRegistrationRequest $request): RedirectResponse

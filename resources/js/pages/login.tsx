@@ -2,11 +2,13 @@ import { router, useForm, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion, type Transition } from 'framer-motion';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import loginRoutes from '@/routes/login';
 import backgroundImg from '../assets/background.jpg';
 import loginCoverImg from '../assets/loginright.jpg';
 import cpmsLogo from '../assets/logo-cpms.png';
 import LockoutModal from '../components/lockout-modal';
 import RegisterPanel from '../components/register-panel';
+import UnregisteredEmailModal from '../components/unregistered-email-modal';
 import { ROLE_REDIRECTS, normalizeRole } from '../types/auth';
 import '../../css/pages/login.css';
 
@@ -20,13 +22,14 @@ type LoginPageProps = {
     flash?: {
         success?: string;
         error?: string;
+        lockout_until?: number;
+        locked_email?: string;
     };
 };
 
 type AuthView = 'login' | 'register';
 
-const LOCKOUT_DURATION_MS = 10 * 60 * 1000; // 10 minutes
-const MAX_ATTEMPTS = 3;
+const UNREGISTERED_EMAIL_MESSAGE = 'This email address is not registered in our system.';
 
 const primaryButtonClassName =
     'group relative isolate inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-600 to-green-700 px-5 py-3.5 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:from-emerald-500 hover:to-green-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/25 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50';
@@ -37,6 +40,8 @@ const paneSwitchTransition: Transition = {
     damping: 28,
     mass: 0.9,
 };
+
+const normalizeEmail = (value: string | null | undefined): string => value?.trim().toLowerCase() ?? '';
 
 const BrandPanel = ({ className = '' }: { className?: string }) => {
     return (
@@ -63,38 +68,47 @@ export default function LoginPage() {
     const [authView, setAuthView] = useState<AuthView>('login');
     const [registrationMessage, setRegistrationMessage] = useState(flash?.success ?? '');
     const [showPassword, setShowPassword] = useState<boolean>(false);
-    
-    // Rate limiting state
-    const [failedAttempts, setFailedAttempts] = useState<number>(0);
-    const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+    const [lockoutUntil, setLockoutUntil] = useState<number | null>(flash?.lockout_until ?? null);
+    const [lockedEmail, setLockedEmail] = useState<string | null>(normalizeEmail(flash?.locked_email));
     const [showLockoutModal, setShowLockoutModal] = useState<boolean>(false);
+    const [showUnregisteredModal, setShowUnregisteredModal] = useState<boolean>(false);
 
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
     });
 
-    // Initialize rate limiting from localStorage
     useEffect(() => {
-        const savedAttempts = localStorage.getItem('login_attempts');
-        const savedLockout = localStorage.getItem('lockout_until');
+        if (flash?.lockout_until && flash.lockout_until > Date.now()) {
+            setLockoutUntil(flash.lockout_until);
+            setLockedEmail(normalizeEmail(flash.locked_email));
+            setShowLockoutModal(true);
+        }
+    }, [flash?.lockout_until, flash?.locked_email]);
 
-        if (savedAttempts) {
-            setFailedAttempts(parseInt(savedAttempts, 10));
+    useEffect(() => {
+        if (lockoutUntil === null) {
+            return;
         }
 
-        if (savedLockout) {
-            const lockoutTime = parseInt(savedLockout, 10);
-            if (lockoutTime > Date.now()) {
-                setLockoutUntil(lockoutTime);
-                setShowLockoutModal(true);
-            } else {
-                localStorage.removeItem('lockout_until');
-                localStorage.removeItem('login_attempts');
-                setFailedAttempts(0);
-            }
+        if (lockoutUntil <= Date.now()) {
+            setLockoutUntil(null);
+            setLockedEmail(null);
+            setShowLockoutModal(false);
+
+            return;
         }
-    }, []);
+
+        const timeout = window.setTimeout(() => {
+            setLockoutUntil(null);
+            setLockedEmail(null);
+            setShowLockoutModal(false);
+        }, lockoutUntil - Date.now());
+
+        return () => {
+            window.clearTimeout(timeout);
+        };
+    }, [lockoutUntil]);
 
     useEffect(() => {
         if (!activeRole) {
@@ -115,57 +129,54 @@ export default function LoginPage() {
         }
     }, [flash?.success]);
 
+    const currentEmail = normalizeEmail(data.email);
+    const currentEmailIsLocked = lockoutUntil !== null && lockoutUntil > Date.now() && currentEmail !== '' && currentEmail === lockedEmail;
+
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
         event.preventDefault();
 
-        if (lockoutUntil && lockoutUntil > Date.now()) {
+        if (currentEmailIsLocked) {
             setShowLockoutModal(true);
             return;
         }
 
-        post('/login', {
+        setShowUnregisteredModal(false);
+
+        post(loginRoutes.store().url, {
             replace: true,
             preserveScroll: true,
-            onError: (errors) => {
-                // Increment attempts on authentication error
-                // We check if there are errors related to credentials
-                if (errors.email || errors.password) {
-                    const newAttempts = failedAttempts + 1;
-                    setFailedAttempts(newAttempts);
-                    localStorage.setItem('login_attempts', newAttempts.toString());
-
-                    if (newAttempts > MAX_ATTEMPTS) {
-                        const lockoutTime = Date.now() + LOCKOUT_DURATION_MS;
-                        setLockoutUntil(lockoutTime);
-                        setShowLockoutModal(true);
-                        localStorage.setItem('lockout_until', lockoutTime.toString());
-                    }
+            onError: (formErrors) => {
+                if (formErrors.email === UNREGISTERED_EMAIL_MESSAGE) {
+                    setShowUnregisteredModal(true);
                 }
             },
-            onSuccess: () => {
-                localStorage.removeItem('login_attempts');
-                localStorage.removeItem('lockout_until');
-            }
         });
     };
 
-    const handleCloseLockoutModal = () => {
+    const handleCloseLockoutModal = (): void => {
         setShowLockoutModal(false);
-        // If lockout is expired, reset attempts
-        if (lockoutUntil && lockoutUntil <= Date.now()) {
+
+        if (lockoutUntil !== null && lockoutUntil <= Date.now()) {
             setLockoutUntil(null);
-            setFailedAttempts(0);
-            localStorage.removeItem('login_attempts');
-            localStorage.removeItem('lockout_until');
+            setLockedEmail(null);
         }
     };
 
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-3 py-6 sm:px-4">
-            <LockoutModal 
-                open={showLockoutModal} 
-                onClose={handleCloseLockoutModal} 
-                lockoutUntil={lockoutUntil} 
+            <LockoutModal
+                open={showLockoutModal}
+                onClose={handleCloseLockoutModal}
+                lockoutUntil={lockoutUntil}
+                lockedEmail={lockedEmail}
+            />
+            <UnregisteredEmailModal
+                open={showUnregisteredModal}
+                onClose={() => setShowUnregisteredModal(false)}
+                onRegister={() => {
+                    setShowUnregisteredModal(false);
+                    setAuthView('register');
+                }}
             />
             <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${backgroundImg})` }}>
                 <div className="absolute inset-0 backdrop-blur-md" />
@@ -320,7 +331,7 @@ export default function LoginPage() {
 
                                                             <button
                                                                 type="submit"
-                                                                disabled={processing || (!!lockoutUntil && lockoutUntil > Date.now())}
+                                                                disabled={processing}
                                                                 className={`${primaryButtonClassName} animate-fade-in-up`}
                                                                 style={{ animationDelay: '0.4s' }}
                                                             >

@@ -1,17 +1,15 @@
-import { AlertTriangle, Clock, X } from 'lucide-react';
+import { UserPlus, X, HelpCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-interface LockoutModalProps {
+interface UnregisteredEmailModalProps {
     open: boolean;
     onClose: () => void;
-    lockoutUntil: number | null;
-    lockedEmail?: string | null;
+    onRegister: () => void;
 }
 
-const LockoutModal = ({ open, onClose, lockoutUntil, lockedEmail = null }: LockoutModalProps) => {
+const UnregisteredEmailModal = ({ open, onClose, onRegister }: UnregisteredEmailModalProps) => {
     const [isAppearing, setIsAppearing] = useState(false);
-    const [timeLeft, setTimeLeft] = useState<string>('');
 
     useEffect(() => {
         if (!open) {
@@ -28,30 +26,6 @@ const LockoutModal = ({ open, onClose, lockoutUntil, lockedEmail = null }: Locko
             window.cancelAnimationFrame(animationFrame);
         };
     }, [open]);
-
-    useEffect(() => {
-        if (!open || !lockoutUntil) return;
-
-        const updateTimer = () => {
-            const now = Date.now();
-            const diff = lockoutUntil - now;
-
-            if (diff <= 0) {
-                setTimeLeft('00:00');
-                onClose();
-                return;
-            }
-
-            const minutes = Math.floor(diff / 60000);
-            const seconds = Math.floor((diff % 60000) / 1000);
-            setTimeLeft(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-        };
-
-        updateTimer();
-        const interval = setInterval(updateTimer, 1000);
-
-        return () => clearInterval(interval);
-    }, [open, lockoutUntil, onClose]);
 
     if (!open) return null;
 
@@ -70,8 +44,8 @@ const LockoutModal = ({ open, onClose, lockoutUntil, lockedEmail = null }: Locko
             >
                 <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3">
                     <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5 text-amber-600" />
-                        <h2 className="text-lg font-bold text-gray-800">Account Locked</h2>
+                        <HelpCircle className="h-5 w-5 text-emerald-600" />
+                        <h2 className="text-lg font-bold text-gray-800">Account Not Found</h2>
                     </div>
                     <button
                         type="button"
@@ -85,39 +59,33 @@ const LockoutModal = ({ open, onClose, lockoutUntil, lockedEmail = null }: Locko
                 <div className="space-y-4 p-6">
                     <div className="flex flex-col items-center justify-center space-y-4 text-center">
                         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                            <Clock className="h-10 w-10" />
+                            <UserPlus className="h-10 w-10" />
                         </div>
                         
                         <div className="space-y-2">
-                            <h3 className="text-xl font-bold text-gray-900">Too Many Attempts</h3>
+                            <h3 className="text-xl font-bold text-gray-900">Email Not Registered</h3>
                             <p className="text-sm text-gray-600">
-                                {lockedEmail
-                                    ? (
-                                        <>
-                                            Sign-in for <span className="font-semibold text-gray-800">{lockedEmail}</span> is temporarily locked due to multiple failed login attempts.
-                                        </>
-                                    )
-                                    : 'For security reasons, your account has been temporarily locked due to multiple failed login attempts.'}
+                                The email address you entered is not registered in our system. Double-check the spelling or open the registration form to create an account.
                             </p>
                         </div>
-
-                        <div className="w-full rounded-xl border border-emerald-100 bg-emerald-50/50 p-4">
-                            <p className="mb-1 text-xs font-semibold tracking-wider text-emerald-600 uppercase">Please wait</p>
-                            <p className="text-3xl font-mono font-bold text-emerald-900">{timeLeft}</p>
-                        </div>
-
-                        <p className="text-xs text-gray-500">You can try again once the timer expires.</p>
                     </div>
                 </div>
 
                 <div className="border-t border-gray-200 bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3">
-                    <div className="flex justify-center">
+                    <div className="flex flex-col gap-2">
+                        <button
+                            type="button"
+                            onClick={onRegister}
+                            className="group relative isolate inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-lg bg-gradient-to-r from-emerald-600 via-emerald-600 to-green-700 px-4 py-2.5 text-sm font-semibold text-white transition duration-300 hover:from-emerald-500 hover:to-green-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/25 active:scale-[0.98]"
+                        >
+                            <span className="relative z-10">Open Registration Form</span>
+                        </button>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="group relative isolate inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-lg bg-gradient-to-r from-emerald-600 via-emerald-600 to-green-700 px-4 py-2.5 text-sm font-semibold text-white transition duration-300 hover:from-emerald-500 hover:to-green-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/25 active:scale-[0.98]"
+                            className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold text-gray-700 transition duration-200 hover:bg-gray-200 active:scale-[0.98]"
                         >
-                            <span className="relative z-10">Got it</span>
+                            Try Another Email
                         </button>
                     </div>
                 </div>
@@ -127,4 +95,4 @@ const LockoutModal = ({ open, onClose, lockoutUntil, lockedEmail = null }: Locko
     );
 };
 
-export default LockoutModal;
+export default UnregisteredEmailModal;
