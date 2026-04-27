@@ -31,6 +31,7 @@ class StudentDocumentsController extends Controller
         $isPhaseTwoAvailable = $this->isPhaseTwoAvailable($group);
 
         $uploadedFiles = $this->resolveUploadedFiles($group?->id);
+        $approvedConceptSubmissionId = $this->resolveApprovedConceptSubmissionId($group, $uploadedFiles);
         $generatedFiles = $this->resolveGeneratedFiles($group?->id);
         $phaseTwoRequirements = $this->resolvePhaseTwoRequirements($group, $isPhaseTwoAvailable);
 
@@ -47,6 +48,7 @@ class StudentDocumentsController extends Controller
             ] : null,
             'isGroupLeader' => $isGroupLeader,
             'isPhase2Available' => $isPhaseTwoAvailable,
+            'approvedConceptSubmissionId' => $approvedConceptSubmissionId,
             'phase2Requirements' => $phaseTwoRequirements,
             'uploadedFiles' => $uploadedFiles
                 ->map(fn (DocumentSubmission $submission): array => [
@@ -306,7 +308,7 @@ class StudentDocumentsController extends Controller
             return collect();
         }
 
-        return DocumentSubmission::query()
+        $uploadedFiles = DocumentSubmission::query()
             ->with('requirement:id,requirement_type,stage')
             ->where('group_id', $groupId)
             ->whereHas('requirement', function (Builder $query): void {
@@ -324,6 +326,43 @@ class StudentDocumentsController extends Controller
                 'file_size',
                 'created_at',
             ]);
+
+        $latestManuscriptSubmissionId = $uploadedFiles
+            ->first(fn (DocumentSubmission $submission): bool => $this->isOutlineManuscriptSubmission($submission))
+            ?->id;
+
+        return $uploadedFiles
+            ->filter(function (DocumentSubmission $submission) use ($latestManuscriptSubmissionId): bool {
+                if (! $this->isOutlineManuscriptSubmission($submission)) {
+                    return true;
+                }
+
+                return $submission->id === $latestManuscriptSubmissionId;
+            })
+            ->values();
+    }
+
+    /**
+     * @param  Collection<int, DocumentSubmission>  $uploadedFiles
+     */
+    private function resolveApprovedConceptSubmissionId(?Group $group, Collection $uploadedFiles): ?int
+    {
+        if (! $group instanceof Group || ! Schema::hasColumn('groups', 'approved_concept_submission_id')) {
+            return null;
+        }
+
+        $approvedConceptSubmissionId = is_numeric($group->approved_concept_submission_id)
+            ? (int) $group->approved_concept_submission_id
+            : null;
+
+        if ($approvedConceptSubmissionId === null) {
+            return null;
+        }
+
+        $isApprovedSubmissionStillAvailable = $uploadedFiles
+            ->contains(fn (DocumentSubmission $submission): bool => (int) $submission->id === $approvedConceptSubmissionId);
+
+        return $isApprovedSubmissionStillAvailable ? $approvedConceptSubmissionId : null;
     }
 
     /**
@@ -376,6 +415,27 @@ class StudentDocumentsController extends Controller
         }
 
         return $status !== '' ? $status : 'Approved';
+    }
+
+    private function isOutlineManuscriptSubmission(DocumentSubmission $submission): bool
+    {
+        return $this->isOutlineManuscriptRequirement(
+            $submission->requirement?->requirement_type,
+            $submission->requirement?->stage,
+        );
+    }
+
+    private function isOutlineManuscriptRequirement(?string $requirementType, ?string $stage): bool
+    {
+        if (strtolower(trim((string) $stage)) !== 'outline') {
+            return false;
+        }
+
+        $normalizedRequirementType = strtolower(trim((string) $requirementType));
+
+        return str_contains($normalizedRequirementType, 'manuscript')
+            || str_contains($normalizedRequirementType, 'project outline')
+            || $normalizedRequirementType === 'outline';
     }
 
     /**

@@ -3,14 +3,17 @@
 use App\Http\Controllers\Student\AdviserRequestController;
 use App\Http\Controllers\Student\DestroyStudentConceptSubmissionController;
 use App\Http\Controllers\Student\DestroyStudentDocumentSubmissionController;
+use App\Http\Controllers\Student\DestroyStudentManuscriptSubmissionController;
 use App\Http\Controllers\Student\ShowStudentConceptSubmissionController;
 use App\Http\Controllers\Student\ShowStudentDocumentController;
 use App\Http\Controllers\Student\StoreStudentConceptSubmissionController;
+use App\Http\Controllers\Student\StoreStudentManuscriptSubmissionController;
 use App\Http\Controllers\Student\StudentConceptController;
 use App\Http\Controllers\Student\StudentDashboardController;
 use App\Http\Controllers\Student\StudentDocumentsController;
 use App\Http\Controllers\Student\StudentGroupController;
 use App\Http\Controllers\Student\StudentLiveDefenseController;
+use App\Http\Controllers\Student\StudentManuscriptController;
 use App\Http\Controllers\Student\StudentTitleRepositoryController;
 use App\Http\Controllers\Student\UpdateStudentConceptSubmissionController;
 use App\Models\AcademicYear;
@@ -280,6 +283,9 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
     Route::get('/concepts/submissions/{submission}', ShowStudentConceptSubmissionController::class)->name('student.concepts.submissions.show');
     Route::patch('/concepts/submissions/{submission}', UpdateStudentConceptSubmissionController::class)->name('student.concepts.submissions.update');
     Route::delete('/concepts/submissions/{submission}', DestroyStudentConceptSubmissionController::class)->name('student.concepts.submissions.destroy');
+    Route::get('/manuscripts', StudentManuscriptController::class)->name('student.manuscripts');
+    Route::post('/manuscripts/submissions', StoreStudentManuscriptSubmissionController::class)->name('student.manuscripts.submissions.store');
+    Route::delete('/manuscripts/submissions/{submission}', DestroyStudentManuscriptSubmissionController::class)->name('student.manuscripts.submissions.destroy');
     Route::get('/documents', StudentDocumentsController::class)->name('student.documents');
     Route::get('/documents/files/{type}/{id}', ShowStudentDocumentController::class)
         ->whereIn('type', ['submission', 'recommendation', 'minutes'])
@@ -906,12 +912,12 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
     })->name('student.live-defense.acknowledgement');
     Route::get('/settings', function () {
         $user = Auth::guard('web')->user();
-        if (!$user instanceof User) {
+        if (! $user instanceof User) {
             abort(403);
         }
 
         $programSet = $user->programSets()->with('academicYear')->first();
-        
+
         $groupRole = 'Student';
         if (Schema::hasTable('groups')) {
             $group = Group::query()
@@ -924,7 +930,7 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
             if ($group) {
                 if ((int) $group->leader_id === (int) $user->id) {
                     $groupRole = 'Group Leader';
-                } else if (Schema::hasTable('group_members')) {
+                } elseif (Schema::hasTable('group_members')) {
                     $member = $group->members()->where('users.id', $user->id)->first();
                     if ($member && $member->pivot && is_string($member->pivot->role) && trim($member->pivot->role) !== '') {
                         $groupRole = trim($member->pivot->role);

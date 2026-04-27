@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { PencilLine, X } from 'lucide-react';
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { getRequirementTypeOptions, type RequirementStage } from './requirementTypeOptions';
 
 type AcademicYearOption = {
     value: string;
@@ -26,17 +27,20 @@ type EditRequirementModalProps = {
     open: boolean;
     requirement: RequirementRecord | null;
     academicYearOptions: AcademicYearOption[];
+    stage?: RequirementStage;
     onClose: () => void;
 };
 
-const requirementTypeOptions = ['Concept Papers', 'Manuscript', 'Minutes', 'Recommendation Letter', 'Acknowledgement Receipt', 'Evaluation Sheet'];
-
-const EditRequirementModal = ({ open, requirement, academicYearOptions, onClose }: EditRequirementModalProps) => {
+const EditRequirementModal = ({ open, requirement, academicYearOptions, stage = 'Concept', onClose }: EditRequirementModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
 
     const defaultAcademicYearId = React.useMemo(() => {
         return academicYearOptions.find((option) => option.isCurrent)?.value ?? academicYearOptions[0]?.value ?? '';
     }, [academicYearOptions]);
+
+    const requirementTypeOptions = React.useMemo(() => {
+        return getRequirementTypeOptions(stage, requirement?.requirement_type ?? null);
+    }, [requirement?.requirement_type, stage]);
 
     const editForm = useForm<RequirementFormData>({
         requirement_type: requirement?.requirement_type ?? '',

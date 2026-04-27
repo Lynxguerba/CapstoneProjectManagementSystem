@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { FilePlus, X } from 'lucide-react';
 import React from 'react';
 import { createPortal } from 'react-dom';
+import { getRequirementTypeOptions, type RequirementStage } from './requirementTypeOptions';
 
 type AcademicYearOption = {
     value: string;
@@ -20,23 +21,14 @@ type AddRequirementModalProps = {
     open: boolean;
     academicYearOptions: AcademicYearOption[];
     defaultAcademicYearId: string;
-    stage?: 'Concept' | 'Outline' | 'Pre-Deployment' | 'Deployment' | 'Final';
+    stage?: RequirementStage;
     onClose: () => void;
 };
-
-const requirementTypeOptions = [
-    'Concept Papers',
-    'Project Outline',
-    'Manuscript',
-    'Minutes',
-    'Recommendation Letter',
-    'Acknowledgement Receipt',
-    'Evaluation Sheet',
-];
 
 const AddRequirementModal = ({ open, academicYearOptions, defaultAcademicYearId, stage = 'Concept', onClose }: AddRequirementModalProps) => {
     const [isAppearing, setIsAppearing] = React.useState(false);
     const wasOpen = React.useRef(false);
+    const requirementTypeOptions = React.useMemo(() => getRequirementTypeOptions(stage), [stage]);
     const form = useForm<RequirementFormData>({
         requirement_type: '',
         due_date: '',

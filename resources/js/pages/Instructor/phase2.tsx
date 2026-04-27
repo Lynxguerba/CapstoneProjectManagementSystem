@@ -517,16 +517,32 @@ const Phase2Page = () => {
         }
     }, [deadlinesPage, totalDeadlinePages]);
 
-    const documentSubmissionsByGroupId = React.useMemo(() => {
-        const map = new Map<number, DocumentSubmissionRow[]>();
+    const latestRequirementSubmissionsByGroupId = React.useMemo(() => {
+        const groupedSubmissions = new Map<number, Map<number, DocumentSubmissionRow>>();
 
         documentSubmissions.forEach((submission) => {
-            const list = map.get(submission.group_id) ?? [];
-            list.push(submission);
-            map.set(submission.group_id, list);
+            const submissionsByRequirement = groupedSubmissions.get(submission.group_id) ?? new Map<number, DocumentSubmissionRow>();
+            const existingSubmission = submissionsByRequirement.get(submission.document_requirement_id);
+
+            if (!existingSubmission) {
+                submissionsByRequirement.set(submission.document_requirement_id, submission);
+                groupedSubmissions.set(submission.group_id, submissionsByRequirement);
+                return;
+            }
+
+            const submittedAt = submission.submitted_at ?? '';
+            const existingSubmittedAt = existingSubmission.submitted_at ?? '';
+
+            if (submittedAt > existingSubmittedAt || (submittedAt === existingSubmittedAt && submission.id > existingSubmission.id)) {
+                submissionsByRequirement.set(submission.document_requirement_id, submission);
+            }
+
+            groupedSubmissions.set(submission.group_id, submissionsByRequirement);
         });
 
-        return map;
+        return new Map(
+            Array.from(groupedSubmissions.entries()).map(([groupId, submissionsByRequirement]) => [groupId, Array.from(submissionsByRequirement.values())]),
+        );
     }, [documentSubmissions]);
 
     const documents = React.useMemo(() => {
@@ -538,7 +554,7 @@ const Phase2Page = () => {
         };
 
         return filteredGroupsWithoutYear.map((group) => {
-            const submissions = documentSubmissionsByGroupId.get(group.id) ?? [];
+            const submissions = latestRequirementSubmissionsByGroupId.get(group.id) ?? [];
             const normalizedStatuses = submissions.map((submission) => resolveSubmissionStatus(submission));
 
             const hasSubmissions = normalizedStatuses.length > 0;
@@ -580,7 +596,7 @@ const Phase2Page = () => {
                 iconColor: iconTone[status],
             } satisfies DocumentRow;
         });
-    }, [documentSubmissionsByGroupId, filteredGroupsWithoutYear]);
+    }, [filteredGroupsWithoutYear, latestRequirementSubmissionsByGroupId]);
 
     const filteredDocuments = React.useMemo(() => {
         if (selectedDocumentStatus === 'All') {
@@ -1039,6 +1055,7 @@ const Phase2Page = () => {
                 open={editingRequirement !== null}
                 requirement={editingRequirement}
                 academicYearOptions={academicYearSelectOptions}
+                stage="Outline"
                 onClose={() => setEditingRequirement(null)}
             />
             <DeleteRequirementModal
