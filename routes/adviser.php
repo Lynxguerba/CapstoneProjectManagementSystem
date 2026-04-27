@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Adviser\AdviserLiveDefenseController;
+use App\Http\Controllers\Adviser\AdviserManuscriptController;
 use App\Http\Controllers\Adviser\AdviserNotificationController;
 use App\Http\Controllers\Adviser\AdviserScheduleController;
 use App\Http\Controllers\Adviser\ApproveGroupAdviserRequestController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Adviser\GenerateRecommendationForTitleDefenseController
 use App\Http\Controllers\Adviser\StoreAdviserLiveDefenseCommentController;
 use App\Http\Controllers\Adviser\UpdateAdviserAvailabilityController;
 use App\Http\Controllers\Adviser\UpdateAdviserConceptSubmissionStatusController;
+use App\Http\Controllers\Adviser\UpdateAdviserManuscriptSubmissionStatusController;
 use App\Http\Controllers\Adviser\UpdateAdviserProgramUtilitiesController;
 use App\Http\Controllers\Adviser\UpsertAdviserESignatureController;
 use App\Http\Controllers\Panelist\DeleteGroupAcknowledgementReceiptSignatureController;
@@ -989,6 +991,9 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
         ->name('adviser.concepts.submissions.status');
     Route::post('/concepts/groups/{group}/recommendation-title-defense', GenerateRecommendationForTitleDefenseController::class)
         ->name('adviser.concepts.groups.recommendation-title-defense');
+    Route::get('/manuscripts', AdviserManuscriptController::class)->name('adviser.manuscripts');
+    Route::patch('/manuscripts/submissions/{submission}/status', UpdateAdviserManuscriptSubmissionStatusController::class)
+        ->name('adviser.manuscripts.submissions.status');
     Route::get('/documents', function () {
         $userId = Auth::guard('web')->id();
         $projects = [];

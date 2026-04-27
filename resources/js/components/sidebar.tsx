@@ -169,6 +169,7 @@ const Sidebar = ({ onModalOpen }: { onModalOpen?: (open: boolean) => void }) => 
                     { label: 'Group Management', isSection: true },
                     { icon: Users, label: 'Groups', href: '/adviser/groups' },
                     { icon: FileText, label: 'Concepts', href: '/adviser/concepts' },
+                    { icon: ListTree, label: 'Manuscripts', href: '/adviser/manuscripts' },
                     { icon: FolderOpen, label: 'Documents', href: '/adviser/documents' },
                     { icon: Calendar, label: 'Schedule', href: '/adviser/schedule' },
                     { icon: ClipboardCheck, label: 'Evaluations', href: '/adviser/evaluations' },

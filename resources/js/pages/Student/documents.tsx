@@ -17,6 +17,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import React from 'react';
 import ConfirmConceptSubmissionActionModal from '@/components/Student/ConfirmConceptSubmissionActionModal';
+import studentRoutes from '../../routes/student';
 import StudentLayout from './_layout';
 
 type GroupSummary = {
@@ -145,6 +146,7 @@ const StudentDocuments = () => {
     const filteredGeneratedFiles = React.useMemo(() => {
         return generatedFiles.filter((file) => resolvePhaseKey(file.stage) === activePhase);
     }, [activePhase, generatedFiles]);
+    const isManuscriptPhase = activePhase === 'phase2';
 
     const approvedPhaseOneSubmission = React.useMemo(() => {
         if (activePhase !== 'phase1' || approvedConceptSubmissionId === null) {
@@ -198,13 +200,13 @@ const StudentDocuments = () => {
     const uploadWorkspace = React.useMemo(() => {
         if (activePhase === 'phase2') {
             return {
-                href: '/student/manuscripts',
+                href: studentRoutes.manuscripts.url(),
                 label: 'Manuscript Submission',
             };
         }
 
         return {
-            href: '/student/concepts',
+            href: studentRoutes.concepts.url(),
             label: activePhase === 'phase1' ? 'Concept Submission' : 'Upload',
         };
     }, [activePhase]);
@@ -243,7 +245,7 @@ const StudentDocuments = () => {
         <StudentLayout title="Group Documents" subtitle="Uploaded and system-generated files for your project group">
             <div className="space-y-5">
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
-                    <Link href="/student/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                    <Link href={studentRoutes.dashboard.url()} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
                         Dashboard
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
@@ -352,15 +354,21 @@ const StudentDocuments = () => {
                                         <th className="px-3 py-2.5">Title</th>
                                         <th className="px-3 py-2.5">Requirement</th>
                                         <th className="px-3 py-2.5">Submitted</th>
-                                        <th className="px-3 py-2.5">Instructor</th>
-                                        <th className="px-3 py-2.5">Adviser</th>
+                                        {isManuscriptPhase ? (
+                                            <th className="px-3 py-2.5">Adviser Approval</th>
+                                        ) : (
+                                            <>
+                                                <th className="px-3 py-2.5">Instructor</th>
+                                                <th className="px-3 py-2.5">Adviser</th>
+                                            </>
+                                        )}
                                         <th className="px-3 py-2.5">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {filteredUploadedFiles.length === 0 ? (
                                         <tr>
-                                            <td colSpan={6} className="px-3 py-7 text-center text-xs text-slate-500">
+                                            <td colSpan={isManuscriptPhase ? 5 : 6} className="px-3 py-7 text-center text-xs text-slate-500">
                                                 No uploaded files found for {activePhaseLabel}.
                                             </td>
                                         </tr>
@@ -393,20 +401,32 @@ const StudentDocuments = () => {
                                                         <p className="text-[11px] text-slate-500">{file.stage}</p>
                                                     </td>
                                                     <td className="px-3 py-2.5 text-slate-600">{file.submittedAt ?? '—'}</td>
-                                                    <td className="px-3 py-2.5">
-                                                        <span
-                                                            className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusPillClass(file.instructorStatus)}`}
-                                                        >
-                                                            {file.instructorStatus}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-3 py-2.5">
-                                                        <span
-                                                            className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusPillClass(file.adviserStatus)}`}
-                                                        >
-                                                            {file.adviserStatus}
-                                                        </span>
-                                                    </td>
+                                                    {isManuscriptPhase ? (
+                                                        <td className="px-3 py-2.5">
+                                                            <span
+                                                                className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusPillClass(file.adviserStatus)}`}
+                                                            >
+                                                                {file.adviserStatus}
+                                                            </span>
+                                                        </td>
+                                                    ) : (
+                                                        <>
+                                                            <td className="px-3 py-2.5">
+                                                                <span
+                                                                    className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusPillClass(file.instructorStatus)}`}
+                                                                >
+                                                                    {file.instructorStatus}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-3 py-2.5">
+                                                                <span
+                                                                    className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusPillClass(file.adviserStatus)}`}
+                                                                >
+                                                                    {file.adviserStatus}
+                                                                </span>
+                                                            </td>
+                                                        </>
+                                                    )}
                                                     <td className="px-3 py-2.5">
                                                         <div className="flex flex-nowrap items-center gap-2">
                                                             <Link

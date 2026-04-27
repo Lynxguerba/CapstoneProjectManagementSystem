@@ -38,11 +38,11 @@ class StudentManuscriptController extends Controller
         $readinessMessage = ! $group
             ? 'You are not assigned to a group yet. Manuscript submission is locked.'
             : (! $isPhaseTwoAvailable
-                ? 'Phase 2 manuscript submission is locked until your group has an approved project title from Phase 1.'
-                : (! $hasManuscriptRequirement
-                    ? 'Waiting for your instructor to declare the Phase 2 manuscript requirement.'
-                    : ($isGroupLeader
-                        ? 'Phase 2 manuscript submission is ready. Upload one PDF manuscript file for instructor review.'
+                    ? 'Phase 2 manuscript submission is locked until your group has an approved project title from Phase 1.'
+                    : (! $hasManuscriptRequirement
+                        ? 'Waiting for your instructor to declare the Phase 2 manuscript requirement.'
+                        : ($isGroupLeader
+                        ? 'Phase 2 manuscript submission is ready. Upload one PDF manuscript file for adviser review.'
                         : 'Only your Project Manager can submit the manuscript file. You can still monitor the current upload here.')));
 
         return Inertia::render('Student/manuscripts', [

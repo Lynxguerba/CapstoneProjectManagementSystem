@@ -100,6 +100,48 @@ it('replaces the existing manuscript so only one active phase 2 upload remains',
     Storage::disk('public')->assertExists((string) $latestSubmission?->file_path);
 });
 
+it('uses adviser approval status for student manuscript pages and phase 2 summaries', function (): void {
+    $context = createStudentManuscriptContext();
+
+    DocumentSubmission::query()->create([
+        'group_id' => $context['group']->id,
+        'document_requirement_id' => $context['manuscriptRequirement']->id,
+        'title_category_id' => null,
+        'file_name' => 'Reviewed Manuscript',
+        'file_path' => 'document-submissions/group-'.$context['group']->id.'/outline/manuscript/reviewed-manuscript.pdf',
+        'mime_type' => 'application/pdf',
+        'file_size' => 2048,
+        'status' => 'Submitted',
+        'adviser_status' => 'Approved',
+        'submitted_by' => $context['student']->id,
+    ]);
+
+    $manuscriptResponse = $this
+        ->actingAs($context['student'], 'web')
+        ->withSession(['active_role' => 'student'])
+        ->get(route('student.manuscripts'));
+
+    $manuscriptResponse->assertSuccessful();
+
+    $manuscriptPageProps = data_get($manuscriptResponse->viewData('page'), 'props', []);
+
+    expect(data_get($manuscriptPageProps, 'submission.adviserStatus'))->toBe('Approved');
+    expect((string) data_get($manuscriptPageProps, 'readiness.message'))->toContain('adviser review');
+
+    $documentsResponse = $this
+        ->actingAs($context['student'], 'web')
+        ->withSession(['active_role' => 'student'])
+        ->get(route('student.documents'));
+
+    $documentsResponse->assertSuccessful();
+
+    $documentsPageProps = data_get($documentsResponse->viewData('page'), 'props', []);
+    $phaseTwoRequirements = collect(data_get($documentsPageProps, 'phase2Requirements', []));
+    $manuscriptRequirement = $phaseTwoRequirements->firstWhere('id', $context['manuscriptRequirement']->id);
+
+    expect(data_get($manuscriptRequirement, 'status'))->toBe('Approved');
+});
+
 /**
  * @return array{
  *     student: User,

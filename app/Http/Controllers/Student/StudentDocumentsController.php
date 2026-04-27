@@ -236,17 +236,21 @@ class StudentDocumentsController extends Controller
                 'document_requirement_id',
                 'file_name',
                 'status',
+                'adviser_status',
                 'created_at',
             ])
             ->unique('document_requirement_id')
             ->keyBy('document_requirement_id');
 
         return $requirements
-            ->map(static function (DocumentRequirement $requirement) use ($latestSubmissionsByRequirementId): array {
+            ->map(function (DocumentRequirement $requirement) use ($latestSubmissionsByRequirementId): array {
                 /** @var DocumentSubmission|null $submission */
                 $submission = $latestSubmissionsByRequirementId->get($requirement->id);
+                $statusSource = $this->isOutlineManuscriptRequirement($requirement->requirement_type, $requirement->stage)
+                    ? (string) ($submission?->adviser_status ?? '')
+                    : (string) ($submission?->status ?? '');
 
-                $status = match ((string) ($submission?->status ?? '')) {
+                $status = match ($statusSource) {
                     'Approved' => 'Approved',
                     'Revision Required' => 'Revision Required',
                     'Submitted' => 'Submitted',

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ChevronRight, ExternalLink, FileText, FolderOpen, ShieldCheck, Trash2, UploadCloud } from 'lucide-react';
 import React from 'react';
 import ConfirmConceptSubmissionActionModal from '@/components/Student/ConfirmConceptSubmissionActionModal';
+import studentRoutes from '../../routes/student';
 import StudentLayout from './_layout';
 
 type ManuscriptRequirement = {
@@ -130,7 +131,7 @@ const StudentManuscripts = () => {
     };
 
     const handleConfirmUpload = () => {
-        form.post('/student/manuscripts/submissions', {
+        form.post(studentRoutes.manuscripts.submissions.store.url(), {
             preserveScroll: true,
             forceFormData: true,
             onSuccess: () => {
@@ -162,7 +163,7 @@ const StudentManuscripts = () => {
         <StudentLayout title="Manuscript Submission" subtitle="Upload and maintain the single active manuscript file for Phase 2 review">
             <div className="space-y-6">
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
-                    <Link href="/student/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                    <Link href={studentRoutes.dashboard.url()} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
                         Dashboard
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
@@ -226,9 +227,9 @@ const StudentManuscripts = () => {
                             </div>
 
                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase">Current File Status</p>
+                                <p className="text-[10px] font-semibold tracking-wide text-slate-500 uppercase">Adviser Approval</p>
                                 <p className="mt-1 text-xs text-slate-900">
-                                    {submission ? `${submission.instructorStatus} · ${submission.title}` : 'No manuscript uploaded yet.'}
+                                    {submission ? `${submission.adviserStatus} · ${submission.title}` : 'No manuscript uploaded yet.'}
                                 </p>
                             </div>
 
@@ -391,11 +392,8 @@ const StudentManuscripts = () => {
 
                                     <div className="space-y-2 text-xs text-slate-600">
                                         <div className="flex flex-wrap gap-2">
-                                            <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusPillClass(submission.instructorStatus)}`}>
-                                                Instructor: {submission.instructorStatus}
-                                            </span>
                                             <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusPillClass(submission.adviserStatus)}`}>
-                                                Adviser: {submission.adviserStatus}
+                                                Adviser Approval: {submission.adviserStatus}
                                             </span>
                                         </div>
                                         <p>
