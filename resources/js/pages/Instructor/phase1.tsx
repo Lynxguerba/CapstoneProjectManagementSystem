@@ -143,7 +143,7 @@ type RequirementRecord = {
     academic_year_label?: string | null;
 };
 
-const avatarColors = ['bg-emerald-600', 'bg-emerald-500', 'bg-emerald-700', 'bg-slate-600', 'bg-slate-500', 'bg-amber-500'];
+const avatarColors = ['bg-emerald-600', 'bg-emerald-500', 'bg-emerald-700', 'bg-slate-600', 'bg-slate-500', 'bg-emerald-400'];
 const isTabKey = (value: string | null): value is TabKey =>
     value === 'deadlines' || value === 'documents' || value === 'defense' || value === 'payments';
 
@@ -580,8 +580,8 @@ const Phase1Page = () => {
     const documents = React.useMemo(() => {
         const iconTone: Record<DocumentRow['status'], string> = {
             Approved: 'bg-emerald-50 text-emerald-600',
-            'For Review': 'bg-amber-50 text-amber-600',
-            Revise: 'bg-amber-50 text-amber-600',
+            'For Review': 'bg-emerald-50 text-emerald-500',
+            Revise: 'bg-emerald-50 text-emerald-500',
             Missing: 'bg-slate-100 text-slate-400',
         };
 
@@ -818,8 +818,8 @@ const Phase1Page = () => {
                 label: 'Requirements Manager',
                 count: String(deadlines.length),
                 icon: CalendarClock,
-                badge: 'bg-amber-100 text-amber-700',
-                iconClass: 'text-amber-600',
+                badge: 'bg-emerald-100 text-emerald-700',
+                iconClass: 'text-emerald-600',
             },
             {
                 id: 'documents' as const,
@@ -850,7 +850,7 @@ const Phase1Page = () => {
     );
 
     const statusBadge = (status: DeadlineRow['status']) => {
-        return status === 'Due Soon' ? 'border-amber-200 bg-amber-100 text-amber-700' : 'border-emerald-200 bg-emerald-100 text-emerald-700';
+        return status === 'Due Soon' ? 'border-emerald-200 bg-emerald-50 text-emerald-600' : 'border-emerald-200 bg-emerald-100 text-emerald-700';
     };
 
     const paymentBadge = (status: PaymentRow['status']) => {
@@ -858,7 +858,7 @@ const Phase1Page = () => {
             return 'border-emerald-200 bg-emerald-100 text-emerald-700';
         }
         if (status === 'Pending') {
-            return 'border-amber-200 bg-amber-100 text-amber-700';
+            return 'border-emerald-200 bg-emerald-50 text-emerald-600';
         }
         return 'border-slate-200 bg-slate-100 text-slate-600';
     };
@@ -868,10 +868,10 @@ const Phase1Page = () => {
             return 'border-emerald-200 bg-emerald-100 text-emerald-700';
         }
         if (status === 'For Review') {
-            return 'border-amber-200 bg-amber-100 text-amber-700';
+            return 'border-emerald-200 bg-emerald-50 text-emerald-600';
         }
         if (status === 'Revise') {
-            return 'border-amber-200 bg-amber-100 text-amber-700';
+            return 'border-emerald-200 bg-emerald-50 text-emerald-600';
         }
         return 'border-slate-200 bg-slate-100 text-slate-500';
     };
@@ -896,7 +896,7 @@ const Phase1Page = () => {
             return 'border-indigo-200 bg-indigo-100 text-indigo-700';
         }
         if (status === 'Pending') {
-            return 'border-amber-200 bg-amber-100 text-amber-700';
+            return 'border-emerald-200 bg-emerald-50 text-emerald-600';
         }
         if (status === 'Cancelled') {
             return 'border-rose-200 bg-rose-100 text-rose-700';
@@ -923,7 +923,7 @@ const Phase1Page = () => {
                         <select
                             value={selectedAcademicYear}
                             onChange={(event) => setSelectedAcademicYear(event.target.value)}
-                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                         >
                             {academicYearOptions.map((year) => {
                                 const isCurrent = academicYears.find((ay) => ay.label === year)?.is_current;
@@ -943,7 +943,7 @@ const Phase1Page = () => {
                     <select
                         value={selectedProgramSet}
                         onChange={(event) => setSelectedProgramSet(event.target.value)}
-                        className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-4 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                        className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-4 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                     >
                         <option value="All">All Program Sets</option>
                         {programSetOptions.map((option) => (
@@ -959,7 +959,7 @@ const Phase1Page = () => {
                         <select
                             value={selectedDocumentStatus}
                             onChange={(event) => setSelectedDocumentStatus(event.target.value)}
-                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                         >
                             <option value="All">All Status</option>
                             <option value="Approved">Approved</option>
@@ -975,7 +975,7 @@ const Phase1Page = () => {
                         <select
                             value={selectedDefenseStatus}
                             onChange={(event) => setSelectedDefenseStatus(event.target.value)}
-                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                         >
                             <option value="All">All Status</option>
                             <option value="Available">Available</option>
@@ -989,7 +989,7 @@ const Phase1Page = () => {
                         <select
                             value={selectedPaymentStatus}
                             onChange={(event) => setSelectedPaymentStatus(event.target.value)}
-                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                            className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs shadow-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                         >
                             <option value="All">All Status</option>
                             <option value="Verified">Verified</option>

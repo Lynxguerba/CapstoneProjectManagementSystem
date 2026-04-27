@@ -24,7 +24,7 @@ CPSM TO DO:
 
 #Date Apil 11, 2026
   Admin: Students Management Reject Request account should be not display on the table after rejected[]
-  Instructor: Defense Scheduling Page, section Schedules must be disbabled modifying schedule in status column[]
+  Instructor: Defense Scheduling Page, section Schedules must be disbabled modifying schedule in status column[DONE]
   
 #Date April 14, 2026   
     Adviser: Live Defense Board page, Evaluatin must be view all the evalaution of the Panelist[]

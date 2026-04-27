@@ -751,7 +751,7 @@ const Phase2Page = () => {
         () => [
             {
                 id: 'deadlines' as const,
-                label: 'Outline Requirements',
+                label: 'Requirements Manager',
                 count: String(deadlines.length),
                 icon: CalendarClock,
                 badge: 'bg-emerald-100 text-emerald-700',
@@ -759,7 +759,7 @@ const Phase2Page = () => {
             },
             {
                 id: 'documents' as const,
-                label: 'Outline Submissions',
+                label: 'Groups Documentation',
                 count: String(documents.length),
                 icon: FileText,
                 badge: 'bg-slate-100 text-slate-600',
@@ -767,7 +767,7 @@ const Phase2Page = () => {
             },
             {
                 id: 'defense' as const,
-                label: 'Outline Review Status',
+                label: 'Defense Status',
                 count: String(defenseRows.length),
                 icon: ShieldCheck,
                 badge: 'bg-emerald-100 text-emerald-700',
@@ -775,7 +775,7 @@ const Phase2Page = () => {
             },
             {
                 id: 'payments' as const,
-                label: 'Outline Payment',
+                label: 'Payment Verification',
                 count: String(payments.length),
                 icon: CreditCard,
                 badge: 'bg-emerald-100 text-emerald-700',
