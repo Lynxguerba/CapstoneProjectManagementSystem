@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { Calendar, ChevronRight, Eye, FileText, Filter, FolderOpen, Search } from 'lucide-react';
+import { ChevronRight, Eye, FileText, Filter, FolderOpen, Search } from 'lucide-react';
 import React from 'react';
 import AdviserLayout from './_layout';
 
@@ -91,7 +91,7 @@ const AdviserDocuments = () => {
                                 placeholder="Search titles, groups, authors..."
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
-                                className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm transition-all outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/10 md:w-80"
+                                className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs shadow-sm transition-all outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 md:w-80"
                             />
                         </div>
 
@@ -100,7 +100,7 @@ const AdviserDocuments = () => {
                             <select
                                 value={selectedYear}
                                 onChange={(event) => setSelectedYear(event.target.value)}
-                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs capitalize shadow-sm outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/10"
+                                className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-9 text-xs capitalize shadow-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10"
                             >
                                 <option value="all">All Years</option>
                                 {academicYearOptions.map((year) => (
@@ -121,7 +121,6 @@ const AdviserDocuments = () => {
                                     <th className="px-6 py-4">Capstone Title</th>
                                     <th className="px-6 py-4">Group Name</th>
                                     <th className="px-6 py-4">Authors / Group Members</th>
-                                    <th className="px-6 py-4">AY / Term</th>
                                     <th className="px-6 py-4 text-right">Action</th>
                                 </tr>
                             </thead>
@@ -129,11 +128,11 @@ const AdviserDocuments = () => {
                                 {paginatedProjects.map((project, index) => (
                                     <tr
                                         key={project.id}
-                                        className={`transition-colors hover:bg-indigo-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
+                                        className={`transition-colors hover:bg-emerald-50/30 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
                                     >
                                         <td className="max-w-xs px-6 py-4">
                                             <div className="flex items-start gap-3">
-                                                <div className="mt-1 rounded bg-indigo-100 p-1.5 text-indigo-700">
+                                                <div className="mt-1 rounded bg-emerald-100 p-1.5 text-emerald-700">
                                                     <FileText size={14} />
                                                 </div>
                                                 <span className="leading-relaxed font-semibold text-slate-800">{project.title}</span>
@@ -141,16 +140,10 @@ const AdviserDocuments = () => {
                                         </td>
                                         <td className="px-6 py-4 text-slate-600 font-medium">{project.group_name}</td>
                                         <td className="px-6 py-4 text-slate-600">{project.author_names || '—'}</td>
-                                        <td className="px-6 py-4">
-                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
-                                                <Calendar size={10} />
-                                                {project.academicYear}
-                                            </span>
-                                        </td>
                                         <td className="px-6 py-4 text-right">
                                             <Link
                                                 href={`/adviser/group-details?group=${project.id}`}
-                                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                                                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 shadow-sm transition-all hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
                                             >
                                                 <Eye className="h-3 w-3" />
                                                 View Details
@@ -161,7 +154,7 @@ const AdviserDocuments = () => {
 
                                 {filteredProjects.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-500">
+                                        <td colSpan={4} className="px-6 py-10 text-center text-sm text-slate-500">
                                             <div className="flex flex-col items-center gap-2">
                                                 <FolderOpen className="h-8 w-8 text-slate-300" />
                                                 No approved projects found.
@@ -199,7 +192,7 @@ const AdviserDocuments = () => {
                                         onClick={() => setCurrentPage(page)}
                                         className={`h-8 min-w-[32px] rounded-lg text-xs font-bold transition-all ${
                                             page === currentPage
-                                                ? 'bg-indigo-700 text-white shadow-md shadow-indigo-700/20'
+                                                ? 'bg-emerald-700 text-white shadow-md shadow-emerald-700/20'
                                                 : 'text-slate-600 hover:bg-slate-100'
                                         }`}
                                     >
