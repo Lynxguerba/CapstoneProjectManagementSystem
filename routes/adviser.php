@@ -705,7 +705,109 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
     Route::delete('/assignment-requests/{assignmentRequest}', DismissGroupAdviserRequestController::class)
         ->name('adviser.assignment-requests.dismiss');
     Route::get('/group-details', function () {
-        return Inertia::render('Adviser/group-details');
+        $userId = Auth::guard('web')->id();
+        $groupId = request()->query('group');
+
+        if (! $groupId) {
+            return redirect()->route('adviser.documents');
+        }
+
+        try {
+            $group = Group::query()
+                ->with([
+                    'leader:id,name,first_name,last_name,email',
+                    'members:id,name,first_name,last_name,email',
+                    'programSet:id,name,program,instructor_id,academic_year_id',
+                    'programSet.academicYear',
+                    'programSet.instructor:id,name,first_name,last_name',
+                    'adviserAssignment.adviser:id,name,first_name,last_name',
+                    'panelAssignments.panelist:id,name,first_name,last_name',
+                    'defenseSchedules' => fn ($q) => $q->orderByDesc('scheduled_date'),
+                    'documentSubmissions' => fn ($q) => $q->with('requirement')->orderByDesc('created_at'),
+                ])
+                ->where('id', $groupId)
+                ->whereHas('adviserAssignment', fn ($query) => $query->where('adviser_id', $userId))
+                ->first();
+
+            if (! $group) {
+                return redirect()->route('adviser.documents');
+            }
+
+            $resolveUserName = static function (?User $user): string {
+                if (! $user) {
+                    return '';
+                }
+                $firstName = is_string($user->first_name) ? trim($user->first_name) : '';
+                $lastName = is_string($user->last_name) ? trim($user->last_name) : '';
+                $fullName = $firstName !== '' || $lastName !== ''
+                    ? trim($firstName.' '.$lastName)
+                    : (is_string($user->name) ? trim($user->name) : '');
+
+                return $fullName;
+            };
+
+            $members = collect([$group->leader])
+                ->merge($group->members)
+                ->filter()
+                ->unique('id')
+                ->map(function ($member) use ($resolveUserName) {
+                    return [
+                        'id' => $member->id,
+                        'name' => $resolveUserName($member),
+                        'email' => $member->email,
+                        'role' => $member->pivot?->role ?? 'Member',
+                    ];
+                })
+                ->values();
+
+            $submissions = $group->documentSubmissions->map(function ($submission) {
+                return [
+                    'id' => $submission->id,
+                    'file_name' => $submission->file_name,
+                    'file_path' => $submission->file_path,
+                    'file_url' => $submission->file_path ? Storage::disk('public')->url($submission->file_path) : null,
+                    'status' => $submission->status,
+                    'adviser_status' => $submission->adviser_status,
+                    'stage' => $submission->requirement?->stage,
+                    'requirement_type' => $submission->requirement?->requirement_type,
+                    'created_at' => $submission->created_at->format('M d, Y'),
+                ];
+            });
+
+            $schedules = $group->defenseSchedules->map(function ($schedule) {
+                return [
+                    'id' => $schedule->id,
+                    'stage' => $schedule->stage,
+                    'status' => $schedule->status,
+                    'scheduled_date' => $schedule->scheduled_date?->format('M d, Y'),
+                    'start_time' => $schedule->start_time,
+                    'end_time' => $schedule->end_time,
+                ];
+            });
+
+            $panels = $group->panelAssignments->map(function ($assignment) use ($resolveUserName) {
+                return [
+                    'name' => $resolveUserName($assignment->panelist),
+                    'role' => $assignment->role,
+                ];
+            });
+
+            return Inertia::render('Adviser/group-details', [
+                'group' => [
+                    'id' => $group->id,
+                    'name' => $group->name,
+                    'program' => $group->programSet?->program,
+                    'academic_year' => $group->programSet?->academicYear?->label,
+                    'instructor' => $resolveUserName($group->programSet?->instructor),
+                    'members' => $members,
+                    'panels' => $panels,
+                ],
+                'submissions' => $submissions,
+                'schedules' => $schedules,
+            ]);
+        } catch (\Throwable $e) {
+            return redirect()->route('adviser.documents');
+        }
     })->name('adviser.group-details');
     Route::get('/concepts', function () {
         $groups = [];

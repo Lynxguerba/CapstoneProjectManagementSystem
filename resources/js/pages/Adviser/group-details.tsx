@@ -1,443 +1,351 @@
+import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { CalendarClock, FileText, FolderOpen, Scale, Users } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import {
+    Calendar,
+    ChevronRight,
+    Download,
+    ExternalLink,
+    FileText,
+    FolderOpen,
+    LayoutDashboard,
+    Search,
+    Users,
+} from 'lucide-react';
+import React from 'react';
 import AdviserLayout from './_layout';
 
-type TabKey = 'overview' | 'concepts' | 'documents' | 'evaluation' | 'schedule' | 'verdict';
+type Member = {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+};
 
-type Step = {
-    label: string;
-    status: 'done' | 'current' | 'next';
+type Submission = {
+    id: number;
+    file_name: string;
+    file_path: string;
+    file_url: string | null;
+    status: string;
+    adviser_status: string;
+    stage: string;
+    requirement_type: string;
+    created_at: string;
+};
+
+type Schedule = {
+    id: number;
+    stage: string;
+    status: string;
+    scheduled_date: string;
+    start_time: string;
+    end_time: string;
+};
+
+type Panel = {
+    name: string;
+    role: string;
+};
+
+type GroupDetailsProps = {
+    group: {
+        id: number;
+        name: string;
+        program: string;
+        academic_year: string;
+        instructor: string;
+        members: Member[];
+        panels: Panel[];
+    };
+    submissions: Submission[];
+    schedules: Schedule[];
 };
 
 const AdviserGroupDetails = () => {
-    const [tab, setTab] = useState<TabKey>('overview');
+    const { group, submissions, schedules } = usePage<GroupDetailsProps>().props;
+    const [activeTab, setActiveTab] = React.useState<'overview' | 'submissions' | 'schedules'>('overview');
+    const [searchQuery, setSearchQuery] = React.useState('');
 
-    const group = {
-        name: 'Group Beta',
-        members: [
-            { name: 'Mark R.', role: 'Project Manager' },
-            { name: 'Lea C.', role: 'System Analyst' },
-            { name: 'John K.', role: 'Programmer' },
-            { name: 'Kate V.', role: 'Documentarian' },
-        ],
-        panel: 'Panel A (dummy)',
-        paymentStatus: 'Verified (dummy)',
-    };
-
-    const steps: Step[] = [
-        { label: 'Concept Submitted', status: 'done' },
-        { label: 'Concept Approved', status: 'done' },
-        { label: 'Outline Defense', status: 'current' },
-        { label: 'Pre-Oral', status: 'next' },
-        { label: 'Final Defense', status: 'next' },
-        { label: 'Deployment', status: 'next' },
-    ];
-
-    const tabs: Array<{ key: TabKey; label: string; icon: LucideIcon }> = [
-        { key: 'overview', label: 'Overview', icon: Users },
-        { key: 'concepts', label: 'Concepts', icon: FileText },
-        { key: 'documents', label: 'Documents', icon: FolderOpen },
-        { key: 'evaluation', label: 'Evaluation', icon: Scale },
-        { key: 'schedule', label: 'Schedule', icon: CalendarClock },
-        { key: 'verdict', label: 'Verdict', icon: Scale },
-    ];
-
-    const currentStepIndex = useMemo(() => steps.findIndex((s) => s.status === 'current'), [steps]);
+    const filteredSubmissions = submissions.filter(
+        (s) =>
+            s.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.stage.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.requirement_type.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
 
     return (
-        <AdviserLayout title="Group Details" subtitle="Academic view of a capstone group (UI only)">
+        <AdviserLayout title="Group Details" subtitle={`Managing ${group.name}`}>
             <div className="space-y-6">
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-                >
-                    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                        <div>
-                            <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Group</div>
-                            <div className="mt-1 text-2xl font-bold text-slate-900">{group.name}</div>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                                <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
-                                    Panel: {group.panel}
-                                </span>
-                                <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                    Payment: {group.paymentStatus}
-                                </span>
-                            </div>
-                        </div>
+                {/* Breadcrumbs */}
+                <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+                    <Link href="/adviser/dashboard" className="font-medium text-slate-600 transition-colors hover:text-emerald-600">
+                        Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <Link href="/adviser/documents" className="font-medium text-slate-600 transition-colors hover:text-emerald-600">
+                        Approved Projects
+                    </Link>
+                    <ChevronRight className="h-3 w-3 text-slate-400" />
+                    <span className="font-semibold text-slate-800" aria-current="page">
+                        {group.name}
+                    </span>
+                </nav>
 
-                        <div className="w-full rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5 lg:max-w-sm">
-                            <div className="text-sm font-semibold text-slate-900">Members</div>
-                            <div className="mt-3 space-y-2">
-                                {group.members.map((m) => (
-                                    <div key={m.name} className="flex items-center justify-between gap-3">
-                                        <div className="truncate text-sm font-medium text-slate-800">{m.name}</div>
-                                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold whitespace-nowrap text-slate-600">
-                                            {m.role}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </motion.section>
+                {/* Tabs */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                    <button
+                        onClick={() => setActiveTab('overview')}
+                        className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
+                            activeTab === 'overview'
+                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:border-emerald-200'
+                        }`}
+                    >
+                        <LayoutDashboard size={16} />
+                        Overview
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('submissions')}
+                        className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
+                            activeTab === 'submissions'
+                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:border-emerald-200'
+                        }`}
+                    >
+                        <FolderOpen size={16} />
+                        Document Submissions
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('schedules')}
+                        className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
+                            activeTab === 'schedules'
+                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:border-emerald-200'
+                        }`}
+                    >
+                        <Calendar size={16} />
+                        Defense Schedules
+                    </button>
+                </div>
 
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.06 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-                >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <div className="text-lg font-semibold text-slate-900">Project Status Tracker</div>
-                            <div className="mt-1 text-sm text-slate-500">Stepper UI based on project phases (dummy).</div>
-                        </div>
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                            Current: {currentStepIndex >= 0 ? steps[currentStepIndex].label : '—'}
-                        </span>
-                    </div>
-
-                    <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-6">
-                        {steps.map((s) => {
-                            const tone =
-                                s.status === 'done'
-                                    ? 'border-emerald-200 bg-emerald-50'
-                                    : s.status === 'current'
-                                      ? 'border-indigo-200 bg-indigo-50'
-                                      : 'border-slate-200 bg-slate-50';
-
-                            const dot = s.status === 'done' ? 'bg-emerald-600' : s.status === 'current' ? 'bg-indigo-600' : 'bg-slate-400';
-
-                            return (
-                                <div key={s.label} className={`rounded-2xl border p-4 ${tone}`}>
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <div className="truncate text-sm font-semibold text-slate-900">{s.label}</div>
-                                            <div className="mt-1 text-xs text-slate-600">{s.status.toUpperCase()}</div>
-                                        </div>
-                                        <div className={`mt-1 h-3 w-3 rounded-full ${dot}`} />
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </motion.section>
-
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.12 }}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-                >
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <div className="text-lg font-semibold text-slate-900">Workspace</div>
-                            <div className="mt-1 text-sm text-slate-500">Tabs for concepts, documents, evaluation, schedule, and verdict.</div>
-                        </div>
-                    </div>
-
-                    <div className="mt-5 flex flex-wrap gap-2">
-                        {tabs.map((t) => {
-                            const active = tab === t.key;
-                            return (
-                                <button
-                                    key={t.key}
-                                    type="button"
-                                    onClick={() => setTab(t.key)}
-                                    className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
-                                        active
-                                            ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                    }`}
-                                >
-                                    <t.icon size={16} />
-                                    {t.label}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    <div className="mt-6">
-                        {tab === 'overview' ? (
-                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                                <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
-                                    <div className="text-sm font-semibold text-slate-900">Documents Overview</div>
-                                    <div className="mt-2 text-sm text-slate-600">2 submitted • 1 for revision (dummy)</div>
-                                    <div className="mt-4 space-y-3">
-                                        {[
-                                            { name: 'Chapter 1–3 (Outline)', status: 'For Revision' },
-                                            { name: 'Presentation Slides', status: 'Pending' },
-                                            { name: 'Revision Notes', status: 'Approved' },
-                                        ].map((d) => (
-                                            <div
-                                                key={d.name}
-                                                className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3"
+                {/* Tab Content */}
+                <div className="min-h-[400px]">
+                    {activeTab === 'overview' && (
+                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                                <h3 className="flex items-center gap-2 font-bold text-slate-800 text-sm">
+                                    <FileText size={18} className="text-emerald-600" />
+                                    Recent Submissions
+                                </h3>
+                                <div className="mt-4 space-y-3">
+                                    {submissions.slice(0, 5).map((s) => (
+                                        <div key={s.id} className="flex items-center justify-between rounded-xl border border-slate-100 p-3">
+                                            <div className="min-w-0">
+                                                <p className="truncate font-semibold text-slate-800 text-sm">{s.file_name}</p>
+                                                <p className="text-slate-500 text-[10px]">
+                                                    {s.stage} • {s.created_at}
+                                                </p>
+                                            </div>
+                                            <span
+                                                className={`rounded-full px-2 py-0.5 font-bold text-[10px] ${
+                                                    s.status === 'Approved'
+                                                        ? 'bg-emerald-100 text-emerald-700'
+                                                        : s.status === 'Revision Required'
+                                                          ? 'bg-amber-100 text-amber-700'
+                                                          : 'bg-slate-100 text-slate-700'
+                                                }`}
                                             >
-                                                <div className="truncate text-sm font-medium text-slate-800">{d.name}</div>
-                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold whitespace-nowrap text-slate-600">
-                                                    {d.status}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-2">
-                                    <div className="text-sm font-semibold text-slate-900">Adviser Notes</div>
-                                    <div className="mt-1 text-sm text-slate-600">Dummy notes for quick reference.</div>
-                                    <textarea
-                                        className="mt-4 h-40 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                                        defaultValue="Focus on scope clarity and testing plan before proceeding to Pre-Oral."
-                                    />
-                                    <div className="mt-4 flex flex-wrap gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => alert('UI only: save notes')}
-                                            className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
-                                        >
-                                            Save notes
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => alert('UI only: send message')}
-                                            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                                        >
-                                            Message group
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : null}
-
-                        {tab === 'concepts' ? (
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                                <div className="text-sm font-semibold text-slate-900">Concepts (dummy)</div>
-                                <div className="mt-2 grid grid-cols-1 gap-4 md:grid-cols-3">
-                                    {[
-                                        { title: 'CPMS with Workflow Automation', status: 'Approved' },
-                                        { title: 'Smart Queue for Clinic', status: 'Rejected' },
-                                        { title: 'Repository with Similarity Search', status: 'For Revision' },
-                                    ].map((c) => (
-                                        <div key={c.title} className="rounded-2xl border border-slate-200 bg-white p-5">
-                                            <div className="line-clamp-2 text-sm font-semibold text-slate-900">{c.title}</div>
-                                            <div className="mt-3 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                                                {c.status}
-                                            </div>
-                                            <div className="mt-4 flex flex-wrap gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => alert('UI only: approve')}
-                                                    className="rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
-                                                >
-                                                    Approve
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => alert('UI only: request revision')}
-                                                    className="rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-semibold text-white hover:bg-amber-600"
-                                                >
-                                                    Revision
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => alert('UI only: reject')}
-                                                    className="rounded-xl bg-rose-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-rose-700"
-                                                >
-                                                    Reject
-                                                </button>
-                                            </div>
+                                                {s.status}
+                                            </span>
                                         </div>
                                     ))}
+                                    {submissions.length === 0 && <p className="py-4 text-center text-slate-400 text-xs">No submissions found.</p>}
                                 </div>
                             </div>
-                        ) : null}
 
-                        {tab === 'documents' ? (
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                                <div className="text-sm font-semibold text-slate-900">Documents (dummy)</div>
-                                <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                                        <div className="text-sm font-semibold text-slate-900">Submitted Files</div>
-                                        <div className="mt-4 space-y-3">
-                                            {[
-                                                { name: 'Chapter 1–3', phase: 'Outline', status: 'For Revision' },
-                                                { name: 'Slides', phase: 'Outline', status: 'Pending' },
-                                                { name: 'Revision Log', phase: 'Outline', status: 'Approved' },
-                                            ].map((d) => (
-                                                <div key={d.name} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        <div className="min-w-0">
-                                                            <div className="truncate text-sm font-semibold text-slate-900">{d.name}</div>
-                                                            <div className="mt-1 text-xs text-slate-500">Phase: {d.phase}</div>
+                            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                                <h3 className="flex items-center gap-2 font-bold text-slate-800 text-sm">
+                                    <Calendar size={18} className="text-emerald-600" />
+                                    Next Schedule
+                                </h3>
+                                <div className="mt-4 space-y-3">
+                                    {schedules.length > 0 ? (
+                                        schedules.slice(0, 3).map((sch) => (
+                                            <div key={sch.id} className="flex items-center justify-between rounded-xl border border-slate-100 p-3">
+                                                <div>
+                                                    <p className="font-semibold text-slate-800 text-sm">{sch.stage} Defense</p>
+                                                    <p className="text-slate-500 text-[10px]">
+                                                        {sch.scheduled_date} • {sch.start_time} - {sch.end_time}
+                                                    </p>
+                                                </div>
+                                                <span
+                                                    className={`rounded-full px-2 py-0.5 font-bold text-[10px] ${
+                                                        sch.status === 'Scheduled'
+                                                            ? 'bg-emerald-100 text-emerald-700'
+                                                            : sch.status === 'Completed'
+                                                                  ? 'bg-emerald-50 text-emerald-600'
+                                                                  : 'bg-amber-100 text-amber-700'
+
+                                                    }`}
+                                                >
+                                                    {sch.status}
+                                                </span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="py-4 text-center text-slate-400 text-xs">No defense schedules found.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'submissions' && (
+                        <div className="space-y-4">
+                            <div className="relative">
+                                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search submissions..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-4 pl-10 text-sm outline-none transition-all focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/5"
+                                />
+                            </div>
+
+                            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="border-b border-slate-200 bg-slate-50/50 font-bold text-slate-600 text-xs uppercase">
+                                        <tr>
+                                            <th className="px-6 py-4">File Name</th>
+                                            <th className="px-6 py-4">Stage</th>
+                                            <th className="px-6 py-4">Requirement</th>
+                                            <th className="px-6 py-4 text-center">Status</th>
+                                            <th className="px-6 py-4 text-right">Date</th>
+                                            <th className="px-6 py-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {filteredSubmissions.map((s) => (
+                                            <tr key={s.id} className="transition-colors hover:bg-slate-50/50">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="rounded bg-emerald-100 p-1.5 text-emerald-700">
+                                                            <FileText size={16} />
                                                         </div>
-                                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold whitespace-nowrap text-slate-600">
-                                                            {d.status}
-                                                        </span>
+                                                        <span className="font-semibold text-slate-800">{s.file_name}</span>
                                                     </div>
-                                                    <div className="mt-3 flex gap-2">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => alert('UI only: preview')}
-                                                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50"
-                                                        >
-                                                            Preview
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => alert('UI only: download')}
-                                                            className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"
-                                                        >
-                                                            Download
-                                                        </button>
+                                                </td>
+                                                <td className="px-6 py-4 text-slate-600 font-medium">{s.stage}</td>
+                                                <td className="px-6 py-4 text-slate-500 text-xs">{s.requirement_type}</td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span
+                                                        className={`rounded-full px-2 py-0.5 font-bold text-[10px] ${
+                                                            s.status === 'Approved'
+                                                                ? 'bg-emerald-100 text-emerald-700'
+                                                                : s.status === 'Revision Required'
+                                                                  ? 'bg-amber-100 text-amber-700'
+                                                                  : 'bg-slate-100 text-slate-700'
+                                                        }`}
+                                                    >
+                                                        {s.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-slate-500 text-xs">{s.created_at}</td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        {s.file_url && (
+                                                            <>
+                                                                <a
+                                                                    href={s.file_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600"
+                                                                    title="Open File"
+                                                                >
+                                                                    <ExternalLink size={16} />
+                                                                </a>
+                                                                <a
+                                                                    href={s.file_url}
+                                                                    download
+                                                                    className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600"
+                                                                    title="Download"
+                                                                >
+                                                                    <Download size={16} />
+                                                                </a>
+                                                            </>
+                                                        )}
                                                     </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {filteredSubmissions.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-10 text-center text-slate-400">
+                                                    No submissions found.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'schedules' && (
+                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <table className="w-full text-left text-sm">
+                                <thead className="border-b border-slate-200 bg-slate-50/50 font-bold text-slate-600 text-xs uppercase">
+                                    <tr>
+                                        <th className="px-6 py-4">Defense Stage</th>
+                                        <th className="px-6 py-4">Scheduled Date</th>
+                                        <th className="px-6 py-4">Time</th>
+                                        <th className="px-6 py-4 text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {schedules.map((sch) => (
+                                        <tr key={sch.id} className="transition-colors hover:bg-slate-50/50">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="rounded bg-emerald-100 p-1.5 text-emerald-700">
+                                                        <Calendar size={16} />
+                                                    </div>
+                                                    <span className="font-semibold text-slate-800">{sch.stage} Defense</span>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600 font-medium">{sch.scheduled_date}</td>
+                                            <td className="px-6 py-4 text-slate-500 text-xs">
+                                                {sch.start_time} - {sch.end_time}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span
+                                                    className={`rounded-full px-2 py-0.5 font-bold text-[10px] ${
+                                                        sch.status === 'Scheduled'
+                                                            ? 'bg-emerald-100 text-emerald-700'
+                                                            : sch.status === 'Completed'
+                                                                  ? 'bg-emerald-50 text-emerald-600'
+                                                                  : 'bg-amber-100 text-amber-700'
 
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                                        <div className="text-sm font-semibold text-slate-900">Adviser Comments</div>
-                                        <div className="mt-1 text-sm text-slate-600">Leave notes and update status (UI only).</div>
-                                        <textarea
-                                            className="mt-4 h-40 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                                            placeholder="Write your feedback..."
-                                        />
-                                        <div className="mt-4 flex flex-wrap gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => alert('UI only: approve')}
-                                                className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
-                                            >
-                                                Approve
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => alert('UI only: for revision')}
-                                                className="rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600"
-                                            >
-                                                For Revision
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => alert('UI only: reject')}
-                                                className="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700"
-                                            >
-                                                Reject
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : null}
-
-                        {tab === 'evaluation' ? (
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                                <div className="text-sm font-semibold text-slate-900">Evaluation (dummy)</div>
-                                <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                                        <div className="text-sm font-semibold text-slate-900">Rubric Scoring</div>
-                                        <div className="mt-4 space-y-4">
-                                            {[
-                                                { label: 'Problem Definition', value: 8 },
-                                                { label: 'Methodology', value: 7 },
-                                                { label: 'Documentation Quality', value: 9 },
-                                                { label: 'Presentation Readiness', value: 6 },
-                                            ].map((r) => (
-                                                <div key={r.label}>
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="text-sm font-semibold text-slate-800">{r.label}</div>
-                                                        <div className="text-sm font-bold text-slate-900">{r.value}/10</div>
-                                                    </div>
-                                                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
-                                                        <div
-                                                            className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
-                                                            style={{ width: `${r.value * 10}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                                        <div className="text-sm font-semibold text-slate-900">Recommendation</div>
-                                        <div className="mt-4">
-                                            <label className="block text-sm font-semibold text-slate-700">Decision</label>
-                                            <select className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500">
-                                                <option>Ready for Defense</option>
-                                                <option>Needs Revision</option>
-                                                <option>Recommend Re-Defense</option>
-                                            </select>
-                                        </div>
-                                        <div className="mt-4">
-                                            <label className="block text-sm font-semibold text-slate-700">Feedback</label>
-                                            <textarea
-                                                className="mt-2 h-32 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                                                placeholder="Write recommendation notes..."
-                                            />
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => alert('UI only: submit evaluation')}
-                                            className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-                                        >
-                                            Submit evaluation
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : null}
-
-                        {tab === 'schedule' ? (
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                                <div className="text-sm font-semibold text-slate-900">Schedule (dummy)</div>
-                                <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
-                                    <div className="text-sm font-semibold text-slate-900">Next Defense</div>
-                                    <div className="mt-2 text-sm text-slate-600">2026-03-21 • 9:00 AM • Room 101</div>
-                                    <button
-                                        type="button"
-                                        onClick={() => alert('UI only: open full schedule')}
-                                        className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
-                                    >
-                                        Open schedule page
-                                    </button>
-                                </div>
-                            </div>
-                        ) : null}
-
-                        {tab === 'verdict' ? (
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                                <div className="text-sm font-semibold text-slate-900">Verdict (dummy)</div>
-                                <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                                        <div className="text-sm font-semibold text-slate-900">Final Decision</div>
-                                        <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                            Approved (dummy)
-                                        </div>
-                                        <div className="mt-4 text-sm text-slate-600">Panel remarks will appear here once released.</div>
-                                    </div>
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                                        <div className="text-sm font-semibold text-slate-900">Adviser Acknowledgement</div>
-                                        <textarea
-                                            className="mt-4 h-28 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-                                            placeholder="Add adviser remarks..."
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => alert('UI only: acknowledge verdict')}
-                                            className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-                                        >
-                                            Acknowledge
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : null}
-                    </div>
-                </motion.section>
+                                                    }`}
+                                                >
+                                                    {sch.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {schedules.length === 0 && (
+                                        <tr>
+                                            <td colSpan={4} className="px-6 py-10 text-center text-slate-400">
+                                                No schedules found.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </div>
         </AdviserLayout>
     );
