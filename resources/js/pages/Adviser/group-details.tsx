@@ -166,7 +166,7 @@ const AdviserGroupDetails = () => {
                             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                                 <h3 className="flex items-center gap-2 font-bold text-slate-800 text-sm">
                                     <Calendar size={18} className="text-emerald-600" />
-                                    Next Schedule
+                                    Schedule Detials
                                 </h3>
                                 <div className="mt-4 space-y-3">
                                     {schedules.length > 0 ? (
