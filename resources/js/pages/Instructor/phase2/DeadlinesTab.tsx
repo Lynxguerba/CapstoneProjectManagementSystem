@@ -1,11 +1,5 @@
 import { CalendarClock, FilePlus, Filter, Pencil, Trash2 } from 'lucide-react';
 
-type AcademicYearOption = {
-    id: number;
-    label: string;
-    is_current: boolean;
-};
-
 type RequirementRecord = {
     id: number;
     requirement_type: string;
@@ -124,7 +118,7 @@ const DeadlinesTab = ({
                                 <tr key={row.id} className="text-slate-600 transition-colors hover:bg-emerald-50/40">
                                     <td className="px-6 py-3 font-semibold text-slate-900">{row.requirementType}</td>
                                     <td className="px-6 py-3 text-xs text-slate-500">{row.academicYear}</td>
-                                    <td className="px-6 py-3 font-semibold text-amber-600">{formatDateLabel(row.dueDate)}</td>
+                                    <td className="px-6 py-3 font-semibold text-emerald-600">{formatDateLabel(row.dueDate)}</td>
                                     <td className="px-6 py-3">
                                         {row.total === 0 ? (
                                             <span className="text-xs text-slate-400">No groups yet</span>

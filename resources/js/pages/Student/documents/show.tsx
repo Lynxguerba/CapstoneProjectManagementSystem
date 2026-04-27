@@ -4,6 +4,7 @@ import { ChevronRight, ExternalLink, FileText, Trash2 } from 'lucide-react';
 import React from 'react';
 import ConfirmConceptSubmissionActionModal from '@/components/Student/ConfirmConceptSubmissionActionModal';
 import StudentLayout from '../_layout';
+import { resolvePhaseKey } from '../documents';
 
 type GroupSummary = {
     id: number;
@@ -81,7 +82,10 @@ const StudentDocumentShow = () => {
                         Dashboard
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
-                    <Link href="/student/documents" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
+                    <Link
+                        href={`/student/documents?phase=${resolvePhaseKey(document.stage)}`}
+                        className="font-medium text-slate-600 transition-colors hover:text-slate-900"
+                    >
                         Group Documents
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />

@@ -76,9 +76,9 @@ type StudentDocumentsProps = {
     };
 };
 
-type PhaseKey = 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5';
+export type PhaseKey = 'phase1' | 'phase2' | 'phase3' | 'phase4' | 'phase5';
 
-const phaseTabs: { key: PhaseKey; label: string; icon: LucideIcon }[] = [
+export const phaseTabs: { key: PhaseKey; label: string; icon: LucideIcon }[] = [
     { key: 'phase1', label: 'Phase 1: Concept Papers', icon: Lightbulb },
     { key: 'phase2', label: 'Phase 2: Outline', icon: ListTree },
     { key: 'phase3', label: 'Phase 3: Pre-Deployment', icon: PackageCheck },
@@ -86,19 +86,7 @@ const phaseTabs: { key: PhaseKey; label: string; icon: LucideIcon }[] = [
     { key: 'phase5', label: 'Phase 5: Finals', icon: Flag },
 ];
 
-const statusPillClass = (status: string): string => {
-    if (status === 'Approved') {
-        return 'border-emerald-300 bg-emerald-100 text-emerald-800';
-    }
-
-    if (status === 'Revision Required') {
-        return 'border-amber-200 bg-amber-100 text-amber-700';
-    }
-
-    return 'border-slate-200 bg-slate-100 text-slate-700';
-};
-
-const resolvePhaseKey = (stage: string): PhaseKey => {
+export const resolvePhaseKey = (stage: string): PhaseKey => {
     const normalizedStage = stage.toLowerCase().trim();
 
     if (normalizedStage.includes('outline')) {
@@ -120,6 +108,18 @@ const resolvePhaseKey = (stage: string): PhaseKey => {
     return 'phase1';
 };
 
+export const statusPillClass = (status: string): string => {
+    if (status === 'Approved') {
+        return 'border-emerald-300 bg-emerald-100 text-emerald-800';
+    }
+
+    if (status === 'Revision Required') {
+        return 'border-amber-200 bg-amber-100 text-amber-700';
+    }
+
+    return 'border-slate-200 bg-slate-100 text-slate-700';
+};
+
 const StudentDocuments = () => {
     const { props } = usePage<StudentDocumentsProps>();
     const group = props.group;
@@ -132,8 +132,29 @@ const StudentDocuments = () => {
     const successMessage = props.flash?.success ?? '';
 
     const deleteForm = useForm({});
-    const [activePhase, setActivePhase] = React.useState<PhaseKey>('phase1');
+
+    // Initialize from URL search params
+    const [activePhase, setActivePhase] = React.useState<PhaseKey>(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const phase = params.get('phase') as PhaseKey;
+            if (phase && ['phase1', 'phase2', 'phase3', 'phase4', 'phase5'].includes(phase)) {
+                return phase;
+            }
+        }
+        return 'phase1';
+    });
+
     const [submissionPendingRemoval, setSubmissionPendingRemoval] = React.useState<UploadedFileRow | null>(null);
+
+    const handlePhaseChange = (key: PhaseKey) => {
+        setActivePhase(key);
+
+        // Update URL without full reload
+        const url = new URL(window.location.href);
+        url.searchParams.set('phase', key);
+        window.history.replaceState({}, '', url.toString());
+    };
 
     const activePhaseLabel = React.useMemo(() => {
         return phaseTabs.find((tab) => tab.key === activePhase)?.label ?? 'Phase';
@@ -296,7 +317,7 @@ const StudentDocuments = () => {
                             <button
                                 key={tab.key}
                                 type="button"
-                                onClick={() => setActivePhase(tab.key)}
+                                onClick={() => handlePhaseChange(tab.key)}
                                 className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold whitespace-nowrap transition-all ${
                                     isActive
                                         ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
