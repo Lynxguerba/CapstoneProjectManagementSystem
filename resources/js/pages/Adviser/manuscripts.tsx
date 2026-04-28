@@ -6,6 +6,7 @@ import {
     CheckCircle2,
     ChevronRight,
     ChevronsLeft,
+    FileText,
     GraduationCap,
     ListTree,
     PanelRightOpen,
@@ -14,6 +15,7 @@ import {
     X,
 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import RecommendationModal, { type RecommendationDocument } from '@/components/Adviser/RecommendationModal';
 import adviserRoutes from '../../routes/adviser';
 import manuscriptSubmissionRoutes from '../../routes/adviser/manuscripts/submissions';
 import AdviserLayout from './_layout';
@@ -40,12 +42,18 @@ type GroupManuscriptBundle = {
     program_set_name?: string | null;
     school_year?: string | null;
     updated_at?: string | null;
+    project_title?: string | null;
     member_names?: string[];
+    has_recommendation_requirement?: boolean;
+    recommendation_requirement_id?: number | null;
+    recommendation_requirement_type?: string | null;
+    recommendation_document?: RecommendationDocument | null;
     manuscripts: Manuscript[];
 };
 
 type AdviserManuscriptsPageProps = {
     groups?: GroupManuscriptBundle[];
+    hasESignature?: boolean;
 };
 
 type ReviewNotification = {
@@ -54,17 +62,25 @@ type ReviewNotification = {
     message: string;
 };
 
+type GroupStageBundle = GroupManuscriptBundle & {
+    stage: string;
+};
+
 const AdviserManuscripts = () => {
     const { props } = usePage<AdviserManuscriptsPageProps>();
     const [query, setQuery] = useState('');
     const [selectedProgramSet, setSelectedProgramSet] = useState('All');
     const [selectedAcademicYear, setSelectedAcademicYear] = useState('All');
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+    const [selectedStage, setSelectedStage] = useState<string | null>(null);
     const [selectedManuscriptId, setSelectedManuscriptId] = useState<number | null>(null);
     const [isSubmissionsPaneCollapsed, setIsSubmissionsPaneCollapsed] = useState(false);
     const [bundles, setBundles] = useState<GroupManuscriptBundle[]>(() => props.groups ?? []);
     const [processingManuscriptId, setProcessingManuscriptId] = useState<number | null>(null);
+    const [isRecommendationModalOpen, setIsRecommendationModalOpen] = useState(false);
+    const [isRecommendationGenerating, setIsRecommendationGenerating] = useState(false);
     const [notification, setNotification] = useState<ReviewNotification | null>(null);
+    const hasESignature = props.hasESignature ?? false;
 
     const dismissNotification = useCallback(() => {
         setNotification(null);
@@ -73,6 +89,38 @@ const AdviserManuscripts = () => {
     useEffect(() => {
         setBundles(props.groups ?? []);
     }, [props.groups]);
+
+    const transformedBundles = useMemo(() => {
+        const result: GroupStageBundle[] = [];
+
+        bundles.forEach((bundle) => {
+            const manuscriptsByStage = new Map<string, Manuscript[]>();
+
+            bundle.manuscripts.forEach((manuscript) => {
+                const stage = manuscript.stage;
+                if (!manuscriptsByStage.has(stage)) {
+                    manuscriptsByStage.set(stage, []);
+                }
+                manuscriptsByStage.get(stage)?.push(manuscript);
+            });
+
+            manuscriptsByStage.forEach((manuscripts, stage) => {
+                result.push({
+                    ...bundle,
+                    stage,
+                    manuscripts,
+                    updated_at: manuscripts[0]?.submitted_at ?? bundle.updated_at,
+                });
+            });
+        });
+
+        // Sort by updated_at descending
+        return result.sort((a, b) => {
+            const dateA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+            const dateB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+            return dateB - dateA;
+        });
+    }, [bundles]);
 
     useEffect(() => {
         if (!notification) {
@@ -140,7 +188,7 @@ const AdviserManuscripts = () => {
     const filteredBundles = useMemo(() => {
         const normalizedQuery = query.trim().toLowerCase();
 
-        return bundles.filter((bundle) => {
+        return transformedBundles.filter((bundle) => {
             const matchesProgramSet = selectedProgramSet === 'All' || String(bundle.program_set_id) === selectedProgramSet;
             if (!matchesProgramSet) {
                 return false;
@@ -156,36 +204,104 @@ const AdviserManuscripts = () => {
             }
 
             const matchesGroup = bundle.group_name.toLowerCase().includes(normalizedQuery);
+            const matchesStage = bundle.stage.toLowerCase().includes(normalizedQuery);
             const matchesManuscript = bundle.manuscripts.some(
                 (manuscript) =>
                     manuscript.title.toLowerCase().includes(normalizedQuery) ||
                     manuscript.requirement_type.toLowerCase().includes(normalizedQuery),
             );
 
-            return matchesGroup || matchesManuscript;
+            return matchesGroup || matchesManuscript || matchesStage;
         });
-    }, [bundles, query, selectedProgramSet, selectedAcademicYear]);
+    }, [transformedBundles, query, selectedProgramSet, selectedAcademicYear]);
 
     const selectedGroup = useMemo(
-        () => filteredBundles.find((bundle) => bundle.group_id === selectedGroupId) ?? null,
-        [filteredBundles, selectedGroupId],
+        () => filteredBundles.find((bundle) => bundle.group_id === selectedGroupId && bundle.stage === selectedStage) ?? null,
+        [filteredBundles, selectedGroupId, selectedStage],
     );
     const selectedManuscript = useMemo(
         () => selectedGroup?.manuscripts.find((manuscript) => manuscript.id === selectedManuscriptId) ?? null,
         [selectedGroup, selectedManuscriptId],
     );
+    const isOutlineStageSelected = selectedGroup?.stage.toLowerCase() === 'outline';
+    const projectTitleForRecommendation = useMemo(() => {
+        const projectTitle = selectedGroup?.project_title?.trim();
+        if (projectTitle) {
+            return projectTitle;
+        }
+
+        const manuscriptTitle = selectedManuscript?.title.trim() ?? selectedGroup?.manuscripts[0]?.title.trim() ?? '';
+
+        return manuscriptTitle !== '' ? manuscriptTitle : null;
+    }, [selectedGroup, selectedManuscript]);
+    const recommendationTitles = useMemo(() => {
+        if (!projectTitleForRecommendation) {
+            return [] as string[];
+        }
+
+        return [projectTitleForRecommendation];
+    }, [projectTitleForRecommendation]);
+    const areAllOutlineManuscriptsApproved = useMemo(() => {
+        if (!selectedGroup || !isOutlineStageSelected || selectedGroup.manuscripts.length === 0) {
+            return false;
+        }
+
+        return selectedGroup.manuscripts.every((manuscript) => manuscript.adviser_status === 'Approved');
+    }, [isOutlineStageSelected, selectedGroup]);
+    const hasRecommendationRequirement = selectedGroup?.has_recommendation_requirement === true;
+    const canGenerateRecommendation = Boolean(
+        selectedGroup &&
+            isOutlineStageSelected &&
+            hasRecommendationRequirement &&
+            projectTitleForRecommendation &&
+            areAllOutlineManuscriptsApproved,
+    );
+    const recommendationDisabledReason = useMemo(() => {
+        if (!selectedGroup) {
+            return 'Select an outline submission first.';
+        }
+
+        if (!isOutlineStageSelected) {
+            return 'Recommendation for Outline Defense is only available for Outline stage submissions.';
+        }
+
+        if (!hasRecommendationRequirement) {
+            return 'No outline recommendation document requirement is configured for this group in Requirements Manager.';
+        }
+
+        if (!projectTitleForRecommendation) {
+            return 'No approved project title is linked to this group yet.';
+        }
+
+        if (selectedGroup.manuscripts.length === 0) {
+            return 'No outline manuscript submissions are available for recommendation.';
+        }
+
+        if (!areAllOutlineManuscriptsApproved) {
+            return 'All outline manuscript rows must be approved in Adviser Approval Status before generating recommendation.';
+        }
+
+        return null;
+    }, [
+        areAllOutlineManuscriptsApproved,
+        hasRecommendationRequirement,
+        isOutlineStageSelected,
+        projectTitleForRecommendation,
+        selectedGroup,
+    ]);
 
     useEffect(() => {
-        if (selectedGroupId === null) {
+        if (selectedGroupId === null || selectedStage === null) {
             return;
         }
 
-        const stillAvailable = filteredBundles.some((bundle) => bundle.group_id === selectedGroupId);
+        const stillAvailable = filteredBundles.some((bundle) => bundle.group_id === selectedGroupId && bundle.stage === selectedStage);
         if (!stillAvailable) {
             setSelectedGroupId(null);
+            setSelectedStage(null);
             setSelectedManuscriptId(null);
         }
-    }, [filteredBundles, selectedGroupId]);
+    }, [filteredBundles, selectedGroupId, selectedStage]);
 
     useEffect(() => {
         if (selectedManuscriptId === null || !selectedGroup) {
@@ -197,6 +313,36 @@ const AdviserManuscripts = () => {
             setSelectedManuscriptId(selectedGroup.manuscripts[0]?.id ?? null);
         }
     }, [selectedGroup, selectedManuscriptId]);
+
+    useEffect(() => {
+        if (!selectedGroup || !isOutlineStageSelected) {
+            setIsRecommendationModalOpen(false);
+        }
+    }, [isOutlineStageSelected, selectedGroup]);
+
+    const stageBadgeClass = (stage: string): string => {
+        const normalized = stage.toLowerCase();
+        if (normalized === 'outline') {
+            return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+        }
+        if (normalized === 'pre-deployment') {
+            return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+        }
+        if (normalized === 'deployment') {
+            return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+        }
+        if (normalized === 'final' || normalized === 'finals') {
+            return 'border-emerald-200 bg-emerald-600 text-white';
+        }
+        return 'border-slate-200 bg-slate-50 text-slate-600';
+    };
+
+    const formatStage = (stage: string): string => {
+        if (stage.toLowerCase() === 'final') {
+            return 'Finals';
+        }
+        return stage;
+    };
 
     const adviserStatusPillClass = (status: SubmissionStatus): string => {
         if (status === 'Approved') {
@@ -286,6 +432,100 @@ const AdviserManuscripts = () => {
             title: 'Revision Requested',
             message: 'The selected manuscript is now marked for revision.',
         });
+    };
+
+    const handleGenerateRecommendation = async (): Promise<void> => {
+        if (!selectedGroup) {
+            return;
+        }
+
+        if (!canGenerateRecommendation) {
+            setNotification({
+                tone: 'warning',
+                title: 'Recommendation Unavailable',
+                message: recommendationDisabledReason ?? 'Complete all prerequisite approvals before generating recommendation.',
+            });
+            return;
+        }
+
+        if (!hasESignature) {
+            setNotification({
+                tone: 'warning',
+                title: 'E-Signature Required',
+                message: 'Register your e-signature in Adviser Settings before generating recommendation.',
+            });
+            return;
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (!csrfToken) {
+            setNotification({
+                tone: 'error',
+                title: 'Security Token Missing',
+                message: 'Unable to validate request. Refresh the page and try again.',
+            });
+            return;
+        }
+
+        setIsRecommendationGenerating(true);
+        setNotification(null);
+
+        try {
+            const response = await fetch(`/adviser/manuscripts/groups/${selectedGroup.group_id}/recommendation-outline-defense`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({}),
+            });
+
+            const payload = (await response.json().catch(() => null)) as {
+                message?: string;
+                recommendation?: RecommendationDocument;
+            } | null;
+
+            if (!response.ok) {
+                setNotification({
+                    tone: 'error',
+                    title: 'Recommendation Generation Failed',
+                    message: payload?.message ?? 'Unable to generate outline recommendation letter.',
+                });
+                return;
+            }
+
+            const recommendation = payload?.recommendation ?? null;
+
+            setBundles((currentBundles) =>
+                currentBundles.map((bundle) => {
+                    if (bundle.group_id !== selectedGroup.group_id) {
+                        return bundle;
+                    }
+
+                    return {
+                        ...bundle,
+                        recommendation_document: recommendation,
+                    };
+                }),
+            );
+
+            setNotification({
+                tone: 'success',
+                title: 'Recommendation Generated',
+                message: payload?.message ?? 'Signed outline recommendation letter generated successfully.',
+            });
+        } catch {
+            setNotification({
+                tone: 'error',
+                title: 'Recommendation Generation Failed',
+                message: 'An unexpected error occurred while generating the outline recommendation letter.',
+            });
+        } finally {
+            setIsRecommendationGenerating(false);
+        }
     };
 
     return (
@@ -409,7 +649,7 @@ const AdviserManuscripts = () => {
                             <div className="flex items-center gap-2">
                                 <ListTree size={16} className="text-emerald-700" />
                                 <div className={isSubmissionsPaneCollapsed ? 'hidden' : ''}>
-                                    <div className="text-sm font-semibold text-slate-900">Outline Manuscripts</div>
+                                    <div className="text-sm font-semibold text-slate-900">Group Manuscripts</div>
                                     <div className="text-xs text-slate-500">Select a group to review.</div>
                                 </div>
                             </div>
@@ -472,15 +712,16 @@ const AdviserManuscripts = () => {
 
                         <div className="mt-4 space-y-2">
                             {filteredBundles.map((bundle) => {
-                                const isActive = bundle.group_id === selectedGroupId;
+                                const isActive = bundle.group_id === selectedGroupId && bundle.stage === selectedStage;
                                 const firstLetter = bundle.group_name.trim().charAt(0).toUpperCase() || '?';
 
                                 return (
                                     <button
-                                        key={bundle.group_id}
+                                        key={`${bundle.group_id}-${bundle.stage}`}
                                         type="button"
                                         onClick={() => {
                                             setSelectedGroupId(bundle.group_id);
+                                            setSelectedStage(bundle.stage);
                                             setSelectedManuscriptId(bundle.manuscripts[0]?.id ?? null);
                                         }}
                                         className={`w-full rounded-xl border text-left transition-colors ${
@@ -499,8 +740,17 @@ const AdviserManuscripts = () => {
                                             </div>
                                         ) : (
                                             <div className="flex items-start justify-between gap-3 px-4 py-3">
-                                                <div className="min-w-0">
-                                                    <div className="truncate text-sm font-semibold text-slate-900">{bundle.group_name}</div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div className="truncate text-sm font-semibold text-slate-900">{bundle.group_name}</div>
+                                                        <span
+                                                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ${stageBadgeClass(
+                                                                bundle.stage,
+                                                            )}`}
+                                                        >
+                                                            {formatStage(bundle.stage)}
+                                                        </span>
+                                                    </div>
                                                     <div className="mt-1 text-[11px] text-slate-500">
                                                         {bundle.program_set_name ?? 'Program set'}
                                                         {bundle.school_year ? ` • ${bundle.school_year}` : ''}
@@ -537,18 +787,42 @@ const AdviserManuscripts = () => {
                         ) : (
                             <div className="space-y-5">
                                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className="font-semibold text-slate-900">Group</span>
-                                        <span className="font-semibold text-slate-900">{selectedGroup.group_name}</span>
-                                        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
-                                            Leader {selectedGroup.leader_name ?? 'N/A'}
-                                        </span>
-                                        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
-                                            {selectedGroup.program_set_name ?? 'Program set'}
-                                        </span>
-                                    </div>
-                                    <div className="mt-2 text-xs text-slate-500">
-                                        Members: {selectedGroup.member_names?.length ? selectedGroup.member_names.join(' • ') : 'No members found.'}
+                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                        <div>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="font-semibold text-slate-900">Group</span>
+                                                <span className="font-semibold text-slate-900">{selectedGroup.group_name}</span>
+                                                <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${stageBadgeClass(selectedGroup.stage)}`}>
+                                                    {formatStage(selectedGroup.stage)}
+                                                </span>
+                                                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
+                                                    Leader {selectedGroup.leader_name ?? 'N/A'}
+                                                </span>
+                                                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
+                                                    {selectedGroup.program_set_name ?? 'Program set'}
+                                                </span>
+                                            </div>
+                                            <div className="mt-2 text-xs text-slate-500">
+                                                Project Title: {projectTitleForRecommendation ?? 'No approved project title linked yet.'}
+                                            </div>
+                                            <div className="mt-1 text-xs text-slate-500">
+                                                Members: {selectedGroup.member_names?.length ? selectedGroup.member_names.join(' • ') : 'No members found.'}
+                                            </div>
+                                        </div>
+                                        {isOutlineStageSelected ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsRecommendationModalOpen(true)}
+                                                disabled={!canGenerateRecommendation}
+                                                title={
+                                                    canGenerateRecommendation ? 'Open recommendation generator' : (recommendationDisabledReason ?? undefined)
+                                                }
+                                                className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+                                            >
+                                                <FileText className="h-3.5 w-3.5" />
+                                                Recommendation
+                                            </button>
+                                        ) : null}
                                     </div>
                                 </div>
 
@@ -682,6 +956,30 @@ const AdviserManuscripts = () => {
                     </motion.section>
                 </div>
             </motion.section>
+            <RecommendationModal
+                open={isRecommendationModalOpen && selectedGroup !== null && isOutlineStageSelected}
+                onClose={() => setIsRecommendationModalOpen(false)}
+                groupName={selectedGroup?.group_name ?? 'Group'}
+                leaderName={selectedGroup?.leader_name ?? null}
+                modalTitle="Recommendation for Outline Defense"
+                recommendationRequirementType={selectedGroup?.recommendation_requirement_type ?? null}
+                approvedTitles={recommendationTitles}
+                titleSectionLabel="Project Title"
+                titlePrefixLabel={null}
+                memberNames={selectedGroup?.member_names ?? []}
+                hasESignature={hasESignature}
+                canGenerate={canGenerateRecommendation}
+                readyMessage="The approved project title and adviser-approved outline manuscript are ready for recommendation generation."
+                disabledReason={recommendationDisabledReason}
+                processing={isRecommendationGenerating}
+                recommendationDocument={selectedGroup?.recommendation_document ?? null}
+                emptyPreviewMessage="Click the E-Sign button to generate and preview the outline recommendation PDF."
+                footerMessage="This action generates a signed outline recommendation letter and stores it in the document review flow."
+                generateButtonLabel={selectedGroup?.recommendation_document ? 'Re-sign & Regenerate PDF' : 'E-Sign & Generate PDF'}
+                onGenerate={() => {
+                    void handleGenerateRecommendation();
+                }}
+            />
         </AdviserLayout>
     );
 };

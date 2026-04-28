@@ -41,6 +41,52 @@ class RecommendationForTitleDefensePdfGenerator
         return $outputPdfPath;
     }
 
+    public function generateOutlineDefense(
+        string $templatePdfPath,
+        string $signatureDataUrl,
+        string $projectTitle,
+        string $groupName,
+        string $submittedByNames,
+        string $adviserName,
+        CarbonInterface $signedAt,
+        ?string $programCode = null,
+    ): string {
+        $workingDirectory = storage_path('app/private/tmp/outline-recommendation-'.Str::uuid()->toString());
+        File::ensureDirectoryExists($workingDirectory);
+        $outputPdfPath = $workingDirectory.'/recommendation-for-outline-defense.pdf';
+
+        $templateBackground = $this->loadPdfTemplatePageImage($templatePdfPath, $workingDirectory);
+
+        if (is_array($templateBackground)) {
+            $this->generateOutlineDefenseFromTemplate(
+                $outputPdfPath,
+                $templateBackground,
+                $signatureDataUrl,
+                $projectTitle,
+                $groupName,
+                $submittedByNames,
+                $adviserName,
+                $signedAt,
+                $programCode,
+            );
+
+            return $outputPdfPath;
+        }
+
+        $this->generateOutlineDefenseFallbackPdf(
+            $outputPdfPath,
+            $signatureDataUrl,
+            $projectTitle,
+            $groupName,
+            $submittedByNames,
+            $adviserName,
+            $signedAt,
+            $programCode,
+        );
+
+        return $outputPdfPath;
+    }
+
     /**
      * @param  array<int, string>  $proponentNames
      * @param  array<int, string>  $memberPanelistNames
@@ -665,6 +711,179 @@ class RecommendationForTitleDefensePdfGenerator
         File::put($outputPdfPath, $pdfDocument);
     }
 
+    /**
+     * @param  array{width: int, height: int, rgb_data: string, alpha_data: string|null}  $templateBackground
+     */
+    private function generateOutlineDefenseFromTemplate(
+        string $outputPdfPath,
+        array $templateBackground,
+        string $signatureDataUrl,
+        string $projectTitle,
+        string $groupName,
+        string $submittedByNames,
+        string $adviserName,
+        CarbonInterface $signedAt,
+        ?string $programCode,
+    ): void {
+        $pageWidth = 612.0;
+        $pageHeight = 792.0;
+        $lines = [];
+        $signatureImage = $this->extractSignatureImage($signatureDataUrl);
+        $imageMap = [
+            'BG' => $templateBackground,
+        ];
+
+        $this->appendPdfImageCommand($lines, 'BG', 0.0, 0.0, $pageWidth, $pageHeight);
+
+        $this->appendPdfFilledRectangle($lines, 60.0, 558.0, 490.0, 38.0);
+        $this->appendPdfFilledRectangle($lines, 68.0, 490.0, 476.0, 62.0);
+        $this->appendPdfFilledRectangle($lines, 112.0, 462.0, 388.0, 18.0);
+        $this->appendPdfFilledRectangle($lines, 68.0, 430.0, 476.0, 50.0);
+        $this->appendPdfFilledRectangle($lines, 388.0, 330.0, 162.0, 96.0);
+
+        $degreeName = $this->resolveDegreeProgramName($programCode);
+        $introText = sprintf(
+            'In partial fulfillment of the requirements for the degree %s, this Capstone Project entitled',
+            $degreeName,
+        );
+        $introLines = $this->wrapText($introText, 76);
+        $introY = 582;
+        foreach ($introLines as $index => $line) {
+            $this->appendPdfTextCenteredAtX($lines, 'F1', 11, 306.0, $introY - ($index * 15), $line);
+        }
+
+        $titleLines = $this->wrapText(Str::upper($this->shortenLineText($projectTitle, 180)), 54);
+        $titleFontSize = count($titleLines) > 2 ? 13 : 14;
+        $titleLineHeight = count($titleLines) > 2 ? 18 : 20;
+        $titleY = 528;
+        foreach (array_slice($titleLines, 0, 3) as $index => $line) {
+            $this->appendPdfTextCenteredAtX($lines, 'F2', $titleFontSize, 306.0, $titleY - ($index * $titleLineHeight), $line);
+        }
+
+        $this->appendPdfTextCenteredAtX(
+            $lines,
+            'F1',
+            10,
+            306.0,
+            468,
+            'Capstone Group: '.$this->shortenLineText($groupName, 58)
+        );
+
+        $bodyLines = $this->wrapText(
+            sprintf(
+                'has been prepared and submitted by %s and is recommended for outline defense.',
+                $submittedByNames,
+            ),
+            76,
+        );
+        $bodyStartY = 446;
+        foreach ($bodyLines as $index => $line) {
+            $this->appendPdfTextLine($lines, 'F1', 11, 72, $bodyStartY - ($index * 15), $line);
+        }
+        $bodyEndY = $bodyStartY - (count($bodyLines) * 15);
+
+        $signatureBlockCenterX = 470.0;
+        if (is_array($signatureImage)) {
+            $signatureSize = $this->calculateImageDrawSize($signatureImage, 120.0, 40.0);
+            $signatureX = $signatureBlockCenterX - ($signatureSize['width'] / 2.0);
+            $this->appendPdfImageCommand($lines, 'SIG', $signatureX, max(372.0, (float) $bodyEndY - 8.0), $signatureSize['width'], $signatureSize['height']);
+            $imageMap['SIG'] = $signatureImage;
+        }
+
+        $this->appendPdfTextCenteredAtX($lines, 'F2', 11, $signatureBlockCenterX, 366, $adviserName);
+        $this->appendPdfTextCenteredAtX($lines, 'F1', 10, $signatureBlockCenterX, 352, 'Project Adviser');
+        $this->appendPdfTextCenteredAtX($lines, 'F1', 10, $signatureBlockCenterX, 338, 'Date Signed: '.$signedAt->format('F d, Y'));
+
+        $pdfContent = implode("\n", $lines);
+        $pdfDocument = $this->buildSimplePdfDocument($pdfContent, $imageMap, $pageWidth, $pageHeight);
+        File::put($outputPdfPath, $pdfDocument);
+    }
+
+    private function generateOutlineDefenseFallbackPdf(
+        string $outputPdfPath,
+        string $signatureDataUrl,
+        string $projectTitle,
+        string $groupName,
+        string $submittedByNames,
+        string $adviserName,
+        CarbonInterface $signedAt,
+        ?string $programCode,
+    ): void {
+        $pageWidth = 612.0;
+        $pageHeight = 792.0;
+        $lines = [];
+        $headerImage = $this->loadTemplateImage(storage_path('app/private/templates/header.png'));
+        $footerImage = $this->loadTemplateImage(storage_path('app/private/templates/footer.png'));
+        $signatureImage = $this->extractSignatureImage($signatureDataUrl);
+        $imageMap = [];
+
+        if (is_array($headerImage)) {
+            $headerSize = $this->calculateImageDrawSize($headerImage, $pageWidth, 134.0);
+            $this->appendPdfImageCommand($lines, 'HEADER', 0.0, $pageHeight - $headerSize['height'], $headerSize['width'], $headerSize['height']);
+            $imageMap['HEADER'] = $headerImage;
+        }
+
+        if (is_array($footerImage)) {
+            $footerSize = $this->calculateImageDrawSize($footerImage, $pageWidth, 94.0);
+            $this->appendPdfImageCommand($lines, 'FOOTER', 0.0, 0.0, $footerSize['width'], $footerSize['height']);
+            $imageMap['FOOTER'] = $footerImage;
+        }
+
+        $this->appendPdfCenteredTextLine($lines, 'F2', 15, 645, 'Recommendation for Outline Defense');
+
+        $degreeName = $this->resolveDegreeProgramName($programCode);
+        $introText = sprintf(
+            'In partial fulfillment of the requirements for the degree %s, this Capstone Project entitled',
+            $degreeName,
+        );
+        $introLines = $this->wrapText($introText, 74);
+        foreach ($introLines as $index => $line) {
+            $this->appendPdfTextCenteredAtX($lines, 'F1', 11, 306.0, 588 - ($index * 16), $line);
+        }
+
+        $titleLines = $this->wrapText(Str::upper($this->shortenLineText($projectTitle, 180)), 52);
+        foreach (array_slice($titleLines, 0, 3) as $index => $line) {
+            $this->appendPdfTextCenteredAtX($lines, 'F2', 14, 306.0, 530 - ($index * 20), $line);
+        }
+
+        $this->appendPdfTextCenteredAtX(
+            $lines,
+            'F1',
+            10,
+            306.0,
+            468,
+            'Capstone Group: '.$this->shortenLineText($groupName, 58)
+        );
+
+        $bodyLines = $this->wrapText(
+            sprintf(
+                'has been prepared and submitted by %s and is recommended for outline defense.',
+                $submittedByNames,
+            ),
+            76,
+        );
+        $bodyStartY = 446;
+        foreach ($bodyLines as $index => $line) {
+            $this->appendPdfTextLine($lines, 'F1', 11, 72, $bodyStartY - ($index * 15), $line);
+        }
+
+        $signatureBlockCenterX = 470.0;
+        if (is_array($signatureImage)) {
+            $signatureSize = $this->calculateImageDrawSize($signatureImage, 120.0, 40.0);
+            $signatureX = $signatureBlockCenterX - ($signatureSize['width'] / 2.0);
+            $this->appendPdfImageCommand($lines, 'SIG', $signatureX, 376.0, $signatureSize['width'], $signatureSize['height']);
+            $imageMap['SIG'] = $signatureImage;
+        }
+
+        $this->appendPdfTextCenteredAtX($lines, 'F2', 11, $signatureBlockCenterX, 366, $adviserName);
+        $this->appendPdfTextCenteredAtX($lines, 'F1', 10, $signatureBlockCenterX, 352, 'Project Adviser');
+        $this->appendPdfTextCenteredAtX($lines, 'F1', 10, $signatureBlockCenterX, 338, 'Date Signed: '.$signedAt->format('F d, Y'));
+
+        $pdfContent = implode("\n", $lines);
+        $pdfDocument = $this->buildSimplePdfDocument($pdfContent, $imageMap, $pageWidth, $pageHeight);
+        File::put($outputPdfPath, $pdfDocument);
+    }
+
     private function resolveDegreeProgramName(?string $programCode): string
     {
         $normalizedProgramCode = strtoupper(trim((string) $programCode));
@@ -711,6 +930,33 @@ class RecommendationForTitleDefensePdfGenerator
             $this->formatPdfNumber($y),
         );
         $lines[] = '/'.$imageKey.' Do';
+        $lines[] = 'Q';
+    }
+
+    private function appendPdfFilledRectangle(
+        array &$lines,
+        float $x,
+        float $y,
+        float $width,
+        float $height,
+        float $red = 1.0,
+        float $green = 1.0,
+        float $blue = 1.0,
+    ): void {
+        $lines[] = 'q';
+        $lines[] = sprintf(
+            '%s %s %s rg',
+            $this->formatPdfNumber($red),
+            $this->formatPdfNumber($green),
+            $this->formatPdfNumber($blue),
+        );
+        $lines[] = sprintf(
+            '%s %s %s %s re f',
+            $this->formatPdfNumber($x),
+            $this->formatPdfNumber($y),
+            $this->formatPdfNumber($width),
+            $this->formatPdfNumber($height),
+        );
         $lines[] = 'Q';
     }
 
@@ -968,6 +1214,41 @@ class RecommendationForTitleDefensePdfGenerator
     /**
      * @return array{width: int, height: int, rgb_data: string, alpha_data: string|null}|null
      */
+    private function loadPdfTemplatePageImage(string $templatePdfPath, string $workingDirectory): ?array
+    {
+        if (! is_file($templatePdfPath)) {
+            return null;
+        }
+
+        $finder = new ExecutableFinder;
+        if ($finder->find('gs') === null) {
+            return null;
+        }
+
+        $templatePngPath = $workingDirectory.'/template-page.png';
+
+        try {
+            $this->runProcess([
+                'gs',
+                '-dNOPAUSE',
+                '-dBATCH',
+                '-sDEVICE=pngalpha',
+                '-r72',
+                '-dFirstPage=1',
+                '-dLastPage=1',
+                '-sOutputFile='.$templatePngPath,
+                $templatePdfPath,
+            ], $workingDirectory);
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $this->loadTemplateImage($templatePngPath);
+    }
+
+    /**
+     * @return array{width: int, height: int, rgb_data: string, alpha_data: string|null}|null
+     */
     private function loadTemplateImage(string $imagePath): ?array
     {
         if (! is_file($imagePath)) {
@@ -984,15 +1265,24 @@ class RecommendationForTitleDefensePdfGenerator
     /**
      * @param  array<string, array{width: int, height: int, rgb_data: string, alpha_data: string|null}>  $images
      */
-    private function buildSimplePdfDocument(string $contentStream, array $images = []): string
-    {
+    private function buildSimplePdfDocument(
+        string $contentStream,
+        array $images = [],
+        float $pageWidth = 595.0,
+        float $pageHeight = 842.0,
+    ): string {
         $pageResources = '<< /ProcSet [/PDF /Text /ImageC] /Font << /F1 4 0 R /F2 5 0 R >>';
         $xObjectEntries = [];
+        $mediaBox = sprintf(
+            '[0 0 %s %s]',
+            $this->formatPdfNumber($pageWidth),
+            $this->formatPdfNumber($pageHeight),
+        );
 
         $objects = [
             1 => '<< /Type /Catalog /Pages 2 0 R >>',
             2 => '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-            3 => '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources '.$pageResources.' /Contents 6 0 R >>',
+            3 => '<< /Type /Page /Parent 2 0 R /MediaBox '.$mediaBox.' /Resources '.$pageResources.' /Contents 6 0 R >>',
             4 => '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
             5 => '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',
             6 => '<< /Length '.strlen($contentStream)." >>\nstream\n{$contentStream}\nendstream",
@@ -1037,7 +1327,7 @@ class RecommendationForTitleDefensePdfGenerator
             $pageResources .= ' /XObject << '.implode(' ', $xObjectEntries).' >>';
         }
         $pageResources .= ' >>';
-        $objects[3] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources '.$pageResources.' /Contents 6 0 R >>';
+        $objects[3] = '<< /Type /Page /Parent 2 0 R /MediaBox '.$mediaBox.' /Resources '.$pageResources.' /Contents 6 0 R >>';
 
         ksort($objects);
 

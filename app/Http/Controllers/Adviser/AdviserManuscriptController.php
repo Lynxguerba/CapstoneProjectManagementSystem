@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Adviser;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdviserRecommendationDocument;
+use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
 use App\Models\User;
@@ -18,10 +20,13 @@ class AdviserManuscriptController extends Controller
 {
     public function __invoke(): Response
     {
-        $adviserId = Auth::guard('web')->id();
+        $adviser = Auth::guard('web')->user();
+        $adviserId = $adviser?->id;
+        $adviser?->loadMissing('eSignature');
 
         return Inertia::render('Adviser/manuscripts', [
             'groups' => $adviserId !== null ? $this->resolveGroups($adviserId) : [],
+            'hasESignature' => $adviser?->eSignature !== null,
         ]);
     }
 
@@ -34,7 +39,17 @@ class AdviserManuscriptController extends Controller
      *     program_set_name: string,
      *     school_year: string|null,
      *     updated_at: string|null,
+     *     project_title: string|null,
      *     member_names: array<int, string>,
+     *     has_recommendation_requirement: bool,
+     *     recommendation_requirement_id: int|null,
+     *     recommendation_requirement_type: string|null,
+     *     recommendation_document: array{
+     *         id: int,
+     *         file_name: string,
+     *         file_url: string,
+     *         signed_at: string|null
+     *     }|null,
      *     manuscripts: array<int, array{
      *         id: int,
      *         title: string,
@@ -59,15 +74,53 @@ class AdviserManuscriptController extends Controller
                 'programSet.academicYear',
                 'leader:id,name,first_name,last_name,email',
                 'members:id,name,first_name,last_name,email',
+                'approvedConceptSubmission:id,file_name',
             ])
             ->whereHas('adviserAssignment', fn (Builder $query): Builder => $query->where('adviser_id', $adviserId))
             ->orderByDesc('updated_at')
             ->get(['id', 'name', 'program_set_id', 'leader_id', 'updated_at']);
 
         $manuscriptsByGroup = $this->resolveManuscriptsByGroup($groups->pluck('id')->all());
+        $academicYearIds = $groups
+            ->map(fn (Group $group): ?int => $group->programSet?->academic_year_id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $recommendationRequirementsByAcademicYearId = $academicYearIds->isEmpty()
+            ? collect()
+            : DocumentRequirement::query()
+                ->where('stage', 'Outline')
+                ->whereRaw('LOWER(requirement_type) like ?', ['%recommendation%'])
+                ->whereIn('academic_year_id', $academicYearIds->all())
+                ->orderBy('due_date')
+                ->get(['id', 'academic_year_id', 'requirement_type'])
+                ->groupBy('academic_year_id')
+                ->map(fn (Collection $requirements): ?DocumentRequirement => $requirements->first());
+
+        $defaultRecommendationRequirement = DocumentRequirement::query()
+            ->where('stage', 'Outline')
+            ->whereRaw('LOWER(requirement_type) like ?', ['%recommendation%'])
+            ->whereNull('academic_year_id')
+            ->orderBy('due_date')
+            ->first(['id', 'academic_year_id', 'requirement_type']);
+
+        $latestRecommendationByGroupId = AdviserRecommendationDocument::query()
+            ->whereIn('group_id', $groups->pluck('id')->all())
+            ->whereHas('requirement', fn (Builder $query): Builder => $query->where('stage', 'Outline'))
+            ->orderByDesc('signed_at')
+            ->orderByDesc('id')
+            ->get(['id', 'group_id', 'file_name', 'file_path', 'signed_at'])
+            ->unique('group_id')
+            ->keyBy('group_id');
 
         return $groups
-            ->map(function (Group $group) use ($manuscriptsByGroup): array {
+            ->map(function (Group $group) use (
+                $defaultRecommendationRequirement,
+                $latestRecommendationByGroupId,
+                $manuscriptsByGroup,
+                $recommendationRequirementsByAcademicYearId,
+            ): array {
                 $programSet = $group->programSet;
                 $schoolYear = $programSet?->academicYear?->label ?? $programSet?->school_year;
                 $fallbackProgramSetName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
@@ -80,6 +133,9 @@ class AdviserManuscriptController extends Controller
                     ->unique()
                     ->values()
                     ->all();
+                $recommendationRequirement = $recommendationRequirementsByAcademicYearId->get($programSet?->academic_year_id)
+                    ?? $defaultRecommendationRequirement;
+                $recommendationDocument = $latestRecommendationByGroupId->get($group->id);
 
                 return [
                     'group_id' => $group->id,
@@ -89,7 +145,21 @@ class AdviserManuscriptController extends Controller
                     'program_set_name' => $programSet?->name ?: $fallbackProgramSetName,
                     'school_year' => $schoolYear,
                     'updated_at' => $latestSubmission?->created_at?->format('Y-m-d') ?? $group->updated_at?->format('Y-m-d'),
+                    'project_title' => is_string($group->approvedConceptSubmission?->file_name)
+                        ? trim($group->approvedConceptSubmission->file_name)
+                        : null,
                     'member_names' => $memberNames,
+                    'has_recommendation_requirement' => $recommendationRequirement !== null,
+                    'recommendation_requirement_id' => $recommendationRequirement?->id,
+                    'recommendation_requirement_type' => $recommendationRequirement?->requirement_type,
+                    'recommendation_document' => $recommendationDocument
+                        ? [
+                            'id' => $recommendationDocument->id,
+                            'file_name' => $recommendationDocument->file_name,
+                            'file_url' => Storage::disk('public')->url($recommendationDocument->file_path),
+                            'signed_at' => $recommendationDocument->signed_at?->format('Y-m-d H:i'),
+                        ]
+                        : null,
                     'manuscripts' => $groupManuscripts
                         ->map(function (DocumentSubmission $submission): array {
                             $adviserStatus = match ((string) $submission->adviser_status) {
@@ -132,10 +202,12 @@ class AdviserManuscriptController extends Controller
             return collect();
         }
 
+        $stages = ['Outline', 'Pre-Deployment', 'Deployment', 'Final'];
+
         return DocumentSubmission::query()
             ->with('requirement:id,stage,requirement_type')
             ->whereIn('group_id', $groupIds)
-            ->whereHas('requirement', fn (Builder $query): Builder => $query->where('stage', 'Outline'))
+            ->whereHas('requirement', fn (Builder $query): Builder => $query->whereIn('stage', $stages))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get([
@@ -149,16 +221,19 @@ class AdviserManuscriptController extends Controller
                 'adviser_reviewed_at',
                 'created_at',
             ])
-            ->filter(fn (DocumentSubmission $submission): bool => $this->isOutlineManuscriptRequirement(
+            ->filter(fn (DocumentSubmission $submission): bool => $this->isManuscriptRequirement(
                 $submission->requirement?->requirement_type,
                 $submission->requirement?->stage,
             ))
             ->groupBy('group_id');
     }
 
-    private function isOutlineManuscriptRequirement(?string $requirementType, ?string $stage): bool
+    private function isManuscriptRequirement(?string $requirementType, ?string $stage): bool
     {
-        if (strtolower(trim((string) $stage)) !== 'outline') {
+        $allowedStages = ['outline', 'pre-deployment', 'deployment', 'final'];
+        $normalizedStage = strtolower(trim((string) $stage));
+
+        if (! in_array($normalizedStage, $allowedStages, true)) {
             return false;
         }
 
@@ -166,7 +241,10 @@ class AdviserManuscriptController extends Controller
 
         return str_contains($normalizedRequirementType, 'manuscript')
             || str_contains($normalizedRequirementType, 'project outline')
-            || $normalizedRequirementType === 'outline';
+            || $normalizedRequirementType === 'outline'
+            || $normalizedRequirementType === 'pre-deployment'
+            || $normalizedRequirementType === 'deployment'
+            || $normalizedRequirementType === 'final';
     }
 
     private function resolveUserName(?User $user): string

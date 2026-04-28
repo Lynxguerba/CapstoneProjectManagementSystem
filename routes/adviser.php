@@ -9,6 +9,7 @@ use App\Http\Controllers\Adviser\DeleteAdviserESignatureController;
 use App\Http\Controllers\Adviser\DestroyAdviserLiveDefenseCommentController;
 use App\Http\Controllers\Adviser\DismissGroupAdviserRequestController;
 use App\Http\Controllers\Adviser\GenerateAdviserConceptVerdictMinutesController;
+use App\Http\Controllers\Adviser\GenerateRecommendationForOutlineDefenseController;
 use App\Http\Controllers\Adviser\GenerateRecommendationForTitleDefenseController;
 use App\Http\Controllers\Adviser\StoreAdviserLiveDefenseCommentController;
 use App\Http\Controllers\Adviser\UpdateAdviserAvailabilityController;
@@ -994,6 +995,8 @@ Route::middleware(['auth', 'role:adviser'])->prefix('adviser')->group(function (
     Route::get('/manuscripts', AdviserManuscriptController::class)->name('adviser.manuscripts');
     Route::patch('/manuscripts/submissions/{submission}/status', UpdateAdviserManuscriptSubmissionStatusController::class)
         ->name('adviser.manuscripts.submissions.status');
+    Route::post('/manuscripts/groups/{group}/recommendation-outline-defense', GenerateRecommendationForOutlineDefenseController::class)
+        ->name('adviser.manuscripts.groups.recommendation-outline-defense');
     Route::get('/documents', function () {
         $userId = Auth::guard('web')->id();
         $projects = [];

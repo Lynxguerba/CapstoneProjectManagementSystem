@@ -573,13 +573,18 @@ class StudentLiveDefenseController extends Controller
         }
 
         $latestRecommendation = AdviserRecommendationDocument::query()
-            ->with('adviser:id,name,first_name,last_name,email')
+            ->with([
+                'adviser:id,name,first_name,last_name,email',
+                'requirement:id,stage',
+            ])
             ->where('group_id', $group->id)
+            ->whereHas('requirement', fn ($query) => $query->where('stage', 'Concept'))
             ->orderByDesc('signed_at')
             ->orderByDesc('id')
             ->first([
                 'id',
                 'adviser_id',
+                'document_requirement_id',
                 'file_name',
                 'file_path',
                 'signed_at',

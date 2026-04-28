@@ -16,14 +16,21 @@ type RecommendationModalProps = {
     onClose: () => void;
     groupName: string;
     leaderName?: string | null;
+    modalTitle?: string;
     recommendationRequirementType?: string | null;
     approvedTitles: string[];
+    titleSectionLabel?: string;
+    titlePrefixLabel?: string | null;
     memberNames: string[];
     hasESignature: boolean;
     canGenerate: boolean;
+    readyMessage?: string;
     disabledReason?: string | null;
     processing: boolean;
     recommendationDocument: RecommendationDocument | null;
+    emptyPreviewMessage?: string;
+    footerMessage?: string;
+    generateButtonLabel?: string;
     onGenerate: () => void;
 };
 
@@ -32,14 +39,21 @@ const RecommendationModal = ({
     onClose,
     groupName,
     leaderName,
+    modalTitle = 'Recommendation for Title Defense',
     recommendationRequirementType,
     approvedTitles,
+    titleSectionLabel = 'Approved Titles',
+    titlePrefixLabel = 'Title',
     memberNames,
     hasESignature,
     canGenerate,
+    readyMessage = 'All concept submissions are approved and a recommendation requirement is configured.',
     disabledReason,
     processing,
     recommendationDocument,
+    emptyPreviewMessage = 'Click the E-Sign button to generate and preview the recommendation PDF.',
+    footerMessage = 'This action generates a signed recommendation letter and stores it in the document review flow.',
+    generateButtonLabel,
     onGenerate,
 }: RecommendationModalProps) => {
     const [isAppearing, setIsAppearing] = useState(false);
@@ -112,7 +126,7 @@ const RecommendationModal = ({
                     <div className="flex items-center gap-2">
                         <FileText className="h-5 w-5 text-emerald-700" />
                         <div>
-                            <h2 className="text-lg font-bold text-emerald-900">Recommendation for Title Defense</h2>
+                            <h2 className="text-lg font-bold text-emerald-900">{modalTitle}</h2>
                             <p className="text-xs text-emerald-700">
                                 {groupName} · Leader {leaderName ?? 'N/A'}
                             </p>
@@ -188,7 +202,7 @@ const RecommendationModal = ({
                                 >
                                     {canGenerate ? (
                                         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700">
-                                            All concept submissions are approved and a recommendation requirement is configured.
+                                            {readyMessage}
                                         </div>
                                     ) : (
                                         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
@@ -208,14 +222,21 @@ const RecommendationModal = ({
                                     </div>
 
                                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                                        <div className="text-xs font-semibold tracking-wide text-slate-600 uppercase">Approved Titles</div>
+                                        <div className="text-xs font-semibold tracking-wide text-slate-600 uppercase">{titleSectionLabel}</div>
                                         {approvedTitles.length === 0 ? (
-                                            <div className="mt-2 text-xs text-slate-500">No approved concept titles found.</div>
+                                            <div className="mt-2 text-xs text-slate-500">No project title is available yet.</div>
                                         ) : (
                                             <div className="mt-2 space-y-1">
                                                 {approvedTitles.map((title, index) => (
                                                     <div key={`${title}-${index}`} className="text-sm text-slate-800">
-                                                        <span className="font-semibold">Title {index + 1}:</span> {title}
+                                                        {titlePrefixLabel ? (
+                                                            <>
+                                                                <span className="font-semibold">{titlePrefixLabel} {index + 1}:</span>{' '}
+                                                                {title}
+                                                            </>
+                                                        ) : (
+                                                            title
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -265,7 +286,7 @@ const RecommendationModal = ({
                             </div>
                         ) : (
                             <div className="flex flex-1 items-center justify-center bg-slate-100 p-6 text-center text-sm text-slate-500">
-                                Click the E-Sign button to generate and preview the recommendation PDF.
+                                {emptyPreviewMessage}
                             </div>
                         )}
                     </div>
@@ -273,7 +294,7 @@ const RecommendationModal = ({
 
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-emerald-200 bg-gradient-to-r from-emerald-50 to-green-100 px-4 py-3">
                     <div className="text-xs text-emerald-800">
-                        This action generates a signed recommendation letter and stores it in the document review flow.
+                        {footerMessage}
                     </div>
                     <button
                         type="button"
@@ -290,7 +311,7 @@ const RecommendationModal = ({
                         ) : (
                             <>
                                 <PenLine className="h-4 w-4" />
-                                <span>{recommendationDocument ? 'Re-sign & Regenerate' : 'E-Sign & Generate PDF'}</span>
+                                <span>{generateButtonLabel ?? (recommendationDocument ? 'Re-sign & Regenerate' : 'E-Sign & Generate PDF')}</span>
                                 <CheckCircle2 className="h-4 w-4" />
                             </>
                         )}

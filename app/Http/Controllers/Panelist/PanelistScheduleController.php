@@ -35,17 +35,24 @@ class PanelistScheduleController extends Controller
         $panelist = Auth::guard('web')->user();
         $panelistId = $panelist?->id;
         $assignedGroups = $this->resolveAssignedGroups($panelistId);
-        $conceptTitlesByGroupId = $this->resolveConceptTitlesByGroupId($assignedGroups);
+        $titlesByGroupIdAndStage = $this->resolveTitlesByGroupIdAndStage($assignedGroups);
         $schedulesByGroupStage = $this->resolveSchedulesByGroupStage($assignedGroups);
 
         $rows = $assignedGroups
-            ->flatMap(function (Group $group) use ($conceptTitlesByGroupId, $panelistId, $schedulesByGroupStage): Collection {
+            ->flatMap(function (Group $group) use ($titlesByGroupIdAndStage, $panelistId, $schedulesByGroupStage): Collection {
                 return collect(self::PHASE_STAGE_MAP)
-                    ->map(function (string $stage, string $phaseKey) use ($conceptTitlesByGroupId, $group, $panelistId, $schedulesByGroupStage): array {
+                    ->map(function (string $stage, string $phaseKey) use ($titlesByGroupIdAndStage, $group, $panelistId, $schedulesByGroupStage): array {
                         $schedule = $schedulesByGroupStage->get($this->scheduleMapKey($group->id, $stage));
                         $groupLabel = $this->formatGroupName($group->name);
-                        $conceptTitle = $conceptTitlesByGroupId->get($group->id);
-                        $projectTitle = is_string($conceptTitle) && trim($conceptTitle) !== '' ? trim($conceptTitle) : $groupLabel;
+
+                        $groupTitles = $titlesByGroupIdAndStage->get($group->id);
+                        $stageTitle = $groupTitles?->get($stage);
+
+                        if (! is_string($stageTitle) || trim($stageTitle) === '') {
+                            $stageTitle = $groupTitles?->first();
+                        }
+
+                        $projectTitle = is_string($stageTitle) && trim($stageTitle) !== '' ? trim($stageTitle) : $groupLabel;
                         $programSetName = $this->resolveProgramSetName($group);
                         $academicYear = $group->programSet?->academicYear?->label ?? $group->programSet?->school_year;
 
@@ -114,9 +121,9 @@ class PanelistScheduleController extends Controller
 
     /**
      * @param  Collection<int, Group>  $assignedGroups
-     * @return Collection<int, string>
+     * @return Collection<int, Collection<string, string>>
      */
-    private function resolveConceptTitlesByGroupId(Collection $assignedGroups): Collection
+    private function resolveTitlesByGroupIdAndStage(Collection $assignedGroups): Collection
     {
         if (
             $assignedGroups->isEmpty()
@@ -136,21 +143,24 @@ class PanelistScheduleController extends Controller
             ->with('requirement:id,requirement_type,stage')
             ->whereIn('group_id', $groupIds)
             ->whereHas('requirement', function (Builder $query): void {
-                $query
-                    ->where('stage', 'Concept')
-                    ->orWhereRaw('LOWER(requirement_type) like ?', ['%concept%']);
+                $query->whereIn('stage', array_values(self::PHASE_STAGE_MAP));
             })
             ->orderByDesc('created_at')
             ->get(['id', 'group_id', 'document_requirement_id', 'file_name', 'created_at']);
 
         return $submissions
             ->groupBy('group_id')
-            ->map(function (Collection $groupSubmissions): string {
-                /** @var DocumentSubmission|null $latestSubmission */
-                $latestSubmission = $groupSubmissions->first();
-                $title = is_string($latestSubmission?->file_name) ? trim($latestSubmission->file_name) : '';
+            ->map(function (Collection $groupSubmissions): Collection {
+                return $groupSubmissions
+                    ->filter(function (DocumentSubmission $submission) {
+                        $requirementType = strtolower($submission->requirement?->requirement_type ?? '');
+                        $fileName = strtolower($submission->file_name ?? '');
 
-                return $title;
+                        return ! str_contains($requirementType, 'recommendation')
+                            && ! str_contains($fileName, 'recommendation');
+                    })
+                    ->groupBy(fn (DocumentSubmission $sub) => $sub->requirement?->stage)
+                    ->map(fn (Collection $stageSubmissions) => trim($stageSubmissions->first()->file_name ?? ''));
             });
     }
 

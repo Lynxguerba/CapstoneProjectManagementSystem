@@ -382,7 +382,7 @@ class StudentDocumentsController extends Controller
             return collect();
         }
 
-        $latestRecommendation = AdviserRecommendationDocument::query()
+        return AdviserRecommendationDocument::query()
             ->with([
                 'adviser:id,name,first_name,last_name,email',
                 'requirement:id,requirement_type,stage',
@@ -403,11 +403,9 @@ class StudentDocumentsController extends Controller
                 'file_name',
                 'signed_at',
             ])
-            ->first();
-
-        return $latestRecommendation instanceof AdviserRecommendationDocument
-            ? collect([$latestRecommendation])
-            : collect();
+            ->filter(fn (AdviserRecommendationDocument $recommendation): bool => trim((string) ($recommendation->requirement?->stage ?? '')) !== '')
+            ->unique(fn (AdviserRecommendationDocument $recommendation): string => strtolower(trim((string) ($recommendation->requirement?->stage ?? ''))))
+            ->values();
     }
 
     private function resolveRecommendationInstructorStatus(AdviserRecommendationDocument $recommendation): string

@@ -81,7 +81,7 @@ class StudentManuscriptController extends Controller
             ] : null,
             'notifications' => [
                 'deadline' => $deadlineDate?->format('F d, Y').' · 11:59 PM',
-                'documentsUrl' => route('student.documents'),
+                'documentsUrl' => route('student.documents', ['phase' => 'phase2']),
             ],
         ]);
     }
