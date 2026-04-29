@@ -140,7 +140,7 @@ const SignOutModal = ({ open, onClose, activeRole, assignedRoles, showDeanAccoun
                 }
             }
         }, 250);
-
+ 
         return () => {
             abortController.abort();
             window.clearTimeout(timeoutId);
