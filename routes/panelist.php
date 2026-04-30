@@ -20,6 +20,7 @@ use App\Http\Controllers\Panelist\UpsertPanelistEvaluationSheetSignatureControll
 use App\Models\DefenseSchedule;
 use App\Models\Group;
 use App\Models\GroupAcknowledgementReceipt;
+use App\Models\GroupDefenseVerdict;
 use App\Models\GroupPanelist;
 use App\Models\PanelistAvailability;
 use App\Models\PanelistEvaluationSheetSignature;
@@ -452,9 +453,20 @@ Route::middleware(['auth', 'role:panelist'])->prefix('panelist')->group(function
             };
         };
 
-        if (Schema::hasColumn('groups', 'concept_verdict')) {
+        $normalizedDefenseStage = strtolower(trim((string) $defenseStage));
+
+        if ($normalizedDefenseStage === 'concept' && Schema::hasColumn('groups', 'concept_verdict')) {
             $rawConceptVerdict = is_string($selectedGroup->concept_verdict) ? trim($selectedGroup->concept_verdict) : '';
             $conceptVerdict = $rawConceptVerdict !== '' ? $rawConceptVerdict : null;
+        } elseif ($normalizedDefenseStage !== '' && class_exists(GroupDefenseVerdict::class) && Schema::hasTable('group_defense_verdicts')) {
+            $stageVerdict = GroupDefenseVerdict::query()
+                ->where('group_id', $selectedGroup->id)
+                ->whereRaw('LOWER(stage) = ?', [$normalizedDefenseStage])
+                ->value('verdict');
+
+            $conceptVerdict = is_string($stageVerdict) && trim($stageVerdict) !== ''
+                ? trim($stageVerdict)
+                : null;
         }
 
         $defenseTypeKey = $normalizeDefenseTypeKey($defenseStage);

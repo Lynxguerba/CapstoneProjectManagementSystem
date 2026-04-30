@@ -4,6 +4,7 @@ use App\Models\AcademicYear;
 use App\Models\DefenseRoom;
 use App\Models\DefenseSchedule;
 use App\Models\Group;
+use App\Models\GroupDefenseVerdict;
 use App\Models\GroupPanelist;
 use App\Models\PanelistEvaluationSheetSignature;
 use App\Models\ProgramSet;
@@ -89,6 +90,72 @@ it('loads instructor review data for the explicitly requested phase instead of t
     expect(data_get($outlineProps, 'defenseHeaderTitle'))->toBe('OUTLINE DEFENSE');
     expect(data_get($outlinePanelistRow, 'evaluationData.groupScores.total'))->toBe(22);
     expect(data_get($outlinePanelistRow, 'evaluationData.presenters'))->toBe([$context['leader']->name]);
+});
+
+it('loads the matching verdict text for the requested phase on the panelist evaluation sheet', function (): void {
+    $context = seedEvaluationPhaseIsolationContext();
+
+    $context['group']->update([
+        'concept_verdict' => 'Passed (No revisions needed)',
+        'concept_verdict_by_panelist_id' => $context['panelist']->id,
+        'concept_verdict_decided_at' => now(),
+    ]);
+
+    GroupDefenseVerdict::query()->create([
+        'group_id' => $context['group']->id,
+        'stage' => 'Outline',
+        'verdict' => 'Conditional Passed',
+        'panelist_user_id' => $context['panelist']->id,
+        'decided_at' => now(),
+    ]);
+
+    $conceptResponse = $this
+        ->actingAs($context['panelist'], 'web')
+        ->withSession(['active_role' => 'panelist'])
+        ->get(route('panelist.live-defense.evaluation-sheet', [
+            'group' => $context['group']->id,
+            'stage' => 'Concept',
+        ]));
+
+    $conceptResponse->assertOk();
+
+    $outlineResponse = $this
+        ->actingAs($context['panelist'], 'web')
+        ->withSession(['active_role' => 'panelist'])
+        ->get(route('panelist.live-defense.evaluation-sheet', [
+            'group' => $context['group']->id,
+            'stage' => 'Outline',
+        ]));
+
+    $outlineResponse->assertOk();
+
+    expect(data_get($conceptResponse->viewData('page'), 'props.conceptVerdict'))->toBe('Passed (No revisions needed)');
+    expect(data_get($outlineResponse->viewData('page'), 'props.conceptVerdict'))->toBe('Conditional Passed');
+});
+
+it('uses the outline verdict status on the panelist schedule rows for phase 2', function (): void {
+    $context = seedEvaluationPhaseIsolationContext();
+
+    GroupDefenseVerdict::query()->create([
+        'group_id' => $context['group']->id,
+        'stage' => 'Outline',
+        'verdict' => 'Conditional Passed',
+        'panelist_user_id' => $context['panelist']->id,
+        'decided_at' => now(),
+    ]);
+
+    $response = $this
+        ->actingAs($context['panelist'], 'web')
+        ->withSession(['active_role' => 'panelist'])
+        ->get(route('panelist.schedule'));
+
+    $response->assertOk();
+
+    $rows = collect(data_get($response->viewData('page'), 'props.rows', []));
+    $outlineRow = $rows->firstWhere('id', $context['group']->id.':phase2');
+
+    expect(data_get($outlineRow, 'defenseType'))->toBe('Outline');
+    expect(data_get($outlineRow, 'evaluationStatus'))->toBe('Conditional');
 });
 
 /**

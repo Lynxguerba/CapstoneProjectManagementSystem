@@ -8,6 +8,9 @@ use App\Models\DefenseSchedule;
 use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
+use App\Models\GroupAcknowledgementReceipt;
+use App\Models\GroupDefenseVerdict;
+use App\Models\PanelistEvaluationSheetSignature;
 use App\Models\ProgramSet;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -74,6 +77,7 @@ class InstructorPhaseTwoController extends Controller
                 $hasConceptVerdictColumn = Schema::hasColumn('groups', 'concept_verdict');
                 $hasApprovedConceptSubmissionColumn = Schema::hasColumn('groups', 'approved_concept_submission_id');
                 $hasGroupPanelistsTable = Schema::hasTable('group_panelists');
+                $hasGroupMembersTable = Schema::hasTable('group_members');
 
                 $groupColumns = ['id', 'name', 'program_set_id', 'leader_id', 'created_at'];
 
@@ -86,11 +90,19 @@ class InstructorPhaseTwoController extends Controller
                 }
 
                 $groupsQuery = Group::query()
-                    ->with(['programSet.academicYear', 'leader'])
+                    ->with([
+                        'programSet.academicYear',
+                        'leader:id,name,first_name,last_name,email',
+                        'adviserAssignment:id,group_id,adviser_id',
+                    ])
                     ->when($userId !== null, function ($query) use ($userId): void {
                         $query->whereHas('programSet', fn ($subQuery) => $subQuery->where('instructor_id', $userId));
                     })
                     ->orderByDesc('created_at');
+
+                if ($hasGroupMembersTable) {
+                    $groupsQuery->with('members:id,name,first_name,last_name,email');
+                }
 
                 if ($hasGroupPanelistsTable) {
                     $groupsQuery->withCount('panelAssignments');
@@ -100,13 +112,63 @@ class InstructorPhaseTwoController extends Controller
                     $groupsQuery->whereNotNull('approved_concept_submission_id');
                 }
 
-                $groups = $groupsQuery
-                    ->get($groupColumns)
+                $groupCollection = $groupsQuery->get($groupColumns);
+                $groupIds = $groupCollection
+                    ->pluck('id')
+                    ->filter(static fn ($groupId): bool => is_numeric($groupId))
+                    ->map(static fn ($groupId): int => (int) $groupId)
+                    ->values();
+
+                $outlineVerdictsByGroupId = collect();
+                if ($groupIds->isNotEmpty() && Schema::hasTable('group_defense_verdicts')) {
+                    $outlineVerdictsByGroupId = GroupDefenseVerdict::query()
+                        ->whereIn('group_id', $groupIds->all())
+                        ->whereRaw('LOWER(stage) = ?', ['outline'])
+                        ->get([
+                            'id',
+                            'group_id',
+                            'verdict',
+                            'approved_document_submission_id',
+                            'decided_at',
+                        ])
+                        ->keyBy('group_id');
+                }
+
+                $evaluationSignedCountsByGroupId = collect();
+                if ($groupIds->isNotEmpty() && Schema::hasTable('panelist_evaluation_sheet_signatures')) {
+                    $evaluationSignedCountsByGroupId = PanelistEvaluationSheetSignature::query()
+                        ->selectRaw('group_id, COUNT(*) as signed_count')
+                        ->whereIn('group_id', $groupIds->all())
+                        ->where('defense_type_key', 'outline_defense')
+                        ->groupBy('group_id')
+                        ->get()
+                        ->mapWithKeys(fn (PanelistEvaluationSheetSignature $signature): array => [
+                            (int) $signature->group_id => (int) ($signature->signed_count ?? 0),
+                        ]);
+                }
+
+                $receiptSignedCountsByGroupId = collect();
+                if ($groupIds->isNotEmpty() && Schema::hasTable('group_acknowledgement_receipts')) {
+                    $receiptSignedCountsByGroupId = GroupAcknowledgementReceipt::query()
+                        ->selectRaw('group_id, COUNT(*) as signed_count')
+                        ->whereIn('group_id', $groupIds->all())
+                        ->where('defense_type_key', 'outline_defense')
+                        ->groupBy('group_id')
+                        ->get()
+                        ->mapWithKeys(fn (GroupAcknowledgementReceipt $receipt): array => [
+                            (int) $receipt->group_id => (int) ($receipt->signed_count ?? 0),
+                        ]);
+                }
+
+                $groups = $groupCollection
                     ->map(function (Group $group) use (
                         $resolveUserName,
                         $hasConceptVerdictColumn,
                         $hasApprovedConceptSubmissionColumn,
-                        $hasGroupPanelistsTable
+                        $hasGroupPanelistsTable,
+                        $outlineVerdictsByGroupId,
+                        $evaluationSignedCountsByGroupId,
+                        $receiptSignedCountsByGroupId,
                     ): array {
                         $programSet = $group->programSet;
                         $schoolYear = $programSet?->academicYear?->label;
@@ -116,9 +178,21 @@ class InstructorPhaseTwoController extends Controller
                         }
 
                         $fallbackName = trim(($programSet?->program ?? '').' '.($schoolYear ?? ''));
+                        $memberRows = collect([$group->leader])
+                            ->merge($group->relationLoaded('members') ? $group->members : collect())
+                            ->filter(fn (?User $member): bool => $member instanceof User)
+                            ->unique(fn (User $member): int => (int) $member->id)
+                            ->map(fn (User $member): array => [
+                                'id' => (int) $member->id,
+                                'name' => $resolveUserName($member),
+                            ])
+                            ->values()
+                            ->all();
                         $panelistsCount = $hasGroupPanelistsTable && is_numeric($group->panel_assignments_count ?? null)
                             ? (int) $group->panel_assignments_count
                             : 0;
+                        $receiptRequiredCount = $panelistsCount + ((int) ($group->adviserAssignment?->adviser_id ?? 0) > 0 ? 1 : 0);
+                        $outlineVerdict = $outlineVerdictsByGroupId->get($group->id);
 
                         return [
                             'id' => $group->id,
@@ -134,7 +208,20 @@ class InstructorPhaseTwoController extends Controller
                                 ? (int) $group->approved_concept_submission_id
                                 : null,
                             'leader_name' => $resolveUserName($group->leader),
+                            'members' => $memberRows,
+                            'members_count' => count($memberRows),
                             'panelists_count' => $panelistsCount,
+                            'receipt_signed_count' => (int) ($receiptSignedCountsByGroupId->get($group->id) ?? 0),
+                            'receipt_required_count' => $receiptRequiredCount,
+                            'evaluation_signed_count' => (int) ($evaluationSignedCountsByGroupId->get($group->id) ?? 0),
+                            'evaluation_required_count' => $panelistsCount,
+                            'outline_verdict' => is_string($outlineVerdict?->verdict) && trim($outlineVerdict->verdict) !== ''
+                                ? trim($outlineVerdict->verdict)
+                                : null,
+                            'outline_verdict_decided_at' => $outlineVerdict?->decided_at?->format('Y-m-d H:i'),
+                            'outline_approved_document_submission_id' => is_numeric($outlineVerdict?->approved_document_submission_id)
+                                ? (int) $outlineVerdict->approved_document_submission_id
+                                : null,
                         ];
                     })
                     ->filter(function (array $groupRow) use ($hasApprovedConceptSubmissionColumn): bool {

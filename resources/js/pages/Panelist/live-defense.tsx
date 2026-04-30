@@ -24,6 +24,7 @@ type ConceptSubmission = {
     instructorStatus: 'Submitted' | 'Approved' | 'Revision Required' | string;
     adviserStatus: 'Submitted' | 'Approved' | 'Revision Required' | string;
     panelistApprovalStatus: 'Approved' | 'Pending' | 'Rejected' | string;
+    reviewStatus?: string | null;
     fileUrl?: string | null;
 };
 
@@ -46,6 +47,7 @@ type LiveComment = {
 };
 
 type PanelistLiveDefenseProps = {
+    activeStage?: string | null;
     auth?: {
         user?: {
             name?: string;
@@ -59,7 +61,7 @@ type PanelistLiveDefenseProps = {
         defenseStatus?: 'Pending' | 'In Progress' | 'Completed' | string;
     } | null;
     conceptSubmissions?: ConceptSubmission[];
-    canApproveConceptTitle?: boolean;
+    canManageVerdict?: boolean;
     participants?: {
         students?: Participant[];
         adviser?: Participant | null;
@@ -134,8 +136,16 @@ const panelistApprovalStatusClass = (status: string): string => {
         return 'border-emerald-200 bg-emerald-100 text-emerald-700';
     }
 
-    if (status === 'Rejected') {
+    if (status === 'Rejected' || status === 'Failed') {
         return 'border-rose-200 bg-rose-100 text-rose-700';
+    }
+
+    if (status === 'Revision Required' || status === 'Revise') {
+        return 'border-amber-200 bg-amber-100 text-amber-700';
+    }
+
+    if (status === 'Submitted' || status === 'Pending') {
+        return 'border-slate-200 bg-slate-100 text-slate-600';
     }
 
     return 'border-amber-200 bg-amber-100 text-amber-700';
@@ -185,24 +195,37 @@ const isScrolledNearBottom = (element: HTMLDivElement): boolean => {
     return distanceFromBottom <= 24;
 };
 
-const resolveActiveStageSearchParam = (): string => {
-    if (typeof window === 'undefined') {
-        return '';
-    }
-
-    const activeStage = new URLSearchParams(window.location.search).get('stage');
-    return typeof activeStage === 'string' ? activeStage.trim() : '';
-};
-
 const PanelistLiveDefense = () => {
     const { props } = usePage<PanelistLiveDefenseProps>();
     const group = props.group;
+    const activeStage = React.useMemo(() => (props.activeStage ?? 'Concept').trim() || 'Concept', [props.activeStage]);
+    const isOutlineStage = React.useMemo(() => activeStage.toLowerCase() === 'outline', [activeStage]);
+    const boardTitle = React.useMemo(() => (isOutlineStage ? 'Outline Defense Board' : 'Live Defense'), [isOutlineStage]);
+    const boardSubtitle = React.useMemo(
+        () => (isOutlineStage ? 'Evaluate manuscript submissions and record outline defense decisions' : 'Evaluate concept titles and panel decisions'),
+        [isOutlineStage],
+    );
+    const submissionLabel = React.useMemo(() => (isOutlineStage ? 'Manuscript' : 'Concept Title'), [isOutlineStage]);
+    const submissionListTitle = React.useMemo(() => (isOutlineStage ? 'Manuscript List' : 'Concept Title List'), [isOutlineStage]);
+    const submissionEmptyLabel = React.useMemo(
+        () => (isOutlineStage ? 'No manuscript submissions are available yet.' : 'No concept titles are available yet.'),
+        [isOutlineStage],
+    );
+    const reviewStatusLabel = React.useMemo(() => (isOutlineStage ? 'Adviser Status' : 'Approval of Panelist'), [isOutlineStage]);
+    const recommendationTitle = React.useMemo(
+        () => (isOutlineStage ? 'Recommendation for Outline Defense' : 'Recommendation Letter'),
+        [isOutlineStage],
+    );
+    const recommendationSubtitle = React.useMemo(
+        () => (isOutlineStage ? 'Signed adviser recommendation for outline defense' : 'Signed adviser recommendation for title defense'),
+        [isOutlineStage],
+    );
     const conceptSubmissions = React.useMemo(() => props.conceptSubmissions ?? [], [props.conceptSubmissions]);
     const students = React.useMemo(() => props.participants?.students ?? [], [props.participants?.students]);
     const adviser = props.participants?.adviser ?? null;
     const panelists = React.useMemo(() => props.participants?.panelists ?? [], [props.participants?.panelists]);
     const recommendationLetter = props.recommendationLetter ?? null;
-    const canManageConceptVerdict = props.canApproveConceptTitle === true;
+    const canManageConceptVerdict = props.canManageVerdict === true;
     const conceptVerdict = props.conceptVerdict ?? null;
     const serverCommentsBySubmission = React.useMemo(() => props.commentsBySubmission ?? {}, [props.commentsBySubmission]);
     const serverHighlightsBySubmission = React.useMemo(() => props.highlightsBySubmission ?? {}, [props.highlightsBySubmission]);
@@ -227,11 +250,7 @@ const PanelistLiveDefense = () => {
     const liveDefensePartialProps = React.useMemo(() => ['commentsBySubmission', 'highlightsBySubmission', 'commentHighlightTargets'], []);
     const liveDefenseCommentPollingProps = React.useMemo(() => ['commentsBySubmission', 'commentHighlightTargets'], []);
     const liveDefenseHighlightPartialProps = React.useMemo(() => ['highlightsBySubmission'], []);
-    const activeStage = React.useMemo(() => resolveActiveStageSearchParam(), []);
-    const activeStageQuery = React.useMemo(
-        () => (activeStage !== '' ? `&stage=${encodeURIComponent(activeStage)}` : ''),
-        [activeStage],
-    );
+    const activeStageQuery = React.useMemo(() => `&stage=${encodeURIComponent(activeStage)}`, [activeStage]);
 
     React.useEffect(() => {
         setSelectedConceptId((currentSelectedConceptId) => {
@@ -496,7 +515,7 @@ const PanelistLiveDefense = () => {
 
     if (!group) {
         return (
-            <PanelLayout title="Live Defense Board" subtitle="Panel live review workspace">
+            <PanelLayout title={boardTitle} subtitle={boardSubtitle}>
                 <div className="rounded-xl border border-slate-200 bg-white p-6 text-xs text-slate-500 shadow-sm">
                     No assigned group available for live defense.
                 </div>
@@ -509,7 +528,7 @@ const PanelistLiveDefense = () => {
     const defenseStatus = verdictDrivenDefenseStatus ?? group.defenseStatus ?? 'Pending';
 
     return (
-        <PanelLayout title="Live Defense Board" subtitle="Panel live review workspace">
+        <PanelLayout title={boardTitle} subtitle={boardSubtitle}>
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="space-y-5">
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
                     <Link href="/panelist/dashboard" className="font-medium text-slate-600 transition-colors hover:text-slate-900">
@@ -521,7 +540,7 @@ const PanelistLiveDefense = () => {
                     </Link>
                     <ChevronRight className="h-3 w-3 text-slate-400" />
                     <span className="font-semibold text-slate-800" aria-current="page">
-                        Live Defense
+                        {boardTitle}
                     </span>
                 </nav>
 
@@ -531,7 +550,7 @@ const PanelistLiveDefense = () => {
                             <div>
                                 <div className="flex items-center gap-2">
                                     <FileText className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Concept Title List</h3>
+                                    <h3 className="text-sm font-semibold text-slate-900">{submissionListTitle}</h3>
                                 </div>
                                 <p className="mt-1 text-xs text-slate-500">{groupLabel}</p>
                             </div>
@@ -546,22 +565,22 @@ const PanelistLiveDefense = () => {
                         <table className="w-full min-w-[680px] text-left text-xs">
                             <thead className="border-b border-slate-200 bg-white text-slate-600">
                                 <tr>
-                                    <th className="px-4 py-3 font-semibold">Title</th>
+                                    <th className="px-4 py-3 font-semibold">{submissionLabel}</th>
                                     <th className="px-4 py-3 font-semibold">Submitted</th>
-                                    <th className="px-4 py-3 font-semibold">Approval of Panelist</th>
+                                    <th className="px-4 py-3 font-semibold">{reviewStatusLabel}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {conceptSubmissions.length === 0 ? (
                                     <tr>
                                         <td colSpan={3} className="px-4 py-10 text-center text-slate-500">
-                                            No concept titles are available yet.
+                                            {submissionEmptyLabel}
                                         </td>
                                     </tr>
                                 ) : (
                                     conceptSubmissions.map((submission) => {
                                         const isActive = submission.id === selectedConceptId;
-                                        const panelistApprovalStatus = submission.panelistApprovalStatus ?? 'Pending';
+                                        const panelistApprovalStatus = submission.reviewStatus ?? submission.panelistApprovalStatus ?? 'Pending';
 
                                         return (
                                             <tr
@@ -597,7 +616,9 @@ const PanelistLiveDefense = () => {
                             <h3 className="text-sm font-semibold text-slate-800">Panelist Comments</h3>
                         </div>
                         <p className="mt-1 text-xs text-slate-500">
-                            Comments here are visible in the live defense stream for students, adviser, and panelists.
+                            {isOutlineStage
+                                ? 'Comments here are visible in the outline defense stream for students, adviser, and panelists.'
+                                : 'Comments here are visible in the live defense stream for students, adviser, and panelists.'}
                         </p>
 
                         <div
@@ -685,7 +706,7 @@ const PanelistLiveDefense = () => {
                                 onChange={(event) => setCommentInput(event.target.value)}
                                 onFocus={() => setIsCommentFocused(true)}
                                 onBlur={() => setIsCommentFocused(false)}
-                                placeholder="Type your panel comment..."
+                                placeholder={`Type your ${submissionLabel.toLowerCase()} review comment...`}
                                 rows={3}
                                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                             />
@@ -707,14 +728,16 @@ const PanelistLiveDefense = () => {
                         <div className="mb-3">
                             <p className="text-sm font-semibold text-slate-900">PDF Viewer</p>
                             <p className="mt-1 text-xs text-slate-500">
-                                {selectedConcept ? selectedConcept.title : 'Select a concept title row to preview the uploaded PDF.'}
+                                {selectedConcept
+                                    ? selectedConcept.title
+                                    : `Select a ${submissionLabel.toLowerCase()} row to preview the uploaded PDF.`}
                             </p>
                         </div>
 
                         <div className="min-h-0 flex-1">
                             {!selectedConcept || !selectedConcept.fileUrl ? (
                                 <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-                                    PDF preview is not available for this selected concept submission.
+                                    PDF preview is not available for this selected {submissionLabel.toLowerCase()} submission.
                                 </div>
                             ) : (
                                 <PdfHighlighterViewer
@@ -873,25 +896,27 @@ const PanelistLiveDefense = () => {
                                     onClick={() => setIsRecommendationLetterModalOpen(true)}
                                     className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-left transition-colors hover:bg-emerald-100"
                                 >
-                                    <p className="text-[11px] font-semibold tracking-wide text-emerald-700 uppercase">Recommendation Letter</p>
+                                    <p className="text-[11px] font-semibold tracking-wide text-emerald-700 uppercase">{recommendationTitle}</p>
                                     <p className="mt-1 text-xs font-semibold text-emerald-900">{recommendationLetter.fileName}</p>
                                     <p className="mt-0.5 text-[11px] text-emerald-700">
                                         Signed at: {recommendationLetter.signedAt ?? 'Not available'} · Click to view
                                     </p>
                                 </button>
                             ) : (
-                                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">Recommendation Letter: Not available yet.</p>
+                                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">{recommendationTitle}: Not available yet.</p>
                             )}
-                            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                                <p className="text-[11px] text-slate-500">Instructor Status</p>
-                                <span
-                                    className={`mt-1 inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold ${statusPillClass(
-                                        selectedConcept?.instructorStatus ?? 'Submitted',
-                                    )}`}
-                                >
-                                    {selectedConcept?.instructorStatus ?? 'Submitted'}
-                                </span>
-                            </div>
+                            {!isOutlineStage ? (
+                                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                    <p className="text-[11px] text-slate-500">Instructor Status</p>
+                                    <span
+                                        className={`mt-1 inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold ${statusPillClass(
+                                            selectedConcept?.instructorStatus ?? 'Submitted',
+                                        )}`}
+                                    >
+                                        {selectedConcept?.instructorStatus ?? 'Submitted'}
+                                    </span>
+                                </div>
+                            ) : null}
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                                 <p className="text-[11px] text-slate-500">Adviser Status</p>
                                 <span
@@ -911,6 +936,8 @@ const PanelistLiveDefense = () => {
                         open={isRecommendationLetterModalOpen}
                         onClose={() => setIsRecommendationLetterModalOpen(false)}
                         recommendationLetter={recommendationLetter}
+                        title={recommendationTitle}
+                        subtitle={recommendationSubtitle}
                     />
                 ) : null}
 
@@ -926,6 +953,15 @@ const PanelistLiveDefense = () => {
                     initialApprovedSubmissionId={conceptVerdict?.approvedConceptSubmissionId ?? null}
                     decidedBy={conceptVerdict?.decidedBy ?? null}
                     decidedAt={conceptVerdict?.decidedAt ?? null}
+                    dialogTitle={isOutlineStage ? 'Outline Verdict' : 'Concept Verdict'}
+                    dialogSubtitle={
+                        isOutlineStage
+                            ? 'Panel chairman can set the final outline defense verdict.'
+                            : 'Panel chairman can set the final concept verdict.'
+                    }
+                    submissionLabel={submissionLabel}
+                    statusColumnLabel={reviewStatusLabel}
+                    emptyStateMessage={submissionEmptyLabel}
                 />
             </motion.section>
         </PanelLayout>

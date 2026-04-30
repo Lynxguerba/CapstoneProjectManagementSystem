@@ -43,6 +43,7 @@ type GroupSummary = {
     program?: string | null;
     school_year?: string | null;
     concept_verdict?: string | null;
+    stage_verdicts?: Record<string, string | null | undefined>;
 };
 
 type AdviserSummary = {
@@ -214,8 +215,8 @@ const scheduleDateTime = (schedule: ScheduleRow): Date | null => {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), Math.floor(minutes / 60), minutes % 60);
 };
 
-const normalizeConceptVerdictStatus = (conceptVerdict?: string | null): Exclude<PhaseStatus, 'Not Scheduled'> => {
-    const verdict = (conceptVerdict ?? '').trim();
+const normalizeVerdictStatus = (verdictValue?: string | null): Exclude<PhaseStatus, 'Not Scheduled'> => {
+    const verdict = (verdictValue ?? '').trim();
 
     if (verdict === 'Passed (No revisions needed)' || verdict === 'Passed (With revisions needed)' || verdict === 'Pass with revision') {
         return 'Defended';
@@ -232,13 +233,30 @@ const normalizeConceptVerdictStatus = (conceptVerdict?: string | null): Exclude<
     return 'Pending';
 };
 
-const normalizePhaseStatus = (schedule: ScheduleRow | null, phase: string, conceptVerdict?: string | null): PhaseStatus => {
+const resolveStageVerdict = (
+    phase: string,
+    stageVerdicts?: Record<string, string | null | undefined>,
+    conceptVerdict?: string | null,
+): string | null => {
     if (phase === 'Concept') {
-        const verdictStatus = normalizeConceptVerdictStatus(conceptVerdict);
+        return conceptVerdict ?? null;
+    }
 
-        if (verdictStatus !== 'Pending') {
-            return verdictStatus;
-        }
+    const matchingVerdict = Object.entries(stageVerdicts ?? {}).find(([stage]) => stage.trim().toLowerCase() === phase.trim().toLowerCase());
+
+    return matchingVerdict?.[1] ?? null;
+};
+
+const normalizePhaseStatus = (
+    schedule: ScheduleRow | null,
+    phase: string,
+    stageVerdicts?: Record<string, string | null | undefined>,
+    conceptVerdict?: string | null,
+): PhaseStatus => {
+    const verdictStatus = normalizeVerdictStatus(resolveStageVerdict(phase, stageVerdicts, conceptVerdict));
+
+    if (verdictStatus !== 'Pending') {
+        return verdictStatus;
     }
 
     if (!schedule) {
@@ -250,11 +268,11 @@ const normalizePhaseStatus = (schedule: ScheduleRow | null, phase: string, conce
         return 'Pending';
     }
 
-    if (phase !== 'Concept') {
-        return 'Defended';
+    if (phase === 'Concept' || phase === 'Outline') {
+        return verdictStatus;
     }
 
-    return normalizeConceptVerdictStatus(conceptVerdict);
+    return 'Defended';
 };
 
 const normalizeScheduleDetailStatus = (schedule: ScheduleRow | null): string => {
@@ -325,13 +343,13 @@ const StudentSchedule = () => {
 
         return phaseOrder.map((phase, index) => {
             const schedule = schedulesByStage.get(phase) ?? null;
-            const rawStatus = normalizePhaseStatus(schedule, phase, group?.concept_verdict);
-            const isLocked = index > 0 && !previousPhaseCleared && schedule === null;
+            const rawStatus = normalizePhaseStatus(schedule, phase, group?.stage_verdicts, group?.concept_verdict);
+            const isLocked = index > 0 && !previousPhaseCleared;
             const status = isLocked ? 'Locked' : rawStatus;
 
             const lockReason = isLocked ? `Waiting for ${phaseOrder[index - 1]} to be marked Defended.` : undefined;
 
-            previousPhaseCleared = isUnlockStatus(rawStatus);
+            previousPhaseCleared = !isLocked && isUnlockStatus(rawStatus);
 
             return {
                 phase,
@@ -573,15 +591,15 @@ const StudentSchedule = () => {
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        {row.schedule ? (
+                                                        {row.schedule && !row.isLocked ? (
                                                             <Link
-                                                                href="/student/live-defense"
+                                                                href={`/student/live-defense?stage=${encodeURIComponent(row.phase)}`}
                                                                 className="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[10px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
                                                             >
                                                                 Open Defense Board
                                                             </Link>
                                                         ) : (
-                                                            <span className="text-[11px] text-slate-400">Not available</span>
+                                                            <span className="text-[11px] text-slate-400">{row.isLocked ? 'Locked' : 'Not available'}</span>
                                                         )}
                                                     </td>
                                                 </tr>

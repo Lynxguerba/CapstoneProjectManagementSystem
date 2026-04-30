@@ -105,11 +105,23 @@ const buildGroupLabel = (group: GroupSummary | null): string => {
     return details.join(' | ');
 };
 
+const resolveStageFromDefenseTypeKey = (defenseTypeKey?: string | null): string | null => {
+    return (
+        {
+            concept_presentation: 'Concept',
+            outline_defense: 'Outline',
+            pre_deployment_defense: 'Pre-Deployment',
+            final_defense: 'Final',
+        }[(defenseTypeKey ?? '').trim()] ?? null
+    );
+};
+
 const AcknowledgementReceiptPage = () => {
     const { props } = usePage<AcknowledgementReceiptProps>();
     const group = props.group ?? null;
-    const groupQuery = group ? `?group=${group.id}` : '';
     const defense = props.defense ?? null;
+    const stageQuery = React.useMemo(() => resolveStageFromDefenseTypeKey(defense?.typeKey), [defense?.typeKey]);
+    const groupQuery = group ? `?group=${group.id}${stageQuery ? `&stage=${encodeURIComponent(stageQuery)}` : ''}` : '';
     const project = props.project ?? null;
     const facultyRows = React.useMemo(() => props.facultyRows ?? [], [props.facultyRows]);
     const instructor = props.instructor ?? null;

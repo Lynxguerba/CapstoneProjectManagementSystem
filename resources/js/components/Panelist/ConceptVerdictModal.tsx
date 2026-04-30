@@ -20,6 +20,7 @@ type ConceptSubmission = {
     requirementType: string;
     submittedAt?: string | null;
     panelistApprovalStatus?: string;
+    reviewStatus?: string | null;
 };
 
 type ConceptVerdictModalProps = {
@@ -34,6 +35,11 @@ type ConceptVerdictModalProps = {
     initialApprovedSubmissionId?: number | null;
     decidedBy?: string | null;
     decidedAt?: string | null;
+    dialogTitle?: string;
+    dialogSubtitle?: string;
+    submissionLabel?: string;
+    statusColumnLabel?: string;
+    emptyStateMessage?: string;
 };
 
 const verdictOptions: Array<{ value: ConceptVerdictOptionValue; label: string }> = [
@@ -73,8 +79,16 @@ const panelistApprovalStatusClass = (status: string): string => {
         return 'border-emerald-200 bg-emerald-100 text-emerald-700';
     }
 
-    if (status === 'Rejected') {
+    if (status === 'Rejected' || status === 'Failed') {
         return 'border-rose-200 bg-rose-100 text-rose-700';
+    }
+
+    if (status === 'Revision Required' || status === 'Revise') {
+        return 'border-amber-200 bg-amber-100 text-amber-700';
+    }
+
+    if (status === 'Submitted' || status === 'Pending') {
+        return 'border-slate-200 bg-slate-100 text-slate-600';
     }
 
     return 'border-amber-200 bg-amber-100 text-amber-700';
@@ -92,6 +106,11 @@ const ConceptVerdictModal = ({
     initialApprovedSubmissionId = null,
     decidedBy = null,
     decidedAt = null,
+    dialogTitle = 'Concept Verdict',
+    dialogSubtitle = 'Panel chairman can set the final concept verdict.',
+    submissionLabel = 'Concept Title',
+    statusColumnLabel = 'Panelist Approval',
+    emptyStateMessage = 'No concept titles are available yet.',
 }: ConceptVerdictModalProps) => {
     const [selectedVerdict, setSelectedVerdict] = useState<ConceptVerdictOptionValue | ''>('');
     const [selectedApprovedSubmissionId, setSelectedApprovedSubmissionId] = useState<number | null>(null);
@@ -103,6 +122,8 @@ const ConceptVerdictModal = ({
         return conceptSubmissions.find((submission) => submission.id === selectedApprovedSubmissionId) ?? null;
     }, [conceptSubmissions, selectedApprovedSubmissionId]);
     const isPassedVerdictSelected = isPassedVerdict(selectedVerdict);
+    const normalizedSubmissionLabel = useMemo(() => submissionLabel.trim() || 'Document', [submissionLabel]);
+    const normalizedSubmissionLabelLower = useMemo(() => normalizedSubmissionLabel.toLowerCase(), [normalizedSubmissionLabel]);
 
     useEffect(() => {
         if (!open) {
@@ -173,12 +194,12 @@ const ConceptVerdictModal = ({
         }
 
         if (selectedVerdict === '') {
-            setFormError('Select a concept verdict first.');
+            setFormError('Select a defense verdict first.');
             return;
         }
 
         if (isPassedVerdict(selectedVerdict) && selectedApprovedSubmissionId === null) {
-            setFormError('Select the approved concept title when verdict is a Passed option.');
+            setFormError(`Select the approved ${normalizedSubmissionLabelLower} when verdict is a Passed option.`);
             return;
         }
 
@@ -203,7 +224,7 @@ const ConceptVerdictModal = ({
                         errors.approved_document_submission_id ||
                         errors.group_id ||
                         Object.values(errors)[0] ||
-                        'Unable to save concept verdict.';
+                        'Unable to save defense verdict.';
                     setFormError(String(firstError));
                 },
                 onFinish: () => {
@@ -240,8 +261,8 @@ const ConceptVerdictModal = ({
                     <div className="flex items-center gap-2">
                         <Scale className="h-5 w-5 text-gray-800" />
                         <div>
-                            <h2 className="text-lg font-bold text-gray-800">Concept Verdict</h2>
-                            <p className="text-xs text-slate-600">Panel chairman can set the final concept verdict.</p>
+                            <h2 className="text-lg font-bold text-gray-800">{dialogTitle}</h2>
+                            <p className="text-xs text-slate-600">{dialogSubtitle}</p>
                         </div>
                     </div>
                     <button
@@ -267,7 +288,7 @@ const ConceptVerdictModal = ({
 
                     {!canEdit ? (
                         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                            View only. Only the Panel Chairman can modify verdict and approved title selection.
+                            View only. Only the Panel Chairman can modify the verdict and approved {normalizedSubmissionLabelLower} selection.
                         </div>
                     ) : null}
 
@@ -296,13 +317,13 @@ const ConceptVerdictModal = ({
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                                 {isPassedVerdictSelected ? (
                                     <p>
-                                        Approved title selection is required.
+                                        Approved {normalizedSubmissionLabelLower} selection is required.
                                         <span className="block text-[11px] text-slate-500">
-                                            Selected: {selectedApprovedTitle ? selectedApprovedTitle.title : 'No title selected'}
+                                            Selected: {selectedApprovedTitle ? selectedApprovedTitle.title : `No ${normalizedSubmissionLabelLower} selected`}
                                         </span>
                                     </p>
                                 ) : (
-                                    <p>Approved title action is enabled only when verdict is a Passed option.</p>
+                                    <p>Approved {normalizedSubmissionLabelLower} action is enabled only when verdict is a Passed option.</p>
                                 )}
                             </div>
                         </div>
@@ -313,9 +334,9 @@ const ConceptVerdictModal = ({
                             <table className="w-full min-w-[760px] text-left text-xs">
                                 <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                                     <tr>
-                                        <th className="px-4 py-3 font-semibold">Title</th>
+                                        <th className="px-4 py-3 font-semibold">{normalizedSubmissionLabel}</th>
                                         <th className="px-4 py-3 font-semibold">Submitted</th>
-                                        <th className="px-4 py-3 font-semibold">Panelist Approval</th>
+                                        <th className="px-4 py-3 font-semibold">{statusColumnLabel}</th>
                                         <th className="px-4 py-3 font-semibold">Action</th>
                                     </tr>
                                 </thead>
@@ -323,12 +344,12 @@ const ConceptVerdictModal = ({
                                     {conceptSubmissions.length === 0 ? (
                                         <tr>
                                             <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
-                                                No concept titles are available yet.
+                                                {emptyStateMessage}
                                             </td>
                                         </tr>
                                     ) : (
                                         conceptSubmissions.map((submission) => {
-                                            const panelistApprovalStatus = submission.panelistApprovalStatus ?? 'Pending';
+                                            const panelistApprovalStatus = submission.reviewStatus ?? submission.panelistApprovalStatus ?? 'Pending';
                                             const isSelectedSubmission = submission.id === selectedApprovedSubmissionId;
                                             const isActionEnabled = canEdit && isPassedVerdictSelected && !isSaving;
 
@@ -358,7 +379,7 @@ const ConceptVerdictModal = ({
                                                             } disabled:cursor-not-allowed disabled:opacity-50`}
                                                         >
                                                             <ShieldCheck className="h-3.5 w-3.5" />
-                                                            {isSelectedSubmission ? 'Selected' : 'Set as approved title'}
+                                                            {isSelectedSubmission ? 'Selected' : `Set as approved ${normalizedSubmissionLabelLower}`}
                                                         </button>
                                                     </td>
                                                 </tr>

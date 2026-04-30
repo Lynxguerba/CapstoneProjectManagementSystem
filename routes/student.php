@@ -24,6 +24,7 @@ use App\Models\DocumentSubmission;
 use App\Models\Group;
 use App\Models\GroupAcknowledgementReceipt;
 use App\Models\GroupAdviserRequest;
+use App\Models\GroupDefenseVerdict;
 use App\Models\GroupPanelist;
 use App\Models\User;
 use Carbon\Carbon;
@@ -370,6 +371,26 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
                         $conceptVerdict = $rawConceptVerdict !== '' ? $rawConceptVerdict : null;
                     }
 
+                    $stageVerdicts = [];
+                    if (class_exists(GroupDefenseVerdict::class) && Schema::hasTable('group_defense_verdicts')) {
+                        $stageVerdicts = GroupDefenseVerdict::query()
+                            ->where('group_id', $group->id)
+                            ->get(['stage', 'verdict'])
+                            ->mapWithKeys(static function (GroupDefenseVerdict $stageVerdict): array {
+                                $stage = trim((string) $stageVerdict->stage);
+                                $verdict = trim((string) $stageVerdict->verdict);
+
+                                if ($stage === '') {
+                                    return [];
+                                }
+
+                                return [
+                                    $stage => $verdict !== '' ? $verdict : null,
+                                ];
+                            })
+                            ->all();
+                    }
+
                     $groupSummary = [
                         'id' => $group->id,
                         'name' => $group->name,
@@ -377,6 +398,7 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->group(function (
                         'program' => $programSet?->program,
                         'school_year' => $schoolYear,
                         'concept_verdict' => $conceptVerdict,
+                        'stage_verdicts' => $stageVerdicts,
                     ];
 
                     $adviserUser = $group->adviserAssignment?->adviser;

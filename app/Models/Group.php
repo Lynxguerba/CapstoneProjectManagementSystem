@@ -97,6 +97,11 @@ class Group extends Model
         return $this->hasMany(GroupAcknowledgementReceipt::class);
     }
 
+    public function defenseVerdicts(): HasMany
+    {
+        return $this->hasMany(GroupDefenseVerdict::class);
+    }
+
     public function panelists(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'group_panelists', 'group_id', 'panelist_id')

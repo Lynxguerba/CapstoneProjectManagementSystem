@@ -37,6 +37,7 @@ use App\Models\DocumentSubmission;
 use App\Models\Group;
 use App\Models\GroupAcknowledgementReceipt;
 use App\Models\GroupAdviserRequest;
+use App\Models\GroupDefenseVerdict;
 use App\Models\GroupPanelist;
 use App\Models\PanelistAvailability;
 use App\Models\PanelistEvaluationSheetSignature;
@@ -3860,9 +3861,6 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                         ->values()
                         ->all();
 
-                    $rawConceptVerdict = is_string($activeGroup->concept_verdict) ? trim($activeGroup->concept_verdict) : '';
-                    $conceptVerdict = $rawConceptVerdict !== '' ? $rawConceptVerdict : null;
-
                     $defenseTypeKey = 'concept_presentation';
                     $selectedSchedule = null;
                     if (class_exists(DefenseSchedule::class) && Schema::hasTable('defense_schedules')) {
@@ -3905,6 +3903,22 @@ Route::middleware(['auth', 'role:instructor'])->prefix('instructor')->group(func
                             'final', 'finals', 'final defense' => 'final_defense',
                             default => 'concept_presentation',
                         };
+                    }
+
+                    if (strtolower(trim($activeStage)) === 'concept') {
+                        $rawConceptVerdict = is_string($activeGroup->concept_verdict) ? trim($activeGroup->concept_verdict) : '';
+                        $conceptVerdict = $rawConceptVerdict !== '' ? $rawConceptVerdict : null;
+                    } elseif (class_exists(GroupDefenseVerdict::class) && Schema::hasTable('group_defense_verdicts')) {
+                        $stageVerdict = GroupDefenseVerdict::query()
+                            ->where('group_id', $activeGroup->id)
+                            ->whereRaw('LOWER(stage) = ?', [strtolower(trim($activeStage))])
+                            ->value('verdict');
+
+                        $conceptVerdict = is_string($stageVerdict) && trim($stageVerdict) !== ''
+                            ? trim($stageVerdict)
+                            : null;
+                    } else {
+                        $conceptVerdict = null;
                     }
 
                     if ($hasGroupPanelistsTable) {

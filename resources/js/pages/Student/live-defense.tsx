@@ -17,6 +17,7 @@ type ConceptSubmission = {
     instructorStatus: 'Submitted' | 'Approved' | 'Revision Required' | string;
     adviserStatus: 'Submitted' | 'Approved' | 'Revision Required' | string;
     panelistApprovalStatus: 'Approved' | 'Pending' | 'Rejected' | string;
+    reviewStatus?: string | null;
     fileUrl?: string | null;
 };
 
@@ -55,6 +56,7 @@ type LiveComment = {
 };
 
 type StudentLiveDefenseProps = {
+    activeStage?: string | null;
     group: {
         id: number;
         name: string;
@@ -98,8 +100,16 @@ const panelistApprovalStatusClass = (status: string): string => {
         return 'border-emerald-200 bg-emerald-100 text-emerald-700';
     }
 
-    if (status === 'Rejected') {
+    if (status === 'Rejected' || status === 'Failed') {
         return 'border-rose-200 bg-rose-100 text-rose-700';
+    }
+
+    if (status === 'Revision Required' || status === 'Revise') {
+        return 'border-amber-200 bg-amber-100 text-amber-700';
+    }
+
+    if (status === 'Submitted' || status === 'Pending') {
+        return 'border-slate-200 bg-slate-100 text-slate-600';
     }
 
     return 'border-amber-200 bg-amber-100 text-amber-700';
@@ -152,6 +162,29 @@ const isScrolledNearBottom = (element: HTMLDivElement): boolean => {
 const StudentLiveDefense = () => {
     const { props } = usePage<StudentLiveDefenseProps>();
     const group = props.group;
+    const activeStage = React.useMemo(() => (props.activeStage ?? 'Concept').trim() || 'Concept', [props.activeStage]);
+    const isOutlineStage = React.useMemo(() => activeStage.toLowerCase() === 'outline', [activeStage]);
+    const stageBoardTitle = React.useMemo(() => (isOutlineStage ? 'Outline Defense Board' : 'Live Defense'), [isOutlineStage]);
+    const stageBoardSubtitle = React.useMemo(
+        () => (isOutlineStage ? 'Review manuscript submissions, verdicts, and defense approval updates' : 'Review concept titles and panel feedback'),
+        [isOutlineStage],
+    );
+    const submissionLabel = React.useMemo(() => (isOutlineStage ? 'Manuscript' : 'Concept Title'), [isOutlineStage]);
+    const submissionListTitle = React.useMemo(() => (isOutlineStage ? 'Manuscript List' : 'Concept Title List'), [isOutlineStage]);
+    const submissionEmptyLabel = React.useMemo(
+        () => (isOutlineStage ? 'No manuscript submissions are available yet.' : 'No concept titles are available yet.'),
+        [isOutlineStage],
+    );
+    const reviewStatusLabel = React.useMemo(() => (isOutlineStage ? 'Adviser Status' : 'Panelist Approval'), [isOutlineStage]);
+    const recommendationTitle = React.useMemo(
+        () => (isOutlineStage ? 'Recommendation for Outline Defense' : 'Recommendation Letter'),
+        [isOutlineStage],
+    );
+    const recommendationSubtitle = React.useMemo(
+        () => (isOutlineStage ? 'Signed adviser recommendation for outline defense' : 'Signed adviser recommendation for title defense'),
+        [isOutlineStage],
+    );
+    const activeStageQuery = React.useMemo(() => `&stage=${encodeURIComponent(activeStage)}`, [activeStage]);
     const conceptSubmissions = React.useMemo(() => props.conceptSubmissions ?? [], [props.conceptSubmissions]);
     const students = React.useMemo(() => props.participants?.students ?? [], [props.participants?.students]);
     const adviser = props.participants?.adviser ?? null;
@@ -342,7 +375,7 @@ const StudentLiveDefense = () => {
     const defenseStatus = group?.defenseStatus ?? 'Pending';
 
     return (
-        <StudentLayout title="Live Defense Board" subtitle="Track concept titles, panel feedback, and file review">
+        <StudentLayout title={stageBoardTitle} subtitle={stageBoardSubtitle}>
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="space-y-5">
                 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
                     <Link href={studentRoutes.dashboard.url()} className="font-medium text-slate-600 transition-colors hover:text-slate-900">
@@ -354,7 +387,7 @@ const StudentLiveDefense = () => {
                     </Link>
                     <span>/</span>
                     <span className="font-semibold text-slate-800" aria-current="page">
-                        Live Defense Board
+                        {stageBoardTitle}
                     </span>
                 </nav>
 
@@ -364,12 +397,13 @@ const StudentLiveDefense = () => {
                             <div>
                                 <div className="flex items-center gap-2">
                                     <FileText className="h-4 w-4 text-emerald-600" />
-                                    <h3 className="text-sm font-semibold text-slate-900">Concept Title List</h3>
+                                    <h3 className="text-sm font-semibold text-slate-900">{submissionListTitle}</h3>
                                 </div>
                                 <p className="mt-1 text-xs text-slate-500">{groupLabel}</p>
                             </div>
                             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                                {conceptSubmissions.length} title{conceptSubmissions.length === 1 ? '' : 's'}
+                                {conceptSubmissions.length} {submissionLabel.toLowerCase()}
+                                {conceptSubmissions.length === 1 ? '' : 's'}
                             </span>
                         </div>
                     </div>
@@ -378,22 +412,22 @@ const StudentLiveDefense = () => {
                         <table className="w-full min-w-[640px] text-left text-xs">
                             <thead className="border-b border-slate-200 bg-white text-slate-600">
                                 <tr>
-                                    <th className="px-4 py-3 font-semibold">Title</th>
+                                    <th className="px-4 py-3 font-semibold">{submissionLabel}</th>
                                     <th className="px-4 py-3 font-semibold">Submitted</th>
-                                    <th className="px-4 py-3 font-semibold">Panelist Status</th>
+                                    <th className="px-4 py-3 font-semibold">{reviewStatusLabel}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {conceptSubmissions.length === 0 ? (
                                     <tr>
                                         <td colSpan={3} className="px-4 py-10 text-center text-slate-500">
-                                            No concept titles are available yet.
+                                            {submissionEmptyLabel}
                                         </td>
                                     </tr>
                                 ) : (
                                     conceptSubmissions.map((submission) => {
                                         const active = submission.id === selectedConceptId;
-                                        const panelistApprovalStatus = submission.panelistApprovalStatus ?? 'Pending';
+                                        const panelistApprovalStatus = submission.reviewStatus ?? submission.panelistApprovalStatus ?? 'Pending';
 
                                         return (
                                             <tr
@@ -490,14 +524,16 @@ const StudentLiveDefense = () => {
                         <div className="mb-3">
                             <p className="text-sm font-semibold text-slate-900">PDF Viewer</p>
                             <p className="mt-1 text-xs text-slate-500">
-                                {selectedConcept ? selectedConcept.title : 'Select a concept title row to preview the uploaded PDF.'}
+                                {selectedConcept
+                                    ? selectedConcept.title
+                                    : `Select a ${submissionLabel.toLowerCase()} row to preview the uploaded PDF.`}
                             </p>
                         </div>
 
                         <div className="min-h-0 flex-1">
                             {!selectedConcept || !selectedConcept.fileUrl ? (
                                 <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-                                    PDF preview is not available for this selected concept submission.
+                                    PDF preview is not available for this selected {submissionLabel.toLowerCase()} submission.
                                 </div>
                             ) : (
                                 <PdfHighlighterViewer
@@ -591,7 +627,7 @@ const StudentLiveDefense = () => {
                                 <div className="mt-3">
                                     {group ? (
                                         <Link
-                                            href={`/student/live-defense/acknowledgement?group=${group.id}`}
+                                            href={`/student/live-defense/acknowledgement?group=${group.id}${activeStageQuery}`}
                                             className="block rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-center text-xs font-semibold tracking-wide text-emerald-700 uppercase transition hover:bg-emerald-100"
                                         >
                                             Acknowledgement
@@ -647,25 +683,27 @@ const StudentLiveDefense = () => {
                                     onClick={() => setIsRecommendationLetterModalOpen(true)}
                                     className="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-left transition-colors hover:bg-emerald-100"
                                 >
-                                    <p className="text-[11px] font-semibold tracking-wide text-emerald-700 uppercase">Recommendation Letter</p>
+                                    <p className="text-[11px] font-semibold tracking-wide text-emerald-700 uppercase">{recommendationTitle}</p>
                                     <p className="mt-1 text-xs font-semibold text-emerald-900">{recommendationLetter.fileName}</p>
                                     <p className="mt-0.5 text-[11px] text-emerald-700">
                                         Signed at: {recommendationLetter.signedAt ?? 'Not available'} · Click to view
                                     </p>
                                 </button>
                             ) : (
-                                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">Recommendation Letter: Not available yet.</p>
+                                <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">{recommendationTitle}: Not available yet.</p>
                             )}
-                            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                                <p className="text-[11px] text-slate-500">Instructor Status</p>
-                                <span
-                                    className={`mt-1 inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold ${statusPillClass(
-                                        selectedConcept?.instructorStatus ?? 'Submitted',
-                                    )}`}
-                                >
-                                    {selectedConcept?.instructorStatus ?? 'Submitted'}
-                                </span>
-                            </div>
+                            {!isOutlineStage ? (
+                                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                    <p className="text-[11px] text-slate-500">Instructor Status</p>
+                                    <span
+                                        className={`mt-1 inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold ${statusPillClass(
+                                            selectedConcept?.instructorStatus ?? 'Submitted',
+                                        )}`}
+                                    >
+                                        {selectedConcept?.instructorStatus ?? 'Submitted'}
+                                    </span>
+                                </div>
+                            ) : null}
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                                 <p className="text-[11px] text-slate-500">Adviser Status</p>
                                 <span
@@ -685,6 +723,8 @@ const StudentLiveDefense = () => {
                         open={isRecommendationLetterModalOpen}
                         onClose={() => setIsRecommendationLetterModalOpen(false)}
                         recommendationLetter={recommendationLetter}
+                        title={recommendationTitle}
+                        subtitle={recommendationSubtitle}
                     />
                 ) : null}
 
@@ -694,12 +734,22 @@ const StudentLiveDefense = () => {
                         onClose={() => setIsConceptVerdictModalOpen(false)}
                         groupId={group.id}
                         groupLabel={groupLabel}
+                        activeStage={activeStage}
                         conceptSubmissions={conceptSubmissions}
                         canEdit={false}
                         initialVerdict={conceptVerdict?.value ?? null}
                         initialApprovedSubmissionId={conceptVerdict?.approvedConceptSubmissionId ?? null}
                         decidedBy={conceptVerdict?.decidedBy ?? null}
                         decidedAt={conceptVerdict?.decidedAt ?? null}
+                        dialogTitle={isOutlineStage ? 'Outline Verdict' : 'Concept Verdict'}
+                        dialogSubtitle={
+                            isOutlineStage
+                                ? 'Panel chairman can review the final outline defense verdict.'
+                                : 'Panel chairman can review the final concept verdict.'
+                        }
+                        submissionLabel={submissionLabel}
+                        statusColumnLabel={reviewStatusLabel}
+                        emptyStateMessage={submissionEmptyLabel}
                     />
                 ) : null}
             </motion.section>

@@ -31,15 +31,33 @@ class StorePanelistLiveDefenseCommentController extends Controller
         }
 
         $validated = $request->validated();
+        $activeStage = $this->resolveRequestedStage($request->input('stage'));
         $submissionId = (int) $validated['document_submission_id'];
         $submission = DocumentSubmission::query()
+            ->with('requirement:id,stage,requirement_type')
             ->whereKey($submissionId)
-            ->first(['id', 'group_id']);
+            ->first(['id', 'group_id', 'document_requirement_id']);
 
         if (! $submission instanceof DocumentSubmission) {
             throw ValidationException::withMessages([
-                'document_submission_id' => 'Selected concept submission is not available.',
+                'document_submission_id' => 'Selected document submission is not available.',
             ]);
+        }
+
+        if ($activeStage !== null) {
+            $submissionStage = trim((string) ($submission->requirement?->stage ?? ''));
+
+            if ($submissionStage === '' || strcasecmp($submissionStage, $activeStage) !== 0) {
+                throw ValidationException::withMessages([
+                    'document_submission_id' => 'Selected document does not belong to the active defense stage.',
+                ]);
+            }
+
+            if (strcasecmp($activeStage, 'Outline') === 0 && ! $this->isOutlineManuscriptSubmission($submission)) {
+                throw ValidationException::withMessages([
+                    'document_submission_id' => 'Only submitted outline manuscripts can receive outline defense comments.',
+                ]);
+            }
         }
 
         $isAssignedPanelist = GroupPanelist::query()
@@ -103,8 +121,6 @@ class StorePanelistLiveDefenseCommentController extends Controller
             ]);
         });
 
-        $activeStage = $this->resolveRequestedStage($request->input('stage'));
-
         return redirect()->route('panelist.live-defense', array_filter([
             'group' => $submission->group_id,
             'stage' => $activeStage,
@@ -120,5 +136,19 @@ class StorePanelistLiveDefenseCommentController extends Controller
         $normalizedStage = trim($value);
 
         return $normalizedStage !== '' ? $normalizedStage : null;
+    }
+
+    private function isOutlineManuscriptSubmission(DocumentSubmission $submission): bool
+    {
+        $requirementType = strtolower(trim((string) $submission->requirement?->requirement_type));
+        $requirementStage = strtolower(trim((string) $submission->requirement?->stage));
+
+        if ($requirementStage !== 'outline') {
+            return false;
+        }
+
+        return str_contains($requirementType, 'manuscript')
+            || str_contains($requirementType, 'project outline')
+            || $requirementType === 'outline';
     }
 }

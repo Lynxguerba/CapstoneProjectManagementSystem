@@ -8,11 +8,13 @@ use App\Models\DefenseSchedule;
 use App\Models\DocumentRequirement;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
+use App\Models\GroupDefenseVerdict;
 use App\Models\GroupPanelist;
 use App\Models\LiveDefenseComment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -23,42 +25,47 @@ use Inertia\Response;
 
 class StudentLiveDefenseController extends Controller
 {
-    public function __invoke(): Response
+    public function __invoke(Request $request): Response
     {
         /** @var User|null $student */
         $student = Auth::guard('web')->user();
         $group = $this->resolveStudentGroup($student?->id);
+        $activeStage = $this->resolveRequestedStage($request->query('stage'));
         $panelists = $this->resolveGroupPanelists($group);
-        $recommendationLetter = $this->resolveLatestRecommendationLetter($group);
-        $academicYearId = $group?->programSet?->academic_year_id;
-        $conceptRequirements = $this->resolveConceptRequirements($academicYearId);
-        $conceptSubmissions = $this->resolveConceptSubmissions(
-            $group?->id,
-            $conceptRequirements->pluck('id')->values(),
-        );
+        $conceptSubmissions = $this->resolveStageSubmissions($group, $activeStage);
+        $recommendationLetter = $this->resolveLatestRecommendationLetter($group, $activeStage);
         $approvedConceptSubmissionId = $this->resolveApprovedConceptSubmissionId($group, $conceptSubmissions);
-        $conceptVerdict = $this->resolveConceptVerdict($group, $approvedConceptSubmissionId);
+        $conceptVerdict = $this->resolveStageVerdict($group, $conceptSubmissions, $approvedConceptSubmissionId, $activeStage);
         $liveDefenseWorkspace = $this->resolveLiveDefenseWorkspace($group, $conceptSubmissions);
+        $isOutlineStage = $this->isOutlineStage($activeStage);
 
         return Inertia::render('Student/live-defense', [
+            'activeStage' => $activeStage,
             'group' => $group ? [
                 'id' => $group->id,
                 'name' => $group->name,
                 'programSetName' => $group->programSet?->name,
                 'academicYear' => $group->programSet?->academicYear?->label,
-                'defenseStatus' => $this->resolveConceptDefenseStatus($group->id),
+                'defenseStatus' => $this->resolveStageDefenseStatus($group->id, $activeStage),
             ] : null,
             'conceptSubmissions' => $conceptSubmissions
-                ->map(fn (DocumentSubmission $submission): array => [
-                    'id' => $submission->id,
-                    'title' => (string) $submission->file_name,
-                    'requirementType' => (string) ($submission->requirement?->requirement_type ?? 'Concept Paper'),
-                    'submittedAt' => $submission->created_at?->format('Y-m-d H:i'),
-                    'instructorStatus' => (string) ($submission->status ?? 'Submitted'),
-                    'adviserStatus' => (string) ($submission->adviser_status ?? 'Submitted'),
-                    'panelistApprovalStatus' => $this->resolvePanelistApprovalStatus((int) $submission->id, $approvedConceptSubmissionId),
-                    'fileUrl' => $submission->file_path !== null ? Storage::disk('public')->url($submission->file_path) : null,
-                ])
+                ->map(function (DocumentSubmission $submission) use ($approvedConceptSubmissionId, $isOutlineStage): array {
+                    $reviewStatus = $isOutlineStage
+                        ? (string) ($submission->adviser_status ?? 'Submitted')
+                        : $this->resolvePanelistApprovalStatus((int) $submission->id, $approvedConceptSubmissionId);
+
+                    return [
+                        'id' => $submission->id,
+                        'title' => (string) $submission->file_name,
+                        'requirementType' => (string) ($submission->requirement?->requirement_type ?? ($isOutlineStage ? 'Manuscript' : 'Concept Paper')),
+                        'submittedAt' => $submission->created_at?->format('Y-m-d H:i'),
+                        'instructorStatus' => (string) ($submission->status ?? 'Submitted'),
+                        'adviserStatus' => (string) ($submission->adviser_status ?? 'Submitted'),
+                        'panelistApprovalStatus' => $reviewStatus,
+                        'reviewStatus' => $reviewStatus,
+                        'fileUrl' => $submission->file_path !== null ? Storage::disk('public')->url($submission->file_path) : null,
+                    ];
+                })
                 ->values()
                 ->all(),
             'panelists' => $panelists,
@@ -73,6 +80,22 @@ class StudentLiveDefenseController extends Controller
             'recommendationLetter' => $recommendationLetter,
             'conceptVerdict' => $conceptVerdict,
         ]);
+    }
+
+    private function resolveRequestedStage(mixed $value): string
+    {
+        if (! is_string($value)) {
+            return 'Concept';
+        }
+
+        $normalizedStage = trim($value);
+
+        return $normalizedStage !== '' ? $normalizedStage : 'Concept';
+    }
+
+    private function isOutlineStage(string $stage): bool
+    {
+        return strtolower(trim($stage)) === 'outline';
     }
 
     private function resolveStudentGroup(?int $studentId): ?Group
@@ -198,6 +221,85 @@ class StudentLiveDefenseController extends Controller
                 'adviser_status',
                 'created_at',
             ]);
+    }
+
+    /**
+     * @return Collection<int, DocumentRequirement>
+     */
+    private function resolveOutlineManuscriptRequirements(?int $academicYearId): Collection
+    {
+        if (! Schema::hasTable('document_requirements')) {
+            return collect();
+        }
+
+        $requirementsQuery = DocumentRequirement::query()
+            ->where('stage', 'Outline')
+            ->when(
+                is_int($academicYearId),
+                fn (Builder $query) => $query->where(function (Builder $nestedQuery) use ($academicYearId): void {
+                    $nestedQuery->where('academic_year_id', $academicYearId)
+                        ->orWhereNull('academic_year_id');
+                }),
+            )
+            ->orderBy('due_date')
+            ->orderBy('id');
+
+        return $requirementsQuery
+            ->get(['id', 'requirement_type', 'due_date', 'academic_year_id', 'stage'])
+            ->filter(fn (DocumentRequirement $requirement): bool => $this->isOutlineManuscriptRequirementType($requirement->requirement_type))
+            ->values();
+    }
+
+    /**
+     * @param  Collection<int, int>  $requirementIds
+     * @return Collection<int, DocumentSubmission>
+     */
+    private function resolveOutlineManuscriptSubmissions(?int $groupId, Collection $requirementIds): Collection
+    {
+        if ($groupId === null || $requirementIds->isEmpty() || ! Schema::hasTable('document_submissions')) {
+            return collect();
+        }
+
+        return DocumentSubmission::query()
+            ->with('requirement:id,requirement_type,stage')
+            ->where('group_id', $groupId)
+            ->whereIn('document_requirement_id', $requirementIds->all())
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get([
+                'id',
+                'group_id',
+                'document_requirement_id',
+                'file_name',
+                'file_path',
+                'status',
+                'adviser_status',
+                'created_at',
+            ]);
+    }
+
+    /**
+     * @return Collection<int, DocumentSubmission>
+     */
+    private function resolveStageSubmissions(?Group $group, string $activeStage): Collection
+    {
+        $academicYearId = $group?->programSet?->academic_year_id;
+
+        if ($this->isOutlineStage($activeStage)) {
+            $outlineRequirements = $this->resolveOutlineManuscriptRequirements($academicYearId);
+
+            return $this->resolveOutlineManuscriptSubmissions(
+                $group?->id,
+                $outlineRequirements->pluck('id')->values(),
+            );
+        }
+
+        $conceptRequirements = $this->resolveConceptRequirements($academicYearId);
+
+        return $this->resolveConceptSubmissions(
+            $group?->id,
+            $conceptRequirements->pluck('id')->values(),
+        );
     }
 
     /**
@@ -387,6 +489,70 @@ class StudentLiveDefenseController extends Controller
     }
 
     /**
+     * @param  Collection<int, DocumentSubmission>  $documentSubmissions
+     * @return array{
+     *     value: string|null,
+     *     approvedConceptSubmissionId: int|null,
+     *     decidedAt: string|null,
+     *     decidedBy: string|null
+     * }|null
+     */
+    private function resolveStageVerdict(
+        ?Group $group,
+        Collection $documentSubmissions,
+        ?int $approvedConceptSubmissionId,
+        string $activeStage,
+    ): ?array {
+        if (! $this->isOutlineStage($activeStage)) {
+            return $this->resolveConceptVerdict($group, $approvedConceptSubmissionId);
+        }
+
+        if (! $group instanceof Group || ! Schema::hasTable('group_defense_verdicts')) {
+            return null;
+        }
+
+        $stageVerdict = GroupDefenseVerdict::query()
+            ->with('panelist:id,name,first_name,last_name,email')
+            ->where('group_id', $group->id)
+            ->where('stage', $activeStage)
+            ->first([
+                'id',
+                'group_id',
+                'stage',
+                'verdict',
+                'approved_document_submission_id',
+                'panelist_user_id',
+                'decided_at',
+            ]);
+
+        if (! $stageVerdict instanceof GroupDefenseVerdict) {
+            return null;
+        }
+
+        $approvedSubmissionId = is_numeric($stageVerdict->approved_document_submission_id)
+            ? (int) $stageVerdict->approved_document_submission_id
+            : null;
+
+        if (
+            $approvedSubmissionId !== null
+            && ! $documentSubmissions->contains(
+                fn (DocumentSubmission $submission): bool => (int) $submission->id === $approvedSubmissionId
+            )
+        ) {
+            $approvedSubmissionId = null;
+        }
+
+        $verdict = trim((string) $stageVerdict->verdict);
+
+        return [
+            'value' => $verdict !== '' ? $verdict : null,
+            'approvedConceptSubmissionId' => $approvedSubmissionId,
+            'decidedAt' => $stageVerdict->decided_at?->format('Y-m-d H:i'),
+            'decidedBy' => $this->resolveOptionalUserName($stageVerdict->panelist),
+        ];
+    }
+
+    /**
      * @param  Collection<int, DocumentSubmission>  $conceptSubmissions
      * @return array{
      *     commentsBySubmission: array<int, array<int, array{id: string, databaseId: int, author: string, authorRole: string, attributedPanelistName: string|null, message: string, createdAt: string, canDelete: bool}>>,
@@ -549,7 +715,7 @@ class StudentLiveDefenseController extends Controller
         return $trimmedEmoji !== '' ? $trimmedEmoji : '💬';
     }
 
-    private function resolveConceptDefenseStatus(int $groupId): string
+    private function resolveStageDefenseStatus(int $groupId, string $activeStage): string
     {
         if (! Schema::hasTable('defense_schedules')) {
             return 'Pending';
@@ -557,7 +723,7 @@ class StudentLiveDefenseController extends Controller
 
         $status = DefenseSchedule::query()
             ->where('group_id', $groupId)
-            ->whereRaw('LOWER(stage) = ?', ['concept'])
+            ->whereRaw('LOWER(stage) = ?', [strtolower(trim($activeStage))])
             ->value('status');
 
         return is_string($status) && $status !== '' ? $status : 'Pending';
@@ -566,7 +732,7 @@ class StudentLiveDefenseController extends Controller
     /**
      * @return array{id: int, fileName: string, fileUrl: string|null, signedAt: string|null, adviserName: string|null}|null
      */
-    private function resolveLatestRecommendationLetter(?Group $group): ?array
+    private function resolveLatestRecommendationLetter(?Group $group, string $activeStage): ?array
     {
         if (! $group instanceof Group || ! Schema::hasTable('adviser_recommendation_documents')) {
             return null;
@@ -578,7 +744,7 @@ class StudentLiveDefenseController extends Controller
                 'requirement:id,stage',
             ])
             ->where('group_id', $group->id)
-            ->whereHas('requirement', fn ($query) => $query->where('stage', 'Concept'))
+            ->whereHas('requirement', fn ($query) => $query->where('stage', $activeStage))
             ->orderByDesc('signed_at')
             ->orderByDesc('id')
             ->first([
@@ -604,6 +770,15 @@ class StudentLiveDefenseController extends Controller
             'signedAt' => $latestRecommendation->signed_at?->format('Y-m-d H:i'),
             'adviserName' => $this->resolveUserName($latestRecommendation->adviser),
         ];
+    }
+
+    private function isOutlineManuscriptRequirementType(?string $requirementType): bool
+    {
+        $normalizedRequirementType = strtolower(trim((string) $requirementType));
+
+        return str_contains($normalizedRequirementType, 'manuscript')
+            || str_contains($normalizedRequirementType, 'project outline')
+            || $normalizedRequirementType === 'outline';
     }
 
     private function resolveUserName(?User $user): string

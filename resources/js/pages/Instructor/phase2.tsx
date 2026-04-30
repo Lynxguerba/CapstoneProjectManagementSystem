@@ -46,6 +46,11 @@ type GroupRow = {
     panelists_count?: number;
     receipt_signed_count?: number;
     receipt_required_count?: number;
+    evaluation_signed_count?: number;
+    evaluation_required_count?: number;
+    outline_verdict?: string | null;
+    outline_verdict_decided_at?: string | null;
+    outline_approved_document_submission_id?: number | null;
     created_at?: string | null;
 };
 
@@ -670,7 +675,22 @@ const Phase2Page = () => {
         return filteredGroupsWithoutYear.map((group) => {
             const schedule = scheduleByGroupId.get(group.id);
             const panelistsCount = Number(group.panelists_count ?? 0);
-            const status = panelistsCount > 0 ? `Available (${panelistsCount} Panelist${panelistsCount === 1 ? '' : 's'})` : 'No Panelists Assigned';
+            const evaluationSignedCount = Number(group.evaluation_signed_count ?? 0);
+            const evaluationRequiredCount = Number(group.evaluation_required_count ?? panelistsCount);
+            const outlineVerdict = (group.outline_verdict ?? '').trim();
+            let status = 'Not Scheduled';
+
+            if (panelistsCount <= 0) {
+                status = 'No Panelists Assigned';
+            } else if (!schedule) {
+                status = `Awaiting Schedule (${panelistsCount} Panelist${panelistsCount === 1 ? '' : 's'})`;
+            } else if (outlineVerdict !== '') {
+                status = `Verdict Recorded · ${outlineVerdict}`;
+            } else if (evaluationSignedCount > 0 && evaluationRequiredCount > 0) {
+                status = `Evaluation Signed (${evaluationSignedCount}/${evaluationRequiredCount})`;
+            } else {
+                status = `Awaiting Review (${panelistsCount} Panelist${panelistsCount === 1 ? '' : 's'})`;
+            }
 
             return {
                 id: `defense-${group.id}`,
@@ -681,7 +701,7 @@ const Phase2Page = () => {
                 scheduleTime: schedule?.start_time && schedule?.end_time ? formatTimeRange(schedule.start_time, schedule.end_time) : '--',
                 room: schedule?.room?.name ?? '—',
                 status,
-                canReview: panelistsCount > 0,
+                canReview: panelistsCount > 0 || outlineVerdict !== '',
                 reviewUrl: `/instructor/requirements/documents/evaluation?group=${group.id}&stage=Outline`,
             };
         });
@@ -694,7 +714,7 @@ const Phase2Page = () => {
 
         return defenseRows.filter((row) => {
             if (selectedDefenseStatus === 'Available') {
-                return row.status.startsWith('Available');
+                return row.status.startsWith('Awaiting') || row.status.startsWith('Evaluation Signed') || row.status.startsWith('Verdict Recorded');
             }
             return row.status === selectedDefenseStatus;
         });

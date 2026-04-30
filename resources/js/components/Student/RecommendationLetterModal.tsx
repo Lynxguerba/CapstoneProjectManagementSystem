@@ -14,9 +14,17 @@ type RecommendationLetterModalProps = {
     open: boolean;
     onClose: () => void;
     recommendationLetter: RecommendationLetter;
+    title?: string;
+    subtitle?: string;
 };
 
-const RecommendationLetterModal = ({ open, onClose, recommendationLetter }: RecommendationLetterModalProps) => {
+const RecommendationLetterModal = ({
+    open,
+    onClose,
+    recommendationLetter,
+    title = 'Recommendation Letter',
+    subtitle = 'Signed adviser recommendation for title defense',
+}: RecommendationLetterModalProps) => {
     const [isAppearing, setIsAppearing] = useState(false);
 
     useEffect(() => {
@@ -83,8 +91,8 @@ const RecommendationLetterModal = ({ open, onClose, recommendationLetter }: Reco
                     <div className="flex items-center gap-2">
                         <FileText className="h-5 w-5 text-gray-800" />
                         <div>
-                            <h2 className="text-lg font-bold text-gray-800">Recommendation Letter</h2>
-                            <p className="text-xs text-slate-600">Signed adviser recommendation for title defense</p>
+                            <h2 className="text-lg font-bold text-gray-800">{title}</h2>
+                            <p className="text-xs text-slate-600">{subtitle}</p>
                         </div>
                     </div>
                     <button

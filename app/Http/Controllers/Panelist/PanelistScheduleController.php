@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DefenseSchedule;
 use App\Models\DocumentSubmission;
 use App\Models\Group;
+use App\Models\GroupDefenseVerdict;
 use App\Models\GroupPanelist;
 use App\Models\User;
 use Carbon\Carbon;
@@ -107,13 +108,16 @@ class PanelistScheduleController extends Controller
         }
 
         return Group::query()
-            ->with([
+            ->with(array_filter([
                 'programSet.academicYear',
                 'leader',
                 'members',
                 'adviserAssignment.adviser',
                 'panelAssignments.panelist',
-            ])
+                Schema::hasTable('group_defense_verdicts')
+                    ? 'defenseVerdicts:id,group_id,stage,verdict'
+                    : null,
+            ]))
             ->whereHas('panelAssignments', fn (Builder $query): Builder => $query->where('panelist_id', $panelistId))
             ->orderBy('name')
             ->get($groupColumns);
@@ -264,13 +268,9 @@ class PanelistScheduleController extends Controller
 
     private function resolveEvaluationStatus(?DefenseSchedule $schedule, Group $group, string $stage): string
     {
-        $normalizedStage = strtolower(trim($stage));
-
-        if ($normalizedStage === 'concept') {
-            $conceptVerdictStatus = $this->resolveConceptVerdictEvaluationStatus($group);
-            if ($conceptVerdictStatus !== null) {
-                return $conceptVerdictStatus;
-            }
+        $stageVerdictStatus = $this->resolveStageVerdictEvaluationStatus($group, $stage);
+        if ($stageVerdictStatus !== null) {
+            return $stageVerdictStatus;
         }
 
         if (! $schedule instanceof DefenseSchedule) {
@@ -286,9 +286,37 @@ class PanelistScheduleController extends Controller
         return 'Pending';
     }
 
+    private function resolveStageVerdictEvaluationStatus(Group $group, string $stage): ?string
+    {
+        $normalizedStage = strtolower(trim($stage));
+
+        if ($normalizedStage === 'concept') {
+            return $this->resolveVerdictEvaluationStatus($group->concept_verdict ?? null);
+        }
+
+        if ($normalizedStage === '' || ! $group->relationLoaded('defenseVerdicts')) {
+            return null;
+        }
+
+        $stageVerdict = $group->defenseVerdicts->first(
+            fn (GroupDefenseVerdict $verdict): bool => strtolower(trim((string) $verdict->stage)) === $normalizedStage
+        );
+
+        if (! $stageVerdict instanceof GroupDefenseVerdict) {
+            return null;
+        }
+
+        return $this->resolveVerdictEvaluationStatus($stageVerdict->verdict);
+    }
+
     private function resolveConceptVerdictEvaluationStatus(Group $group): ?string
     {
-        $conceptVerdict = is_string($group->concept_verdict) ? trim($group->concept_verdict) : '';
+        return $this->resolveVerdictEvaluationStatus($group->concept_verdict ?? null);
+    }
+
+    private function resolveVerdictEvaluationStatus(?string $verdict): ?string
+    {
+        $conceptVerdict = is_string($verdict) ? trim($verdict) : '';
 
         if (
             in_array($conceptVerdict, [
