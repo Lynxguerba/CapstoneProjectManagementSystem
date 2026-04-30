@@ -236,7 +236,7 @@ const PanelistSchedule = () => {
                                                         Details
                                                     </button>
                                                     <Link
-                                                        href={`/panelist/live-defense?group=${row.group.id}`}
+                                                        href={`/panelist/live-defense?group=${row.group.id}&stage=${encodeURIComponent(row.defenseType)}`}
                                                         className="inline-flex items-center rounded-md bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                                                     >
                                                         Evaluate

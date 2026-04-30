@@ -508,19 +508,6 @@ const Phase1Page = () => {
         }
     }, [deadlinesPage, totalDeadlinePages]);
 
-    const requirementsByAcademicYearLabel = React.useMemo(() => {
-        const map = new Map<string, RequirementRecord[]>();
-
-        requirements.forEach((requirement) => {
-            const label = resolveAcademicYearLabel(requirement.academic_year_id, requirement.academic_year_label ?? null);
-            const current = map.get(label) ?? [];
-            current.push(requirement);
-            map.set(label, current);
-        });
-
-        return map;
-    }, [requirements, resolveAcademicYearLabel]);
-
     const documentSubmissionsByGroupId = React.useMemo(() => {
         const map = new Map<number, DocumentSubmissionRow[]>();
 
@@ -532,50 +519,6 @@ const Phase1Page = () => {
 
         return map;
     }, [documentSubmissions]);
-
-    const documentDetailsByGroup = React.useMemo(() => {
-        const map = new Map<number, RequirementDocumentDetail[]>();
-
-        groups.forEach((group) => {
-            const academicYearLabel = group.school_year ?? 'All';
-            const requirementsForGroup = requirementsByAcademicYearLabel.get(academicYearLabel) ?? requirementsByAcademicYearLabel.get('All') ?? [];
-            const submissions = documentSubmissionsByGroupId.get(group.id) ?? [];
-            const latestByRequirement = new Map<number, DocumentSubmissionRow>();
-
-            submissions.forEach((submission) => {
-                const requirementId = submission.document_requirement_id;
-                const existing = latestByRequirement.get(requirementId);
-                if (!existing) {
-                    latestByRequirement.set(requirementId, submission);
-                    return;
-                }
-
-                const nextDate = submission.submitted_at ?? '';
-                const existingDate = existing.submitted_at ?? '';
-
-                if (nextDate > existingDate || (nextDate === existingDate && submission.id > existing.id)) {
-                    latestByRequirement.set(requirementId, submission);
-                }
-            });
-
-            const details = requirementsForGroup.map((requirement) => {
-                const submission = latestByRequirement.get(requirement.id);
-                const status = submission ? resolveSubmissionStatus(submission) : 'Missing';
-
-                return {
-                    id: requirement.id,
-                    requirementType: requirement.requirement_type,
-                    status,
-                    fileName: submission?.file_name ?? null,
-                    submittedAt: submission?.submitted_at ?? null,
-                } satisfies RequirementDocumentDetail;
-            });
-
-            map.set(group.id, details);
-        });
-
-        return map;
-    }, [documentSubmissionsByGroupId, groups, requirementsByAcademicYearLabel]);
 
     const documents = React.useMemo(() => {
         const iconTone: Record<DocumentRow['status'], string> = {
@@ -685,7 +628,7 @@ const Phase1Page = () => {
                 submittedAt: schedule?.created_at ? formatDateLabel(schedule.created_at) : formatDateLabel(group.created_at),
                 status,
                 statusLabel,
-                reviewUrl: `/instructor/requirements/documents/acknowledgement?group=${group.id}`,
+                reviewUrl: `/instructor/requirements/documents/acknowledgement?group=${group.id}&stage=Concept`,
             } satisfies PaymentRow;
         });
     }, [filteredGroupsWithoutYear, scheduleByGroupId]);
@@ -714,7 +657,7 @@ const Phase1Page = () => {
                 room: schedule?.room?.name ?? '—',
                 status,
                 canReview: panelistsCount > 0,
-                reviewUrl: `/instructor/requirements/documents/evaluation?group=${group.id}`,
+                reviewUrl: `/instructor/requirements/documents/evaluation?group=${group.id}&stage=Concept`,
             };
         });
     }, [filteredGroupsWithoutYear, scheduleByGroupId]);
@@ -776,7 +719,7 @@ const Phase1Page = () => {
     };
 
     const handleViewDocuments = (groupId: number) => {
-        router.visit(`/instructor/requirements/documents?group=${groupId}`);
+        router.visit(`/instructor/requirements/documents?group=${groupId}&stage=Concept`);
     };
 
     const handlePrevDeadlinesPage = () => {

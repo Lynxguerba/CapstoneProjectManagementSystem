@@ -103,8 +103,22 @@ class StorePanelistLiveDefenseCommentController extends Controller
             ]);
         });
 
-        return redirect()->route('panelist.live-defense', [
+        $activeStage = $this->resolveRequestedStage($request->input('stage'));
+
+        return redirect()->route('panelist.live-defense', array_filter([
             'group' => $submission->group_id,
-        ]);
+            'stage' => $activeStage,
+        ], static fn (mixed $value): bool => $value !== null));
+    }
+
+    private function resolveRequestedStage(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $normalizedStage = trim($value);
+
+        return $normalizedStage !== '' ? $normalizedStage : null;
     }
 }

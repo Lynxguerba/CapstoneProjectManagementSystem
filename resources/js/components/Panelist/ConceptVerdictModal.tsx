@@ -27,6 +27,7 @@ type ConceptVerdictModalProps = {
     onClose: () => void;
     groupId: number;
     groupLabel: string;
+    activeStage?: string | null;
     conceptSubmissions: ConceptSubmission[];
     canEdit: boolean;
     initialVerdict?: ConceptVerdictValue | null;
@@ -84,6 +85,7 @@ const ConceptVerdictModal = ({
     onClose,
     groupId,
     groupLabel,
+    activeStage = null,
     conceptSubmissions,
     canEdit,
     initialVerdict = null,
@@ -188,6 +190,7 @@ const ConceptVerdictModal = ({
                 group_id: groupId,
                 verdict: selectedVerdict,
                 approved_document_submission_id: isPassedVerdict(selectedVerdict) ? selectedApprovedSubmissionId : null,
+                stage: activeStage,
             },
             {
                 preserveScroll: true,

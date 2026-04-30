@@ -147,6 +147,17 @@ const mapConceptVerdictToSheetVerdict = (conceptVerdict: string | null | undefin
     return null;
 };
 
+const resolveStageFromDefenseTypeKey = (defenseTypeKey: string): string | null => {
+    return (
+        {
+            concept_presentation: 'Concept',
+            outline_defense: 'Outline',
+            pre_deployment_defense: 'Pre-Deployment',
+            final_defense: 'Final',
+        }[defenseTypeKey] ?? null
+    );
+};
+
 const buildGroupLabel = (group: GroupSummary | null): string => {
     if (!group) {
         return 'No group selected';
@@ -191,8 +202,6 @@ const resolveSignatureDataUrl = (
 const PanelistEvaluationSheet = () => {
     const { props } = usePage<PanelistEvaluationSheetProps>();
     const group = props.group ?? null;
-    const groupLabel = buildGroupLabel(group);
-    const groupQuery = group ? `?group=${group.id}` : '';
     const defenseHeaderTitle = React.useMemo(() => {
         const normalizedTitle = (props.defenseHeaderTitle ?? '').trim();
 
@@ -205,6 +214,19 @@ const PanelistEvaluationSheet = () => {
     }, [props.panelistName]);
     const panelistUserId = props.panelistUserId ?? null;
     const defenseTypeKey = (props.defenseTypeKey ?? '').trim();
+    const groupLabel = React.useMemo(() => buildGroupLabel(group), [group]);
+    const activeStageQuery = React.useMemo(() => {
+        const activeStage = resolveStageFromDefenseTypeKey(defenseTypeKey);
+
+        return activeStage !== null ? `&stage=${encodeURIComponent(activeStage)}` : '';
+    }, [defenseTypeKey]);
+    const groupQuery = React.useMemo(() => {
+        if (!group) {
+            return '';
+        }
+
+        return `?group=${group.id}${activeStageQuery}`;
+    }, [activeStageQuery, group]);
     const signedAt = props.evaluationSheetSignature?.signedAt ?? null;
     const isSigned = typeof signedAt === 'string' && signedAt.trim() !== '';
     const [pendingSignatureAction, setPendingSignatureAction] = React.useState<'sign' | 'clear' | null>(null);

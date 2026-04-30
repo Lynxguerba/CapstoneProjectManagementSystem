@@ -185,6 +185,15 @@ const isScrolledNearBottom = (element: HTMLDivElement): boolean => {
     return distanceFromBottom <= 24;
 };
 
+const resolveActiveStageSearchParam = (): string => {
+    if (typeof window === 'undefined') {
+        return '';
+    }
+
+    const activeStage = new URLSearchParams(window.location.search).get('stage');
+    return typeof activeStage === 'string' ? activeStage.trim() : '';
+};
+
 const PanelistLiveDefense = () => {
     const { props } = usePage<PanelistLiveDefenseProps>();
     const group = props.group;
@@ -218,6 +227,11 @@ const PanelistLiveDefense = () => {
     const liveDefensePartialProps = React.useMemo(() => ['commentsBySubmission', 'highlightsBySubmission', 'commentHighlightTargets'], []);
     const liveDefenseCommentPollingProps = React.useMemo(() => ['commentsBySubmission', 'commentHighlightTargets'], []);
     const liveDefenseHighlightPartialProps = React.useMemo(() => ['highlightsBySubmission'], []);
+    const activeStage = React.useMemo(() => resolveActiveStageSearchParam(), []);
+    const activeStageQuery = React.useMemo(
+        () => (activeStage !== '' ? `&stage=${encodeURIComponent(activeStage)}` : ''),
+        [activeStage],
+    );
 
     React.useEffect(() => {
         setSelectedConceptId((currentSelectedConceptId) => {
@@ -376,6 +390,7 @@ const PanelistLiveDefense = () => {
             only: liveDefensePartialProps,
             data: {
                 group: group.id,
+                stage: activeStage,
             },
             onFinish: () => {
                 setRemovingCommentId(null);
@@ -430,6 +445,7 @@ const PanelistLiveDefense = () => {
                     document_submission_id: submissionId,
                     message: highlightComment,
                     is_highlight_comment: true,
+                    stage: activeStage,
                     highlight: {
                         highlight_id: highlightId,
                         quote_text: quoteText,
@@ -462,6 +478,7 @@ const PanelistLiveDefense = () => {
                 document_submission_id: selectedConcept.id,
                 message,
                 is_highlight_comment: false,
+                stage: activeStage,
             },
             {
                 preserveState: true,
@@ -789,7 +806,7 @@ const PanelistLiveDefense = () => {
                                 </div>
                                 <div className="mt-3">
                                     <Link
-                                        href={`/panelist/live-defense/acknowledgement?group=${group.id}`}
+                                        href={`/panelist/live-defense/acknowledgement?group=${group.id}${activeStageQuery}`}
                                         className="block rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-center text-xs font-semibold tracking-wide text-emerald-700 uppercase transition hover:bg-emerald-100"
                                     >
                                         Acknowledgement
@@ -832,7 +849,7 @@ const PanelistLiveDefense = () => {
                                 <p className="text-xs font-semibold text-slate-700">Open scoring form for this defense panel session.</p>
                                 <div className="mt-3">
                                     <Link
-                                        href={`/panelist/live-defense/evaluation-sheet?group=${group.id}`}
+                                        href={`/panelist/live-defense/evaluation-sheet?group=${group.id}${activeStageQuery}`}
                                         className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                                     >
                                         <ShieldCheck className="h-3.5 w-3.5" />
@@ -902,6 +919,7 @@ const PanelistLiveDefense = () => {
                     onClose={() => setIsConceptVerdictModalOpen(false)}
                     groupId={group.id}
                     groupLabel={groupLabel}
+                    activeStage={activeStage}
                     conceptSubmissions={conceptSubmissions}
                     canEdit={canManageConceptVerdict}
                     initialVerdict={conceptVerdict?.value ?? null}

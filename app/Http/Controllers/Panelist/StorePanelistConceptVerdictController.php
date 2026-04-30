@@ -8,6 +8,7 @@ use App\Models\DocumentSubmission;
 use App\Models\Group;
 use App\Models\GroupPanelist;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
@@ -109,8 +110,23 @@ class StorePanelistConceptVerdictController extends Controller
             'approved_concept_submission_id' => $approvedSubmissionId,
         ]);
 
-        return redirect()->route('panelist.live-defense', [
+        $activeStage = $this->resolveRequestedStage($request);
+
+        return redirect()->route('panelist.live-defense', array_filter([
             'group' => $group->id,
-        ])->with('success', 'Concept verdict saved successfully.');
+            'stage' => $activeStage,
+        ], static fn (mixed $value): bool => $value !== null))->with('success', 'Concept verdict saved successfully.');
+    }
+
+    private function resolveRequestedStage(Request $request): ?string
+    {
+        $stage = $request->input('stage');
+        if (! is_string($stage)) {
+            return null;
+        }
+
+        $normalizedStage = trim($stage);
+
+        return $normalizedStage !== '' ? $normalizedStage : null;
     }
 }
