@@ -118,6 +118,8 @@ const ConceptVerdictModal = ({
     const [formError, setFormError] = useState<string | null>(null);
     const [isAppearing, setIsAppearing] = useState(false);
 
+    const isOutlineStage = useMemo(() => activeStage?.toLowerCase() === 'outline', [activeStage]);
+
     const selectedApprovedTitle = useMemo(() => {
         return conceptSubmissions.find((submission) => submission.id === selectedApprovedSubmissionId) ?? null;
     }, [conceptSubmissions, selectedApprovedSubmissionId]);
@@ -136,10 +138,16 @@ const ConceptVerdictModal = ({
         }
 
         setSelectedVerdict(normalizeConceptVerdictValue(initialVerdict));
-        setSelectedApprovedSubmissionId(initialApprovedSubmissionId ?? null);
+
+        if (isOutlineStage && conceptSubmissions.length === 1) {
+            setSelectedApprovedSubmissionId(conceptSubmissions[0].id);
+        } else {
+            setSelectedApprovedSubmissionId(initialApprovedSubmissionId ?? null);
+        }
+
         setFormError(null);
         setIsSaving(false);
-    }, [open, initialVerdict, initialApprovedSubmissionId]);
+    }, [open, initialVerdict, initialApprovedSubmissionId, isOutlineStage, conceptSubmissions]);
 
     useEffect(() => {
         if (!open) {
@@ -185,6 +193,8 @@ const ConceptVerdictModal = ({
 
         if (!isPassedVerdict(nextVerdict)) {
             setSelectedApprovedSubmissionId(null);
+        } else if (isOutlineStage && conceptSubmissions.length === 1) {
+            setSelectedApprovedSubmissionId(conceptSubmissions[0].id);
         }
     };
 
@@ -317,7 +327,9 @@ const ConceptVerdictModal = ({
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                                 {isPassedVerdictSelected ? (
                                     <p>
-                                        Approved {normalizedSubmissionLabelLower} selection is required.
+                                        {isOutlineStage && conceptSubmissions.length === 1
+                                            ? `The ${normalizedSubmissionLabelLower} is automatically selected for approval.`
+                                            : `Approved ${normalizedSubmissionLabelLower} selection is required.`}
                                         <span className="block text-[11px] text-slate-500">
                                             Selected: {selectedApprovedTitle ? selectedApprovedTitle.title : `No ${normalizedSubmissionLabelLower} selected`}
                                         </span>
@@ -337,13 +349,18 @@ const ConceptVerdictModal = ({
                                         <th className="px-4 py-3 font-semibold">{normalizedSubmissionLabel}</th>
                                         <th className="px-4 py-3 font-semibold">Submitted</th>
                                         <th className="px-4 py-3 font-semibold">{statusColumnLabel}</th>
-                                        <th className="px-4 py-3 font-semibold">Action</th>
+                                        {!(isOutlineStage && conceptSubmissions.length === 1) && (
+                                            <th className="px-4 py-3 font-semibold">Action</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {conceptSubmissions.length === 0 ? (
                                         <tr>
-                                            <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                                            <td
+                                                colSpan={isOutlineStage && conceptSubmissions.length === 1 ? 3 : 4}
+                                                className="px-4 py-8 text-center text-slate-500"
+                                            >
                                                 {emptyStateMessage}
                                             </td>
                                         </tr>
@@ -367,21 +384,23 @@ const ConceptVerdictModal = ({
                                                             {panelistApprovalStatus}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setSelectedApprovedSubmissionId(submission.id)}
-                                                            disabled={!isActionEnabled}
-                                                            className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-[11px] font-semibold transition ${
-                                                                isSelectedSubmission
-                                                                    ? 'border-emerald-300 bg-emerald-100 text-emerald-700'
-                                                                    : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                            } disabled:cursor-not-allowed disabled:opacity-50`}
-                                                        >
-                                                            <ShieldCheck className="h-3.5 w-3.5" />
-                                                            {isSelectedSubmission ? 'Selected' : `Set as approved ${normalizedSubmissionLabelLower}`}
-                                                        </button>
-                                                    </td>
+                                                    {!(isOutlineStage && conceptSubmissions.length === 1) && (
+                                                        <td className="px-4 py-3">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setSelectedApprovedSubmissionId(submission.id)}
+                                                                disabled={!isActionEnabled}
+                                                                className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-[11px] font-semibold transition ${
+                                                                    isSelectedSubmission
+                                                                        ? 'border-emerald-300 bg-emerald-100 text-emerald-700'
+                                                                        : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                                } disabled:cursor-not-allowed disabled:opacity-50`}
+                                                            >
+                                                                <ShieldCheck className="h-3.5 w-3.5" />
+                                                                {isSelectedSubmission ? 'Selected' : `Set as approved ${normalizedSubmissionLabelLower}`}
+                                                            </button>
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             );
                                         })
