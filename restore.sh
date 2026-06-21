@@ -4,6 +4,12 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
+if [[ -f .env ]]; then
+    DB_USERNAME=$(grep '^DB_USERNAME=' .env | cut -d= -f2-)
+    DB_PASSWORD=$(grep '^DB_PASSWORD=' .env | cut -d= -f2-)
+    DB_DATABASE=$(grep '^DB_DATABASE=' .env | cut -d= -f2-)
+fi
+
 usage() {
     cat <<'USAGE'
 Usage:
@@ -65,13 +71,8 @@ for required_file in "$DB_FILE" "$STORAGE_ARCHIVE" "$CHECKSUM_FILE"; do
     fi
 done
 
-if ! command -v docker >/dev/null 2>&1; then
-    echo "Error: docker is required." >&2
-    exit 1
-fi
-
-if [[ ! -f docker-compose.yml ]]; then
-    echo "Error: docker-compose.yml not found in $ROOT_DIR" >&2
+if ! command -v mysql >/dev/null 2>&1; then
+    echo "Error: mysql client is required." >&2
     exit 1
 fi
 
@@ -96,21 +97,21 @@ PRE_RESTORE_DIR="backups/pre_restore_$TIMESTAMP"
 mkdir -p "$PRE_RESTORE_DIR"
 
 echo "[2/6] Creating pre-restore database snapshot ..."
-docker compose exec -T db sh -lc 'mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --single-transaction --routines --triggers --events --no-tablespaces "$MYSQL_DATABASE"' > "$PRE_RESTORE_DIR/db.sql"
+mysqldump -h 127.0.0.1 -u"${DB_USERNAME:-root}" -p"${DB_PASSWORD:-}" --single-transaction --routines --triggers --events --no-tablespaces "${DB_DATABASE:-cpms}" > "$PRE_RESTORE_DIR/db.sql"
 
 echo "[3/6] Creating pre-restore storage snapshot ..."
 tar -czf "$PRE_RESTORE_DIR/storage-app.tar.gz" storage/app
 sha256sum "$PRE_RESTORE_DIR/db.sql" "$PRE_RESTORE_DIR/storage-app.tar.gz" > "$PRE_RESTORE_DIR/checksums.sha256"
 
 echo "[4/6] Restoring database ..."
-docker compose exec -T db sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < "$DB_FILE"
+mysql -h 127.0.0.1 -u"${DB_USERNAME:-root}" -p"${DB_PASSWORD:-}" "${DB_DATABASE:-cpms}" < "$DB_FILE"
 
 echo "[5/6] Restoring storage/app ..."
 rm -rf storage/app
 tar -xzf "$STORAGE_ARCHIVE"
 
 echo "[6/6] Post-restore quick checks ..."
-cat <<'SQL' | docker compose exec -T db sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
+cat <<'SQL' | mysql -h 127.0.0.1 -u"${DB_USERNAME:-root}" -p"${DB_PASSWORD:-}" "${DB_DATABASE:-cpms}"
 SELECT 'users', COUNT(*) FROM users;
 SELECT 'program_sets', COUNT(*) FROM program_sets;
 SELECT 'groups', COUNT(*) FROM `groups`;

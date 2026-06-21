@@ -62,17 +62,15 @@ services:
     container_name: cpms_phpmyadmin
     restart: unless-stopped
     environment:
-      PMA_HOST: db
+      PMA_HOST: host.docker.internal
       PMA_PORT: 3306
       MYSQL_ROOT_PASSWORD: root
       PMA_USER: cpms
       PMA_PASSWORD: root
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8080:80"
-    depends_on:
-      - db
-    networks:
-      - cpms
 
 volumes:
   dbdata:
