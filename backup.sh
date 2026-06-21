@@ -20,13 +20,13 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     exit 0
 fi
 
-if ! command -v docker >/dev/null 2>&1; then
-    echo "Error: docker is required." >&2
+if ! command -v docker >/dev/null 2>&1 && ! command -v mysqldump >/dev/null 2>&1; then
+    echo "Error: docker or mysqldump is required." >&2
     exit 1
 fi
 
-if [[ ! -f docker-compose.yml ]]; then
-    echo "Error: docker-compose.yml not found in $ROOT_DIR" >&2
+if [[ ! -f docker-compose.yml && ! -f .env ]]; then
+    echo "Error: docker-compose.yml or .env not found in $ROOT_DIR" >&2
     exit 1
 fi
 
@@ -42,7 +42,18 @@ fi
 mkdir -p "$BACKUP_DIR"
 
 echo "[1/5] Backing up database to $BACKUP_DIR/db.sql ..."
-docker compose exec -T db sh -lc 'mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --single-transaction --routines --triggers --events --no-tablespaces "$MYSQL_DATABASE"' > "$BACKUP_DIR/db.sql"
+if command -v docker >/dev/null 2>&1 && docker compose ps --services 2>/dev/null | grep -q "^db$"; then
+    docker compose exec -T db sh -lc 'mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --single-transaction --routines --triggers --events --no-tablespaces "$MYSQL_DATABASE"' > "$BACKUP_DIR/db.sql"
+else
+    # Fallback to local mysqldump using .env variables
+    DB_HOST=$(grep '^DB_HOST=' .env | cut -d '=' -f2- | tr -d '"'\''\r' || echo "127.0.0.1")
+    DB_PORT=$(grep '^DB_PORT=' .env | cut -d '=' -f2- | tr -d '"'\''\r' || echo "3306")
+    DB_DATABASE=$(grep '^DB_DATABASE=' .env | cut -d '=' -f2- | tr -d '"'\''\r' || echo "cpms")
+    DB_USERNAME=$(grep '^DB_USERNAME=' .env | cut -d '=' -f2- | tr -d '"'\''\r' || echo "root")
+    DB_PASSWORD=$(grep '^DB_PASSWORD=' .env | cut -d '=' -f2- | tr -d '"'\''\r' || echo "")
+    
+    mysqldump -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" --single-transaction --routines --triggers --events --no-tablespaces "$DB_DATABASE" > "$BACKUP_DIR/db.sql"
+fi
 
 echo "[2/5] Backing up storage/app to $BACKUP_DIR/storage-app.tar.gz ..."
 tar -czf "$BACKUP_DIR/storage-app.tar.gz" storage/app
