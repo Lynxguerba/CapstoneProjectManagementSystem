@@ -11,3 +11,7 @@
   Laravel ( artisan serve ), the Queue worker, and Vite all at the same time:
 
     composer run dev
+
+### 3. Stop the server
+    
+    sudo service mysql stop && docker compose down
