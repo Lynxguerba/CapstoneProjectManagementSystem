@@ -71,8 +71,11 @@ for required_file in "$DB_FILE" "$STORAGE_ARCHIVE" "$CHECKSUM_FILE"; do
     fi
 done
 
-if ! command -v mysql >/dev/null 2>&1; then
-    echo "Error: mysql client is required." >&2
+USE_DOCKER="false"
+if command -v docker >/dev/null 2>&1 && docker compose ps --services 2>/dev/null | grep -q "^db$"; then
+    USE_DOCKER="true"
+elif ! command -v mysql >/dev/null 2>&1; then
+    echo "Error: mysql client is required (or docker with a running 'db' service)." >&2
     exit 1
 fi
 
@@ -97,26 +100,43 @@ PRE_RESTORE_DIR="backups/pre_restore_$TIMESTAMP"
 mkdir -p "$PRE_RESTORE_DIR"
 
 echo "[2/6] Creating pre-restore database snapshot ..."
-mysqldump -h 127.0.0.1 -u"${DB_USERNAME:-root}" -p"${DB_PASSWORD:-}" --single-transaction --routines --triggers --events --no-tablespaces "${DB_DATABASE:-cpms}" > "$PRE_RESTORE_DIR/db.sql"
+if [[ "$USE_DOCKER" == "true" ]]; then
+    docker compose exec -T db sh -lc 'mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --single-transaction --routines --triggers --events --no-tablespaces "$MYSQL_DATABASE"' > "$PRE_RESTORE_DIR/db.sql"
+else
+    mysqldump -h 127.0.0.1 -u"${DB_USERNAME:-root}" -p"${DB_PASSWORD:-}" --single-transaction --routines --triggers --events --no-tablespaces "${DB_DATABASE:-cpms}" > "$PRE_RESTORE_DIR/db.sql"
+fi
 
 echo "[3/6] Creating pre-restore storage snapshot ..."
 tar -czf "$PRE_RESTORE_DIR/storage-app.tar.gz" storage/app
 sha256sum "$PRE_RESTORE_DIR/db.sql" "$PRE_RESTORE_DIR/storage-app.tar.gz" > "$PRE_RESTORE_DIR/checksums.sha256"
 
 echo "[4/6] Restoring database ..."
-mysql -h 127.0.0.1 -u"${DB_USERNAME:-root}" -p"${DB_PASSWORD:-}" "${DB_DATABASE:-cpms}" < "$DB_FILE"
+if [[ "$USE_DOCKER" == "true" ]]; then
+    docker compose exec -T db sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' < "$DB_FILE"
+else
+    mysql -h 127.0.0.1 -u"${DB_USERNAME:-root}" -p"${DB_PASSWORD:-}" "${DB_DATABASE:-cpms}" < "$DB_FILE"
+fi
 
 echo "[5/6] Restoring storage/app ..."
 rm -rf storage/app
 tar -xzf "$STORAGE_ARCHIVE"
 
 echo "[6/6] Post-restore quick checks ..."
-cat <<'SQL' | mysql -h 127.0.0.1 -u"${DB_USERNAME:-root}" -p"${DB_PASSWORD:-}" "${DB_DATABASE:-cpms}"
+if [[ "$USE_DOCKER" == "true" ]]; then
+    docker compose exec -T db sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' <<'SQL'
 SELECT 'users', COUNT(*) FROM users;
 SELECT 'program_sets', COUNT(*) FROM program_sets;
 SELECT 'groups', COUNT(*) FROM `groups`;
 SELECT 'group_members', COUNT(*) FROM group_members;
 SQL
+else
+    cat <<'SQL' | mysql -h 127.0.0.1 -u"${DB_USERNAME:-root}" -p"${DB_PASSWORD:-}" "${DB_DATABASE:-cpms}"
+SELECT 'users', COUNT(*) FROM users;
+SELECT 'program_sets', COUNT(*) FROM program_sets;
+SELECT 'groups', COUNT(*) FROM `groups`;
+SELECT 'group_members', COUNT(*) FROM group_members;
+SQL
+fi
 
 echo "Restore completed."
 echo "Pre-restore safety snapshot: $PRE_RESTORE_DIR"
