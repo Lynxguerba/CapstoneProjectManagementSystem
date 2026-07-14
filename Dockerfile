@@ -15,26 +15,31 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
-# Copy composer files first (better caching)
-COPY composer.json composer.lock ./
+# Copy artisan and core config files first (needed for composer post-install scripts)
+COPY artisan composer.json composer.lock ./
+COPY config ./config/
+COPY app ./app/
+COPY routes ./routes/
+COPY bootstrap ./bootstrap/
+COPY database ./database/
 
 # Install PHP dependencies
-# RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+
+# Increase PHP upload limits
+COPY php.uploads.ini /usr/local/etc/php/conf.d/php.uploads.ini
 
 # Copy package.json files
 COPY package.json package-lock.json ./
 
 # Install Node dependencies
-# RUN npm install
-
-# Increase PHP upload limits for large document submissions.
-COPY php.uploads.ini /usr/local/etc/php/conf.d/php.uploads.ini
+RUN npm install
 
 # Copy the rest of the project
 COPY . .
 
 # Build frontend assets
-# RUN npm run build
+RUN npm run build
 
 # Expose port
 EXPOSE 8000

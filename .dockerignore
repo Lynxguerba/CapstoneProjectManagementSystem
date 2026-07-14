@@ -1,0 +1,17 @@
+/vendor
+/node_modules
+/.git
+.env
+.gitignore
+.gitattributes
+*.md
+.dockerignore
+Dockerfile
+docker-compose.yml
+backup.sh
+restore.sh
+/.phpunit.cache
+/.github
+/docs
+/concept
+/backups
